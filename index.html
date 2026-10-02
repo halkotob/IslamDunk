@@ -29,7 +29,7 @@ body{flex-direction:column;gap:14px}
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '4.9';
+const VERSION = '7.2';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -375,8 +375,8 @@ const SFX = {
 // ------------------------------------------------------------------ INPUT
 const BLOCK_KEYS = new Set(['KeyE', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Numpad0', 'Numpad1', 'Numpad2', 'Numpad3', 'Numpad4', 'Slash']);
 const BINDS = [
-  { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], a: ['KeyJ'], b: ['KeyK'], t: [], x: ['KeyH'], s: [] },
-  { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], a: ['Numpad1', 'Comma'], b: ['Numpad2', 'Period'], t: [], x: ['Numpad0', 'KeyM'], s: [] }
+  { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], a: ['KeyJ'], b: ['KeyK'], t: ['KeyL'], x: ['KeyH'], s: ['KeyI'] },
+  { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], a: ['Numpad1', 'Comma'], b: ['Numpad2', 'Period'], t: ['Numpad3', 'Slash'], x: ['Numpad0', 'KeyM'], s: ['Numpad4', 'KeyN'] }
 ];
 const SIM_KEYS = new Set(BINDS.flatMap(b => Object.values(b).flat()));
 const MK = { up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'], left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'],
@@ -384,7 +384,7 @@ const MK = { up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'], left: ['Arrow
 const TOUCH_BTNS = [
   { key: 'KeyK', label: 'SHOOT', dx: 86, y: H - 90, r: 48 },
   { key: 'KeyJ', label: 'PASS', dx: 196, y: H - 62, r: 38 },
-  { key: 'KeyH', label: 'MOVE', dx: 104, y: H - 204, r: 36 }
+  { key: 'KeyL', label: 'TURBO', dx: 104, y: H - 204, r: 36 }
 ];
 function layoutTouch() { for (const b of TOUCH_BTNS) b.x = W - b.dx; }
 layoutTouch();
@@ -846,6 +846,12 @@ function updatePlayer(p, dt) {
     case 'sig': sigUpdate(p, dt); break;
     case 'shoot':
       if (ball.owner !== p) { p.state = 'post'; break; }
+      if (p.human === 1 && Net.role === 'host') {                          // remote shooter: lag-compensated release
+        const R = Net.pendRel;
+        if (R) { Net.pendRel = null; if (R.rt > 0 && R.rt <= p.st_t + 0.02 && R.rt >= p.st_t - 0.35) p.st_t = R.rt; releaseShot(p); break; }
+        if (p.st_t > 0.72 + Math.min(0.3, Net.guestLag || 0) || (!c.bHeld && p.st_t > 0.72)) releaseShot(p);
+        break;
+      }
       { const rel = p.human >= 0 ? !c.bHeld : p.st_t >= p.ai.relT; if (rel || p.st_t > 0.72) releaseShot(p); }
       break;
     case 'pass': if (p.st_t > 0.2) p.state = 'free'; break;
@@ -909,7 +915,7 @@ function freeLogic(p) {
       else {
         const h = attackHoop(p.team), d = dxz(p, h);
         if (p.human >= 0 && d > 150 && d < 270) {
-          const speed = Math.hypot(p.vx || 0, p.vz || 0), label = !(c.turbo && p.turboOK()) ? 'SPRINT TO DUNK' : speed < 115 ? 'BUILD A RUN-UP' : 'DRIVE AT THE RIM';
+          const speed = Math.hypot(p.vx || 0, p.vz || 0), label = !(c.turbo && p.turboOK()) ? 'TURBO TO DUNK' : speed < 115 ? 'BUILD A RUN-UP' : 'DRIVE AT THE RIM';
           FX.pop(p.x, 132, p.z, label, '#ffd76a');
         }
         startShot(p);
@@ -2628,7 +2634,6 @@ function drawCrest(g, x, y, r, T) {
 
 // ---------------------------------------------------------------- SCENE
 function drawScene(g, t) {
-  applyViewPersp();
   withPlane(g, K_BACK, FLOOR_TOP, () => { if (M.gym) drawGymBack(g, t); else if (VL) drawVenueBack(g, t); else drawArena(g, t); });
   if (courtCv) drawFloorWarped(g, courtCv);
   withPlane(g, K_NEAR, NEAR_Y, () => { if (M.gym) drawGymNear(g); else if (VL) drawVenueNear(g); else drawNearSide(g); });
@@ -2644,8 +2649,8 @@ function drawScene(g, t) {
   drawReflections(g, actors);
   M._coach = actors;
   for (const p of actors) drawShadow(g, p.x, p.y, p.z, 18);
-  if (!M.gym || M.practice) for (const p of actors) drawTeamRing(g, p);          // team-colored floor rings: who is where, at a glance
-  if (actors.length && (!M.gym || M.practice)) drawDepthAids(g, actors);          // v7: drop lines, ball marker, range rings
+  if (View.depth && (!M.gym || M.practice)) for (const p of actors) drawTeamRing(g, p);   // team-colored floor rings: who is where, at a glance
+  if (View.depth && showBall) drawDepthAids(g, actors);
   if (M.balls) { if (showBall) for (const st of M.balls) if (!st.owner && st.x > -500) drawShadow(g, st.x, st.y, st.z, 8); }
   else if (!ball.owner && showBall) drawShadow(g, ball.x, ball.y, ball.z, 8);
   // Contact glyphs sit behind the ball, hoop and players, never over their silhouettes.
@@ -2654,7 +2659,7 @@ function drawScene(g, t) {
   for (const h of hoops) { if (M.gym && h.idx === 0) continue; E.push({ z: h.z - 30, f: () => drawHoopBack(g, h) }); E.push({ z: h.z + 12, f: () => drawHoopFront(g, h) }); }
   if (M.drawExtras) M.drawExtras(E, g);
   if (M.gym && !gymUp().lights) E.push({ z: 1e9, f: () => { g.fillStyle = 'rgba(40,50,25,0.08)'; g.fillRect(0, 0, W, H); } });
-  if (actors.length && VIEW.depth > 0) E.push({ z: 1e9 + 1, f: () => drawDepthHaze(g) });
+  if (actors.length && View.depth === 2) E.push({ z: 1e9 + 1, f: () => drawDepthHaze(g) });   // grading: Full only
   for (const p of actors) E.push({ z: p.z + (p.state === 'dunk' || p.state === 'hang' ? 20 : 0), f: () => withPlayerBall(p, () => drawPlayer(g, p)) });
   if (M.balls) { if (showBall) for (const st of M.balls) if (!st.owner && st.x > -500) E.push({ z: st.z + 1, f: () => withBall(st, () => drawBall(g)) }); }
   else if (!ball.owner && showBall) E.push({ z: ball.z + 1, f: () => drawBall(g) });
@@ -2753,10 +2758,10 @@ function drawHUD(g) {
     else if (p.boost > 0) { g.fillStyle = '#ffe38a'; g.textAlign = 'right'; g.font = `10px ${FONT}`; g.fillText('NOOR ACTIVE', x + 214, y + 17); }
     else if ((p.fat || 0) > 0.7) { g.fillStyle = '#ffb08a'; g.textAlign = 'right'; g.font = `10px ${FONT}`; g.fillText('WINDED', x + 214, y + 17); }
     else { const badge=isMine(p)&&selectedRunBadge(); if(badge){g.fillStyle=badge.color;g.textAlign='right';g.font=`8px ${FONT}`;g.fillText(fitText(g,badge.name.toUpperCase(),72),x+214,y+17);} }
-    const spr = !!(p.cmd && p.cmd.turbo && p.turboOK());                 // v7: sprint (double-tap a direction)
-    g.fillStyle = spr ? '#ffd76a' : '#9fb3c8'; g.font = `9px ${FONT}`; g.textAlign = 'left'; g.fillText(spr ? 'SPRINT' : 'TURBO', x + 20, y + 32);
-    if (spr && !p.fire) { g.save(); g.shadowColor = 'rgba(255,215,106,0.9)'; g.shadowBlur = 8; meter(g, x + 64, y + 25, 150, 8, p.turbo / 100, '#ffd76a'); g.restore(); }
-    else meter(g, x + 64, y + 25, 150, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : '#4fc3ff');
+    g.fillStyle = '#9fb3c8'; g.font = `9px ${FONT}`; g.textAlign = 'left'; g.fillText('TURBO', x + 20, y + 32);
+    const sprinting = p.cmd.turbo && Math.hypot(p.vx || 0, p.vz || 0) > 60 && p.turboOK && p.turboOK();
+    if (sprinting) { g.save(); g.shadowColor = '#8fe3ff'; g.shadowBlur = 10; g.fillStyle = 'rgba(143,227,255,0.35)'; roundRect(g, x + 61, y + 22, 156, 14, 7); g.fill(); g.restore(); }   // v7: sprint glow
+    meter(g, x + 64, y + 25, 150, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : sprinting ? '#bff0ff' : '#4fc3ff');
     if (noor) { g.fillStyle = '#9fb3c8'; g.fillText('NOOR', x + 20, y + 45); meter(g, x + 64, y + 39, 150, 6, p.boost > 0 ? p.boost / 12 : p.hifz / 100, p.boost > 0 ? '#ffe38a' : '#57d68d'); }
     drawCompRow(g, p, x, y + ch - 16, y);
   }
@@ -2945,6 +2950,8 @@ const SET_ITEMS = [
   { label: 'Period length', get: () => SETTINGS.format === 'first21' ? 'Untimed, win by 2' : periodTxt(SETTINGS.periodLen), step: d => { if (SETTINGS.format !== 'first21') SETTINGS.periodLen = PERIOD_OPTS[(PERIOD_OPTS.indexOf(SETTINGS.periodLen) + d + PERIOD_OPTS.length) % PERIOD_OPTS.length]; } },
   { label: 'Sound', get: () => SETTINGS.sound ? 'On' : 'Off', step: () => { SETTINGS.sound = !SETTINGS.sound; SFX.setOn(SETTINGS.sound); } },
   { label: 'Fullscreen (F)', get: () => isFullscreen() ? 'On' : 'Off', step: () => toggleFullscreen() },
+  { label: 'Camera (C in game)', get: () => CAM_PRESETS[View.camera].name, step: d => cycleCamera(d, false) },
+  { label: 'Depth aids', get: () => ['Off', 'Subtle', 'Full'][View.depth], step: d => { View.depth = (View.depth + d + 3) % 3; View.save(); } },
   { label: 'Back', get: () => '', step: () => {} }
 ];
 function settingsUpdate() {
@@ -3397,7 +3404,81 @@ function boot() {
 }
 
 // ================================================================ ONLINE
-// Two-player online play over the claude.ai "room" capability.
+
+// =====================================================================================
+//  ONLINE CONFIG (Firebase). Paste your project's web config here. See README.md.
+//  Leave apiKey empty to disable online play outside claude.ai.
+// =====================================================================================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA7y9yqTdK59ePeZ4N_H4F5euOEuwq-ThA",
+  authDomain: "islamdunk-39718.firebaseapp.com",
+  databaseURL: "https://islamdunk-39718-default-rtdb.firebaseio.com",
+  projectId: "islamdunk-39718",
+  storageBucket: "islamdunk-39718.firebasestorage.app",
+  messagingSenderId: "832147818552",
+  appId: "1:832147818552:web:596b4c820dde8d8540becd",
+  measurementId: "G-F3MW75QSH0"
+};
+const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+// =====================================================================================
+
+// ---- transport adapters: everything Net needs from a network is presence(patch), peers(), onPeers(fn, onErr)
+function makeRoomTransport(r) {                 // claude.ai "room" capability
+  return { kind: 'room', presence: p => r.presence(p), peers: () => r.peers(), onPeers: (f, e) => r.onPeers(f, e) };
+}
+function firebaseConfigured() { return !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL); }
+// Firebase Realtime Database: one path per room code (rooms/<CODE>/peers/<peerId>), each client writes
+// only its own node, everyone listens to the room. Field values are stored as JSON strings so arrays
+// and nulls round-trip exactly. The room is chosen from our own presence (code when hosting, join
+// when joining), so nothing above this layer changes. onDisconnect removes a closed tab; on reconnect
+// the full presence is written again, which Net already treats as a rejoin.
+function makeFirebaseTransport(cfg) {
+  const me = 'p' + Math.random().toString(36).slice(2, 12);
+  const T = { kind: 'firebase', me, room: null, pres: {}, raw: {}, cache: {}, list: [], subs: [], D: null, db: null, meRef: null, unsub: null };
+  const self = () => ({ peer: me, by: null, isMe: true, sameTab: true, kind: 'viewer', guest: false, presence: T.pres, updatedAt: Date.now() });
+  const parse = (id, fields) => {
+    const c = T.cache[id] || (T.cache[id] = {}), out = {};
+    for (const k in fields) { const str = fields[k]; if (c[k] && c[k].str === str) out[k] = c[k].v; else { let v; try { v = JSON.parse(str); } catch (e) { v = str; } c[k] = { str, v }; out[k] = v; } }
+    return out;
+  };
+  const rebuild = () => {
+    const L = [self()];
+    for (const id in T.raw) if (id !== me) L.push({ peer: id, by: null, isMe: false, sameTab: false, kind: 'viewer', guest: false, presence: parse(id, T.raw[id] || {}), updatedAt: Date.now() });
+    for (const id in T.cache) if (!(id in T.raw)) delete T.cache[id];
+    T.list = L; for (const f of T.subs) { try { f(L); } catch (e) {} }
+  };
+  const full = () => { const o = {}; for (const k in T.pres) o[k] = JSON.stringify(T.pres[k]); return o; };
+  const switchRoom = async code => {
+    const D = T.D;
+    if (T.unsub) { T.unsub(); T.unsub = null; }
+    if (T.meRef) { try { await D.onDisconnect(T.meRef).cancel(); await D.remove(T.meRef); } catch (e) {} T.meRef = null; }
+    T.room = code; T.raw = {}; T.cache = {};
+    if (!code) { rebuild(); return; }
+    T.meRef = D.ref(T.db, 'rooms/' + code + '/peers/' + me);
+    try { await D.onDisconnect(T.meRef).remove(); } catch (e) {}
+    D.set(T.meRef, full()).catch(() => {});
+    T.unsub = D.onValue(D.ref(T.db, 'rooms/' + code + '/peers'), snap => { T.raw = snap.val() || {}; rebuild(); }, err => { for (const f of T.errs || []) f({ code: 'upstream_error', message: String(err) }); });
+  };
+  T.ready = (async () => {
+    const [A, D] = await Promise.all([import(FIREBASE_SDK + 'firebase-app.js'), import(FIREBASE_SDK + 'firebase-database.js')]);
+    T.D = D; T.db = D.getDatabase(A.initializeApp(cfg, 'islamdunk'));
+    D.onValue(D.ref(T.db, '.info/connected'), snap => {                     // reconnected: re-assert presence + cleanup hook
+      if (snap.val() && T.meRef) { D.onDisconnect(T.meRef).remove().catch(() => {}); D.set(T.meRef, full()).catch(() => {}); }
+    });
+  })();
+  T.presence = async patch => {
+    for (const k in patch) { if (patch[k] === null) delete T.pres[k]; else T.pres[k] = patch[k]; }
+    const code = T.pres.code || T.pres.join || null;
+    if (code !== T.room) await switchRoom(code);
+    else if (T.meRef) { const flat = {}; for (const k in patch) flat[k] = patch[k] === null ? null : JSON.stringify(patch[k]); T.D.update(T.meRef, flat).catch(() => {}); }
+    rebuild();
+  };
+  T.peers = () => (T.list.length ? T.list : [self()]);
+  T.onPeers = (f, e) => { T.subs.push(f); if (e) (T.errs = T.errs || []).push(e); return () => { T.subs = T.subs.filter(x => x !== f); }; };
+  return T;
+}
+
+// Two-player online play over a transport adapter: the claude.ai "room" capability or Firebase.
 // Host-authoritative: the host runs the full simulation (physics + AI) and
 // publishes a compact snapshot in its presence ~30x/s. The guest publishes
 // only its controller state; button presses travel as counters so a press
@@ -3407,7 +3488,7 @@ const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const NS = ['free', 'steal', 'shove', 'pass', 'land', 'getup', 'windup', 'shoot', 'post', 'jump', 'down', 'dunk', 'hang', 'sig'];   // appended only
 const NB = ['held', 'loose', 'shot', 'pass', 'scored'];
 const NP = ['tip', 'live', 'dead', 'break', 'over'];
-const ND = ['tomahawk', 'windmill', '360', 'twohand'];
+const ND = ['tomahawk', 'windmill', '360', 'twohand', 'alley'];   // append only: indices travel in snapshots
 const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
 // Online mini games: host is Khalil, the guest is Nasser; Lightning adds 3 CPU masjid members.
 const MINI_ONLINE = { lightning: ['khalil', 'nasser', 'saleem', 'mahmoud', 'hamid'], horse: ['khalil', 'nasser'] };
@@ -3424,10 +3505,11 @@ const Net = {
     this.wrapAll();
     // Record why online play is unavailable so the screen can show it.
     try {
-      if (typeof window === 'undefined' || !window.claude || !window.claude.use) { this.avail = 'no'; this.reason = 'no-viewer'; return; }
-      const r = await window.claude.use('room');
-      if (!r) { this.avail = 'no'; this.reason = 'room-null'; return; }
-      this.room = r; this.avail = 'yes';
+      let r = null;
+      if (typeof window !== 'undefined' && window.claude && window.claude.use) { const room = await window.claude.use('room'); if (room) r = makeRoomTransport(room); }   // inside claude.ai
+      if (!r && firebaseConfigured()) { const fb = makeFirebaseTransport(FIREBASE_CONFIG); await fb.ready; r = fb; }                          // standalone site
+      if (!r) { this.avail = 'no'; this.reason = (typeof window !== 'undefined' && window.claude) ? 'room-null' : 'not-configured'; return; }
+      this.room = r; this.transport = r.kind; this.avail = 'yes';
       r.onPeers(ch => this.onPeers(ch), e => { this.avail = 'no'; this.reason = 'room-' + ((e && e.code) || 'error'); });
       r.presence({ here: 1 }).catch(e => { if (e && e.code && e.code !== 'upstream_error' && e.code !== 'invalid_argument') { this.avail = 'no'; this.reason = 'presence-' + e.code; } });
     } catch (e) { this.avail = 'no'; this.reason = 'exception'; }
@@ -3493,7 +3575,9 @@ const Net = {
     const i = (g && g.presence && g.presence.in) || {};
     let mx = clamp(+i.mx || 0, -1, 1), mz = clamp(+i.mz || 0, -1, 1); const L = Math.hypot(mx, mz); if (L > 1) { mx /= L; mz /= L; }
     const ac = i.ac | 0, bc = i.bc | 0, xc = i.xc | 0, sc = i.sc | 0;
-    if (i.q) this.guestQ = +i.q;                          // newest guest input the host has applied (for guest prediction)
+    if (i.q) this.guestQ = +i.q;
+    if ((i.rc | 0) > (this.lastRc || 0)) { this.lastRc = i.rc | 0; this.pendRel = { rt: +i.rt || 0 }; }   // guest released Shoot at this shot time (its view)
+    this.guestLag = clamp(+i.lg || 0, 0, 300) / 1000;                          // newest guest input the host has applied (for guest prediction)
     c.mx = mx; c.mz = mz; c.turbo = !!i.t; c.bHeld = !!i.bh; c.bRel = false; c.xHeld = !!i.xh; c.aRel = !!this._ah && !i.ah; c.aHeld = !!i.ah; this._ah = !!i.ah;
     c.a = ac > this.lastAc; c.b = bc > this.lastBc; this.lastAc = Math.max(this.lastAc, ac); this.lastBc = Math.max(this.lastBc, bc);
     c.x = xc > (this.lastXc || 0); this.lastXc = Math.max(this.lastXc || 0, xc);
@@ -3520,8 +3604,7 @@ const Net = {
       this.guestPeer = null;
       if (M.online) { for (const p of M.players) if (p.human === 1) p.human = -1; if (Game.screen === 'play') FX.callout('YOUR FRIEND LEFT', '#ff9a8a', 'CPU TAKES OVER'); }
     }
-    this.sendT -= rdt;
-    if (this.sendT <= 0) { this.sendT = 1 / 30; this.setP({ s: this.snapshot() }); }
+    this.setP({ s: this.snapshot() });             // every frame: the platform coalesces presence (~30 Hz) and sends the newest
   },
   snapshot() {
     const s = { v: 1, g: this.guestPeer, mode: this.mode };
@@ -3572,6 +3655,7 @@ const Net = {
         const d = t - this.lastSnapAt; this.avgInt = lerp(this.avgInt || 33, d, 0.1); this.jit = lerp(this.jit || 8, Math.abs(d - this.avgInt), 0.1);
       }
       this.lastS = h.presence.s; this.lastSnapAt = t;
+      if (h.presence.s.ak) this.rtt = lerp(this.rtt || 120, clamp(t - h.presence.s.ak, 0, 600), 0.2);   // input stamp echoed by the host
       this.snaps.push({ t, s: h.presence.s }); if (this.snaps.length > 10) this.snaps.shift();
     }
   },
@@ -3581,8 +3665,11 @@ const Net = {
     if (Game.screen === 'netplay' && !Game.paused && !(Game.trivia && !Game.trivia.done)) {
       const c = {}; humanCmd(0, c);
       if (c.a) this.ac++; if (c.b) this.bc++; if (c.x) this.xc = (this.xc || 0) + 1; if (c.s) this.sc = (this.sc || 0) + 1;
+      const meS = M.players && M.players.find(p => p.human === 1);
+      if (this._bh && !c.bHeld && meS && meS.state === 'shoot') { this.rc = (this.rc || 0) + 1; this.rt = Math.round(meS.st_t * 1000) / 1000; }   // release at the time WE saw
+      this._bh = c.bHeld;
       const q = Math.round(nowMs() * 10) / 10; (this.hist = this.hist || []).push({ q, mx: r2(c.mx), mz: r2(c.mz), t: c.turbo ? 1 : 0, dt: Math.min(rdt, 0.05) }); if (this.hist.length > 120) this.hist.shift();
-      this.setP({ in: { q, mx: r2(c.mx), mz: r2(c.mz), t: c.turbo ? 1 : 0, bh: c.bHeld ? 1 : 0, xh: c.xHeld ? 1 : 0, ah: c.aHeld ? 1 : 0, ac: this.ac, bc: this.bc, xc: this.xc || 0 } });
+      this.setP({ in: { q, rc: this.rc || 0, rt: this.rt || 0, lg: Math.round((this.rtt || 120) / 2 + (this.rdelay || 70)), ri: this.rh || 0, rp: this.rp ? [this.rp, this.rpI] : null, mx: r2(c.mx), mz: r2(c.mz), t: c.turbo ? 1 : 0, bh: c.bHeld ? 1 : 0, xh: c.xHeld ? 1 : 0, ah: c.aHeld ? 1 : 0, ac: this.ac, bc: this.bc, xc: this.xc || 0 } });
     } else this.setP({ in: { mx: 0, mz: 0, t: 0, bh: 0, ac: this.ac, bc: this.bc } });
     const h = this.hostPeer(), s = this.lastS, me = this.myPeer();
     if (Game.screen === 'netwait') {
@@ -3607,7 +3694,12 @@ const Net = {
   // position toward that. Only on the ground and free; everything else uses host interpolation.
   predictOwn(rdt) {
     const me = M.players.find(p => p.human === 1), N = this.snaps[this.snaps.length - 1];
-    if (!me || !N || !N.s.p || N.s.mid !== this.curMid || N.s.ak == null || me.state !== 'free' || NP[N.s.m[3]] !== 'live' || this.noPredict) { if (me) me._pd = null; return; }
+    if (!me || !N || !N.s.p || N.s.mid !== this.curMid || N.s.ak == null || me.state !== 'free' || NP[N.s.m[3]] !== 'live' || this.noPredict) {
+      if (me && me._pd) { me._off = { x: me._pd.x - me.x, z: me._pd.z - me.z }; me._pd = null; }   // hand back to interpolation smoothly
+      if (me && me._off) { const k = Math.exp(-rdt / 0.12); me._off.x *= k; me._off.z *= k; me.x += me._off.x; me.z += me._off.z; if (Math.abs(me._off.x) + Math.abs(me._off.z) < 0.5) me._off = null; }
+      return;
+    }
+    if (me._off && !me._pd) { me._pd = { x: me.x + me._off.x, z: me.z + me._off.z }; me._off = null; }   // and from it, starting where we're drawn
     const raw = N.s.p[M.players.indexOf(me)], ak = N.s.ak, hist = this.hist || [];
     let x = raw[0], z = raw[2], vx = raw[3], vz = raw[4];
     const keepT = me.cmd.turbo;
@@ -3629,7 +3721,7 @@ const Net = {
     const buf = this.snaps; if (!buf.length) return;
     // render slightly in the past (about 1.6 snapshot intervals plus jitter) so
     // there are almost always two snapshots to blend between
-    const delay = clamp((this.avgInt || 33) * 1.6 + (this.jit || 8) * 2, 50, 160), now = nowMs() - delay;
+    const delay = this.rdelay = clamp((this.avgInt || 33) * 1.25 + (this.jit || 8) * 1.5, 45, 140), now = nowMs() - delay;
     while (buf.length > 2 && buf[1].t <= now) buf.shift();
     const A = buf[0], B = buf[1] || buf[0], SB = B.s;
     const ext = B === buf[buf.length - 1] && now > B.t ? clamp((now - B.t) / 1000, 0, 0.06) : 0;   // brief extrapolation if a snapshot is late
@@ -3658,7 +3750,7 @@ const Net = {
       p.x = L(a[0], b[0]) + b[3] * ext; p.y = L(a[1], b[1]); p.z = L(a[2], b[2]) + b[4] * ext; p.vx = b[3]; p.vz = b[4]; p.face = b[5];
       p.state = NS[b[6]] || 'free'; p.st_t = b[7]; p.spin = b[8]; p.rot = b[9]; p.dh = b[10] ? 'f' : 'n';
       p.move = b[11] ? { type: b[11] === 2 ? 'btb' : 'cross', t: b[12], dur: b[11] === 2 ? 0.3 : 0.24, from: p.dh, to: p.dh === 'n' ? 'f' : 'n', bounced: true } : null;
-      p.act = b[13] >= 0 ? { type: ND[b[13]], s: b[14] } : null;
+      p.act = b[13] >= 0 ? { type: ND[b[13]] || 'tomahawk', s: b[14] } : (p.state === 'dunk' || p.state === 'hang') ? { type: 'tomahawk', s: b[14] || 0 } : null;   // never leave a dunking player without an act (crashed the guest's frame)
       p.fire = !!(b[15] & 1); p.cmd.turbo = !!(b[15] & 4); p.celebrate = b[15] & 8 ? 0.5 : 0;
       p.turbo = b[16]; p.hifz = b[17]; p.boost = b[18]; p.human = b[19];
       if (SB.st) { const t = SB.st[i]; Object.assign(p.stats, { pts: t[0], reb: t[1], ast: t[2], stl: t[3], blk: t[4], dnk: t[5], fgm: t[6], fga: t[7], pf: t[8] || 0, ftm: t[9] || 0, fta: t[10] || 0 }); }
@@ -3754,9 +3846,9 @@ function drawOnline(g) {
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `32px ${FONT}`; g.fillText('Play online with a friend', W / 2, 96);
   g.fillStyle = IVORY; g.font = `15px ${BODY}`;
   if (Net.avail !== 'yes') {
-    const msg = Net.avail === 'checking' ? 'Connecting...' : 'Online play works when the game is opened from its claude.ai link while signed in.';
+    const msg = Net.avail === 'checking' ? 'Connecting...' : Net.reason === 'not-configured' ? 'Online play needs a Firebase project. Paste its config into FIREBASE_CONFIG (see README).' : Net.reason === 'exception' ? 'Could not reach the online service. Check your connection and the Firebase config.' : 'Online play works when the game is opened from its claude.ai link while signed in.';
     g.fillText(msg, W / 2, 200);
-    if (Net.avail !== 'checking') g.fillText('Share the link with your friend so you both open the same page, then come back here.', W / 2, 226);
+    if (Net.avail !== 'checking') g.fillText('Both players open the same page, then one hosts and the other enters the code.', W / 2, 226);
     if (Net.reason) { g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Diagnostic: ' + Net.reason, W / 2, 256); }
     drawMenu(g, ['Back', 'Reload and try again'], Game.idx % 2, 310, i => { if (i === 1 && typeof location !== 'undefined') location.reload(); else goTitle(); });
     return;
@@ -4151,7 +4243,7 @@ const STORY = {
   ],
   tips: ['Bend your knees on free throws. And your ego.', 'Barakah is in sharing. Pass to the open brother.', "Box out. The rebound doesn't come to the one who waits.",
     'Hold shoot and let go at the top of your jump. Green on the meter is money.', 'A contested shot is a gift to the other team. Find the open brother.', "Change direction while dribbling. The defender's ankles will need a break.",
-    'Sprint and shoot near the rim is a dunk. Use it wisely.', 'Pray before the game, not just after it.', 'Defense is patience. Stay between your man and the rim.',
+    'Sprint at the rim and shoot: that is a dunk. Use it wisely.', 'Pray before the game, not just after it.', 'Defense is patience. Stay between your man and the rim.',
     'Help the man who falls, even if he wears the other jersey.', 'Talk on defense. A quiet team gets screened.', 'Stay low on defense. Tall legs, short temper, both are trouble.',
     'Shake hands before tip-off. Adab first, then basketball.', 'Drink water. Your legs will thank you in the fourth.', 'A good pass makes two people happy.']
 };
@@ -6525,7 +6617,7 @@ const SHEIKH_LINES = {
     'When a defender is in your face, move the ball. When you’re open, shoot with confidence.',
     'Free throws are won in practice, not in the game.',
     'Don’t reach for steals all night. Good defense is mostly your feet.',
-    'Turbo is a tool, not a habit. Save it for the moments that matter.',
+    'Sprinting is a tool, not a habit. Save your legs for the moments that matter.',
     'Renew your intention before every game. The Prophet ﷺ taught that actions are judged by intentions.',
     'Sabr isn’t only for hard days. It’s also staying steady when things go well.',
     'Allah is with the patient. That’s in Surah Al-Baqarah (2:153).',
@@ -7291,7 +7383,7 @@ function introTick(rdt) {
 let PERSP = 0.24;                                   // v4.8: stronger near/far scale for depth readability
 function depthK(z) { return 1 + PERSP * (z - COURT.D / 2) / COURT.D; }          // far 0.88 .. near 1.12
 let K_BACK = depthK(0), K_NEAR = depthK(COURT.D);
-function setPersp(v) { PERSP = v; K_BACK = depthK(0); K_NEAR = depthK(COURT.D); }
+function setPersp(v) { if (PERSP === v) return; PERSP = v; K_BACK = depthK(0); K_NEAR = depthK(COURT.D); }
 // Floor canvases are flat; draw them as horizontal strips, each at its depth scale.
 function drawFloorWarped(g, cv, rs = cv.rs || 1) {
   const cw = cv.width / rs, ch = cv.height / rs, n = 56, x0 = -120;
@@ -7320,54 +7412,55 @@ function camClamp(fx, fy, z) {
 }
 function updateBroadcastCam(dt, snap) {
   if (M.camCut) { M.camCut = false; snap = true; }
-  const CPr = camPreset(), f = camFocus(), own = ball.owner;
+  const CP = camPreset(); setPersp(CP.persp);
+  const f = camFollow(CP), own = ball.owner;
   const dir = M.possTeam >= 0 ? attackHoop(M.possTeam).dir : 0;
   const vx = own ? own.vx || 0 : ball.vx || 0;
   // look-ahead in the direction of play
-  let tx = f.x + (dir * 70 + clamp(vx * 0.22, -110, 110)) * CPr.look;
+  let tx = f.x + (dir * 70 + clamp(vx * 0.22, -110, 110)) * CP.look;
   // zoom: base, wider on fast breaks / spread floor, punch-in on dunks and blocks
-  let z = baseZoom() * CPr.zoom - (VL && VL.spec.kind === 'outdoor' ? 0.1 : 0);
+  let z = (baseZoom() - (VL && VL.spec.kind === 'outdoor' ? 0.1 : 0)) * CP.zoom;
   // Give airborne signature plays and live defensive contact a measured
   // broadcast push. Player-fit below remains authoritative, so nobody is cut off.
   let actionPush = 0;
   for (const p of M.players) {
     if (p.state === 'dunk' && p.act && (p.act.big || p.act.alley)) actionPush = Math.max(actionPush, 0.035 * Math.sin(Math.PI * clamp(p.act.s, 0, 1)));
   }
-  z += actionPush * CPr.punch * (REDUCED_MOTION ? 0.35 : 1);
+  z += actionPush * (REDUCED_MOTION ? 0.35 : 1) * CP.punch;
   const xs = M.players.map(p => p.x), spread = Math.max(...xs) - Math.min(...xs);
   if (spread > 460) z -= Math.min(0.2, (spread - 460) / 300 * 0.2);
   if (Math.abs(vx) > 230 && M.phase === 'live') z -= 0.1;
   const half = M.players.length && M.players.every(p => sgn(p.x - 660) === sgn(xs[0] - 660));
-  if (half && !CPr.lock) { z = Math.min(z, W / 610 * Math.max(1, CPr.zoom)); tx = lerp(tx, attackHoop(M.possTeam >= 0 ? M.possTeam : 0).x - dir * 250, 0.35); }   // keep the half-court set readable
+  if (half) { z = Math.min(z, W / 610); tx = lerp(tx, attackHoop(M.possTeam >= 0 ? M.possTeam : 0).x - dir * 250, 0.35); }   // keep the half-court set readable
   if (M.phase !== 'live' && M.phase !== 'tip') z -= 0.08;
   cam.punch = Math.max(0, cam.punch - dt * 1.6);
-  z += 0.06 * CPr.punch * Math.sin(Math.min(1, cam.punch) * Math.PI / 2);     // a slight push-in, not a snap
-  z = Math.max(1.0, z);
+  z += 0.06 * Math.sin(Math.min(1, cam.punch) * Math.PI / 2) * CP.punch;     // a slight push-in, not a snap
+  z = Math.max(CP.minZ, z);
   let ty = FLOOR_TOP + f.z * ZS - 60 - (f.y || 0) * 0.35;
   if (!own && ball.state === 'shot' && ball.shot && ball.shot.hoop) {
-    const h = ball.shot.hoop, kk = CPr.lock ? 0.5 : 1; tx = lerp(tx, h.x, 0.24 * kk); ty = lerp(ty, FLOOR_TOP + h.z * ZS - RIM_Y * 0.65, 0.18 * kk);
+    const h = ball.shot.hoop; tx = lerp(tx, h.x, 0.24); ty = lerp(ty, FLOOR_TOP + h.z * ZS - RIM_Y * 0.65, 0.18);
   }
   if (cam.make) {                                   // made shot: ~6.5% ease toward the hoop, 350 ms in, smooth ease out
     const m = cam.make; m.t += dt;
     const ez = u => u * u * (3 - 2 * u), env = m.t < 0.35 ? ez(m.t / 0.35) : m.t < 0.55 ? 1 : m.t < 1.15 ? 1 - ez((m.t - 0.55) / 0.6) : 0;
     const a = env * m.amp;
     if (m.t >= 1.15 || !a && m.t > 0.4) cam.make = null;
-    else { z *= 1 + 0.065 * a * CPr.punch; m.mul = Math.max(m.mul || 1, 1 + 0.065 * a); tx = lerp(tx, m.h.x - m.h.dir * 90, 0.3 * a); ty = lerp(ty, FLOOR_TOP + m.h.z * ZS - RIM_Y * 0.6, 0.25 * a); m.want = z; }
+    else { z *= 1 + 0.065 * a; m.mul = Math.max(m.mul || 1, 1 + 0.065 * a); tx = lerp(tx, m.h.x - m.h.dir * 90, 0.3 * a); ty = lerp(ty, FLOOR_TOP + m.h.z * ZS - RIM_Y * 0.6, 0.25 * a); m.want = z; }
   }
   [tx, ty] = camClamp(tx, ty, z);
-  [tx, ty, z] = fitPlayers(tx, ty, z, true, CPr.pad || null);   // targets include everyone, and where they're heading
+  [tx, ty, z] = fitPlayers(tx, ty, z, true);                    // targets include everyone, and where they're heading
   // players' velocities, smoothed for the look-ahead (a sudden stop or cut doesn't jerk the frame)
   for (const p of M.players) { const k = snap ? 1 : Math.min(1, dt * 7); p._cvx = (p._cvx || 0) + ((p.vx || 0) - (p._cvx || 0)) * k; p._cvz = (p._cvz || 0) + ((p.vz || 0) - (p._cvz || 0)) * k; }
   // 1) desired framing: eased toward the target, then the padded look-ahead fit applied to it
   const D = cam.des || (cam.des = { fx: cam.fx, fy: cam.fy, z: cam.zoom });
   if (snap) { D.fx = tx; D.fy = ty; D.z = z; }
   else {
-    D.z += (z - D.z) * Math.min(1, dt * (z < D.z ? 1.8 : 0.8) * CPr.follow);   // calm: out steadily, in slowly
-    D.fx += (tx - D.fx) * Math.min(1, dt * 1.6 * CPr.follow);
-    D.fy += (ty - D.fy) * Math.min(1, dt * 1.5 * CPr.follow);
+    D.z += (z - D.z) * Math.min(1, dt * (z < D.z ? 1.8 : 0.8));   // calm: out steadily, in slowly
+    D.fx += (tx - D.fx) * Math.min(1, dt * 1.6);
+    D.fy += (ty - D.fy) * Math.min(1, dt * 1.5);
   }
   [D.fx, D.fy] = camClamp(D.fx, D.fy, D.z);
-  [D.fx, D.fy, D.z] = fitPlayers(D.fx, D.fy, D.z, true, CPr.pad || null);
+  [D.fx, D.fy, D.z] = fitPlayers(D.fx, D.fy, D.z, true);
   if (cam.make && cam.make.want) cam.make.held = Math.max(cam.make.held || 0, 1 - D.z / Math.max(D.z, z));   // how much the player-fit held the ease back
   // 2) the camera follows the desired framing on a critically damped spring (~200 ms, no overshoot),
   //    so when the fit tightens or loosens the camera accelerates into it instead of snapping
@@ -8251,8 +8344,8 @@ function fatigueMul(p) { const f = p.fat || 0; return f > 0.55 ? 1 - 0.09 * (f -
 function chargeCheck(dt) {
   if (M.phase !== 'live' || M.practice || (M.chargeCd = (M.chargeCd || 0) - dt) > 0) return;
   for (const p of M.players) {
-    const still = p.state === 'free' && p.y < 1 && (p.plant > 0 || Math.hypot(p.vx || 0, p.vz || 0) < (p.stance ? 60 : 28));
-    p.setT = still ? Math.max((p.setT || 0) + dt, p.plant > 0 ? 0.4 : 0) : 0;
+    const still = p.state === 'free' && p.y < 1 && Math.hypot(p.vx || 0, p.vz || 0) < (p.stance ? 60 : 28);
+    p.setT = still ? (p.setT || 0) + dt : 0;
   }
   const h = ball.owner; if (!h || h.state !== 'free' || h.y > 1) return;
   const sp = Math.hypot(h.vx, h.vz); if (sp < 215) return;
@@ -8263,7 +8356,7 @@ function chargeCheck(dt) {
     const headOn = (h.vx * toO.x + h.vz * toO.z) / (sp * d);           // driving straight into him
     if (headOn < 0.75 || dxz(o, hp) > dxz(h, hp)) continue;           // he must be between the driver and the rim
     M.chargeCd = 5;
-    if (!chance(0.6 * (o.plant > 0 ? 1.35 : 1) * (1 + 0.08 * (st7(o, 'hus') - 5)))) return;            // hustle players draw more charges
+    if (!chance(0.6 * (1 + 0.08 * (st7(o, 'hus') - 5)) * (o.v7 && o.v7.plant > 0 ? 1.3 : 1))) return;   // a planted defender draws it more often            // hustle players draw more charges
     AchEvents.charge(o); react(h, 'headDown', 1.0);
     SFX.whistle(); FX.callout('CHARGE!', '#8fe3ff', 'OFFENSIVE FOUL', true);
     o.stats.chg = (o.stats.chg || 0) + 1;
@@ -9757,7 +9850,7 @@ if (ACH_BY_ID.good_company) { ACH_BY_ID.good_company.goal = MUS_CAST.length; ACH
 //                      pull-up, step-back, hook, putback)
 //   PASS (J)         tap = chest pass, hold = lob, turbo = bounce pass,
 //                      hold then tap SHOOT = pass fake; call it back = give-and-go
-//   SKILL (I)        with the ball: call a screen from your partner   (v7: replaced by holding Pass; see v7.0 below)
+//   SKILL (I)        with the ball: call a screen from your partner
 // Defense: hold MOVE = stance (mirror the handler, hands up), turbo + BLOCK =
 // swipe block / chase-down (pins it on the glass from behind), steals read the
 // dribble hand (reach across the body and it's a foul), box out by holding stance.
@@ -10151,7 +10244,7 @@ function intentionalOK(p) {
 function stanceStep(p, dt) {
   const bo = ball.owner, onD = bo ? bo.team !== p.team : !!(ball.pass && ball.pass.from.team !== p.team);
   const ground = p.state === 'free' && p.y < 1;
-  if (p.human >= 0) p.stance = ground && !!p.cmd.stanceHeld && (onD || !!ball.shot || ball.state === 'loose') && bo !== p;
+  if (p.human >= 0) p.stance = ground && !!p.cmd.stanceHeld && (onD || !!ball.shot || ball.state === 'loose' || (p.v7 && p.v7.plant > 0)) && bo !== p;   // v7: PASS held (or a planted charge)
   else p.stance = ground && onD && !!bo && p.ai.plan && p.ai.plan.type === 'guardBall' && dxz(p, bo) < 95 && !p.cmd.turbo;
   p.boxing = (p.stance && (!!ball.shot || ball.state === 'loose')) || (p.human < 0 && p.ai.plan && p.ai.plan.type === 'box');
   if (p.human >= 0 && p.boxing && !bo) {                              // box-out: stay attached between your man and the rim
@@ -10304,7 +10397,7 @@ function bumpStep(dt) {
       else nonShootingFoul(o, h, 'BLOCKING FOUL');
       return;
     }
-    const s = strOf(h) + sp / 125 - strOf(o) - (o.stance ? 1.5 : 0) - (o.setT > 0.2 ? 0.8 : 0) - (o.plant > 0 ? 2 : 0);
+    const s = strOf(h) + sp / 125 - strOf(o) - (o.stance ? 1.5 : 0) - (o.setT > 0.2 ? 0.8 : 0);
     if (s > 1.5) { o.stumble = Math.max(o.stumble || 0, 0.35); o.x += tx / d * 18; o.z = clamp(o.z + tz / d * 18, 8, COURT.D - 8); h.vx *= 0.75; h.vz *= 0.75; if (humanIn(h, o)) popOnce(o, 'bump', 'BUMPED', '#ffffff'); }
     else if (s < -1) { const side = sgn(-tz * h.vx + tx * h.vz) || 1; const vx = h.vx, vz = h.vz; h.vx = (vx * 0.3 - vz * 0.5 * side) * 0.6; h.vz = (vz * 0.3 + vx * 0.5 * side) * 0.6; h.stumble = Math.max(h.stumble || 0, 0.15); if (humanIn(h, o)) popOnce(h, 'bump', 'KNOCKED OFF HIS LINE', '#ffd76a'); }
     else { h.vx *= 0.6; h.vz *= 0.6; o.vx *= 0.5; o.vz *= 0.5; if (humanIn(h, o)) popOnce(h, 'bump', 'CONTACT', '#ffffff'); }
@@ -10444,6 +10537,7 @@ function postStep2(p, dt) {
       p.st_t += dt; p.x += p.vx * dt; p.z += p.vz * dt; p.x = clamp(p.x, -20, COURT.L + 20); p.z = clamp(p.z, 20, COURT.D - 20);
       diveStep(p, dt); p.hist.push({ x: p.x, z: p.z, vx: p.vx, vz: p.vz }); if (p.hist.length > 40) p.hist.shift(); animate(p, dt); return;
     }
+    if (p.state === 'windup' && p.human === 1 && Net.role === 'host' && p.st_t === 0) Net.pendRel = null;
     if (p.state === 'windup' && p.human >= 0 && p.fakeOK && M.phase !== 'ft' && p.st_t + dt < (p.windT || 0.13) && !p.cmd.bHeld && ball.owner === p) {
       p.fakeOK = false; startFake(p); p.shotType = null; p.sigShot = null; p.fadeVx = p.fadeVz = 0;   // tap SHOOT: pump fake
     }
@@ -10476,7 +10570,7 @@ freeLogic = function (p) {
       if (canDunk(p) && !p.postUp) { startDunk(p, {}); return; }
       const h = attackHoop(p.team), d = dxz(p, h);
       if (p.human >= 0 && d > 150 && d < 270 && !p.postUp) {
-        const speed = Math.hypot(p.vx || 0, p.vz || 0), label = !(c.turbo && p.turboOK()) ? 'SPRINT TO DUNK' : speed < 115 ? 'BUILD A RUN-UP' : 'DRIVE AT THE RIM';
+        const speed = Math.hypot(p.vx || 0, p.vz || 0), label = !(c.turbo && p.turboOK()) ? 'TURBO TO DUNK' : speed < 115 ? 'BUILD A RUN-UP' : 'DRIVE AT THE RIM';
         if (c.turbo) FX.pop(p.x, 132, p.z, label, '#ffd76a');
       }
       const k = classifyShot(p);
@@ -10668,6 +10762,7 @@ function pauseItems() {
   const t = timeoutTeam();
   if (canCallTimeout(t)) items.push(['Call timeout (' + M.timeouts[t] + ' left)', () => { Game.paused = false; callTimeout(t, true); }]);
   else if (M.timeouts && t >= 0 && !Net.role && !M.mini && !M.practice) items.push(['Timeout (' + M.timeouts[t] + ' left): only with the ball', () => {}]);
+  if (!M.gym && !M.practice) items.push(['Camera: ' + CAM_PRESETS[View.camera].name, () => cycleCamera(1, true)]);
   items.push([Net.role ? 'Leave online game' : M.career ? 'Leave game (no result)' : 'Quit to title', () => { M.career ? careerHub() : goTitle(); }]);
   return items;
 }
@@ -11638,7 +11733,7 @@ refreshReplayability();
 // After a basket or a dead ball: the inbounding team's nearest player jogs to the ball under the
 // hoop, his teammate gets open, the defense drops back, and a real pass starts the possession.
 // No teleport and no camera cut. Falls back to the instant inbound if anything stalls.
-function smoothInboundOK() { return !M.halfCourt && !M.practice && !M.mini && !M.attract_noInb && Net.role !== 'guest' && !M.sideOut && !M.frontIn; }
+function smoothInboundOK() { return !M.halfCourt && !M.practice && !M.mini && !M.attract_noInb && Net.role !== 'guest'; }
 function inbStep(dt) {
   let I = M.inb;
   if (!I) {
@@ -11761,7 +11856,6 @@ function runGuestPick() {
       if (menuHit('ok')) { this.rp = (this.rp || 0) + 1; this.rpI = this.rh; SFX.good(); }
     }
     _gt.call(this, rdt);
-    if (this.role === 'guest' && Game.screen === 'netplay') { const cur = this.me && this.me.presence ? this.me.presence.in : null; this.setP({ in: Object.assign({}, this._lastIn || {}, { ri: this.rh || 0, rp: this.rp ? [this.rp, this.rpI] : null }) }); }
   };
   const _sp = Net.setP;
   Net.setP = function (p) { if (p && p.in && this.role === 'guest' && p.in.ri == null) { this._lastIn = p.in; } return _sp.call(this, p); };
@@ -11788,489 +11882,354 @@ function runGuestPick() {
   };
 }
 
-// ================================================= v7.0: CONTROLS + DEPTH + CAMERAS
-// Three action buttons (Shoot, Pass, Move) plus movement. Turbo is a double-tap
-// sprint; Skill and Screen are folded into Pass and Move. c.turbo still means
-// "sprinting" everywhere (CPU, stamina, dunk range, swipes, shoves, dives).
-// Depth aids and camera presets are visual layers only: gameplay reads world
-// coordinates, never the camera or the projection.
-
-// ------------------------------------------------------------- tuning
-const SPRINT_TAP = 0.25;        // s: same direction twice within this = sprint
-const SPRINT_GRACE = 0.12;      // s: all directions released this long ends the sprint
-const SPRINT_EDGE = 0.9;        // touch: stick deflection that sprints
-const FLICK_GAP = 0.3;          // touch: second flick within this after the first = sprint
-const PASS_SCREEN_T = 0.28;     // s: hold Pass this long (with the ball) = call a screen
-const STANCE_T = 0.18;          // s: hold Pass this long (on defense) = stance; shorter = steal on release
-const SIG_TAP = 0.25;           // s: Move twice within this = signature move
-const DOUBLE_T = 0.2;           // s: hold Move this long (on defense) = double team
+// ================================================= v7: CONTROL OVERHAUL
+// Three buttons plus movement: SHOOT (K), PASS (J), MOVE (H). Turbo and Skill are gone.
+// Sprint is a gesture (double-tap a direction, or the touch stick at its edge) and still sets
+// c.turbo, so every mechanic that meant "turbo" now means "while sprinting". CPU players keep
+// the v6 freeLogic untouched; this layer only interprets human input.
+const SPRINT_DT = 0.25;      // double-tap window (s)
+const SPRINT_REL = 0.12;     // sprint ends after all directions are released this long (s)
+const STICK_SPRINT = 0.9;    // touch: stick deflection that sprints
+const FLICK_DT = 0.3;        // touch: two flicks within this window start a sprint
+const PASS_HOLD = 0.3;       // PASS held this long (with the ball) calls a screen instead of passing
+const STEAL_TAP = 0.16;      // PASS on defense: release before this = steal, held past it = stance
+const MOVE_DT = 0.2;         // MOVE double-tap window (signature move); a single tap's hesitation waits this long
+const DOUBLE_HOLD = 0.3;     // MOVE held on defense this long = double team
 const PLANT_T = 0.6, PLANT_CD = 1.5;
+for (const b of BINDS) { b.t = []; b.s = []; }        // turbo and skill keys removed
 
-// ------------------------------------------------------------- sprint gesture
-const SPR = [{ clk: 0, on: false }, { clk: 0, on: false }];
-{
-  const _hc7 = humanCmd;
-  humanCmd = function (pad, c) {
-    _hc7(pad, c);
-    const S = SPR[pad] || (SPR[pad] = { clk: 0, on: false });
-    const dt = Net.role === 'guest' ? clamp(Game.rdt || STEP, 0.001, 0.05) : STEP; S.clk += dt;
-    const b = BINDS[pad], d = Input.down, pr = Input.pressed;
-    let held = false, pd = null;
-    for (const k of ['up', 'down', 'left', 'right']) { if (b[k].some(x => d[x])) held = true; if (b[k].some(x => pr[x])) pd = k; }
-    if (pd) {
-      if (!S.on && S.lastDir === pd && S.clk - S.lastT <= SPRINT_TAP) { S.on = true; S.src = 'key'; }
-      S.lastDir = pd; S.lastT = S.clk;
+// ---- sprint gesture
+const Sprint = [{}, {}];
+function sprintStep(pad, c) {
+  const S = Sprint[pad], b = BINDS[pad], d = Input.down, now = nowMs() / 1000, dirs = ['up', 'down', 'left', 'right'];
+  if (S.pobj !== Input.pressed) {                                  // once per frame: look at new presses
+    S.pobj = Input.pressed;
+    for (const k of dirs) if (b[k].some(x => Input.pressed[x])) {
+      if (S.lastDir === k && now - S.lastT < SPRINT_DT) S.on = true;   // same direction twice: sprint (alternating keys never does)
+      S.lastDir = k; S.lastT = now;
     }
-    if (pad === 0 && (Input.stick.ax || Input.stick.az || S.src === 'edge' || S.src === 'flick' || S.fOut)) {
-      const st = Input.stick, m = Math.hypot(st.ax, st.az), a = Math.atan2(st.az, st.ax);
-      if (m > 0.3) held = true;
-      if (!S.fOut && m > 0.55) {                                    // a flick out
-        S.fOut = true;
-        const da = Math.abs(((a - (S.fA || 0)) + Math.PI * 3) % (Math.PI * 2) - Math.PI);
-        if (!S.on && S.fRel != null && S.clk - S.fRel <= FLICK_GAP && da < 0.8) { S.on = true; S.src = 'flick'; }
-        S.fA = a;
-      } else if (S.fOut && m < 0.3) { S.fOut = false; S.fRel = S.clk; }
-      if (m >= SPRINT_EDGE && !S.on) { S.on = true; S.src = 'edge'; }
-      if (S.on && S.src === 'edge' && m < SPRINT_EDGE - 0.1) S.on = false;
-      if (S.on && S.src === 'flick' && m < 0.3) S.on = false;
+  }
+  const any = dirs.some(k => b[k].some(x => d[x]));
+  if (any) S.held = now; else if (now - (S.held || 0) > SPRINT_REL) S.on = false;
+  let stick = false;
+  if (pad === 0 && Input.touchMode) {
+    const ax = Input.stick.ax || 0, az = Input.stick.az || 0, m = Math.hypot(ax, az), a = Math.atan2(az, ax);
+    if (m > 0.55 && !S.up) {                                        // a flick out
+      S.up = true;
+      if (S.flickT && now - S.flickT < FLICK_DT && Math.abs(Math.atan2(Math.sin(a - S.flickA), Math.cos(a - S.flickA))) < 0.7) S.flickOn = true;
+      S.flickT = now; S.flickA = a;
     }
-    S.idle = held ? 0 : (S.idle || 0) + dt;
-    if (S.on && S.idle > SPRINT_GRACE) S.on = false;
-    c.turbo = S.on;
-  };
+    if (m < 0.3) { S.up = false; S.flickOn = false; }
+    stick = m >= STICK_SPRINT || (S.flickOn && m >= 0.3);
+  }
+  c.turbo = !!(S.on && (any || now - (S.held || 0) <= SPRINT_REL)) || stick;
 }
-function localPad(p) { return p.human >= 0 && !(Net.role === 'host' && p.human === 1) ? p.human : -1; }
-function isLocalHuman(p) { return Net.role === 'guest' ? p.human === 1 : Net.role === 'host' ? p.human === 0 : p.human >= 0; }
-
-// ------------------------------------------------------------- button timing (works for remote players too)
-function btnTrack(p, k, pressed, held, dt) {
-  const B = (p.btn || (p.btn = {}));
-  const b = B[k] || (B[k] = { on: false, t: 0, dur: 0, used: false });
-  b.press = false; b.rel = false;
-  if (pressed) { b.on = true; b.t = 0; b.press = true; b.used = false; }
-  else if (b.on) b.t += dt;
-  if (b.on && !held) { b.on = false; b.rel = true; b.dur = b.t; }
-  return b;
-}
-function inputCtx(p) {
-  const bo = ball.owner;
-  if (bo === p) return 'ball';
-  if (bo) return bo.team === p.team ? 'off' : 'def';
-  if (ball.state === 'pass' && ball.pass && ball.pass.from.team === p.team) return 'off';
-  return 'def';                                                        // shot, loose, or their pass: defend / rebound
-}
-
-// ------------------------------------------------------------- automatic pass type
-function autoPass(p, to) {
-  if (!to || to.state === 'down') return;
-  const h = attackHoop(p.team), d = dxz(p, to);
-  if (autoAlley(p, to) && (to.human >= 0 || laneOpen(to, h) > 24)) { doPass(p, to, true); return; }
-  if (d > 160 && (passRisk(p, to) > 0.35 || d > 520)) { lobPass(p, to); return; }
-  doPass(p, to, false);                                                // chest / lead / bounce from the situation
-}
-passHoldStep = function (p, dt) {
-  const ph = p.passHold; if (!ph) return;
-  const c = p.cmd, B = p.btn || {};
-  if (ball.owner !== p || p.state !== 'free' || ph.to.state === 'down') { p.passHold = null; return; }
-  ph.t += dt;
-  if (B.x && B.x.press) { p.passHold = null; B.x.used = true; if (B.a) B.a.used = true; startPassFake(p, ph.to); return; }   // hold Pass + tap Move
-  if (!c.aHeld) { p.passHold = null; if (!ph.scr) autoPass(p, ph.to); return; }
-  if (ph.t >= PASS_SCREEN_T && !ph.scr) { ph.scr = true; if (callScreen(p)) { if (B.a) B.a.used = true; p.passHold = null; } }
-};
-
-// ------------------------------------------------------------- signature (Move double-tap)
-function cancelHesi(p) {
-  const mv = p.mv; if (!mv || mv.kind !== 'hesi' || mv.resolved) return false;
-  p.mv = null; p.cd.mv = 0; if (!p.fire) p.turbo = Math.min(100, p.turbo + MOVE_INFO.hesi.cost);
-  const lab = MOVE_LABEL.hesi;
-  for (let i = FX.pops.length - 1; i >= 0; i--) if (String(FX.pops[i].text).indexOf(lab) >= 0 && FX.pops[i].t < 0.4) { FX.pops.splice(i, 1); break; }
-  return true;
-}
-
-// ------------------------------------------------------------- take a charge / double team
-function startPlant(p) {
-  if ((p.cd.plant || 0) > 0 || p.state !== 'free' || p.y > 1) return false;
-  p.plant = PLANT_T; p.cd.plant = PLANT_CD; p.vx = 0; p.vz = 0; p.setT = Math.max(p.setT || 0, 0.4);
-  FX.pop(p.x, p.y + 132, p.z, 'PLANTED', '#8fe3ff'); SFX.squeak();
-  return true;
-}
-function startDouble(p) {
-  p.dbl = true; p.plant = 0;
-  const m = p.mate, bo = ball.owner;
-  if (m && m.human >= 0) { popOnce(m, 'dblc', 'DOUBLE THE BALL!', '#8fe3ff'); return; }
-  if (m && m.ai) { m.ai.t = 0; if (bo) popOnce(bo, 'dbl', 'DOUBLE TEAM', '#8fe3ff', 3); }
-}
-function endDouble(p) { p.dbl = false; const m = p.mate; if (m && m.ai && m.human < 0) m.ai.t = 0; }
 {
-  const BP = Brain.prototype, _td = BP.thinkDefense;
-  BP.thinkDefense = function () {
-    _td.call(this);
-    const p = this.p, m = p.mate, bo = ball.owner;
-    if (m && m.dbl && m.human >= 0 && bo && bo.team !== p.team && this.plan.type !== 'guardBall') { this.plan = { type: 'help', man: this.plan.man || manOf(p) }; this.t = Math.min(this.t || 0.3, 0.3); }
-  };
+  const _hc = humanCmd;
+  humanCmd = function (pad, c) { _hc(pad, c); sprintStep(pad, c); c.s = false; c.sHeld = false; };
 }
 
-// ------------------------------------------------------------- off-ball screen (Pass without the ball)
-function startAutoScreen(p, h) {
-  if ((p.cd.ascr || 0) > 0) return;
-  p.cd.ascr = 1.2; p.autoScreen = { t: 0, h, set: 0 };
-  FX.pop(p.x, p.y + 132, p.z, 'SCREEN', '#ffd76a'); SFX.blip();
-  if (h.human >= 0) popOnce(h, 'scrc', 'SCREEN COMING', '#ffd76a');
+// ---- automatic pass type
+function laneClogged(p, to) { for (const o of p.opps) { const s = segDist(o.x, o.z, p.x, p.z, to.x, to.z); if (s.d < 34 && s.t > 0.15 && s.t < 0.85 && o.state !== 'down') return true; } return false; }
+function passAuto(p) {
+  const mate = p.mate; if (!mate || mate.state === 'down' || ball.owner !== p || p.state !== 'free') return false;
+  if (autoAlley(p, mate)) { doPass(p, mate, true); return true; }         // he's cutting / sprinting at the rim: alley-oop
+  if (laneClogged(p, mate) || dxz(p, mate) > 520) { lobPass(p, mate); return true; }   // over the top
+  doPass(p, mate, false); return true;                                   // chest / lead / bounce (bounce under pressure)
 }
-function autoScreenStep(p, dt) {
-  const S = p.autoScreen; if (!S) return;
-  const c = p.cmd, h = S.h;
-  if (ball.owner !== h || h.team !== p.team || p.state !== 'free' || S.t > 2.6) { p.autoScreen = null; return; }
+// ---- off the ball: go set a screen on the handler's defender
+function setScreenForPartner(p) {
+  const bo = ball.owner; if (!bo || bo.team !== p.team || bo === p || (p.cd.scr2 || 0) > M.time) return;
+  const def = nearestOpp(bo); if (!def) return;
+  p.cd.scr2 = M.time + 2.5; p.v7.scr = { def, bo, t: 0, still: 0 };
+  FX.pop(p.x, p.y + 140, p.z, 'SETTING A SCREEN', '#ffd76a'); SFX.blip();
+}
+function screenSteer(p, dt) {
+  const S = p.v7.scr, c = p.cmd; if (!S) return;
   S.t += dt;
-  const tgt = nearestOpp(h); if (!tgt) { p.autoScreen = null; return; }
-  const hp = attackHoop(p.team), vx = hp.x - h.x, vz = hp.z - h.z, L = Math.hypot(vx, vz) || 1;
-  const px = -vz / L, pz = vx / L, side = sgn((p.x - h.x) * px + (p.z - h.z) * pz) || 1;
-  const sx = tgt.x + px * side * 24 - vx / L * 6, sz = tgt.z + pz * side * 24 - vz / L * 6;
-  const stick = Math.hypot(c.mx, c.mz);
-  if (!S.set) {
-    const dx = sx - p.x, dz = sz - p.z, D = Math.hypot(dx, dz);
-    if (D > 14 && S.t < 1.8) { const k = Math.min(1, D / 30); c.mx = dx / D * k; c.mz = dz / D * k; c.turbo = false; }
-    else {
-      S.set = S.t; c.mx = c.mz = 0; p.vx *= 0.3; p.vz *= 0.3;
-      popOnce(p, 'scrset', 'SCREEN SET', '#ffd76a');
-      if (h.human < 0 && h.ai && h.state === 'free') { h.ai.plan = { type: 'drive', u: 1 }; h.ai.t = 1.3; }   // the CPU handler uses it
-    }
-  } else {
-    if (stick > 0.5 && S.t - S.set > 0.25) { p.autoScreen = null; return; }   // roll or pop on your own
-    c.mx = c.mz = 0; c.turbo = false;
-    if (S.t - S.set > 1.1) p.autoScreen = null;
-  }
+  if (ball.owner !== S.bo || p.state !== 'free' || S.t > 3.2) { p.v7.scr = null; return; }
+  if (S.t > 0.25 && Math.hypot(c.mx, c.mz) > 0.6 && !S.arrived) { p.v7.scr = null; return; }        // the player took over
+  const h = defendHoop(S.def.team === p.team ? 1 - p.team : S.def.team), H = attackHoop(p.team);
+  const ux = H.x - S.def.x, uz = H.z - S.def.z, L = Math.hypot(ux, uz) || 1;
+  const tx = S.def.x + ux / L * 24, tz = S.def.z + uz / L * 24, dx = tx - p.x, dz = tz - p.z, D = Math.hypot(dx, dz);
+  if (!S.arrived && D > 8) { const k = Math.min(1, D / 30); c.mx = dx / D * k; c.mz = dz / D * k; c.turbo = false; }
+  else { S.arrived = true; c.mx = 0; c.mz = 0; S.still += dt; if (S.still > 1.4) p.v7.scr = null; }   // set (still) screen
+}
+// ---- defense: plant for a charge, call a double team
+function startPlant(p) {
+  if ((p.cd.plant || 0) > M.time || p.state !== 'free' || p.y > 1) return;
+  p.cd.plant = M.time + PLANT_CD; p.v7.plant = PLANT_T; p.vx *= 0.2; p.vz *= 0.2;
+  FX.pop(p.x, p.y + 130, p.z, 'PLANTED', '#8fe3ff');
+}
+function doubleTeam(p, on) {
+  const q = p.mate; if (!q) return;
+  if (q.human >= 0) { if (on && !p.v7.dblShown) { p.v7.dblShown = true; FX.pop(q.x, q.y + 140, q.z, 'DOUBLE THE BALL!', '#8fe3ff'); } if (!on) p.v7.dblShown = false; return; }
+  if (on) {
+    const bo = ball.owner; if (!bo || bo.team === p.team) return;
+    q.ai.plan = { type: 'help', man: (q.ai.plan && q.ai.plan.man) || nearestOpp(q) }; q.ai.t = 0.4;
+    if (!p.v7.dblShown) { p.v7.dblShown = true; FX.pop(bo.x, bo.y + 150, bo.z, 'DOUBLE TEAM', '#8fe3ff'); SFX.blip(); }
+  } else if (p.v7.dblShown) { p.v7.dblShown = false; q.ai.t = 0; }               // recover to his man
 }
 
-// ------------------------------------------------------------- the new human input layer
+// ---- per-step interpretation of the three buttons for a human player
 function v7Input(p, dt) {
-  const c = p.cmd, A = btnTrack(p, 'a', !!c.a, !!c.aHeld, dt), X = btnTrack(p, 'x', !!c.x, !!c.xHeld, dt);
-  const lp = localPad(p);
-  if (lp >= 0 && c.turbo && !p.turboOK() && SPR[lp]) SPR[lp].on = false;            // out of turbo: the sprint ends
-  c.stanceHeld = false;
-  const ctx = inputCtx(p), free = p.state === 'free', dir = Math.hypot(c.mx, c.mz) >= 0.3;
-  if (p.plant > 0) { p.plant -= dt; if (!free || ctx !== 'def') p.plant = 0; else { c.mx = c.mz = 0; c.turbo = false; p.vx *= 0.5; p.vz *= 0.5; } }
-  if (p.dbl && (ctx !== 'def' || !X.on)) endDouble(p);
-  if (ctx !== 'off') p.autoScreen = null;
-  if (ctx !== 'ball') { p.xHold = null; p.passHold = null; }
-
-  if (ctx === 'ball') {
-    const pu = p.postUp;
-    if (pu) {                                                         // post: a short grace after letting go lets Move + direction drop-step
-      if (c.xHeld) pu.grace = null;
-      else { if (pu.grace == null) pu.grace = 0.3; pu.grace -= dt; if (pu.grace > 0) c.xHeld = true; }
-    }
-    if (A.press && free && !p.passHold) { const mate = c.passTo || p.mate; if (mate && mate.state !== 'down') p.passHold = { t: 0, to: mate }; }
-    if (p.passHold) passHoldStep(p, dt);
-    else if (X.press && !X.used && (free || p.state === 'fake')) {
-      const dbl = p.lastXT != null && M.time - p.lastXT <= SIG_TAP;
-      p.lastXT = M.time;
-      let done = false;
-      if (dbl && !p.postUp && free) {
-        const hesiUndo = p.mv && p.mv.kind === 'hesi' && !p.mv.resolved;
-        if (hesiUndo) cancelHesi(p);
-        p.xHold = null;
-        if (trySignature(p, true)) { done = true; p.lastXT = null; }
-      }
-      if (!done && free) {
-        if (dir) { const m = classifyMove(p, c.mx, c.mz); startDribbleMove(p, m.kind, m.side); if (p.postUp && m.kind === 'drop') p.postUp = null; }
-        else if (p.postUp) p.postUp.grace = null;
-        else p.xHold = { t: 0 };
-      }
-    }
-    const xh = p.xHold;                                               // Move, no direction: tap = hesitation, hold near the paint = post up
-    if (xh) {
-      if (!free) p.xHold = null;
-      else if (X.on) { xh.t += dt; if (xh.t >= 0.2 && !p.postUp && postEligible(p)) { p.xHold = null; enterPost(p); } }
-      else { p.xHold = null; if (xh.t < 0.3 && !p.postUp) startDribbleMove(p, 'hesi', 1); }
-    }
-  } else if (ctx === 'off') {
-    const h = ball.owner;
-    if (c.b && h && h !== p) {                                        // Shoot: call for it
-      c.b = false;
-      const near = dxz(p, attackHoop(p.team)) < 300, oop = near && c.turbo && p.turboOK();
-      if (h.human < 0) {
-        if (oop) { h.ai.request = { type: 'alley', to: p }; popOnce(p, 'call', 'LOB IT!', '#ffd76a', 0.6); }
-        else {
-          h.ai.request = { type: 'pass', to: p };
-          if (M.time - (p.ggT == null ? -9 : p.ggT) < 2.6) { h.ai.request.gg = true; p.ggPending = M.time; }   // give-and-go: call it right back
-          popOnce(p, 'call', 'BALL!', '#ffffff', 0.6);
-        }
-      } else popOnce(p, 'call', oop ? 'LOB IT!' : 'OPEN!', oop ? '#ffd76a' : '#ffffff', 0.6);
-    }
-    if (A.press && free && h && h !== p) startAutoScreen(p, h);       // Pass: go set a pick for your partner
-    if (p.autoScreen) autoScreenStep(p, dt);
-  } else {
-    // defense / loose ball / shot in the air
-    if (A.press && free && c.turbo && p.turbo > 20 && digDeep() && !ball.owner && ball.state === 'loose' && Math.hypot(ball.x - p.x, ball.z - p.z) < 120 && ball.y < 70) { A.used = true; startDive(p); }
-    if (A.on && !A.used && A.t >= STANCE_T) c.stanceHeld = true;
-    if (!A.on && p.stanceWas) p.stanceEnd = M.time;
-    p.stanceWas = A.on && A.t >= STANCE_T;
-    if (A.rel && !A.used && A.dur < STANCE_T && free) {
-      if (c.turbo && p.turboOK()) tryShove(p);
-      else {
-        const was = p.stance; if (M.time - (p.stanceEnd == null ? -9 : p.stanceEnd) < 0.6) p.stance = true;   // read the dribble right out of a stance
-        trySteal(p); p.stance = was;
-      }
-    }
-    const bo = ball.owner;
-    if (X.press && free && bo && bo.team !== p.team) startPlant(p);
-    if (X.on && X.t >= DOUBLE_T && !p.dbl && bo && bo.team !== p.team) startDouble(p);
+  const c = p.cmd, V = p.v7 || (p.v7 = {}), now = M.time, bo = ball.owner, mine = bo === p;
+  const onD = bo ? bo.team !== p.team : !!(ball.pass && ball.pass.from.team !== p.team);
+  const free = p.state === 'free';
+  // final minute: sprint + PASS near a loose ball dives (unchanged rule)
+  if (free && c.a && c.turbo && p.turbo > 20 && digDeep() && !bo && ball.state === 'loose' && Math.hypot(ball.x - p.x, ball.z - p.z) < 120 && ball.y < 70) { c.a = false; startDive(p); return; }
+  // PASS
+  if (c.a) V.a = { t: 0, ctx: mine ? 'ball' : bo && !onD ? 'off' : onD ? 'def' : 'reb', done: false };
+  const A = V.a;
+  if (A) {
+    const held = c.aHeld; if (held) A.t += dt;
+    if (A.ctx === 'ball') {
+      if (!mine) V.a = null;
+      else if (held && c.x && !A.done && free) { A.done = true; c.x = false; V.xSkip = true; startPassFake(p, p.mate); }     // PASS held + tap MOVE: pass fake
+      else if (held && A.t >= PASS_HOLD && !A.done) { A.done = true; if (!callScreen(p)) FX.pop(p.x, p.y + 132, p.z, 'NO SCREEN YET', '#9fb3c8'); }
+      else if (!held) { if (!A.done) { if (free) passAuto(p); else { A.waitFree = true; } } if (!A.waitFree || free) V.a = null; }
+      if (A.waitFree && free && mine) { passAuto(p); V.a = null; }
+    } else if (A.ctx === 'def') {
+      if (!held) { if (A.t < STEAL_TAP && free && !A.done) { if (c.turbo && p.turboOK()) tryShove(p); else trySteal(p); } V.a = null; }   // tap: steal (or shove while sprinting)
+    } else if (A.ctx === 'off') {
+      if (!A.done) { A.done = true; setScreenForPartner(p); }
+      if (!held) V.a = null;
+    } else if (!held) V.a = null;
   }
-  c.a = false; c.x = false; c.s = false;                              // Shoot (c.b) still goes through freeLogic
+  c.stanceHeld = !!(V.a && (V.a.ctx === 'def' || V.a.ctx === 'reb') && c.aHeld && V.a.t >= STEAL_TAP);
+  // MOVE
+  if (V.hesiAt && now >= V.hesiAt) { V.hesiAt = null; if (mine && free && !p.postUp) startDribbleMove(p, 'hesi', 1); }   // single tap: hesitation
+  if (c.x && !V.xSkip) {
+    const dir = Math.hypot(c.mx, c.mz) >= 0.3;
+    if (mine) {
+      if (dir) { V.xh = null; if (free) { const m = classifyMove(p, c.mx, c.mz); startDribbleMove(p, m.kind, m.side); } }
+      else if (V.hesiAt) { V.hesiAt = null; V.xh = { t: 0, sig: true }; if (free) trySignature(p, true); }   // double-tap: signature move
+      else V.xh = { t: 0 };
+    } else if (onD) { V.xh = { t: 0, def: true }; startPlant(p); }
+    else V.xh = null;
+  }
+  if (!c.xHeld && !c.x) V.xSkip = false;
+  const X = V.xh;
+  if (X) {
+    if (c.xHeld) {
+      X.t += dt;
+      if (mine && !X.def && !X.sig && X.t >= 0.2 && !p.postUp && free && postEligible(p)) { V.xh = null; enterPost(p); }
+      if (X.def && X.t >= DOUBLE_HOLD) { if (V.plant > 0) V.plant = 0; doubleTeam(p, true); X.dbl = true; }
+    } else {
+      if (mine && !X.def && !X.sig && X.t < 0.3 && !p.postUp) V.hesiAt = now + MOVE_DT;
+      if (X.dbl) doubleTeam(p, false);
+      V.xh = null;
+    }
+  }
+  if (V.plant > 0) V.plant -= dt;
+  if (V.scr) screenSteer(p, dt);
 }
-
-// one preStep for everyone: humans get the v7 layer, the CPU is unchanged
 preStep = function (p, dt) {
   if (p.comp == null) p.comp = 50; else p.comp += (50 - p.comp) * 0.004 * dt;
   if (p.human >= 0) v7Input(p, dt);
   stanceStep(p, dt);
+  if (p.v7 && p.v7.plant > 0) {                                   // planted for a charge: feet locked, set right away, strong vs bumps
+    p.cmd.mx = 0; p.cmd.mz = 0; p.vx *= 0.3; p.vz *= 0.3; p.stance = true; p.setT = Math.max(p.setT || 0, 0.4);
+  }
 };
-
-// ------------------------------------------------------------- touch: three buttons, contextual labels
 {
-  const _lay = TouchUI.layout.bind(TouchUI);
-  TouchUI.layout = function () {
-    _lay();
-    if (!this.el || !this.btns.turbo) return;
-    const t = this.btns.turbo.style, x = this.btns.cross.style;
-    Object.assign(x, { width: t.width, height: t.height, right: t.right, bottom: t.bottom, fontSize: t.fontSize });   // Move takes Turbo's spot: one-thumb arc
-    this.btns.turbo.style.display = 'none'; if (this.btns.skill) this.btns.skill.style.display = 'none';
-  };
-  const _tu7 = TouchUI.update.bind(TouchUI);
-  const setLab = (b, main, sub) => {
-    if (!b) return;
-    if (b.firstChild.textContent !== main) b.firstChild.textContent = main;
-    let sm = b.querySelector('small'); if (!sm) { sm = document.createElement('small'); b.appendChild(sm); }
-    if (sm.textContent !== (sub || '')) sm.textContent = sub || '';
-  };
-  TouchUI.update = function () {
-    _tu7();
-    if (!this.el) return;
-    if (this.btns.turbo) this.btns.turbo.style.display = 'none';
-    if (this.btns.skill) this.btns.skill.style.display = 'none';
-    if (!this.shown || Game.screen === 'musalla') return;
-    const me = M.players && M.players.find(p => isLocalHuman(p)); if (!me) return;
-    const ctx = inputCtx(me), spr = !!(me.cmd && me.cmd.turbo);
-    if (ctx === 'ball') { setLab(this.btns.shoot, 'SHOOT', canDunk(me) ? 'DUNK' : ''); setLab(this.btns.pass, 'PASS', 'hold: screen'); setLab(this.btns.cross, me.postUp ? 'DROP' : 'MOVE', '2x: signature'); }
-    else if (ctx === 'off') { setLab(this.btns.shoot, 'CALL', spr ? 'alley-oop' : ''); setLab(this.btns.pass, 'SCREEN', ''); setLab(this.btns.cross, '–', ''); }
-    else { setLab(this.btns.shoot, 'BLOCK', spr ? 'swipe' : ''); setLab(this.btns.pass, spr ? 'SHOVE' : 'STEAL', 'hold: stance'); setLab(this.btns.cross, 'CHARGE', 'hold: double'); }
-    this.btns.cross.classList.toggle('cd', ctx === 'off' || (ctx === 'ball' && (me.cd.mv || 0) > 0) || (ctx === 'def' && (me.cd.plant || 0) > 0));
-    this.btns.cross.classList.toggle('hint', ctx === 'ball' && sigAvailable(me));
+  const _fl = freeLogic;
+  freeLogic = function (p) {
+    if (p.human < 0) return _fl(p);                                     // CPU: unchanged
+    const c = p.cmd, bo = ball.owner;
+    if (bo === p) {                                                      // SHOOT with the ball (pass and move live in v7Input)
+      if (!c.b) return;
+      p.passHold = null;
+      if (canDunk(p) && !p.postUp) { startDunk(p, {}); return; }
+      const h = attackHoop(p.team), d = dxz(p, h);
+      if (d > 150 && d < 270 && !p.postUp && c.turbo) {
+        const speed = Math.hypot(p.vx || 0, p.vz || 0), label = !p.turboOK() ? 'NO LEGS LEFT' : speed < 115 ? 'BUILD A RUN-UP' : 'DRIVE AT THE RIM';
+        FX.pop(p.x, 132, p.z, label, '#ffd76a');
+      }
+      const k = classifyShot(p);
+      if (k === 'euro') { startEuro(p); return; }
+      applyShotType(p, k); p.postUp = null; p.fakeOK = true; startShot(p); return;
+    }
+    if (bo && bo.team === p.team) {                                      // off the ball: SHOOT calls for it
+      if (!c.b) return;
+      if (bo.human >= 0) { FX.pop(p.x, p.y + 140, p.z, 'OPEN!', '#bfffcf'); return; }
+      const H = attackHoop(p.team), d = dxz(p, H), L = d || 1, toward = ((H.x - p.x) * (p.vx || 0) + (H.z - p.z) * (p.vz || 0)) / L;
+      if (c.turbo && d < 300 && toward > 120) { bo.ai.request = { type: 'alley', to: p }; popOnce(p, 'oop', 'LOB IT!', '#ffd76a'); return; }   // sprinting at the rim: alley-oop
+      bo.ai.request = { type: 'pass', to: p };
+      if (M.time - (p.ggT == null ? -9 : p.ggT) < 2.6) { bo.ai.request.gg = true; p.ggPending = M.time; }   // give-and-go
+      return;
+    }
+    if (!bo) { if (c.b && !(ball.pass && ball.pass.from.team === p.team)) startJump(p); return; }   // shot / loose ball: rebound or tip
+    if (c.b) { if (c.turbo && p.turboOK()) startSwipe(p); else startJump(p); }   // defense: block, or a swipe / chase-down while sprinting
   };
 }
 
-// ------------------------------------------------------------- how to play
+// ---- sprint feedback at the feet: short speed streaks behind a sprinting human
+{
+  const _dtr = drawTeamRing;
+  drawTeamRing = function (g, p) {
+    _dtr(g, p);
+    if (p.human < 0 || !p.cmd.turbo || p.y > 30) return;
+    const sp = Math.hypot(p.vx || 0, p.vz || 0); if (sp < 180 || !(p.turboOK && p.turboOK())) return;
+    const ux = -(p.vx || 0) / sp, uz = -(p.vz || 0) / sp, k = depthK(p.z);
+    g.save(); g.strokeStyle = 'rgba(191,240,255,0.55)'; g.lineWidth = 1.6 * k; g.lineCap = 'round';
+    for (const off of [-9, 0, 9]) {
+      const [x0, y0] = P(p.x + ux * 22 - uz * off * 0.5, 0, p.z + uz * 22 + ux * off), [x1, y1] = P(p.x + ux * (40 + (off ? 0 : 10)) - uz * off * 0.5, 0, p.z + uz * (40 + (off ? 0 : 10)) + ux * off);
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    }
+    g.restore();
+  };
+}
+// ---- touch: three action buttons (SHOOT, PASS, MOVE); sprint comes from the stick
+{
+  const _lay = TouchUI.layout.bind(TouchUI);
+  TouchUI.layout = function () {
+    _lay(); if (!this.btns || !this.btns.shoot) return;
+    const s = this.portrait ? 1.18 : 1, pad = this.portrait ? 26 : 18, bot = this.portrait ? 38 : 16;
+    const place = (b, size, right, bottom) => Object.assign(b.style, { width: size * s + 'px', height: size * s + 'px', right: right * s + pad + 'px', bottom: bottom * s + bot + 'px', fontSize: (size > 70 ? 15 : 12) * s + 'px' });
+    place(this.btns.shoot, 92, 0, 0); place(this.btns.pass, 76, 104, 4); place(this.btns.cross, 72, 18, 104);   // one-hand triangle
+    this.btns.turbo.style.display = 'none'; this.btns.skill.style.display = 'none';
+  };
+  const _tu = TouchUI.update.bind(TouchUI);
+  TouchUI.update = function () {
+    _tu(); if (!this.shown || !this.btns.cross) return;
+    this.btns.turbo.style.display = 'none'; this.btns.skill.style.display = 'none';
+    if (Game.screen === 'musalla') return;
+    const me = M.players && M.players.find(p => p.human === 0); if (!me) return;
+    const bo = ball.owner, mine = bo === me, off = bo && bo.team === me.team && !mine, def = bo && bo.team !== me.team;
+    const L = mine ? [['SHOOT', ''], ['PASS', 'hold: SCREEN'], [me.postUp ? 'DROP' : 'MOVE', '2\u00d7: SIGNATURE']]
+      : off ? [['CALL', ''], ['SCREEN', ''], ['\u2013', '']]
+      : def ? [['BLOCK', ''], ['STEAL', 'hold: STANCE'], ['CHARGE', 'hold: DOUBLE']]
+      : [['JUMP', ''], ['BOX OUT', ''], ['\u2013', '']];
+    const key = JSON.stringify(L);
+    if (this.v7key !== key) {
+      this.v7key = key;
+      [this.btns.shoot, this.btns.pass, this.btns.cross].forEach((b, i) => { b.innerHTML = '<span>' + L[i][0] + '</span>' + (L[i][1] ? '<small>' + L[i][1] + '</small>' : ''); });
+      this.btns.cross.classList.toggle('cd', L[2][0] === '\u2013');
+    }
+  };
+}
+// ---- How to play (three buttons)
 drawHowTo = function (g) {
   dim(g, 0.86);
   const o = Math.round((W - 960) / 2); g.save(); g.translate(o, 0); const rw = W; W = 960;
-  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('How to play', W / 2, 40);
-  const rows = [['Move  •  double-tap a direction to sprint', 'W A S D', 'Arrows'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move', 'H', 'Num0 / M'], ['Switch camera', 'C', 'C']];
-  g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; g.fillText('P1', 640, 64); g.fillText('P2', 780, 64);
-  rows.forEach((r, i) => { const y = 82 + i * 20; g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(r[0], 150, y); g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.fillText(r[1], 640, y); g.fillText(r[2], 780, y); });
-  const col = (x, y0, title, lines) => { g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText(title, x, y0); g.fillStyle = IVORY; g.font = `12px ${BODY}`; lines.forEach((t, i) => g.fillText(t, x, y0 + 19 + i * 18)); return y0 + 19 + lines.length * 18; };
-  col(60, 200, 'OFFENSE: WITH THE BALL', ['Hold Shoot, release at the top  •  tap: pump fake', 'Sprint at the rim + Shoot: dunk', 'Tap Pass: pass (lob and alley-oop are automatic)', 'Hold Pass: call a screen  •  hold Pass + tap Move: pass fake',
-    'Move + direction: crossover, behind the back, spin, step-back', 'Tap Move: hesitation  •  double-tap Move: signature move', 'Hold Move near the paint: post up (Move + direction: drop step)']);
-  col(60, 360, 'OFFENSE: WITHOUT THE BALL', ['Shoot: call for it (right after a pass: give-and-go)', 'Sprint at the rim + Shoot: ask for the alley-oop', 'Pass: go set a screen for your partner']);
-  col(520, 200, 'DEFENSE', ['Tap Pass: steal  •  hold Pass: stance (box out on a shot)', 'Sprint + Pass: shove (late and trailing: foul on purpose)', 'Shoot: jump, block, contest, rebound', 'Sprint + Shoot: swipe  •  from behind: chase-down',
-    'Tap Move: take a charge (plant your feet)', 'Hold Move: your partner doubles the ball', 'Final minute: sprint + Pass dives for loose balls']);
-  col(520, 360, 'SPRINT, CAMERA, DEPTH', ['Phone: push the stick to the edge, or flick it twice', 'Camera and depth aids: Options, the pause menu, or C', 'Rings on the floor show who is where; the range rings', 'light up when you can block, steal or draw a charge']);
-  g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText('Press Enter or tap to go back', W / 2, 520);
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('How to play', W / 2, 44);
+  const keys = [['Move', 'W A S D', 'Arrows'], ['Sprint', 'double-tap a direction, keep holding', 'same'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move button', 'H', 'Num0 / M']];
+  g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; g.fillText('P1', 610, 72); g.fillText('P2', 800, 72);
+  keys.forEach((r, i) => { const y = 92 + i * 21; g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(r[0], 150, y); g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.fillText(r[1], 610, y); g.fillText(r[2], 800, y); });
+  const col = (x, title, lines) => { g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText(title, x, 222); g.font = `12px ${BODY}`; lines.forEach((t, i) => { g.fillStyle = t.startsWith('\u2022') ? '#9fb3c8' : IVORY; g.fillText(t, x, 242 + i * 18); }); };
+  col(60, 'OFFENSE', ['Shoot: hold and release at the top  \u2022  tap: pump fake', 'Sprint + Shoot in range: dunk', 'Pass: tap  \u2022  type is automatic (bounce, lob, alley-oop)', 'Hold Pass: call a screen  \u2022  hold Pass + tap Move: pass fake',
+    'Move + direction: crossover, behind the back, spin, step-back', 'Tap Move: hesitation  \u2022  double-tap: signature move', 'Hold Move near the paint: post up', '\u2022 Without the ball: Shoot calls for it (give-and-go,',
+    '\u2022   or alley-oop while sprinting at the rim)', '\u2022 Without the ball: Pass sets a screen for your partner']);
+  col(500, 'DEFENSE', ['Pass: tap to steal  \u2022  hold: stance (box out on a shot)', 'Sprint + Pass: shove (hard foul)', 'Shoot: jump, block, contest', 'Sprint + Shoot: swipe  \u2022  from behind: chase-down',
+    'Tap Move: plant your feet to take a charge', 'Hold Move: your partner doubles the ball', '\u2022 Reach across his body and it\u2019s a foul', '\u2022 Sprint while in stance fights over screens',
+    '\u2022 Final minute: sprint + Pass dives for loose balls', '\u2022 Pause for timeouts and set plays']);
+  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Touch: push the stick to the edge to sprint. Buttons: SHOOT, PASS, MOVE (labels change with the play).', W / 2, 438);
+  g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText('Press Enter or tap to go back', W / 2, 520);
   W = rw; g.restore();
   addRect(0, 0, W, H, goTitle);
 };
 
-// ------------------------------------------------------------- camera presets
-const CAM_PRESETS = {
-  broadcast: { name: 'Broadcast', zoom: 1, look: 1, punch: 1, persp: 0.24, follow: 1 },
-  wide: { name: 'Broadcast Wide', zoom: 0.76, look: 0.6, punch: 0.5, persp: 0.2, follow: 0.8, pad: [90, 90, 70] },
-  tele: { name: 'Tele', zoom: 1.2, look: 0.55, punch: 1.2, persp: 0.32, follow: 1.5, pad: [26, 34, 22] },
-  lock: { name: 'Player Lock', zoom: 1.08, look: 0.35, punch: 0.8, persp: 0.26, follow: 1.3, lock: true, pad: [40, 48, 34] }
+// ================================================= v7: CAMERA PRESETS + DEPTH AIDS
+// Device-side view settings (no save change): camera preset and depth-aid level.
+const View = {
+  key: 'islamdunk.view', camera: 0, depth: 1,
+  load() { try { const o = JSON.parse(localStorage.getItem(this.key) || '{}'); if (o.camera >= 0 && o.camera < CAM_PRESETS.length) this.camera = o.camera; if (o.depth >= 0 && o.depth <= 2) this.depth = o.depth; } catch (e) {} },
+  save() { try { localStorage.setItem(this.key, JSON.stringify({ camera: this.camera, depth: this.depth })); } catch (e) {} }
 };
-const CAM_ORDER = ['broadcast', 'wide', 'tele', 'lock'];
-const DEPTH_NAMES = ['Off', 'Subtle', 'Full'];
-const VIEW = SETTINGS;
+// Each preset is a parameter set for the existing broadcast camera (fitPlayers stays authoritative).
+const CAM_PRESETS = [
+  { name: 'Broadcast', zoom: 1, look: 1, punch: 1, persp: 0.24, minZ: 1.0, follow: 'ball' },
+  { name: 'Broadcast Wide', zoom: 0.8, look: 0.55, punch: 0.5, persp: 0.22, minZ: 0.82, follow: 'ball' },
+  { name: 'Tele', zoom: 1.16, look: 0.6, punch: 1, persp: 0.32, minZ: 1.05, follow: 'ball' },
+  { name: 'Player Lock', zoom: 1.06, look: 0.35, punch: 0.8, persp: 0.24, minZ: 1.0, follow: 'me' }
+];
+View.load();
+function camPreset() { return CAM_PRESETS[View.camera] || CAM_PRESETS[0]; }
+function camFollow(CP) {
+  const b = ball.owner || ball;
+  if (CP.follow !== 'me') return b;
+  const me = M.players && M.players.find(p => p.human === (Net.role === 'guest' ? 1 : 0)); if (!me) return b;
+  return { x: lerp(me.x, b.x, 0.3), z: lerp(me.z, b.z, 0.3), y: 0, vx: me.vx };    // your player, with a soft blend toward the ball
+}
+function cycleCamera(d = 1, announce = true) {
+  View.camera = (View.camera + d + CAM_PRESETS.length) % CAM_PRESETS.length; View.save();
+  if (announce && M.players && M.players.length) FX.pop(cam.fx || W / 2, 260, 350, 'CAMERA: ' + camPreset().name.toUpperCase(), '#ffffff');
+  SFX.blip && SFX.blip();
+}
 {
-  const v = (Progress.load().view) || {};
-  SETTINGS.camera = CAM_ORDER.includes(v.camera) ? v.camera : 'broadcast';
-  SETTINGS.depth = [0, 1, 2].includes(v.depth) ? v.depth : 1;
-}
-function saveView() { Progress.update(o => { o.view = { camera: VIEW.camera, depth: VIEW.depth }; }); }
-function camPreset() { return CAM_PRESETS[VIEW.camera] || CAM_PRESETS.broadcast; }
-function cycleCamera(d = 1) { VIEW.camera = CAM_ORDER[(CAM_ORDER.indexOf(VIEW.camera) + d + CAM_ORDER.length) % CAM_ORDER.length]; saveView(); }
-function cycleDepth(d = 1) { VIEW.depth = (VIEW.depth + d + 3) % 3; saveView(); }
-function camHuman() { return M.players && (M.players.find(p => isLocalHuman(p)) || null); }
-function camFocus() {
-  const f = ball.owner || ball;
-  if (!camPreset().lock || M.attract) return f;
-  const me = camHuman(); if (!me || me === f) return f;
-  return { x: lerp(me.x, f.x, 0.3), y: lerp(me.y || 0, f.y || 0, 0.3), z: lerp(me.z, f.z, 0.3) };
-}
-function applyViewPersp() { const want = broadcastOn() && !M.practice ? camPreset().persp : 0.24; if (PERSP !== want) setPersp(want); }
-{
-  const _gu7 = gameUpdate;
-  gameUpdate = function (rdt) {
-    if (Input.pressed.KeyC && (Game.screen === 'play' || Game.screen === 'netplay') && !Game.paused && !Game.trivia && !M.gym) {
-      cycleCamera(1); toast('Camera: ' + camPreset().name, 1.6); SFX.blip();
-    }
-    _gu7(rdt);
-  };
-  const _pi = pauseItems;
-  pauseItems = function () {
-    const it = _pi();
-    const extra = [['Camera: ' + camPreset().name, () => cycleCamera(1)], ['Depth aids: ' + DEPTH_NAMES[VIEW.depth], () => cycleDepth(1)]];
-    it.splice(it.length - 1, 0, ...extra);
-    return it;
-  };
-  drawPause = function (g) {
-    dim(g, 0.65);
-    g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `40px ${FONT}`; g.fillText('Paused', W / 2, 150);
-    const it = pauseItems();
-    drawMenu(g, it.map(x => x[0]), Game.idx % it.length, 205, i => it[i][1](), null, 38);
-    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.textAlign = 'center'; g.fillText('C switches the camera in play  •  F fullscreen  •  How to play is in Options', W / 2, 205 + it.length * 38 + 20);
-  };
-  SET_ITEMS.splice(SET_ITEMS.length - 1, 0,
-    { label: 'Camera', get: () => camPreset().name, step: d => cycleCamera(d) },
-    { label: 'Depth aids', get: () => DEPTH_NAMES[VIEW.depth], step: d => cycleDepth(d) });
-  drawSettings = function (g) {
-    dim(g, 0.72);
-    g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `32px ${FONT}`; g.fillText('Settings', W / 2, 92);
-    g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('Difficulty changes CPU reaction, decisions and timing. Player stats never change.', W / 2, 120);
-    drawMenu(g, SET_ITEMS.map(s => s.label), Game.idx, 158, i => { if (i === SET_ITEMS.length - 1) goTitle(); else SET_ITEMS[i].step(1); }, SET_ITEMS.map(s => s.get()), 38);
+  const _gu = gameUpdate;
+  gameUpdate = function (dt) {
+    if ((Game.screen === 'play' || Game.screen === 'netplay') && !Game.paused && Input.pressed.KeyC && !M.gym && !M.practice) cycleCamera(1, true);
+    return _gu(dt);
   };
 }
-
-// ------------------------------------------------------------- depth aids
-function floorRing(g, x, z, r, col, a, w = 1.6, dash = null) {
-  const [sx, sy] = P(x, 0, z), k = depthK(z);
-  g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = w * k; g.setLineDash(dash || []);
-  g.beginPath(); g.ellipse(sx, sy + 1, r * k, r * ZS * k, 0, 0, Math.PI * 2); g.stroke();
+// ---- floor-space drawing helpers (rings follow the court's perspective)
+const _ringPts = Array.from({ length: 32 }, (_, i) => [Math.cos(i / 32 * Math.PI * 2), Math.sin(i / 32 * Math.PI * 2)]);
+function floorRing(g, x, z, r, col, a, lw = 1.5, dash = null) {
+  g.save(); g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = lw; if (dash) g.setLineDash(dash);
+  g.beginPath(); _ringPts.forEach(([c, s], i) => { const [px, py] = P(x + c * r, 0, z + s * r); if (i) g.lineTo(px, py); else g.moveTo(px, py); }); g.closePath(); g.stroke(); g.restore();
 }
-function floorLine(g, x0, z0, x1, z1, col, a, w = 1.5, dash = null) {
-  const [ax, ay] = P(x0, 0, z0), [bx, by] = P(x1, 0, z1);
-  g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = w; g.setLineDash(dash || []);
-  g.beginPath(); g.moveTo(ax, ay + 1); g.lineTo(bx, by + 1); g.stroke();
-}
-function floorText(g, x, z, txt, col) {
-  const [sx, sy] = P(x, 0, z); g.globalAlpha = 0.95; g.setLineDash([]);
-  g.font = `10px ${FONT}`; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = 'rgba(10,14,22,0.85)'; g.strokeText(txt, sx, sy + 16); g.fillStyle = col; g.fillText(txt, sx, sy + 16);
-}
-const AID_IN = '#7dff9a', AID_NEAR = '#ffd76a', AID_OFF = '#ffffff';
-function blockTiming(me) {
-  if (me.state !== 'jump' || ball.state !== 'shot' || !ball.shot || ball.shot.dunk || ball.shot.team === me.team || ball.shot.t > 0.4) return false;
-  return Math.hypot(ball.x - (me.x + me.face * 6), ball.y - (me.y + 104), ball.z - me.z) < (me.swipe ? 42 : 30) * 1.4;
-}
+function floorLine(g, x0, z0, x1, z1, col, a, lw = 1.5) { const [a0, b0] = P(x0, 0, z0), [a1, b1] = P(x1, 0, z1); g.save(); g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = lw; g.lineCap = 'round'; g.beginPath(); g.moveTo(a0, b0); g.lineTo(a1, b1); g.stroke(); g.restore(); }
+function dropLine(g, x, y, z, a) { const [x0, y0] = P(x, y, z), [x1, y1] = P(x, 0, z); g.save(); g.globalAlpha = a; g.strokeStyle = '#ffffff'; g.lineWidth = 1; g.setLineDash([3, 4]); g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); g.restore(); }
+// ---- the depth aids (Subtle: anchors, ball marker, contextual rings. Full: + permanent rings, same-depth line, grading)
 function drawDepthAids(g, actors) {
-  const lvl = VIEW.depth, pulse = REDUCED_MOTION ? 1 : 0.75 + 0.25 * Math.sin(Game.t * 18);
-  g.save(); g.lineCap = 'round';
-  // sprint: speed lines at the feet (always on: it's control feedback)
-  for (const p of actors) {
-    if (!isLocalHuman(p) || !p.cmd || !p.cmd.turbo || !p.turboOK() || p.y > 2) continue;
-    const sp = Math.hypot(p.vx || 0, p.vz || 0); if (sp < 170) continue;
-    const ux = (p.vx || 0) / sp, uz = (p.vz || 0) / sp;
-    for (let i = -1; i <= 1; i++) {
-      const ox = p.x - ux * 24 - uz * i * 10, oz = p.z - uz * 24 + ux * i * 10, L = 22 + 10 * (1 - Math.abs(i)) + (REDUCED_MOTION ? 0 : 5 * Math.sin(Game.t * 30 + i));
-      floorLine(g, ox, oz, ox - ux * L, oz - uz * L, '#fff6de', 0.7, 2.6);
+  const full = View.depth === 2, me = actors.find(p => p.human === (Net.role === 'guest' ? 1 : 0));
+  const pulse = REDUCED_MOTION ? 1 : 0.75 + 0.25 * Math.sin(Game.t * 12);
+  // airborne players: drop line from the feet to their ring
+  for (const p of actors) if (p.y > 12) dropLine(g, p.x, p.y, p.z, 0.4);
+  // ball in the air: crisp ground marker + drop line
+  const balls = M.balls ? M.balls : [ball];
+  for (const b of balls) {
+    if (b.owner || b.x < -500 || b.y < 22) continue;
+    const [mx, my] = P(b.x, 0, b.z), k = depthK(b.z);
+    g.save(); g.fillStyle = 'rgba(255,170,90,0.85)'; g.beginPath(); g.ellipse(mx, my, 2.6 * k, 1.2 * k, 0, 0, Math.PI * 2); g.fill(); g.restore();
+    floorRing(g, b.x, b.z, 7, '#ffb36b', 0.75, 1.2); dropLine(g, b.x, b.y, b.z, 0.35);
+  }
+  if (!me || M.phase !== 'live' && M.phase !== 'ft') return;
+  const bo = ball.owner, onD = bo && bo.team !== me.team;
+  // shooter gathering / rising: block (30, 42 for a swipe) and contest (60, 110) rings
+  const sh = M.players.find(p => p.team !== me.team && (p.state === 'windup' || p.state === 'shoot' || (p.state === 'dunk' && p.act && p.act.s < 0.5)));
+  if (sh) {
+    const d = dxz(me, sh), br = me.cmd.turbo && me.turboOK && me.turboOK() ? 42 : 30, inB = d <= br + 28, inC = d <= 60 + 28;   // ~28 = body contact distance
+    floorRing(g, sh.x, sh.z, 110, '#9fb3c8', 0.25, 1, [4, 6]);
+    floorRing(g, sh.x, sh.z, 60 + 28, inC ? '#ffcf6a' : '#9fb3c8', inC ? 0.7 : 0.35, 1.4);
+    floorRing(g, sh.x, sh.z, br + 28, inB ? '#57e389' : '#ffffff', inB ? 0.95 * pulse : 0.45, inB ? 2.4 : 1.4);
+    if (inB) { const [lx, ly] = P(sh.x, 0, sh.z + br + 34); g.save(); g.fillStyle = '#57e389'; g.font = `10px ${FONT}`; g.textAlign = 'center'; g.fillText('IN RANGE', lx, ly + 12); g.restore(); }
+  }
+  // contact range around you on defense: steal reach (54), shove reach (48) while sprinting
+  if (onD) {
+    const d = dxz(me, bo), near = d < 130;
+    if (near || full) {
+      const sprint = me.cmd.turbo && me.turboOK && me.turboOK(), r = sprint ? 48 : 54, inR = d <= r;
+      floorRing(g, me.x, me.z, r, inR ? (sprint ? '#ff9a6b' : '#57e389') : '#ffffff', inR ? 0.85 : 0.3, inR ? 2 : 1.2);
+      if (inR) floorRing(g, bo.x, bo.z, 22, sprint ? '#ff9a6b' : '#57e389', 0.85, 2);      // the target, highlighted
     }
-  }
-  if (!lvl) { g.restore(); g.globalAlpha = 1; return; }
-  // airborne players: a drop line from the feet to the ring on the floor (height, separate from depth)
-  for (const p of actors) {
-    if (p.y < 8) continue;
-    const [fx, fy] = P(p.x, 0, p.z), [hx, hy] = P(p.x, p.y, p.z);
-    g.globalAlpha = 0.4; g.strokeStyle = '#ffffff'; g.lineWidth = 1.2; g.setLineDash([3, 4]); g.beginPath(); g.moveTo(fx, fy); g.lineTo(hx, hy); g.stroke();
-  }
-  // the ball in the air: a crisp floor marker and a drop line
-  const B = ball, mes = actors.filter(p => isLocalHuman(p));
-  const timing = lvl >= 2 && mes.some(blockTiming);
-  if (!B.owner && B.x > -500 && B.y > 14) {
-    const [fx, fy] = P(B.x, 0, B.z), [bx, by] = P(B.x, B.y - BALL_R, B.z), k = depthK(B.z);
-    g.globalAlpha = 0.3; g.strokeStyle = '#ffffff'; g.lineWidth = 1; g.setLineDash([2, 4]); g.beginPath(); g.moveTo(fx, fy); g.lineTo(bx, by); g.stroke();
-    floorRing(g, B.x, B.z, timing ? 11 : 8, timing ? AID_IN : '#ffffff', timing ? pulse : 0.75, timing ? 2.4 : 1.6);
-    g.setLineDash([]); g.globalAlpha = 0.85; g.fillStyle = timing ? AID_IN : '#ffffff'; g.beginPath(); g.ellipse(fx, fy + 1, 2.2 * k, 1.2 * k, 0, 0, Math.PI * 2); g.fill();
-  }
-  for (const me of mes) {
-    if (me.state === 'down') continue;
-    const bo = B.owner, onD = bo ? bo.team !== me.team : !(B.state === 'pass' && B.pass && B.pass.from.team === me.team);
-    const reachK = lvl >= 2 ? 1.5 : 1;
-    // shooter: contest ring (60 = hand in his face) and block zone at the ball
-    const sh = bo && bo.team !== me.team && (bo.state === 'windup' || bo.state === 'shoot') ? bo : (B.state === 'shot' && B.shot && B.shot.team !== me.team && !B.shot.dunk && B.shot.t < 0.45 ? B.shot.shooter : null);
-    if (sh && dxz(me, sh) < 220 * reachK) {
-      const d = dxz(me, sh), inR = d < 60, col = inR ? AID_IN : d < 110 ? AID_NEAR : AID_OFF;
-      floorRing(g, sh.x, sh.z, 60, col, inR ? 0.85 : 0.45, inR ? 2.2 : 1.4, inR ? null : [6, 6]);
-      const bx = B.owner ? sh.x + sh.face * 6 : B.x, bz = B.owner ? sh.z : B.z, R = me.cmd && me.cmd.turbo && me.turboOK() ? 42 : 30;
-      const inB = Math.hypot(me.x + me.face * 6 - bx, me.z - bz) < R;
-      floorRing(g, bx, bz, R, inB ? AID_IN : AID_NEAR, inB ? 0.9 * (timing ? pulse : 1) : 0.4, 1.6, inB ? null : [3, 4]);
-      if (inR) floorText(g, me.x, me.z, inB ? 'BLOCK RANGE' : 'IN RANGE', AID_IN);
-      if (lvl >= 2) floorLine(g, me.x, me.z, sh.x, sh.z, col, 0.6, 1.5);
+    // charge / bump line in front of a driving handler
+    const sp = Math.hypot(bo.vx || 0, bo.vz || 0), hp = attackHoop(bo.team);
+    if (sp > 215 && dxz(me, hp) < dxz(bo, hp) && d < 160) {
+      const ux = bo.vx / sp, uz = bo.vz / sp, cx = bo.x + ux * 32, cz = bo.z + uz * 32, set = (me.setT || 0) >= 0.35 || (me.v7 && me.v7.plant > 0);
+      floorLine(g, cx - uz * 22, cz + ux * 22, cx + uz * 22, cz - ux * 22, set ? '#8fe3ff' : '#ffffff', set ? 0.9 : 0.4, set ? 2.4 : 1.4);
     }
-    // the handler near you: steal / shove reach, the drive lane and the charge spot
-    if (onD && bo && me.state === 'free' && me.y < 1 && !sh) {
-      const d = dxz(me, bo);
-      if (d < 140 * reachK) {
-        const spr = me.cmd && me.cmd.turbo && me.turboOK(), R = spr ? 48 : 54, inR = d < R;
-        floorRing(g, me.x, me.z, R, inR ? (spr ? '#ffb070' : '#8fe3ff') : AID_OFF, inR ? 0.85 : 0.3, inR ? 2 : 1.3, [5, 5]);
-        if (lvl >= 2) floorLine(g, me.x, me.z, bo.x, bo.z, d < 60 ? AID_IN : d < 110 ? AID_NEAR : AID_OFF, d < 110 ? 0.65 : 0.3, 1.5);
-      }
-      const sp = Math.hypot(bo.vx || 0, bo.vz || 0), hp = attackHoop(bo.team);
-      if (sp > 190 && bo.state === 'free' && dxz(bo, hp) < 460) {
-        const ux = bo.vx / sp, uz = bo.vz / sp, toH = ((hp.x - bo.x) * ux + (hp.z - bo.z) * uz) / (dxz(bo, hp) || 1);
-        if (toH > 0.5) {
-          const ex = bo.x + ux * 150, ez = bo.z + uz * 150, s = segDist(me.x, me.z, bo.x, bo.z, ex, ez);
-          const inLane = s.t > 0.05 && s.t < 1 && s.d < 30, set = inLane && ((me.setT || 0) >= 0.35 || me.plant > 0);
-          floorLine(g, bo.x, bo.z, ex, ez, set ? AID_IN : inLane ? AID_NEAR : AID_OFF, set || inLane ? 0.8 : 0.3, 2, set ? null : [7, 5]);
-          if (inLane) floorText(g, me.x, me.z, set ? 'SET' : 'IN HIS LANE', set ? AID_IN : AID_NEAR);
-        }
-      }
-    }
-    if (me.plant > 0) floorRing(g, me.x, me.z, 26, '#8fe3ff', 0.9, 2.4);
-    // rim zone during shots and dunks (tip-ins, chase-downs off the glass)
-    const dk = actors.find(q => q.state === 'dunk' && q.act && q.act.hoop), hz = B.state === 'shot' && B.shot ? B.shot.hoop : dk ? dk.act.hoop : null;
-    if (hz && dxz(me, hz) < 360) floorRing(g, hz.x + hz.dir * 4, hz.z, 80, '#ffffff', 0.22, 1.2, [4, 6]);
-    if (timing) floorRing(g, me.x, me.z, 30, AID_IN, pulse, 2.6);
+    // Full: same-depth line from you to the man you're guarding, colored by distance
+    if (full) { const col = d <= 54 ? '#57e389' : d <= 110 ? '#ffcf6a' : null; if (col) floorLine(g, me.x, me.z, bo.x, bo.z, col, 0.6, 1.4); }
   }
-  g.setLineDash([]); g.globalAlpha = 1; g.restore();
+  // rim zone during shots and dunks: where chase-downs and tip-ins live
+  const shot = ball.shot && ball.shot.hoop, dk = M.players.find(p => p.state === 'dunk');
+  const hz = shot ? ball.shot.hoop : dk ? attackHoop(dk.team) : null;
+  if (hz) floorRing(g, hz.x - hz.dir * 0, hz.z, 170, '#ffffff', 0.18, 1, [6, 8]);
+  // block timing: you're in the air and the ball is passing within reach of your hands
+  if (me.state === 'jump' && (ball.shot || ball.state === 'shot')) {
+    const hd = Math.hypot(ball.x - me.x, ball.y - (me.y + 110), ball.z - me.z);
+    if (hd < 48) { floorRing(g, me.x, me.z, 30, '#57e389', 0.95 * pulse, 2.6); floorRing(g, ball.x, ball.z, 12, '#57e389', 0.95 * pulse, 2.2); }
+  }
 }
+// human-controlled rings read a little brighter
 {
-  const _dtr = drawTeamRing;
+  const _dtr2 = drawTeamRing;
   drawTeamRing = function (g, p) {
-    if (!VIEW.depth) return _dtr(g, p);
-    if (!M.teamDefs) return;
-    const T = M.teamDefs[p.team]; if (!T) return;
-    const bo = ball.owner, onBall = bo && (p === bo || (bo.team !== p.team && p === nearestOpp(bo))), mine = isLocalHuman(p) && !M.attract;
-    const [x, y] = P(p.x, 0, p.z), k = depthK(p.z);
-    g.save(); g.globalAlpha = mine ? 0.95 : onBall ? 0.85 : 0.6;     // stays on the floor while he's in the air
-    g.strokeStyle = 'rgba(' + ringColor(T) + ',1)'; g.lineWidth = (mine ? 3 : onBall ? 2.6 : 1.8) * k;
-    g.beginPath(); g.ellipse(x, y + 1, 22 * k, 7.5 * k, 0, 0, Math.PI * 2); g.stroke();
-    if (mine) { g.globalAlpha = 0.55; g.strokeStyle = '#ffffff'; g.lineWidth = 1.2 * k; g.beginPath(); g.ellipse(x, y + 1, 16 * k, 5.4 * k, 0, 0, Math.PI * 2); g.stroke(); }
-    g.restore();
-  };
-}
-// Full: a thin light rim around the nearer of two overlapping players, so front and back read.
-const RIM7 = { a: null, b: null };
-{
-  const _dp7 = drawPlayer;
-  drawPlayer = function (g, p) {
-    if (VIEW.depth < 2 || !M.players || (M.gym && !M.practice) || !canvas || typeof g.getTransform !== 'function') return _dp7(g, p);
-    let over = false;
-    for (const q of M.players) if (q !== p && p.z - q.z > 18 && p.z - q.z < 200 && Math.abs(p.x - q.x) < 50) { over = true; break; }
-    if (!over) return _dp7(g, p);
-    const cw = canvas.width, ch = canvas.height;
-    const m = g.getTransform(), [bx, by] = P(p.x, p.y, p.z);
-    const pts = [[bx - 95, by - 300], [bx + 95, by - 300], [bx - 95, by + 24], [bx + 95, by + 24]].map(([x, y]) => [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f]);
-    const x0 = Math.max(0, Math.floor(Math.min(...pts.map(q => q[0]))) - 4), y0 = Math.max(0, Math.floor(Math.min(...pts.map(q => q[1]))) - 4);
-    const x1 = Math.min(cw, Math.ceil(Math.max(...pts.map(q => q[0]))) + 4), y1 = Math.min(ch, Math.ceil(Math.max(...pts.map(q => q[1]))) + 4), w = x1 - x0, h = y1 - y0;
-    if (w <= 0 || h <= 0) return _dp7(g, p);
-    if (!RIM7.a || RIM7.a.width < w || RIM7.a.height < h) { const W2 = Math.max(w, RIM7.a ? RIM7.a.width : 0), H2 = Math.max(h, RIM7.a ? RIM7.a.height : 0); RIM7.a = makeCanvas(W2, H2); RIM7.b = makeCanvas(W2, H2); }
-    const A = RIM7.a.getContext('2d'), Bc = RIM7.b.getContext('2d');
-    A.setTransform(1, 0, 0, 1, 0, 0); A.clearRect(0, 0, w, h); A.setTransform(m.a, m.b, m.c, m.d, m.e - x0, m.f - y0); A.globalAlpha = g.globalAlpha;
-    _dp7(A, p);
-    Bc.setTransform(1, 0, 0, 1, 0, 0); Bc.globalCompositeOperation = 'source-over'; Bc.clearRect(0, 0, w, h); Bc.drawImage(RIM7.a, 0, 0, w, h, 0, 0, w, h);
-    Bc.globalCompositeOperation = 'source-in'; Bc.fillStyle = 'rgba(255,246,222,1)'; Bc.fillRect(0, 0, w, h); Bc.globalCompositeOperation = 'source-over';
-    const o = Math.max(1, Math.round(1.8 * (m.a || 1)));
-    g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 0.95;
-    for (const [dx, dy] of [[-o, 0], [o, 0], [0, -o], [0, o]]) g.drawImage(RIM7.b, 0, 0, w, h, x0 + dx, y0 + dy, w, h);
-    g.globalAlpha = 1; g.drawImage(RIM7.a, 0, 0, w, h, x0, y0, w, h); g.restore();
+    _dtr2(g, p);
+    if (p.human >= 0 && !(Net.role === 'host' && p.human === 1) && p.y < 60) floorRing(g, p.x, p.z, 25, '#ffffff', 0.35, 1.2);
   };
 }
 
