@@ -28,7 +28,7 @@ if (BENCH) {
   const stat = a => { const b = a.slice().sort((x, y) => x - y); const avg = b.reduce((x, y) => x + y, 0) / (b.length || 1); return { avg, p95: b[Math.floor(b.length * 0.95)] || 0, worst: b[b.length - 1] || 0 }; };
   const finish = () => {
     const s = scenarios[cur], f = stat(frames), j = stat(js);
-    results.push({ label: s.label, fps: 1000 / f.avg, frameAvg: f.avg, frameP95: f.p95, frameWorst: f.worst, jsAvg: j.avg, jsP95: j.p95, n: frames.length });
+    results.push({ label: s.label, res: typeof RES !== 'undefined' ? RES.scale : 1, fps: 1000 / f.avg, frameAvg: f.avg, frameP95: f.p95, frameWorst: f.worst, jsAvg: j.avg, jsP95: j.p95, n: frames.length });
     if (cur + 1 < scenarios.length) start(cur + 1); else done();
   };
   const fmt = n => n.toFixed(1);
@@ -43,7 +43,7 @@ if (BENCH) {
   function done() {
     cur = -1; goTitle();
     const dev = `${navigator.userAgent}\nscreen ${innerWidth}x${innerHeight} @${devicePixelRatio}x, canvas ${canvas.width}x${canvas.height}, Islam Dunk v${VERSION}`;
-    const rows = results.map(r => `${r.label}\n  ${fmt(r.fps)} fps | frame avg ${fmt(r.frameAvg)} ms, p95 ${fmt(r.frameP95)} ms, worst ${fmt(r.frameWorst)} ms | JS avg ${fmt(r.jsAvg)} ms, p95 ${fmt(r.jsP95)} ms`);
+    const rows = results.map(r => `${r.label}\n  ${fmt(r.fps)} fps | frame avg ${fmt(r.frameAvg)} ms, p95 ${fmt(r.frameP95)} ms, worst ${fmt(r.frameWorst)} ms | JS avg ${fmt(r.jsAvg)} ms, p95 ${fmt(r.jsP95)} ms | resolution ${Math.round(r.res * 100)}%`);
     const text = 'Islam Dunk render benchmark\n' + dev + '\n\n' + rows.join('\n');
     panel.innerHTML = '';
     const pre = document.createElement('pre'); pre.textContent = text; pre.style.cssText = 'margin:0 0 8px;white-space:pre-wrap;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;max-height:70vh;overflow:auto';

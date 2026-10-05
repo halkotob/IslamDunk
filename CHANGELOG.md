@@ -1,6 +1,21 @@
 # Changelog
 
-## Unreleased: project restructure for Steam readiness (game version stays 7.6)
+## 7.7: adaptive resolution
+Benchmarks on real devices (`?bench=1`) showed the drawing code using 2–5 ms per frame, with the only
+dips in the busiest venue (Grand Ummah Dome, 2400×1350 on a Retina Mac: 53 fps average, occasional
+66 ms frames). So instead of a renderer rewrite (the PixiJS proposal is shelved), v7.7 adds adaptive
+resolution (`src/render/adaptive-res.js`):
+- During play, if more than 12% of the last ~2 s of frames run late, the canvas draws at a lower pixel
+  ratio (100% → 88% → 76% → 66% of normal, never below 1×). After 6 s with under 2% late frames it steps
+  back up. A step up that brings drops back is undone and that level skipped for 30 s, so it never flickers.
+- Late is measured against the fastest cadence the device has shown, capped at 60 Hz: a phone locked
+  to 30 fps (iOS Low Power Mode) isn't mistaken for a slow one, and 120 Hz screens aren't chased.
+- Options › Resolution: Auto (default, shows the current level) or Full.
+- Only the canvas backing size changes; layout, input and gameplay are untouched (seeded CPU games
+  identical to v7.6).
+- The benchmark now reports the resolution level per scenario; `tests/run.mjs` has an `adaptive-res` test.
+
+## Project restructure for Steam readiness (shipped with 7.6)
 
 No gameplay, visual or balance changes.
 

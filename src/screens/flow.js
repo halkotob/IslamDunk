@@ -160,6 +160,7 @@ const SET_ITEMS = [
   { label: 'Camera (C in game)', get: () => CAM_PRESETS[View.camera].name, step: d => cycleCamera(d, false) },
   { label: 'Depth aids', get: () => ['Off', 'Subtle', 'Full'][View.depth], step: d => { View.depth = (View.depth + d + 3) % 3; View.save(); } },
   { label: 'Ball magnet', get: () => ['Off', 'Light', 'Strong'][View.magnet], step: d => { View.magnet = (View.magnet + d + 3) % 3; View.save(); } },
+  { label: 'Resolution', get: () => resLabel(), step: () => resToggle() },
   { label: 'Back', get: () => '', step: () => {} }
 ];
 function settingsUpdate() {

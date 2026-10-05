@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '7.6';
+const VERSION = '7.7';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -2996,6 +2996,7 @@ const SET_ITEMS = [
   { label: 'Camera (C in game)', get: () => CAM_PRESETS[View.camera].name, step: d => cycleCamera(d, false) },
   { label: 'Depth aids', get: () => ['Off', 'Subtle', 'Full'][View.depth], step: d => { View.depth = (View.depth + d + 3) % 3; View.save(); } },
   { label: 'Ball magnet', get: () => ['Off', 'Light', 'Strong'][View.magnet], step: d => { View.magnet = (View.magnet + d + 3) % 3; View.save(); } },
+  { label: 'Resolution', get: () => resLabel(), step: () => resToggle() },
   { label: 'Back', get: () => '', step: () => {} }
 ];
 function settingsUpdate() {
@@ -12959,7 +12960,7 @@ resize = function () {
   W = clamp(Math.round(H * aw / ah), 960, 1200); layoutTouch();
   const s = Math.min(aw / W, ah / H);
   const coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-  const cw = Math.floor(W * s), ch = Math.floor(H * s), d = clamp((window.devicePixelRatio || 1) * s, 1, coarse ? 2 : 2.5);
+  const cw = Math.floor(W * s), ch = Math.floor(H * s), d = resScaled(clamp((window.devicePixelRatio || 1) * s, 1, coarse ? 2 : 2.5));   // v7.7: adaptive resolution
   const key = [cw, ch, W, d].join(',');
   if (key !== fitKey) {
     fitKey = key; dpr = d;
@@ -13535,6 +13536,64 @@ function loadDisplayFont() {
   };
 }
 
+// ================================================= v7.7: ADAPTIVE RESOLUTION
+// When frames run late during play, draw at a slightly lower resolution; when there is steady
+// headroom again, go back up. Levels are fractions of the normal pixel ratio (never below 1x), e.g.
+// on a 2x Retina screen: 2.0 -> 1.76 -> 1.52 -> 1.32. Only the canvas backing size changes; layout,
+// input and gameplay are untouched.
+//   - The target cadence is the fastest the device has shown this session (any screen), capped at
+//     60 Hz. So a phone locked to 30 fps (iOS Low Power Mode) is judged against 30, and a 120 Hz
+//     display isn't pushed down chasing 120.
+//   - Step down: more than 12% of the last ~2 s of play frames late (over 1.4x the target).
+//   - Step up: under 2% late for 6 s. If a step up brings the drops back within 3 s, that level is
+//     skipped for 30 s, so it never flickers between levels.
+//   - Menus, pauses and tab switches don't count. Options > Resolution: Auto (default) / Full.
+const RES_LEVELS = [1, 0.88, 0.76, 0.66];
+const RES = {
+  mode: 'auto', lvl: 0, scale: 1, lastNow: 0, play: [], cad: [], best: Infinity, lastChange: -1e9, probe: null, block: {}, evalAt: 0,
+  key: 'islamdunk.res',
+  load() { try { const m = localStorage.getItem(this.key); if (m === 'full' || m === 'auto') this.mode = m; } catch (e) {} },
+  save() { try { localStorage.setItem(this.key, this.mode); } catch (e) {} },
+  target() { return Math.max(16.4, Math.min(this.best, 34)); },
+  setLevel(l, now) {
+    l = clamp(l, 0, RES_LEVELS.length - 1); if (l === this.lvl) return;
+    this.lvl = l; this.scale = RES_LEVELS[l]; this.lastChange = now; this.play.length = 0;
+    if (typeof resize === 'function' && canvas) resize();
+  },
+  // one frame interval (ms) at time `now` (ms). Exposed for tests.
+  sample(dt, now, playing) {
+    if (!(dt > 0) || dt > 250) { this.play.length = 0; return; }     // tab switch, breakpoint, first frame
+    this.cad.push(dt); if (this.cad.length > 120) this.cad.shift();
+    if (playing) { this.play.push(dt); if (this.play.length > 150) this.play.shift(); } else this.play.length = 0;
+    if (now < this.evalAt) return;
+    this.evalAt = now + 500;
+    if (this.cad.length >= 60) { const s = this.cad.slice().sort((a, b) => a - b); this.best = Math.min(this.best, s[Math.floor(s.length * 0.1)]); }
+    if (this.mode !== 'auto' || this.play.length < 90) return;
+    const thr = this.target() * 1.4, late = this.play.filter(x => x > thr).length / this.play.length;
+    if (this.probe && now - this.probe.at < 3000 && late > 0.12) {      // the step up didn't hold: go back, and leave that level alone for a while
+      this.block[this.lvl] = now + 30000; this.probe = null; this.setLevel(this.lvl + 1, now); return;
+    }
+    if (this.probe && now - this.probe.at >= 3000) this.probe = null;
+    if (late > 0.12 && now - this.lastChange > 2000 && this.lvl < RES_LEVELS.length - 1) this.setLevel(this.lvl + 1, now);
+    else if (late < 0.02 && now - this.lastChange > 6000 && this.lvl > 0 && !((this.block[this.lvl - 1] || 0) > now)) { this.probe = { at: now }; this.setLevel(this.lvl - 1, now); }
+  },
+};
+function resScaled(base) { return typeof RES === 'undefined' ? base : Math.max(Math.min(base, 1), base * RES.scale); }
+function resLabel() { return RES.mode === 'full' ? 'Full' : 'Auto' + (RES.lvl ? ` (${Math.round(RES.scale * 100)}%)` : ''); }
+function resToggle() { RES.mode = RES.mode === 'auto' ? 'full' : 'auto'; RES.save(); if (RES.mode === 'full') RES.setLevel(0, performance.now()); }
+RES.load();
+{
+  const _frame = frame;
+  frame = function (now) {
+    if (RES.lastNow) {
+      const playing = (Game.screen === 'play' || Game.screen === 'netplay' || Game.screen === 'gym') && !Game.paused && !(typeof document !== 'undefined' && document.hidden);
+      RES.sample(now - RES.lastNow, now, playing);
+    }
+    RES.lastNow = now;
+    return _frame.apply(this, arguments);
+  };
+}
+
 // ================================================= TOOLS: RENDER BENCHMARK (?bench=1, inert otherwise)
 // Runs four scenarios in the real game loop on this device and reports frame rate and frame time:
 // a normal possession, a dunk with full FX every 0.7 s, the Grand Ummah Dome with a 3000 crowd, and
@@ -13564,7 +13623,7 @@ if (BENCH) {
   const stat = a => { const b = a.slice().sort((x, y) => x - y); const avg = b.reduce((x, y) => x + y, 0) / (b.length || 1); return { avg, p95: b[Math.floor(b.length * 0.95)] || 0, worst: b[b.length - 1] || 0 }; };
   const finish = () => {
     const s = scenarios[cur], f = stat(frames), j = stat(js);
-    results.push({ label: s.label, fps: 1000 / f.avg, frameAvg: f.avg, frameP95: f.p95, frameWorst: f.worst, jsAvg: j.avg, jsP95: j.p95, n: frames.length });
+    results.push({ label: s.label, res: typeof RES !== 'undefined' ? RES.scale : 1, fps: 1000 / f.avg, frameAvg: f.avg, frameP95: f.p95, frameWorst: f.worst, jsAvg: j.avg, jsP95: j.p95, n: frames.length });
     if (cur + 1 < scenarios.length) start(cur + 1); else done();
   };
   const fmt = n => n.toFixed(1);
@@ -13579,7 +13638,7 @@ if (BENCH) {
   function done() {
     cur = -1; goTitle();
     const dev = `${navigator.userAgent}\nscreen ${innerWidth}x${innerHeight} @${devicePixelRatio}x, canvas ${canvas.width}x${canvas.height}, Islam Dunk v${VERSION}`;
-    const rows = results.map(r => `${r.label}\n  ${fmt(r.fps)} fps | frame avg ${fmt(r.frameAvg)} ms, p95 ${fmt(r.frameP95)} ms, worst ${fmt(r.frameWorst)} ms | JS avg ${fmt(r.jsAvg)} ms, p95 ${fmt(r.jsP95)} ms`);
+    const rows = results.map(r => `${r.label}\n  ${fmt(r.fps)} fps | frame avg ${fmt(r.frameAvg)} ms, p95 ${fmt(r.frameP95)} ms, worst ${fmt(r.frameWorst)} ms | JS avg ${fmt(r.jsAvg)} ms, p95 ${fmt(r.jsP95)} ms | resolution ${Math.round(r.res * 100)}%`);
     const text = 'Islam Dunk render benchmark\n' + dev + '\n\n' + rows.join('\n');
     panel.innerHTML = '';
     const pre = document.createElement('pre'); pre.textContent = text; pre.style.cssText = 'margin:0 0 8px;white-space:pre-wrap;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;max-height:70vh;overflow:auto';

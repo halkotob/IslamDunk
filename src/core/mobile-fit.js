@@ -28,7 +28,7 @@ resize = function () {
   W = clamp(Math.round(H * aw / ah), 960, 1200); layoutTouch();
   const s = Math.min(aw / W, ah / H);
   const coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-  const cw = Math.floor(W * s), ch = Math.floor(H * s), d = clamp((window.devicePixelRatio || 1) * s, 1, coarse ? 2 : 2.5);
+  const cw = Math.floor(W * s), ch = Math.floor(H * s), d = resScaled(clamp((window.devicePixelRatio || 1) * s, 1, coarse ? 2 : 2.5));   // v7.7: adaptive resolution
   const key = [cw, ch, W, d].join(',');
   if (key !== fitKey) {
     fitKey = key; dpr = d;

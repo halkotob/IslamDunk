@@ -221,6 +221,44 @@ T['mobile'] = async ({ browser, base }) => {
   return { ok, detail };
 };
 
+T['adaptive-res'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { device: { viewport: { width: 1200, height: 724 }, deviceScaleFactor: 2 } }), p = await open(ctx, base + '/', errs, 'res');
+  const r = await p.evaluate(() => {
+    const reset = () => Object.assign(RES, { mode: 'auto', lvl: 0, scale: 1, cad: [], play: [], best: Infinity, lastChange: -1e9, probe: null, block: {}, evalAt: 0 }) && resize();
+    let now = 0;
+    const feed = (secs, dtFn, playing = true) => { const end = now + secs * 1000; let i = 0; while (now < end) { const dt = dtFn(i++); now += dt; RES.sample(dt, now, playing); } return RES.lvl; };
+    const out = {};
+    // 60 Hz device: idle menus, then a heavy stretch (30% of frames late), then smooth again
+    reset(); now = 0;
+    feed(3, () => 16.7, false);
+    out.hz60_best = Math.round(RES.best * 10) / 10;
+    out.hz60_heavy_3s = feed(3, i => (i % 10 < 3 ? 34 : 16.7));
+    out.hz60_heavy_9s = feed(6, i => (i % 10 < 3 ? 34 : 16.7));
+    out.backing_at_min = canvas.width + 'x' + canvas.height + ' (dpr ' + Math.round(dpr * 100) / 100 + ')';
+    out.hz60_recover_30s = feed(30, () => 16.7);
+    out.backing_after = canvas.width + 'x' + canvas.height;
+    // 30 fps-locked phone (iOS Low Power Mode): steady 33.3 ms everywhere must not trigger a step down
+    reset(); now = 0;
+    feed(3, () => 33.3, false); out.lock30_steady_20s = feed(20, () => 33.3);
+    // ...but a locked phone that drops to ~20 fps does step down
+    out.lock30_struggling_6s = feed(6, i => (i % 4 === 0 ? 33.3 : 50));
+    // anti-flicker: a step up that brings drops straight back is undone and that level is skipped
+    reset(); now = 0;
+    feed(3, () => 16.7, false); feed(3, i => (i % 10 < 3 ? 34 : 16.7));
+    const down = RES.lvl; feed(7, () => 16.7); const upped = RES.lvl;
+    feed(2.5, i => (i % 10 < 3 ? 34 : 16.7)); const after = RES.lvl;
+    feed(10, () => 16.7); out.flicker = { down, upped, after, heldWithin30s: RES.lvl };
+    // Full mode never adapts
+    reset(); RES.mode = 'full'; now = 0; feed(3, () => 16.7, false); out.full_heavy = feed(10, i => (i % 2 ? 40 : 16.7));
+    reset(); RES.mode = 'auto';
+    return out;
+  });
+  await ctx.close();
+  const ok = r.hz60_heavy_3s === 1 && r.hz60_heavy_9s === 3 && r.hz60_recover_30s === 0 && r.backing_after === '2400x1350' && r.lock30_steady_20s === 0 && r.lock30_struggling_6s >= 1
+    && r.flicker.down === 1 && r.flicker.upped === 0 && r.flicker.after === 1 && r.flicker.heldWithin30s === 1 && r.full_heavy === 0 && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
 // ------------------------------------------------------------------ runner
 const { srv, base } = await serve();
 const browser = await chromium.launch();
