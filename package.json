@@ -6,7 +6,7 @@
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
-  "author": "Islam Dunk",
+  "author": "Masaajid Games",
   "scripts": {
     "dev": "vite",
     "build:web": "vite build --mode web",

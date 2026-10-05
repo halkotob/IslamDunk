@@ -27,11 +27,6 @@ function buildVenueLayers(v, tA, tB, opts = {}) {
   return L;
 }
 // ------------------------------------------------------------- BACKDROPS
-function skyGrad(g, time, h) {
-  const gr = g.createLinearGradient(0, 0, 0, h);
-  const c = { afternoon: ['#5fa8dc', '#cfe8f5'], sunset: ['#2e2b62', '#f08a4b', '#f6c26b'], night: ['#060b1e', '#1b2748'] }[time] || ['#5fa8dc', '#cfe8f5'];
-  c.forEach((col, i) => gr.addColorStop(i / (c.length - 1), col)); return gr;
-}
 function pine(g, x, y, s, night, dark) { g.fillStyle = night ? '#0e1a1a' : dark ? '#2f5a3a' : '#2c5a44'; g.beginPath(); g.moveTo(x, y - 46 * s); g.lineTo(x + 14 * s, y); g.lineTo(x - 14 * s, y); g.fill(); if (!dark && !night) { g.fillStyle = 'rgba(255,255,255,0.8)'; g.beginPath(); g.moveTo(x, y - 46 * s); g.lineTo(x + 6 * s, y - 30 * s); g.lineTo(x - 6 * s, y - 30 * s); g.fill(); } }
 function palm(g, x, y, s, night) {
   g.strokeStyle = night ? '#141418' : '#6b4a2b'; g.lineWidth = 3 * s; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + 6 * s, y - 30 * s, x + 2 * s, y - 56 * s); g.stroke();

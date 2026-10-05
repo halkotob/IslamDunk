@@ -197,7 +197,6 @@ function drawGymHoopBack(g, h, U = gymUp()) {
 }
 
 // ================================================================ DRILLS
-const DRILL_KEYS = ['ft', 'three', 'cones', 'v1'];
 const DRILLS = {
   ft: { name: 'Free throws', desc: '10 shots from the line' },
   three: { name: 'Three-point challenge', desc: '5 racks in 60 seconds, the last ball of each rack counts double' },

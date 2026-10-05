@@ -7,7 +7,6 @@
 // All buildings are original designs inspired by regional styles.
 const SKYLINES = { bosphorus: 'Bosphorus Court', andalus: 'Andalus Court', atlas: 'Atlas Court', isfahan: 'Isfahan Court', nile: 'Nile Court', tropics: 'Tropics Court' };
 Object.assign(BACKDROP_NAMES, SKYLINES);
-const ALL_BACKDROPS = [...BACKDROPS, ...Object.keys(SKYLINES)];
 VENUE_LIST.splice(VENUE_LIST.findIndex(v => v.kind === 'arena'), 0, ...Object.keys(SKYLINES).map(b => ({ id: 'out_' + b, kind: 'outdoor', backdrop: b, name: SKYLINES[b] })));
 const LAYER_PF = { sky: 0.03, dist: 0.12, mid: 0.3 };
 const HORIZON = 146;

@@ -17,6 +17,8 @@ const ICON = path.join(__dirname, '..', 'assets', 'icons', 'icon-512.png');
 const SIZES = [[1280, 720], [1600, 900], [1920, 1080], [2560, 1440]];
 
 app.setName('Islam Dunk');
+if (process.env.ISLAMDUNK_USER_DATA) app.setPath('userData', process.env.ISLAMDUNK_USER_DATA);   // tests: isolated save folder
+const QUERY = process.env.ISLAMDUNK_QUERY || '';                                                 // tests: e.g. net=loop
 if (!app.requestSingleInstanceLock()) { app.quit(); }
 
 // ------------------------------------------------------------------ save file store
@@ -111,7 +113,7 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) shell.openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => { if (url !== win.webContents.getURL() && !(DEV_URL && url.startsWith(DEV_URL))) e.preventDefault(); });
 
-  if (DEV_URL) win.loadURL(DEV_URL); else win.loadFile(RENDERER);
+  if (DEV_URL) win.loadURL(DEV_URL + (QUERY ? '?' + QUERY : '')); else win.loadFile(RENDERER, QUERY ? { search: QUERY } : undefined);
   return win;
 }
 

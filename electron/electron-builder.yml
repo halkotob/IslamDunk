@@ -2,7 +2,7 @@
 # the current OS into release/; `npm run dist:electron` makes installers (NSIS / DMG / AppImage).
 appId: com.islamdunk.game
 productName: Islam Dunk
-copyright: Copyright © 2026 Islam Dunk
+copyright: Copyright © 2026 Masaajid Games
 directories:
   output: release
   buildResources: assets/icons

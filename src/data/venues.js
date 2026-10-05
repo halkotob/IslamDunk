@@ -4,7 +4,6 @@
 // walls/stands, floor, near side, resting crowd) once; per frame we only
 // blit them and animate the crowd, lights, jumbotron and weather.
 const BG_X0 = -160, BGW = COURT.L + 320;           // bg layer covers world x -160..1480 at parallax 1
-const FAR_W = 1700, FAR_PX = 0.4;                  // far backdrop (sky, scenery, masjid) at parallax 0.4
 const NEAR_Y = FLOOR_TOP + Math.ceil(COURT.D * ZS), NEAR_H = H - NEAR_Y + 10;
 const TIMES = ['afternoon', 'sunset', 'night'], BACKDROPS = ['mountains', 'city', 'desert', 'coast', 'snow'];
 const BACKDROP_NAMES = { mountains: 'Mountain View Court', city: 'City Park Court', desert: 'Oasis Court', coast: 'Seaside Court', snow: 'Winter Court' };
