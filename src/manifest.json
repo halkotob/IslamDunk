@@ -58,6 +58,7 @@
     "sim/pump-fake-pickup.js",
     "online/p2p.js",
     "render/visuals-v76.js",
+    "render/bench.js",
     "boot.js"
   ]
 }
