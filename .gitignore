@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# build output (the published web build lives at the repo root; see README)
+dist/
+release/
+*.tsbuildinfo
+
+# env / local
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+
+# test artifacts
+tests/output/
+test-results/

@@ -1,0 +1,27 @@
+# Packaging for the desktop app (electron-builder). `npm run build:electron` builds an unpacked app for
+# the current OS into release/; `npm run dist:electron` makes installers (NSIS / DMG / AppImage).
+appId: com.islamdunk.game
+productName: Islam Dunk
+copyright: Copyright © 2026 Islam Dunk
+directories:
+  output: release
+  buildResources: assets/icons
+files:
+  - package.json
+  - electron/main.cjs
+  - electron/preload.cjs
+  - dist/electron/**
+  - assets/icons/**
+asar: true
+icon: assets/icons/icon-512.png
+win:
+  target: nsis
+linux:
+  target: AppImage
+  category: Game
+mac:
+  target: dmg
+  category: public.app-category.sports-games
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
