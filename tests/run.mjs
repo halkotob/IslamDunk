@@ -9,6 +9,8 @@
 //   controls     scripted human input: pump fake -> double dribble rules, legal pivot and shot
 //   half-court   lobby-driven half-court / points-target games run to completion
 //   career       new career -> 3 matches -> post-game -> save written
+//   career-intro creator (Start career) -> walk to Saleem outside the masjid -> up the path -> gym -> meet
+//                all five brothers -> hub; body builds sum to zero; CPU stages have 2/3/2 strength tiers
 //   online-loop  loopback transport: lobby, 3 game types, back to lobby, direct (P2P) link + fallback
 //   online-room  claude.ai room adapter (faked locally): lobby -> game -> lobby
 //   online-fb    Firebase adapter (fake SDK): lobby -> game -> lobby
@@ -162,6 +164,50 @@ T['career'] = async ({ browser, base }) => {
   await ctx.close();
   const ok = r.out.every((x, i) => x.over && x.screen === 'postgame' && x.played === i + 1) && r.saved && r.savedGames === 3 && !errs.length;
   return { ok, detail: [...r.out.map(x => JSON.stringify(x)), 'save written: ' + r.saved, ...errs] };
+};
+
+T['career-intro'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'career-intro');
+  const st = () => p.evaluate(() => ({ scr: Game.screen, scene: typeof INTRO !== 'undefined' && INTRO ? INTRO.scene : null, x: INTRO && Math.round(INTRO.x || 0), talk: INTRO && INTRO.talk ? INTRO.talk.lines[INTRO.talk.i][0] : null, met: INTRO && INTRO.met ? Object.keys(INTRO.met).length : 0 }));
+  const press = async (k, n = 1) => { for (let i = 0; i < n; i++) { await p.keyboard.press(k); await sleep(380); } };
+  const checks = await p.evaluate(() => {
+    let zero = true, maxAbs = 0;
+    for (const h of [0, 1, 2]) for (const b of [0, 1, 2]) for (const s of [null, ...PLAY_STYLES]) { const m = bodyMods(h, b, s === 'classic' ? null : s), v = Object.values(m); if (v.reduce((a, x) => a + x, 0)) zero = false; maxAbs = Math.max(maxAbs, ...v.map(Math.abs), 0); }
+    C = freshCareer(); C.seed = 4242;
+    const tiers = [0, 1, 2, 3].map(st => { const T = stageTeams(st).slice(1), c = { '-1': 0, '0': 0, '1': 0 }; T.forEach(t => c[t.tier]++); return c; });
+    const bodies = stageTeams(0).slice(2).every(t => t.players.every(p => p.bh != null && p.bw != null));
+    return { zero, maxAbs, tiers, bodies };
+  });
+  // creator -> Tab to the Start career button -> Enter
+  await p.evaluate(() => { C = freshCareer(); C.name = 'Test'; Game.creator = { idx: 0, isNew: true }; setupPractice('free'); Game.screen = 'creator'; });
+  await sleep(300); await press('Tab'); await press('Enter');
+  const s0 = await st();
+  await p.keyboard.down('KeyD'); for (let i = 0; i < 50 && !(await st()).talk; i++) await sleep(100); await p.keyboard.up('KeyD');
+  const greeted = (await st()).talk;
+  for (let i = 0; i < 6 && (await st()).talk; i++) await press('Enter');
+  await sleep(1200);
+  for (let i = 0; i < 80; i++) {
+    const s = await st(); if (s.scr !== 'introout') break;
+    const k = Math.abs(s.x - 420) > 12 ? (s.x < 420 ? 'KeyD' : 'KeyA') : 'KeyW';
+    await p.keyboard.down(k); await sleep(k === 'KeyW' ? 200 : 120); await p.keyboard.up(k);
+  }
+  await sleep(1800); const s1 = await st();
+  for (let i = 0; i < 4 && (await st()).talk; i++) await press('Enter');
+  for (const id of ['khalil', 'nasser', 'mahmoud', 'tariq', 'siddiq']) {
+    await p.evaluate(id => { const s = INTRO_CAST[id], me = M.players[0]; me.x = s.x + (s.x > 900 ? -70 : 70); me.z = s.z; }, id);
+    await sleep(350); await press('KeyE');
+    for (let k = 0; k < 4 && (await st()).talk; k++) await press('Enter');
+  }
+  const s2 = await st();
+  for (let k = 0; k < 3 && (await st()).talk; k++) await press('Enter');
+  await p.evaluate(() => { const me = M.players[0]; me.x = INTRO_SALEEM.x - 70; me.z = INTRO_SALEEM.z; }); await sleep(350);
+  await press('KeyE'); for (let k = 0; k < 4 && (await st()).talk; k++) await press('Enter');
+  await sleep(1600);
+  const end = await p.evaluate(() => ({ scr: Game.screen, seen: C.seen.intro && C.seen.meetNew, saved: !!readSave(SAVE_AUTO) }));
+  await ctx.close();
+  const tiersOk = checks.tiers.every(c => c['-1'] === 2 && c['0'] === 3 && c['1'] === 2);
+  const ok = checks.zero && checks.maxAbs <= 3 && tiersOk && checks.bodies && s0.scr === 'introout' && greeted === 'saleem' && s1.scr === 'gym' && s1.scene === 'gym' && s2.met === 5 && end.scr === 'hub' && end.seen && end.saved && !errs.length;
+  return { ok, detail: [JSON.stringify(checks), 'start: ' + JSON.stringify(s0), 'greeted by ' + greeted, 'gym: ' + JSON.stringify(s1), 'met: ' + JSON.stringify(s2), 'end: ' + JSON.stringify(end), ...errs] };
 };
 
 async function onlineFlow(browser, base, { query = '', room = false, games = ['vs'], dropP2P = false }) {

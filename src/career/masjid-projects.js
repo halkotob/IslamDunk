@@ -142,8 +142,9 @@ function drawExterior(g, U, t) {
     g.fillStyle = '#1e5a4a'; g.fillRect(x0 + 10, top + 6, bw - 20, 20);
     g.fillStyle = '#f2cf6b'; g.font = `15px ${AR_FONT}`; g.textAlign = 'center'; g.fillText('\u0628\u0650\u0633\u0652\u0645\u0650 \u0671\u0644\u0644\u0651\u064e\u0647\u0650 \u0671\u0644\u0631\u0651\u064e\u062d\u0652\u0645\u064e\u0640\u0670\u0646\u0650 \u0671\u0644\u0631\u0651\u064e\u062d\u0650\u064a\u0645\u0650', x0 + bw / 2, top + 21);
   }
-  g.fillStyle = '#1e5a4a'; g.fillRect(x0 + bw / 2 - 90, 432, 180, 26); g.fillStyle = '#6b4a2b'; g.fillRect(x0 + bw / 2 - 4, 458, 8, 6);
-  g.fillStyle = '#f2cf6b'; g.font = `12px ${FONT}`; g.textAlign = 'center'; g.fillText('MASJID AL-AMANAH', x0 + bw / 2, 450);
+  const sgx = drawExterior.signX || x0 + bw / 2;     // the career intro moves the sign beside its path
+  g.fillStyle = '#1e5a4a'; g.fillRect(sgx - 90, 432, 180, 26); g.fillStyle = '#6b4a2b'; g.fillRect(sgx - 4, 458, 8, 6);
+  g.fillStyle = '#f2cf6b'; g.font = `12px ${FONT}`; g.textAlign = 'center'; g.fillText('MASJID AL-AMANAH', sgx, 450);
   // landscaping
   const gd = upOf(U, 'garden');
   if (gd) {

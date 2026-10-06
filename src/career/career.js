@@ -7,6 +7,34 @@
 const SKINS = ['#f3d2b3', '#e6b894', '#d4a174', '#b98059', '#9a6440', '#7b4a2e', '#5e3a24', '#3f2718'];
 const HAIRS = ['#161616', '#3b2412', '#6b4423', '#8a8a8a', '#d8d8d8'];
 const HEIGHT_S = [0.93, 1, 1.08], BUILD_W = [0.9, 1, 1.13];
+// v7.8 body builds: every height and build trades some stats for others (each row sums to zero),
+// so no body is better overall, just better at different things. Same tables for you and the CPU.
+const HEIGHT_MOD = [{ spd: 1, stl: 1, pas: 1, dnk: -2, def: -1 }, {}, { dnk: 2, def: 1, spd: -1, stl: -1, pas: -1 }];   // short, average, tall
+const BUILD_MOD = [{ spd: 1, sta: 1, dnk: -1, def: -1 }, {}, { dnk: 1, def: 1, spd: -1, sta: -1 }];                    // lean, average, solid
+const STYLE_MOD = { sharpshooter: { sht: 2, clu: 1, dnk: -2, def: -1 }, playmaker: { pas: 2, spd: 1, dnk: -1, sht: -1, def: -1 },
+  rimrunner: { dnk: 2, spd: 1, sht: -2, clu: -1 }, lockdown: { def: 2, stl: 1, sht: -2, pas: -1 }, glue: { hus: 2, def: 1, sht: -1, dnk: -1, clu: -1 } };
+// combined modifier for a body (+ play style for your player), each stat capped at +-3 so stacking stays sane
+function bodyMods(height, build, style) {
+  const m = {};
+  for (const t of [HEIGHT_MOD[height] || {}, BUILD_MOD[build] || {}, (style && STYLE_MOD[style]) || {}]) for (const k in t) m[k] = (m[k] || 0) + t[k];
+  for (const k in m) m[k] = clamp(m[k], -3, 3);
+  // capping can tip the total; trim the biggest bonus (or ease the biggest penalty) until it's zero again
+  const sm = (style && STYLE_MOD[style]) || {}, ks = Object.keys(m);   // the style's own strengths are trimmed last
+  let sum = ks.reduce((a, k) => a + m[k], 0);
+  while (sum > 0) { const body = ks.filter(k => m[k] > 0 && !(sm[k] > 0)), pool = body.length ? body : ks, k = pool.reduce((a, b) => m[b] > m[a] ? b : a); m[k]--; sum--; }
+  while (sum < 0) { const k = ks.reduce((a, b) => m[b] < m[a] ? b : a); m[k]++; sum++; }
+  for (const k of ks) if (!m[k]) delete m[k];
+  return m;
+}
+function applyBodyMods(stats, m) { for (const k in m) if (stats[k] != null) stats[k] = clamp(stats[k] + m[k], 1, 10); return stats; }
+// CPU bodies follow their archetype: rim runners and stoppers run big, shooters and playmakers small
+const ARCH_BODY = { rimrunner: [[0.1, 0.4], [0.15, 0.45]], lockdown: [[0.15, 0.45], [0.1, 0.4]], sharpshooter: [[0.4, 0.45], [0.5, 0.4]],
+  playmaker: [[0.6, 0.35], [0.45, 0.45]], glue: [[0.3, 0.4], [0.25, 0.45]] };
+function pickBody(arch, R) {
+  const [h, b] = ARCH_BODY[arch] || ARCH_BODY.glue, pick = ([a, m]) => { const r = R(); return r < a ? 0 : r < a + m ? 1 : 2; };
+  return { bh: pick(h), bw: pick(b) };
+}
+const TIER_OFF = { '-1': -1.1, '0': 0, '1': 0.9 }, TIER_TXT = { '-1': 'Beatable', '0': 'Even', '1': 'Contender' };
 const CAPKEYS = ['hair', 'kufi', 'crochet', 'topi', 'imama'];
 const CAPCOLS = ['#f7f7f2', '#1c1c1c', '#2f4f7f', '#1e7a4c', '#7a1f2b', '#c9a24a', '#6b5a8e'];
 const THOBES = ['#f7f7f2', '#ddd4c2', '#9aa7b3', '#2b3a55', '#4a3b2a', '#232323', '#5f7a5a', '#7d5a6b'];
@@ -83,6 +111,8 @@ function genTeam(R, word, place, strength, stage, colors) {
       stats: { spd: st(), sht: st(), dnk: st(), def: st(), stl: st() } };
     // archetype from its own generator (keyed to the player) so existing seeded rosters don't change
     { const keys = Object.keys(ARCHETYPES), AR = seededRng(hash32(p.name + '|' + word + '|' + place + '|' + s)); p.arch = keys[Math.floor(AR() * keys.length)]; applyArchetype(p.stats, p.arch, AR); }
+    // v7.8: a body to match the archetype (own generator again), and the stats that come with it
+    { const BR = seededRng(hash32('body|' + p.name + '|' + word + '|' + place + '|' + s)); Object.assign(p, pickBody(p.arch, BR)); applyBodyMods(p.stats, bodyMods(p.bh, p.bw)); }
     return p;
   });
   return { name: 'Masjid ' + word, short: shortOf(word), place, c1: colors[0], c2: colors[1], crest: pr(CRESTS), players };
@@ -96,7 +126,13 @@ function stageTeams(stage) {
   const words = MASJID_WORDS.slice(), places = PLACES[stage].slice(), cols = PALETTE.slice(2);
   const take = a => a.splice(Math.floor(R() * a.length), 1)[0];
   const teams = [null, rivalTeam(stage)];
-  for (let i = 0; i < 6; i++) teams.push(genTeam(R, take(words), take(places), S.stat + R() * 0.8 - 0.4, stage, take(cols)));
+  // v7.8: two weaker, two even and two stronger teams per stage (own generator, so names and colors stay put)
+  const TR = seededRng(C.seed * 7 + stage * 53 + 3), tiers = [-1, -1, 0, 0, 1, 1];
+  for (let i = tiers.length - 1; i > 0; i--) { const j = Math.floor(TR() * (i + 1)); [tiers[i], tiers[j]] = [tiers[j], tiers[i]]; }
+  for (let i = 0; i < 6; i++) teams.push(genTeam(R, take(words), take(places), S.stat + R() * 0.8 - 0.4 + TIER_OFF[tiers[i]], stage, take(cols)));
+  // label by how good each roster really is (rival included): top two Contenders, bottom two Beatable
+  { const pw = t => t.players.reduce((a, p) => a + p.stats.spd + p.stats.sht + p.stats.dnk + p.stats.def + p.stats.stl, 0);
+    teams.slice(1).map(t => t).sort((a, b) => pw(b) - pw(a)).forEach((t, i, a) => { t.tier = i < 2 ? 1 : i >= a.length - 2 ? -1 : 0; }); }
   const div = d => Array.from({ length: 8 }, () => 'Masjid ' + take(words.length ? words : MASJID_WORDS.slice()) + ' (' + pickR(R, PLACES[stage]) + ')');
   teams.divisions = { Medium: div(), Large: div() };
   return (_stageCache[key] = teams);
@@ -105,8 +141,8 @@ function pickR(R, a) { return a[Math.floor(R() * a.length)]; }
 function rivalTeam(stage) {
   const s = STAGES[stage].stat + 0.6, st = (a, b, c, d, e) => ({ spd: clamp(Math.round(s + a), 3, 10), sht: clamp(Math.round(s + b), 3, 10), dnk: clamp(Math.round(s + c), 3, 10), def: clamp(Math.round(s + d), 3, 10), stl: clamp(Math.round(s + e), 3, 10) });
   return { name: 'Masjid Al-Burhan', short: 'BURHAN', place: 'Northgate', c1: '#1d1d1d', c2: '#e0b04a', crest: 'minaret', rival: true, players: [
-    { name: 'Sh. Hakim', num: 5, sheikh: true, huffath: true, mufti: true, skin: '#a86b45', hat: 'imama', capColor: '#232323', hair: '#3b3b3b', stats: st(-1, 1, -1, 1, 0) },
-    { name: 'Jalal', num: 1, sheikh: false, huffath: false, skin: '#e0b48a', hat: 'hair', hair: '#1c1c1c', beardStyle: 2, stats: st(1, 1, 1, -1, 0) }] };
+    { name: 'Sh. Hakim', num: 5, sheikh: true, huffath: true, mufti: true, skin: '#a86b45', hat: 'imama', capColor: '#232323', hair: '#3b3b3b', bh: 2, bw: 1, stats: st(-1, 1, -1, 1, 0) },   // tall, steady big man
+    { name: 'Jalal', num: 1, sheikh: false, huffath: false, skin: '#e0b48a', hat: 'hair', hair: '#1c1c1c', beardStyle: 2, bh: 1, bw: 0, stats: st(1, 1, 1, -1, 0) }] };   // wiry scorer
 }
 function teamOf(stage, i) {
   const t = i === 0 ? amanahTeam() : stageTeams(stage)[i];

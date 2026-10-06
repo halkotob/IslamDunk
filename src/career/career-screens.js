@@ -157,7 +157,8 @@ function savesSelect(i) {
 // ------------------------------------------------------------- MATCHES
 function startCareerMatch() {
   const m = ourMatch(), oppId = m.a === 0 ? m.b : m.a;
-  const lv = careerLevels(C.stage);
+  const lv = careerLevels(C.stage), tier = teamOf(C.stage, oppId).tier || 0;
+  lv.opp = Math.max(0, lv.opp + tier * 0.2);              // v7.8: stronger teams also play a little smarter
   Game.lastMatch = null;
   if (!Game.cv) prepCareerVenue();
   const venue = Game.cv.v;
@@ -413,16 +414,21 @@ function drawPregame(g) {
     drawCrest(g, x + 36, 124, 20, team);
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `17px ${FONT}`; g.fillText(team.name, x + 66, 122);
     g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(label, x + 66, 140);
-    team.players.forEach((d, i) => { drawPortrait(g, x + 110 + i * 160, 318, d, team, 1.45, null); g.textAlign = 'center'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(d.name, x + 110 + i * 160, 334); });
+    team.players.forEach((d, i) => {
+      const px = x + 110 + i * 160, lk = d.look, bh = lk ? lk.height : d.bh, bw = lk ? lk.build : d.bw;
+      drawPortrait(g, px, 312, d, team, 1.45, null); g.textAlign = 'center'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(d.name, px, 326);
+      if (bh != null) { g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(LOOK_TXT.height[bh] + ', ' + LOOK_TXT.build[bw == null ? 1 : bw].toLowerCase(), px, 339); }
+    });
   };
   side(40, T, 'Eastside');
-  side(540, opp, (opp.place || '') + (opp.rival ? '  (rival)' : ''));
+  side(540, opp, (opp.place || '') + (opp.rival ? '  (rival)' : '') + (opp.tier != null ? '  \u2022  ' + TIER_TXT[opp.tier] : ''));
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `28px ${FONT}`; g.fillText('vs', W / 2, 220);
   panel(g, 40, 352, 880, 104, false);
   g.textAlign = 'left'; g.font = `14px ${FONT}`;
   if (C.prayBonus) { g.fillStyle = '#9dffb0'; g.fillText('Salah bonus: +10% shooting, +10% stamina this game', 62, 380); }
   else { g.fillStyle = '#9fb3c8'; g.fillText('No salah bonus. Answer the adhan during practice to earn one.', 62, 380); }
-  const lv = careerLevels(C.stage), shift = diffShift();
+  const lv = careerLevels(C.stage), shift = diffShift(), oT = opp.tier || 0;
+  lv.opp = Math.max(0, lv.opp + oT * 0.2);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
   g.fillText('CPU difficulty: ' + diffLabel(lv.opp) + (shift ? ' (' + S.name + ' stage, one step ' + (shift < 0 ? 'easier' : 'harder') + ' because Difficulty is set to ' + (shift < 0 ? 'Easy' : 'Hard') + ')' : ' (' + S.name + ' stage)'), 62, 404);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(castDef(Game.tipBy || 'rafiq').name + ': \u201C' + (Game.tip || STORY.tips[0]) + '\u201D', 62, 434);

@@ -322,7 +322,7 @@ function drawGroup(g, segs, f) {
 function drawPlayer(g, p) {
   const T = p.T, def = p.def, lk = def.look, [bx, by] = P(p.x, p.y, p.z);
   const sc = p.spin ? Math.cos(p.spin) : 1, fs = p.face * (Math.abs(sc) < 0.2 ? 0.2 * sgn(sc) : sc), f = sgn(fs);
-  const sq = p.sq || 0, sw = (lk ? BUILD_W[lk.build] : 1) * (1 - sq * 0.06), sh = (lk ? HEIGHT_S[lk.height] : 1) * (1 + sq * 0.08);
+  const sq = p.sq || 0, sw = (lk ? BUILD_W[lk.build] : def.bw != null ? BUILD_W[def.bw] : 1) * (1 - sq * 0.06), sh = (lk ? HEIGHT_S[lk.height] : def.bh != null ? HEIGHT_S[def.bh] : 1) * (1 + sq * 0.08);   // CPU bodies: bh/bw
   const uncle = !!(M.fun && M.fun.uncle && !M.gym && p.team !== 9);
   const thobe = p.outfit === 'thobe', robe = uncle ? T.c1 : lk ? (lk.teamMatch ? T.c1 : THOBES_ALL[lk.thobe]) : (def.thobe || '#f4f4ef'), hemK = (lk ? lk.thobeLen % 2 : 0) && !uncle ? 0.5 : 0.82;
   const trim = lk && !uncle && (lk.thobeLen >= 2 || lk.teamMatch) ? (lk.teamMatch ? T.c2 : '#c9a24a') : null;   // trimmed thobes / team colors

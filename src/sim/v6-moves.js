@@ -25,6 +25,7 @@ function strOf(p) {                                        // strength for conta
   const d = p.def || {}, s = p.st || {};
   let v = 5 + ((s.dnk || 5) - 5) * 0.35 + ((s.def || 5) - 5) * 0.25;
   if (d.look) v += ((d.look.build == null ? 1 : d.look.build) - 1) * 1.6 + ((d.look.height == null ? 1 : d.look.height) - 1) * 0.6;
+  else if (d.bw != null) v += (d.bw - 1) * 1.6 + ((d.bh == null ? 1 : d.bh) - 1) * 0.6;          // career CPU bodies
   if (d.elder) v -= 1; if (d.arch === 'rimrunner' || d.arch === 'lockdown') v += 0.6;
   return clamp(v, 1, 10);
 }

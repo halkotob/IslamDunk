@@ -1,5 +1,32 @@
 # Changelog
 
+## 7.8: career start, body builds, team tiers, in-world intro
+- **In-world intro** (`src/career/intro-world.js`). New careers no longer open on a text cutscene. You walk
+  up to Sh. Saleem outside Masjid Al-Amanah, follow him up the path and into the gym, then walk around and
+  meet Khalil, Nasser, Uncle Mahmoud, Tariq and Uncle Siddiq where they're standing (a checklist tracks who
+  you've met). You can shoot around while you're at it. Dialogue is shorter, it appears in speech bubbles
+  over the speaker, and "Skip intro" (or Esc) is always available.
+- **Creator** (`src/career/builds.js`). A big gold **Start career** button sits under the preview
+  (Tab jumps to it). A live **Starting stats** panel shows what your build is good and bad at.
+- **Body builds.** Height, build and play style each trade stats:
+  - Short: quicker, better hands. Tall: dunks and defends better.
+  - Lean: faster with more stamina. Solid: stronger at the rim and on defense.
+  - Each play style leans into its strengths.
+
+  Every combination sums to exactly zero, and no stat moves more than ±3. The changes sit on top of
+  trained levels, so existing saves rebalance automatically, and changing your look later moves them
+  back. The hub and Train screens show the bonus next to each stat.
+- **CPU teams.**
+  - **Bodies:** career rosters get heights and builds that suit their archetype (rim runners and stoppers
+    run big, shooters and playmakers small). They render at that size and their stats include the same
+    trades.
+  - **Tiers:** each stage now has two weaker, three even and two stronger teams, with the rival included
+    and labels based on actual roster strength. Stronger teams also play slightly smarter.
+  - **Display:** the hub shows the next opponent's rating (Beatable / Even / Contender). Pregame shows the
+    rating and each player's body.
+- Quick play, online and seeded CPU games are unchanged (identical to v7.6). The `career-intro` test covers
+  the new flow, the zero-sum builds and the tiers.
+
 ## 7.7: adaptive resolution
 Benchmarks on real devices (`?bench=1`) showed the drawing code using 2–5 ms per frame, with the only
 dips in the busiest venue (Grand Ummah Dome, 2400×1350 on a Retina Mac: 53 fps average, occasional

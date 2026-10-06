@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '7.7';
+const VERSION = '7.8';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -2431,7 +2431,7 @@ function drawGroup(g, segs, f) {
 function drawPlayer(g, p) {
   const T = p.T, def = p.def, lk = def.look, [bx, by] = P(p.x, p.y, p.z);
   const sc = p.spin ? Math.cos(p.spin) : 1, fs = p.face * (Math.abs(sc) < 0.2 ? 0.2 * sgn(sc) : sc), f = sgn(fs);
-  const sq = p.sq || 0, sw = (lk ? BUILD_W[lk.build] : 1) * (1 - sq * 0.06), sh = (lk ? HEIGHT_S[lk.height] : 1) * (1 + sq * 0.08);
+  const sq = p.sq || 0, sw = (lk ? BUILD_W[lk.build] : def.bw != null ? BUILD_W[def.bw] : 1) * (1 - sq * 0.06), sh = (lk ? HEIGHT_S[lk.height] : def.bh != null ? HEIGHT_S[def.bh] : 1) * (1 + sq * 0.08);   // CPU bodies: bh/bw
   const uncle = !!(M.fun && M.fun.uncle && !M.gym && p.team !== 9);
   const thobe = p.outfit === 'thobe', robe = uncle ? T.c1 : lk ? (lk.teamMatch ? T.c1 : THOBES_ALL[lk.thobe]) : (def.thobe || '#f4f4ef'), hemK = (lk ? lk.thobeLen % 2 : 0) && !uncle ? 0.5 : 0.82;
   const trim = lk && !uncle && (lk.thobeLen >= 2 || lk.teamMatch) ? (lk.teamMatch ? T.c2 : '#c9a24a') : null;   // trimmed thobes / team colors
@@ -3980,6 +3980,34 @@ function drawNetPlay(g) {
 const SKINS = ['#f3d2b3', '#e6b894', '#d4a174', '#b98059', '#9a6440', '#7b4a2e', '#5e3a24', '#3f2718'];
 const HAIRS = ['#161616', '#3b2412', '#6b4423', '#8a8a8a', '#d8d8d8'];
 const HEIGHT_S = [0.93, 1, 1.08], BUILD_W = [0.9, 1, 1.13];
+// v7.8 body builds: every height and build trades some stats for others (each row sums to zero),
+// so no body is better overall, just better at different things. Same tables for you and the CPU.
+const HEIGHT_MOD = [{ spd: 1, stl: 1, pas: 1, dnk: -2, def: -1 }, {}, { dnk: 2, def: 1, spd: -1, stl: -1, pas: -1 }];   // short, average, tall
+const BUILD_MOD = [{ spd: 1, sta: 1, dnk: -1, def: -1 }, {}, { dnk: 1, def: 1, spd: -1, sta: -1 }];                    // lean, average, solid
+const STYLE_MOD = { sharpshooter: { sht: 2, clu: 1, dnk: -2, def: -1 }, playmaker: { pas: 2, spd: 1, dnk: -1, sht: -1, def: -1 },
+  rimrunner: { dnk: 2, spd: 1, sht: -2, clu: -1 }, lockdown: { def: 2, stl: 1, sht: -2, pas: -1 }, glue: { hus: 2, def: 1, sht: -1, dnk: -1, clu: -1 } };
+// combined modifier for a body (+ play style for your player), each stat capped at +-3 so stacking stays sane
+function bodyMods(height, build, style) {
+  const m = {};
+  for (const t of [HEIGHT_MOD[height] || {}, BUILD_MOD[build] || {}, (style && STYLE_MOD[style]) || {}]) for (const k in t) m[k] = (m[k] || 0) + t[k];
+  for (const k in m) m[k] = clamp(m[k], -3, 3);
+  // capping can tip the total; trim the biggest bonus (or ease the biggest penalty) until it's zero again
+  const sm = (style && STYLE_MOD[style]) || {}, ks = Object.keys(m);   // the style's own strengths are trimmed last
+  let sum = ks.reduce((a, k) => a + m[k], 0);
+  while (sum > 0) { const body = ks.filter(k => m[k] > 0 && !(sm[k] > 0)), pool = body.length ? body : ks, k = pool.reduce((a, b) => m[b] > m[a] ? b : a); m[k]--; sum--; }
+  while (sum < 0) { const k = ks.reduce((a, b) => m[b] < m[a] ? b : a); m[k]++; sum++; }
+  for (const k of ks) if (!m[k]) delete m[k];
+  return m;
+}
+function applyBodyMods(stats, m) { for (const k in m) if (stats[k] != null) stats[k] = clamp(stats[k] + m[k], 1, 10); return stats; }
+// CPU bodies follow their archetype: rim runners and stoppers run big, shooters and playmakers small
+const ARCH_BODY = { rimrunner: [[0.1, 0.4], [0.15, 0.45]], lockdown: [[0.15, 0.45], [0.1, 0.4]], sharpshooter: [[0.4, 0.45], [0.5, 0.4]],
+  playmaker: [[0.6, 0.35], [0.45, 0.45]], glue: [[0.3, 0.4], [0.25, 0.45]] };
+function pickBody(arch, R) {
+  const [h, b] = ARCH_BODY[arch] || ARCH_BODY.glue, pick = ([a, m]) => { const r = R(); return r < a ? 0 : r < a + m ? 1 : 2; };
+  return { bh: pick(h), bw: pick(b) };
+}
+const TIER_OFF = { '-1': -1.1, '0': 0, '1': 0.9 }, TIER_TXT = { '-1': 'Beatable', '0': 'Even', '1': 'Contender' };
 const CAPKEYS = ['hair', 'kufi', 'crochet', 'topi', 'imama'];
 const CAPCOLS = ['#f7f7f2', '#1c1c1c', '#2f4f7f', '#1e7a4c', '#7a1f2b', '#c9a24a', '#6b5a8e'];
 const THOBES = ['#f7f7f2', '#ddd4c2', '#9aa7b3', '#2b3a55', '#4a3b2a', '#232323', '#5f7a5a', '#7d5a6b'];
@@ -4056,6 +4084,8 @@ function genTeam(R, word, place, strength, stage, colors) {
       stats: { spd: st(), sht: st(), dnk: st(), def: st(), stl: st() } };
     // archetype from its own generator (keyed to the player) so existing seeded rosters don't change
     { const keys = Object.keys(ARCHETYPES), AR = seededRng(hash32(p.name + '|' + word + '|' + place + '|' + s)); p.arch = keys[Math.floor(AR() * keys.length)]; applyArchetype(p.stats, p.arch, AR); }
+    // v7.8: a body to match the archetype (own generator again), and the stats that come with it
+    { const BR = seededRng(hash32('body|' + p.name + '|' + word + '|' + place + '|' + s)); Object.assign(p, pickBody(p.arch, BR)); applyBodyMods(p.stats, bodyMods(p.bh, p.bw)); }
     return p;
   });
   return { name: 'Masjid ' + word, short: shortOf(word), place, c1: colors[0], c2: colors[1], crest: pr(CRESTS), players };
@@ -4069,7 +4099,13 @@ function stageTeams(stage) {
   const words = MASJID_WORDS.slice(), places = PLACES[stage].slice(), cols = PALETTE.slice(2);
   const take = a => a.splice(Math.floor(R() * a.length), 1)[0];
   const teams = [null, rivalTeam(stage)];
-  for (let i = 0; i < 6; i++) teams.push(genTeam(R, take(words), take(places), S.stat + R() * 0.8 - 0.4, stage, take(cols)));
+  // v7.8: two weaker, two even and two stronger teams per stage (own generator, so names and colors stay put)
+  const TR = seededRng(C.seed * 7 + stage * 53 + 3), tiers = [-1, -1, 0, 0, 1, 1];
+  for (let i = tiers.length - 1; i > 0; i--) { const j = Math.floor(TR() * (i + 1)); [tiers[i], tiers[j]] = [tiers[j], tiers[i]]; }
+  for (let i = 0; i < 6; i++) teams.push(genTeam(R, take(words), take(places), S.stat + R() * 0.8 - 0.4 + TIER_OFF[tiers[i]], stage, take(cols)));
+  // label by how good each roster really is (rival included): top two Contenders, bottom two Beatable
+  { const pw = t => t.players.reduce((a, p) => a + p.stats.spd + p.stats.sht + p.stats.dnk + p.stats.def + p.stats.stl, 0);
+    teams.slice(1).map(t => t).sort((a, b) => pw(b) - pw(a)).forEach((t, i, a) => { t.tier = i < 2 ? 1 : i >= a.length - 2 ? -1 : 0; }); }
   const div = d => Array.from({ length: 8 }, () => 'Masjid ' + take(words.length ? words : MASJID_WORDS.slice()) + ' (' + pickR(R, PLACES[stage]) + ')');
   teams.divisions = { Medium: div(), Large: div() };
   return (_stageCache[key] = teams);
@@ -4078,8 +4114,8 @@ function pickR(R, a) { return a[Math.floor(R() * a.length)]; }
 function rivalTeam(stage) {
   const s = STAGES[stage].stat + 0.6, st = (a, b, c, d, e) => ({ spd: clamp(Math.round(s + a), 3, 10), sht: clamp(Math.round(s + b), 3, 10), dnk: clamp(Math.round(s + c), 3, 10), def: clamp(Math.round(s + d), 3, 10), stl: clamp(Math.round(s + e), 3, 10) });
   return { name: 'Masjid Al-Burhan', short: 'BURHAN', place: 'Northgate', c1: '#1d1d1d', c2: '#e0b04a', crest: 'minaret', rival: true, players: [
-    { name: 'Sh. Hakim', num: 5, sheikh: true, huffath: true, mufti: true, skin: '#a86b45', hat: 'imama', capColor: '#232323', hair: '#3b3b3b', stats: st(-1, 1, -1, 1, 0) },
-    { name: 'Jalal', num: 1, sheikh: false, huffath: false, skin: '#e0b48a', hat: 'hair', hair: '#1c1c1c', beardStyle: 2, stats: st(1, 1, 1, -1, 0) }] };
+    { name: 'Sh. Hakim', num: 5, sheikh: true, huffath: true, mufti: true, skin: '#a86b45', hat: 'imama', capColor: '#232323', hair: '#3b3b3b', bh: 2, bw: 1, stats: st(-1, 1, -1, 1, 0) },   // tall, steady big man
+    { name: 'Jalal', num: 1, sheikh: false, huffath: false, skin: '#e0b48a', hat: 'hair', hair: '#1c1c1c', beardStyle: 2, bh: 1, bw: 0, stats: st(1, 1, 1, -1, 0) }] };   // wiry scorer
 }
 function teamOf(stage, i) {
   const t = i === 0 ? amanahTeam() : stageTeams(stage)[i];
@@ -4945,7 +4981,8 @@ function savesSelect(i) {
 // ------------------------------------------------------------- MATCHES
 function startCareerMatch() {
   const m = ourMatch(), oppId = m.a === 0 ? m.b : m.a;
-  const lv = careerLevels(C.stage);
+  const lv = careerLevels(C.stage), tier = teamOf(C.stage, oppId).tier || 0;
+  lv.opp = Math.max(0, lv.opp + tier * 0.2);              // v7.8: stronger teams also play a little smarter
   Game.lastMatch = null;
   if (!Game.cv) prepCareerVenue();
   const venue = Game.cv.v;
@@ -5201,16 +5238,21 @@ function drawPregame(g) {
     drawCrest(g, x + 36, 124, 20, team);
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `17px ${FONT}`; g.fillText(team.name, x + 66, 122);
     g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(label, x + 66, 140);
-    team.players.forEach((d, i) => { drawPortrait(g, x + 110 + i * 160, 318, d, team, 1.45, null); g.textAlign = 'center'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(d.name, x + 110 + i * 160, 334); });
+    team.players.forEach((d, i) => {
+      const px = x + 110 + i * 160, lk = d.look, bh = lk ? lk.height : d.bh, bw = lk ? lk.build : d.bw;
+      drawPortrait(g, px, 312, d, team, 1.45, null); g.textAlign = 'center'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(d.name, px, 326);
+      if (bh != null) { g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(LOOK_TXT.height[bh] + ', ' + LOOK_TXT.build[bw == null ? 1 : bw].toLowerCase(), px, 339); }
+    });
   };
   side(40, T, 'Eastside');
-  side(540, opp, (opp.place || '') + (opp.rival ? '  (rival)' : ''));
+  side(540, opp, (opp.place || '') + (opp.rival ? '  (rival)' : '') + (opp.tier != null ? '  \u2022  ' + TIER_TXT[opp.tier] : ''));
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `28px ${FONT}`; g.fillText('vs', W / 2, 220);
   panel(g, 40, 352, 880, 104, false);
   g.textAlign = 'left'; g.font = `14px ${FONT}`;
   if (C.prayBonus) { g.fillStyle = '#9dffb0'; g.fillText('Salah bonus: +10% shooting, +10% stamina this game', 62, 380); }
   else { g.fillStyle = '#9fb3c8'; g.fillText('No salah bonus. Answer the adhan during practice to earn one.', 62, 380); }
-  const lv = careerLevels(C.stage), shift = diffShift();
+  const lv = careerLevels(C.stage), shift = diffShift(), oT = opp.tier || 0;
+  lv.opp = Math.max(0, lv.opp + oT * 0.2);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
   g.fillText('CPU difficulty: ' + diffLabel(lv.opp) + (shift ? ' (' + S.name + ' stage, one step ' + (shift < 0 ? 'easier' : 'harder') + ' because Difficulty is set to ' + (shift < 0 ? 'Easy' : 'Hard') + ')' : ' (' + S.name + ' stage)'), 62, 404);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(castDef(Game.tipBy || 'rafiq').name + ': \u201C' + (Game.tip || STORY.tips[0]) + '\u201D', 62, 434);
@@ -5423,8 +5465,9 @@ function drawExterior(g, U, t) {
     g.fillStyle = '#1e5a4a'; g.fillRect(x0 + 10, top + 6, bw - 20, 20);
     g.fillStyle = '#f2cf6b'; g.font = `15px ${AR_FONT}`; g.textAlign = 'center'; g.fillText('\u0628\u0650\u0633\u0652\u0645\u0650 \u0671\u0644\u0644\u0651\u064e\u0647\u0650 \u0671\u0644\u0631\u0651\u064e\u062d\u0652\u0645\u064e\u0640\u0670\u0646\u0650 \u0671\u0644\u0631\u0651\u064e\u062d\u0650\u064a\u0645\u0650', x0 + bw / 2, top + 21);
   }
-  g.fillStyle = '#1e5a4a'; g.fillRect(x0 + bw / 2 - 90, 432, 180, 26); g.fillStyle = '#6b4a2b'; g.fillRect(x0 + bw / 2 - 4, 458, 8, 6);
-  g.fillStyle = '#f2cf6b'; g.font = `12px ${FONT}`; g.textAlign = 'center'; g.fillText('MASJID AL-AMANAH', x0 + bw / 2, 450);
+  const sgx = drawExterior.signX || x0 + bw / 2;     // the career intro moves the sign beside its path
+  g.fillStyle = '#1e5a4a'; g.fillRect(sgx - 90, 432, 180, 26); g.fillStyle = '#6b4a2b'; g.fillRect(sgx - 4, 458, 8, 6);
+  g.fillStyle = '#f2cf6b'; g.font = `12px ${FONT}`; g.textAlign = 'center'; g.fillText('MASJID AL-AMANAH', sgx, 450);
   // landscaping
   const gd = upOf(U, 'garden');
   if (gd) {
@@ -9909,6 +9952,7 @@ function strOf(p) {                                        // strength for conta
   const d = p.def || {}, s = p.st || {};
   let v = 5 + ((s.dnk || 5) - 5) * 0.35 + ((s.def || 5) - 5) * 0.25;
   if (d.look) v += ((d.look.build == null ? 1 : d.look.build) - 1) * 1.6 + ((d.look.height == null ? 1 : d.look.height) - 1) * 0.6;
+  else if (d.bw != null) v += (d.bw - 1) * 1.6 + ((d.bh == null ? 1 : d.bh) - 1) * 0.6;          // career CPU bodies
   if (d.elder) v -= 1; if (d.arch === 'rimrunner' || d.arch === 'lockdown') v += 0.6;
   return clamp(v, 1, 10);
 }
@@ -13534,6 +13578,369 @@ function loadDisplayFont() {
     let started = false; const go = () => { if (started) return; started = true; _b(); };
     Promise.race([loadDisplayFont(), new Promise(r => setTimeout(r, 1200))]).then(go, go);
   };
+}
+
+// ===================================================== CAREER: BODY BUILDS (v7.8)
+// Height, build and play style each trade some stats for others (tables in career.js, every row sums
+// to zero), applied on top of the levels you buy, so changing your look later moves them back.
+// The creator shows the result live, with a big Start career button under the preview.
+function myMods() { const lk = C.look; return bodyMods(lk.height, lk.build, lookArch(lk)); }
+{
+  const _pd = playerDef;
+  playerDef = function () { const d = _pd.apply(this, arguments); applyBodyMods(d.stats, myMods()); return d; };
+}
+const BUILD_ROWS = [['sht', 'Shooting'], ['spd', 'Speed'], ['dnk', 'Dunking'], ['def', 'Defense'], ['stl', 'Steals'], ['sta', 'Stamina'], ['pas', 'Passing'], ['hus', 'Hustle'], ['clu', 'Clutch']];
+function modTag(g, x, y, v) {
+  if (!v) return;
+  g.textAlign = 'left'; g.font = `11px ${FONT}`; g.fillStyle = v > 0 ? '#9dffb0' : '#ff9a8a'; g.fillText((v > 0 ? '+' : '−') + Math.abs(v), x, y);
+}
+// one stat line: trained level in gold, the body's bonus in green, what it costs you as red outlines
+function buildPips(g, x, y, base, mod) {
+  const eff = clamp(base + mod, 1, 10);
+  for (let i = 0; i < 10; i++) {
+    const on = i < eff, bonus = on && i >= base, lost = !on && i < base;
+    g.fillStyle = bonus ? '#57e389' : on ? GOLD : 'rgba(255,255,255,0.10)'; roundRect(g, x + i * 9, y, 7, 9, 2); g.fill();
+    if (lost) { g.strokeStyle = '#ff7a6a'; g.lineWidth = 1.2; roundRect(g, x + i * 9 + 0.5, y + 0.5, 6, 8, 2); g.stroke(); }
+  }
+}
+function buildSummary(m) {
+  const up = BUILD_ROWS.filter(([k]) => m[k] > 0).map(r => r[1]), dn = BUILD_ROWS.filter(([k]) => m[k] < 0).map(r => r[1]);
+  return up.length ? 'Better at ' + up.join(', ').toLowerCase() + '. Weaker at ' + dn.join(', ').toLowerCase() + '.' : 'Even across the board. Change height, build or play style to specialise.';
+}
+
+drawCreator = function (g) {
+  const cr = Game.creator, lk = C.look, rows = CREATOR_ROWS.filter(r => r.key !== 'done');
+  panel(g, 30, 46, 470, 488, true);
+  g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText(cr.isNew ? 'Create your player' : 'Customize your player', 104, 32);
+  g.textAlign = 'right'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('↑ ↓ choose   ← → change   Enter select', 930, 32);
+  const gap = 476 / rows.length;
+  rows.forEach(r => {
+    const i = CREATOR_ROWS.indexOf(r), y = 54 + rows.indexOf(r) * gap, sel = i === cr.idx, cy = y + gap / 2 + 5;
+    if (sel) { g.fillStyle = 'rgba(232,195,90,0.18)'; roundRect(g, 40, y + 1, 450, gap - 2, 8); g.fill(); }
+    g.fillStyle = sel ? '#fff' : IVORY; g.font = `14px ${BODY}`; g.textAlign = 'left'; g.fillText(r.label, 54, cy);
+    addRect(40, y, 250, gap, () => { cr.idx = i; creatorEnter(i); });
+    const vx = 330;
+    if (r.key === 'name') { g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText(C.name || 'Tap to type', vx + 60, cy); return; }
+    g.fillStyle = GOLD; g.font = `16px ${FONT}`; g.textAlign = 'center'; g.fillText('◂', vx, cy + 1); g.fillText('▸', vx + 120, cy + 1);
+    addRect(vx - 20, y, 40, gap, () => { cr.idx = i; creatorStep(i, -1); }); addRect(vx + 100, y, 40, gap, () => { cr.idx = i; creatorStep(i, 1); });
+    if (r.sw) { g.fillStyle = r.sw[lk[r.key]]; roundRect(g, vx + 30, cy - 14, 60, 18, 9); g.fill(); g.strokeStyle = 'rgba(255,255,255,0.4)'; g.lineWidth = 1; g.stroke(); }
+    else { g.fillStyle = '#fff'; g.font = `13px ${BODY}`; g.fillText(r.txt ? r.txt[lk[r.key]] : String(lk[r.key]), vx + 60, cy); }
+  });
+  // preview
+  const T = amanahTeam(), d = playerDef(), cur = CREATOR_ROWS[cr.idx];
+  panel(g, 530, 46, 400, 262, false);
+  if (cur && cur.key === 'style') drawSigDemo(g, 640, 282, 1.55); else drawPortrait(g, 640, 282, d, T, 1.55, 'thobe');
+  drawPortrait(g, 830, 282, d, T, 1.55, null);
+  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('At the masjid', 640, 300); g.fillText('Game day', 830, 300);
+  // starting stats: what this body is good and bad at
+  const m = myMods(), base = Object.assign({}, C.lv, { stl: Math.round((C.lv.def + C.lv.spd) / 2), hus: C.lv.hus || 4, clu: C.lv.clu || 4 });
+  panel(g, 530, 316, 400, 150, false);
+  g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(cr.isNew ? 'STARTING STATS' : 'YOUR STATS', 548, 338);
+  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(LOOK_TXT.height[lk.height] + ', ' + LOOK_TXT.build[lk.build].toLowerCase() + ', ' + PLAY_STYLE_TXT[lk.style || 0].toLowerCase(), 668, 338);
+  BUILD_ROWS.forEach(([k, label], i) => {
+    const x = 548 + Math.floor(i / 5) * 196, y = 348 + (i % 5) * 16;
+    g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `12px ${BODY}`; g.fillText(label, x, y + 9);
+    buildPips(g, x + 66, y, base[k], m[k] || 0); modTag(g, x + 160, y + 9, m[k] || 0);
+  });
+  g.textAlign = 'left'; g.fillStyle = '#cfd8e3'; g.font = `11px ${BODY}`;
+  wrapText(g, buildSummary(m), 548, 440, 366, 13);
+  // the big button
+  const di = CREATOR_ROWS.findIndex(r => r.key === 'done'), sel = cr.idx === di, pulse = 0.5 + 0.5 * Math.sin(Game.t * 4);
+  const bx = 530, by = 474, bw = 400, bh = 56, hov = hovering(bx, by, bw, bh), pr = pressing(bx, by, bw, bh);
+  g.save(); g.shadowColor = 'rgba(242,207,107,' + (0.35 + 0.4 * (sel ? 1 : pulse)) + ')'; g.shadowBlur = sel || hov ? 26 : 12 + 10 * pulse;
+  const gr = g.createLinearGradient(0, by, 0, by + bh); gr.addColorStop(0, pr ? '#d9b14e' : '#ffe08a'); gr.addColorStop(1, pr ? '#a8812e' : '#d9a83a');
+  g.fillStyle = gr; roundRect(g, bx, by + (pr ? 2 : 0), bw, bh, 28); g.fill(); g.restore();
+  g.strokeStyle = sel ? '#fff' : 'rgba(255,255,255,0.55)'; g.lineWidth = sel ? 3 : 1.5; roundRect(g, bx, by + (pr ? 2 : 0), bw, bh, 28); g.stroke();
+  g.textAlign = 'center'; g.fillStyle = NIGHT; g.font = `24px ${FONT}`; g.fillText(cr.isNew ? 'Start career  ›' : 'Done  ›', bx + bw / 2, by + 37 + (pr ? 2 : 0));
+  addRect(bx, by, bw, bh, () => { cr.idx = di; creatorDone(); });
+};
+{ // keyboard: Tab or Enter on the last row jumps straight to the button; it's also one Up press from the top
+  const _cu = creatorUpdate;
+  creatorUpdate = function () {
+    const cr = Game.creator;
+    if (Input.pressed.Tab) { cr.idx = CREATOR_ROWS.findIndex(r => r.key === 'done'); SFX.blip(); return; }
+    return _cu.apply(this, arguments);
+  };
+}
+{ // hub card and Train: show the body's bonus next to each trained level, and the next opponent's rating
+  const tagRows = (g, x, y0, dy, oy) => { const m = myMods(); STAT_ROWS.forEach(([k], i) => modTag(g, x, y0 + i * dy + oy, m[k] || 0)); };
+  const _hub = drawHub;
+  drawHub = function (g) {
+    _hub.apply(this, arguments);
+    tagRows(g, 234, 292, 22, 9);
+    const b = C.bracket; if (!b || b.champ || b.out) return;
+    const m = ourMatch(), opp = teamOf(C.stage, m.a === 0 ? m.b : m.a);
+    if (opp.tier == null) return;
+    const t = opp.tier; g.textAlign = 'left'; g.font = `11px ${FONT}`; g.fillStyle = t > 0 ? '#ff9a8a' : t < 0 ? '#9dffb0' : '#f2cf6b';
+    g.fillText('★'.repeat(t + 2) + '☆'.repeat(1 - t) + '  ' + TIER_TXT[t].toUpperCase(), 408, 186);
+  };
+  const _tr = drawTrain;
+  drawTrain = function (g) { _tr.apply(this, arguments); tagRows(g, W / 2 - 110 + 94, 132, 38, 22); };
+}
+
+// ================================================= v7.8: IN-WORLD CAREER INTRO
+// The new-career intro happens in the world instead of over a static lineup:
+//   1. Outside Masjid Al-Amanah: walk up the street, Sh. Saleem greets you by the path (two short
+//      lines), then follow him up the path to the door.
+//   2. The gym, first time: you're on the real gym floor (walk, dribble, shoot). The brothers are
+//      around the room; walk up to each one to say salaam. They talk in speech bubbles above their
+//      heads, one or two lines each.
+//   3. When you've met everyone, Saleem wraps up and you land in the career hub.
+// Esc skips the intro at any point. Lines are short on purpose.
+const INTRO_OUT = [
+  ['saleem', 'Assalamu alaikum! You must be the brother who just moved to Eastside.'],
+  ['you', 'Wa alaikum assalam. I heard you have a team?'],
+  ['saleem', 'We do. Come in, the brothers are in the gym.']
+];
+const INTRO_CAST = {   // gym spots (world x, z), what they say when you walk up
+  khalil: { x: 1150, z: 420, lines: [['khalil', 'Welcome! Gym, overflow musalla, potluck hall. Mind the folding chairs.']] },
+  nasser: { x: 1010, z: 590, lines: [['nasser', 'Shooting tip: let it go at the top of your jump. Green on the meter is money.']] },
+  mahmoud: { x: 720, z: 150, lines: [['mahmoud', 'In 1987 I scored forty points in this gym, beta.'], ['mahmoud', 'Nobody kept score. But I know.']] },
+  tariq: { x: 680, z: 520, lines: [['tariq', 'I’m Tariq. I keep the stat sheet now. Every shot, every assist.']] },
+  siddiq: { x: 1240, z: 150, lines: [['siddiq', 'Chai after Isha, brother. The chalkboard by the door keeps our streak.']] }
+};
+const INTRO_SALEEM = { x: 860, z: 300 };
+const INTRO_WRAP = [
+  ['saleem', 'We’ve never won the Metro Masjid League. But we play with adab, and for each other.'],
+  ['saleem', 'Practice here, earn Barakah Points, and get stronger. The league starts soon, in sha Allah.']
+];
+let INTRO = null;
+function introPlayer(id) {
+  const p = new Player(castDef(id), 9, 0, amanahTeam()); p.outfit = 'thobe'; p.state = 'free'; p.face = 1; p.x = -9999; p.noMarker = true;
+  for (let i = 0; i < 20; i++) animate(p, 1 / 60);
+  return p;
+}
+function startIntroWorld() {
+  INTRO = { scene: 'out', t: 0, me: introPlayer('you'), saleem: introPlayer('saleem'), x: 70, d: 1, sx: 520, sd: 0.86, talk: null, talked: false, fade: 0, fadeDir: 0, saleemGo: 0 };
+  INTRO.saleem.face = -1;
+  Game.screen = 'introout';
+}
+function introSay(lines, done) { INTRO.talk = { lines, i: 0, t: 0, done }; }
+function introAdvance() {
+  const t = INTRO.talk; if (!t) return;
+  if (t.t < 0.25) return;                                     // ignore the press that opened the line
+  t.i++; t.t = 0; SFX.blip();
+  if (t.i >= t.lines.length) { INTRO.talk = null; if (t.done) t.done(); }
+}
+function introSkip() {
+  INTRO = null; Gym.intro = null;
+  C.seen.intro = true; C.seen.meetNew = true; slog(0); careerHub();
+}
+const introOk = () => Input.pressed.Enter || Input.pressed.NumpadEnter || Input.pressed.KeyE || Input.pressed.Space;
+
+// ---- speech bubble above a head at screen (x, y)
+function introBubble(g, x, y, who, text, more) {
+  g.save(); g.font = `15px ${BODY}`;
+  const maxW = 300, words = text.split(' '), lines = []; let ln = '';
+  for (const w of words) { const tt = ln ? ln + ' ' + w : w; if (g.measureText(tt).width > maxW && ln) { lines.push(ln); ln = w; } else ln = tt; }
+  lines.push(ln);
+  const tw = Math.max(...lines.map(l => g.measureText(l).width)), bw = Math.max(tw, 120) + 28, bh = 34 + lines.length * 20;
+  const bx = clamp(x - bw / 2, 8, W - bw - 8), by = Math.max(8, y - bh - 16), tx = clamp(x, bx + 18, bx + bw - 18);
+  g.shadowColor = 'rgba(0,0,0,0.35)'; g.shadowBlur = 10; g.shadowOffsetY = 3;
+  g.fillStyle = '#fffaf0'; roundRect(g, bx, by, bw, bh, 14); g.fill();
+  g.beginPath(); g.moveTo(tx - 9, by + bh - 1); g.lineTo(tx, by + bh + 12); g.lineTo(tx + 9, by + bh - 1); g.fill();
+  g.shadowColor = 'transparent';
+  g.textAlign = 'left'; g.fillStyle = '#1e7a5e'; g.font = `12px ${FONT}`; g.fillText(who.toUpperCase(), bx + 14, by + 19);
+  g.fillStyle = '#1a1210'; g.font = `15px ${BODY}`; lines.forEach((l, i) => g.fillText(l, bx + 14, by + 40 + i * 20));
+  if (more) { g.fillStyle = '#c48d1e'; g.font = `11px ${FONT}`; g.textAlign = 'right'; g.fillText('▸', bx + bw - 10, by + bh - 8); }
+  g.restore();
+}
+function introName(id) { return id === 'you' ? (C.name || 'You') : castDef(id).name; }
+function introPrompt(g, x, y, label, fn) {
+  g.font = `12px ${FONT}`; const w = g.measureText(label).width + 26;
+  g.fillStyle = 'rgba(30,90,74,0.95)'; roundRect(g, x - w / 2, y - 26, w, 26, 13); g.fill();
+  g.fillStyle = '#f2cf6b'; g.textAlign = 'center'; g.fillText(label, x, y - 8);
+  addRect(x - w / 2, y - 26, w, 26, fn);
+}
+function introHint(g, text) {
+  g.font = `12px ${BODY}`; const w = g.measureText(text).width + 30;
+  g.fillStyle = 'rgba(8,16,24,0.72)'; roundRect(g, W / 2 - w / 2, H - 40, w, 28, 14); g.fill();
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText(text, W / 2, H - 21);
+}
+function introSkipBtn(g) {
+  g.fillStyle = 'rgba(8,16,24,0.72)'; roundRect(g, W - 128, 12, 116, 30, 15); g.fill();
+  g.strokeStyle = 'rgba(242,207,107,0.5)'; g.lineWidth = 1; g.stroke();
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = `12px ${FONT}`; g.fillText('Skip intro ›', W - 70, 32);
+  addRect(W - 128, 12, 116, 30, introSkip);
+}
+
+// ================================================================ 1. OUTSIDE
+// ground: d = 1 is the sidewalk (front), d = 0 is the masjid door at the end of the path
+const OUT_DOOR_X = 420;
+const outY = d => lerp(392, 474, d), outS = d => lerp(0.34, 0.74, d);
+function outXRange(d) { const k = clamp((1 - d) / 0.82, 0, 1); return [lerp(40, OUT_DOOR_X - 16, k), lerp(W - 40, OUT_DOOR_X + 16, k)]; }   // the lawn: only the path leads in
+function introOutUpdate(rdt) {
+  const I = INTRO, dt = Math.min(rdt, 0.05); I.t += dt;
+  if (I.talk) I.talk.t += dt;
+  if (menuHit('back')) { introSkip(); return; }
+  const me = I.me, S = I.saleem;
+  if (I.fadeDir) {                                           // through the door
+    I.fade = clamp(I.fade + dt * 1.6 * I.fadeDir, 0, 1);
+    me.vx = me.vz = 0; me.fakeIdle = true; animate(me, dt); animate(S, dt);
+    if (I.fade >= 1) startIntroGym();
+    return;
+  }
+  if (I.talk) { if (introOk()) introAdvance(); me.vx = me.vz = 0; me.fakeIdle = true; animate(me, dt); S.fakeIdle = true; animate(S, dt); return; }
+  // Saleem heads up the path once you've talked
+  if (I.saleemGo) {
+    I.saleemGo += dt;
+    const tx = OUT_DOOR_X, td = 0.02, ddx = tx - I.sx, ddd = td - I.sd;
+    if (Math.abs(ddx) > 2 || Math.abs(ddd) > 0.01) { const sp = 120 * outS(I.sd) / 0.74; I.sx += clamp(ddx, -sp * dt, sp * dt); I.sd += clamp(ddd, -0.35 * dt, 0.35 * dt); S.vx = 60; S.face = ddx > 0 ? 1 : -1; S.fakeIdle = false; }
+    else { S.fakeIdle = true; S.vx = 0; I.saleemIn = true; }
+  } else S.fakeIdle = true;
+  animate(S, dt);
+  // walk
+  const c = me.cmd; humanCmd(0, c);
+  if (!c.mx && !c.mz) { const c2 = {}; humanCmd(1, c2); c.mx = c2.mx || 0; c.mz = c2.mz || 0; }   // arrows work here too
+  const k = outS(I.d) / 0.74, vx = c.mx * 150 * k, vd = c.mz * 0.42;
+  I.d = clamp(I.d + vd * dt, I.talked ? 0 : 0.7, 1);
+  const [x0, x1] = outXRange(I.d); I.x = clamp(I.x + vx * dt, x0, x1);
+  if (!I.saleemGo && Math.abs(I.x - I.sx) < 40 * k + 20 && Math.abs(I.d - I.sd) < 0.2) I.x = I.sx - (40 * k + 20) * (I.x < I.sx ? 1 : -1);   // don't walk through him
+  if (Math.abs(c.mx) > 0.05) me.face = c.mx > 0 ? 1 : -1;
+  me.vx = vx; me.vz = vd * 120; me.fakeIdle = !(Math.abs(vx) + Math.abs(vd) > 0.02); animate(me, dt);
+  // meet Saleem as you reach the path
+  if (!I.talked && Math.abs(I.x - I.sx) < 120) {
+    I.talked = true; me.face = 1; S.face = -1;
+    introSay(INTRO_OUT, () => { I.saleemGo = 0.01; });
+  }
+  if (I.talked && I.d < 0.06) { I.fadeDir = 1; SFX.blip(); }
+}
+function drawIntroOut(g) {
+  const I = INTRO, ox = Game.ox || 0, w0 = W;
+  g.save(); g.translate(-ox, 0); W = w0 + 2 * ox;              // full-bleed street on wide screens
+  drawExterior.signX = OUT_DOOR_X + 190; drawExterior(g, C.up, Game.t); drawExterior.signX = 0;
+  const sx = I.x, dx = x => x;                                // same coordinates as drawExterior (its building doesn't move with width)
+  // the path to the door
+  g.fillStyle = 'rgba(214,204,186,0.9)'; g.beginPath();
+  g.moveTo(dx(OUT_DOOR_X - 18), outY(0)); g.lineTo(dx(OUT_DOOR_X + 18), outY(0)); g.lineTo(dx(OUT_DOOR_X + 70), outY(0.86)); g.lineTo(dx(OUT_DOOR_X - 70), outY(0.86)); g.closePath(); g.fill();
+  const figs = [{ p: I.me, x: sx, d: I.d }];
+  if (!(I.saleemIn && I.fadeDir === 0 && I.saleemGo > 0 && I.sd < 0.04)) figs.push({ p: I.saleem, x: dx(I.sx), d: I.sd });
+  figs.sort((a, b) => a.d - b.d);
+  for (const f of figs) musFigure(g, f.p, f.x, outY(f.d), outS(f.d), 'stand');
+  // speech
+  if (I.talk) {
+    const [who, text] = I.talk.lines[I.talk.i], at = who === 'you' ? { x: sx, d: I.d } : { x: dx(I.sx), d: I.sd };
+    introBubble(g, at.x, outY(at.d) - 150 * outS(at.d), introName(who), text, true);
+    addRect(0, 60, W, H - 60, introAdvance);
+  }
+  if (I.talked && !I.talk && !I.fadeDir) {                    // a soft arrow up the path
+    const p = 0.5 + 0.5 * Math.sin(Game.t * 5); g.fillStyle = `rgba(242,207,107,${0.5 + 0.4 * p})`;
+    const ax = OUT_DOOR_X, ay = outY(0.5) - 6 * p; g.beginPath(); g.moveTo(ax, ay - 14); g.lineTo(ax + 11, ay); g.lineTo(ax - 11, ay); g.closePath(); g.fill();
+  }
+  W = w0; g.restore();
+  // establishing title
+  const a = clamp(1 - Math.abs(I.t - 1.8) / 1.8, 0, 1) * (I.talked ? 0 : 1);
+  if (a > 0) {
+    g.save(); g.globalAlpha = a; g.textAlign = 'center';
+    g.fillStyle = 'rgba(8,16,24,0.6)'; roundRect(g, W / 2 - 200, 60, 400, 64, 16); g.fill();
+    g.fillStyle = GOLD; g.font = `24px ${FONT}`; g.fillText('Masjid Al-Amanah', W / 2, 92);
+    g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Eastside • a small masjid with a big gym', W / 2, 112);
+    g.restore();
+  }
+  introSkipBtn(g);
+  if (!I.talk) introHint(g, !I.talked ? (Input.touchMode ? 'Walk over to the brother by the path' : 'A D or ← → to walk over to the brother by the path') : (Input.touchMode ? 'Follow him up the path to the door' : 'W or ↑ to follow him up the path to the door'));
+  if (I.fade > 0) { g.fillStyle = `rgba(4,8,12,${I.fade})`; g.fillRect(-400, 0, W + 800, H); }
+}
+
+// ================================================================== 2. THE GYM
+function startIntroGym() {
+  setupPractice('free');
+  const me = M.players[0]; place(me, 820, 640); me.face = 1; giveBall(me, 'inbound');
+  const npcs = {};
+  for (const id of Object.keys(INTRO_CAST)) { const p = introPlayer(id), s = INTRO_CAST[id]; p.x = s.x; p.z = s.z; p.face = s.x > 900 ? -1 : 1; npcs[id] = p; }
+  const sal = introPlayer('saleem'); sal.x = INTRO_SALEEM.x; sal.z = INTRO_SALEEM.z; sal.face = -1; npcs.saleem = sal;
+  INTRO = { scene: 'gym', t: 0, npcs, met: {}, near: null, talk: null, fade: 1, done: false };
+  Gym.intro = INTRO;
+  Game.screen = 'gym';
+  introSay([['saleem', 'This is our gym. Go say salaam to the brothers, then come find me.']], null);
+}
+function introCastLeft() { return Object.keys(INTRO_CAST).filter(id => !INTRO.met[id]); }
+function introTalkTo(id) {
+  const I = INTRO; if (I.talk) return;
+  const p = I.npcs[id], me = M.players[0]; p.face = sgn(me.x - p.x) || 1; me.face = -p.face;
+  if (id === 'saleem') {
+    if (introCastLeft().length) introSay([['saleem', 'Say salaam to everyone first: ' + introCastLeft().map(k => castDef(k).name).join(', ') + '.']], null);
+    else introSay(INTRO_WRAP, () => { I.done = true; I.fade = 0; I.fadeDir = 1; });
+    return;
+  }
+  introSay(INTRO_CAST[id].lines, () => { I.met[id] = true; if (!introCastLeft().length) introSay([['saleem', 'That’s everyone. Come here a second, brother.']], null); });
+}
+{
+  const _gu = gymUpdate;
+  gymUpdate = function (rdt) {
+    if (!Gym.intro || Gym.intro !== INTRO) return _gu.apply(this, arguments);
+    const I = INTRO, dt = Math.min(rdt, 0.05); I.t += dt;
+    if (I.talk) I.talk.t += dt;
+    if (I.fade > 0 && !I.fadeDir) I.fade = Math.max(0, I.fade - dt * 1.5);
+    if (I.fadeDir) { I.fade = Math.min(1, I.fade + dt * 1.4); if (I.fade >= 1) { introSkip(); return; } }
+    if (menuHit('back')) { introSkip(); return; }
+    const me = M.players[0];
+    for (const id in I.npcs) { const p = I.npcs[id]; p.fakeIdle = true; p.vx = p.vz = 0; if (!I.talk && dxz(p, me) < 220) p.face = sgn(me.x - p.x) || p.face; animate(p, dt); }
+    if (I.talk) { if (introOk()) introAdvance(); }
+    else {
+      let best = null, bd = 120;
+      for (const id in I.npcs) { const d = dxz(I.npcs[id], me); if (d < bd) { bd = d; best = id; } }
+      I.near = best;
+      if (best && (Input.pressed.KeyE || Input.pressed.Enter)) introTalkTo(best);
+    }
+    sim(rdt, true);
+    // nobody walks through anybody
+    for (const id in I.npcs) { const p = I.npcs[id], d = dxz(p, me), min = 34; if (d < min && d > 1e-3) { me.x = p.x + (me.x - p.x) / d * min; me.z = p.z + (me.z - p.z) / d * min; } }
+  };
+  const _cmd = gymCmd;
+  gymCmd = function (p) {
+    if (Gym.intro && Gym.intro === INTRO && p.human >= 0 && (INTRO.talk || INTRO.fadeDir)) { zeroCmd(p.cmd); return true; }
+    return _cmd.apply(this, arguments);
+  };
+  const _setup = setupPractice;
+  setupPractice = function () { _setup.apply(this, arguments); M.cmdHook = gymCmd; M.drawExtras = gymExtras; };
+  const _ex = gymExtras;
+  gymExtras = function (E, g) {
+    _ex.apply(this, arguments);
+    if (!Gym.intro || Gym.intro !== INTRO || Game.screen !== 'gym') return;
+    for (const id in INTRO.npcs) { const p = INTRO.npcs[id]; E.push({ z: p.z, f: () => { drawShadow(g, p.x, 0, p.z, 18); drawPlayer(g, p); } }); }
+  };
+  // the intro has its own Skip button (top-right); the gym's Back button would sit under the checklist
+  const _bv = backVisible;
+  backVisible = function () { if (Game.screen === 'gym' && Gym.intro && Gym.intro === INTRO) return false; return _bv.apply(this, arguments); };
+  const _hud = drawGymHUD;
+  drawGymHUD = function (g) {
+    if (!Gym.intro || Gym.intro !== INTRO) return _hud.apply(this, arguments);
+    const I = INTRO, me = M.players[0], head = p => P(p.x, 112, p.z);
+    // checklist
+    const ids = Object.keys(INTRO_CAST), n = ids.filter(id => I.met[id]).length;
+    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, 12, 12, 196, 36 + ids.length * 20, 12); g.fill();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('Meet the brothers  ' + n + '/' + ids.length, 26, 34);
+    ids.forEach((id, i) => { g.fillStyle = I.met[id] ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((I.met[id] ? '✓ ' : '• ') + castDef(id).name, 30, 56 + i * 20); });
+    // names over heads, talk prompt for the nearest
+    for (const id in I.npcs) {
+      const p = I.npcs[id], [x, y] = head(p);
+      if (I.talk) continue;
+      if (id === I.near) introPrompt(g, x, y - 6, 'Talk to ' + castDef(id).name + (Input.touchMode ? '' : '  (E)'), () => introTalkTo(id));
+      else if (!I.met[id] && id !== 'saleem') { g.fillStyle = 'rgba(242,207,107,0.9)'; g.textAlign = 'center'; g.font = `11px ${FONT}`; g.fillText(castDef(id).name, x, y - 10); }
+      else if (id === 'saleem' && !introCastLeft().length) { const b = 0.5 + 0.5 * Math.sin(Game.t * 6); g.fillStyle = `rgba(242,207,107,${0.6 + 0.4 * b})`; g.textAlign = 'center'; g.font = `16px ${FONT}`; g.fillText('!', x, y - 12); }
+    }
+    if (I.talk) {
+      const [who, text] = I.talk.lines[I.talk.i], p = who === 'you' ? me : I.npcs[who] || me, [x, y] = head(p);
+      introBubble(g, x, y, introName(who), text, true);
+      addRect(0, 60, W, H - 60, introAdvance);
+    } else introHint(g, Input.touchMode ? 'Walk up to someone and tap Talk' : 'W A S D to walk  •  E to talk  •  shoot around while you’re at it');
+    introSkipBtn(g);
+    if (I.fade > 0) { g.fillStyle = `rgba(4,8,12,${I.fade})`; g.fillRect(-400, 0, W + 800, H); }
+  };
+  // new careers start with the in-world intro instead of the old story lineup
+  creatorDone = function () {
+    if (!C.name.trim()) C.name = 'Brother';
+    if (Game.creator.isNew) { C.bracket = makeBracket(0); saveCareer(); startIntroWorld(); }
+    else careerHub();
+  };
+  CAREER_SCREENS.add('introout');
+  const _cu = careerUpdate;
+  careerUpdate = function (rdt) { if (Game.screen === 'introout') return introOutUpdate(rdt); return _cu.apply(this, arguments); };
+  const _cr = careerRender;
+  careerRender = function (g) { if (Game.screen === 'introout') return drawIntroOut(g); return _cr.apply(this, arguments); };
+  const _ch = careerHub;
+  careerHub = function () { Gym.intro = null; return _ch.apply(this, arguments); };
 }
 
 // ================================================= v7.7: ADAPTIVE RESOLUTION
