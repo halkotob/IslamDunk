@@ -1,5 +1,42 @@
 # Changelog
 
+## 7.9: feel and fairness, new logo, intro staging
+- **New logo.** A dunker in a thawb and kufi, in the split-leg, ball-overhead dunk pose, as one gold
+  silhouette. It's on the title screen and splash, and in the app icons (regenerated from the game's own
+  drawing code by `scripts/make-icons.mjs`).
+- **Sprint.**
+  - Everyone jogs 8% faster, and sprinting is a bigger step up (1.5x the jog, was 1.42x).
+  - Keyboard: hold **Left Shift** while moving (Right Shift for player 2). Double-tap sprint is gone.
+  - Touch: pushing the stick to its ring is full speed. Sprinting needs a deliberate push past the dashed
+    outer ring, and the knob glows while you sprint. Quick flicks no longer sprint.
+- **Stamina, same rule for you and the CPU.**
+  - Turbo used to refill only with sprint released, so holding it pinned you at zero. Meanwhile the CPU,
+    which lets go, sprinted about twice as often.
+  - Now anyone who runs the bar dry is winded until it's back to 45%. The bar refills even while you
+    hold sprint and shows red while winded.
+  - Measured result: holding sprint now gives you about 35% sprint time; the CPU gets about 21%.
+- **Walls.** Players stop at the baselines instead of walking into the gym end walls. A loose ball
+  bounces off the end walls and the near sideline back toward the court (it used to travel 70 units past
+  the baseline, behind the walls and off frame). The bottom player card turns see-through while someone
+  is behind it.
+- **Fair restarts.** On side-outs, check balls, 1-on-1 and half-court inbounds, no defender starts
+  within arm's length of the handler. Anyone crowding him steps back between his man and the basket, and
+  a teammate on top of the handler spreads out. Before this, the defender who fouled you could still be
+  touching you.
+- **Career intro.**
+  - The brothers are busy when you walk in: Khalil shoots around (and swishes), Nasser stretches, Uncle
+    Mahmoud sits on a folding chair, Tariq keeps the stat sheet on a clipboard, and Uncle Siddiq pours
+    chai at a little table.
+  - Whoever you walk up to stops, turns to you and talks with his hands; you nod along. Cinematic bars
+    slide in during conversations.
+  - Sh. Saleem walks in with you, then goes to his spot. Names only show for people near you.
+- **Mobile intro fixes.** The touch stick now works on the walk outside the masjid; before, you
+  couldn't move. TALK advances dialogue; before, only a tap on the right spot of the canvas did, which
+  read as a freeze.
+- **Tests.** New `feel` test (stamina parity, walls, side-out spacing). The `controls` test no longer
+  flakes when a turnover inbound is still in the air. Seeded CPU games differ from v7.6 on purpose
+  (speed and stamina changed).
+
 ## 7.8: career start, body builds, team tiers, in-world intro
 - **In-world intro** (`src/career/intro-world.js`). New careers no longer open on a text cutscene. You walk
   up to Sh. Saleem outside Masjid Al-Amanah, follow him up the path and into the gym, then walk around and

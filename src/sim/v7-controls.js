@@ -230,7 +230,7 @@ drawHowTo = function (g) {
   dim(g, 0.86);
   const o = Math.round((W - 960) / 2); g.save(); g.translate(o, 0); const rw = W; W = 960;
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('How to play', W / 2, 44);
-  const keys = [['Move', 'W A S D', 'Arrows'], ['Sprint', 'double-tap a direction, keep holding', 'same'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move button', 'H', 'Num0 / M']];
+  const keys = [['Move', 'W A S D', 'Arrows'], ['Sprint', 'hold Left Shift while moving', 'Right Shift'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move button', 'H', 'Num0 / M']];
   g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; g.fillText('P1', 610, 72); g.fillText('P2', 800, 72);
   keys.forEach((r, i) => { const y = 92 + i * 21; g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(r[0], 150, y); g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.fillText(r[1], 610, y); g.fillText(r[2], 800, y); });
   const col = (x, title, lines) => { g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText(title, x, 222); g.font = `12px ${BODY}`; lines.forEach((t, i) => { g.fillStyle = t.startsWith('\u2022') ? '#9fb3c8' : IVORY; g.fillText(t, x, 242 + i * 18); }); };
@@ -240,7 +240,7 @@ drawHowTo = function (g) {
   col(500, 'DEFENSE', ['Pass: tap to steal  \u2022  hold: stance (box out on a shot)', 'Sprint + Pass: shove (hard foul)', 'Shoot: jump, block, contest', 'Sprint + Shoot: swipe  \u2022  from behind: chase-down',
     'Tap Move: plant your feet to take a charge', 'Hold Move: your partner doubles the ball', '\u2022 Reach across his body and it\u2019s a foul', '\u2022 Sprint while in stance fights over screens',
     '\u2022 Final minute: sprint + Pass dives for loose balls', '\u2022 Pause for timeouts and set plays']);
-  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Touch: push the stick to the edge to sprint. Buttons: SHOOT, PASS, MOVE (labels change with the play).', W / 2, 438);
+  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Touch: push the stick past the dashed ring to sprint. Buttons: SHOOT, PASS, MOVE (labels change with the play).', W / 2, 438);
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText('Press Enter or tap to go back', W / 2, 520);
   W = rw; g.restore();
   addRect(0, 0, W, H, goTitle);

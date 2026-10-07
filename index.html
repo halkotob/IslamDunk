@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '7.8';
+const VERSION = '7.9';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -2794,6 +2794,7 @@ function drawHUD(g) {
     // card rows: name (+ status) / TURBO label + bar / NOOR label + bar: nothing shares a line
     const noor = p.def.huffath, ch = noor ? 66 : 54, tui = TouchUI.shown && !TouchUI.portrait;   // v6: + poise row
     const x = tui ? W / hk - 236 - 8 : 12 + slot * 236, y = tui ? H - H / hk + 50 + slot * (ch + 6) : H - ch - 8; slot++;   // touch landscape: cards top-right, clear of the stick (in the scaled HUD space)
+    g.globalAlpha = hudBehind(x, y, 224, ch, hk) ? 0.35 : 1;      // v7.9: see-through while someone is behind it
     g.fillStyle = 'rgba(8,14,22,0.82)'; roundRect(g, x, y, 224, ch, 11); g.fill();
     g.fillStyle = p.human === 0 ? '#ff7a7a' : '#6ab8ff'; roundRect(g, x + 8, y + 8, 4, ch - 16, 2); g.fill();
     g.font = `12px ${FONT}`; g.textAlign = 'left'; g.fillStyle = '#fff'; g.fillText(fitText(g, p.def.name.toUpperCase(), 120), x + 20, y + 17);
@@ -2804,14 +2805,26 @@ function drawHUD(g) {
     g.fillStyle = '#9fb3c8'; g.font = `9px ${FONT}`; g.textAlign = 'left'; g.fillText('TURBO', x + 20, y + 32);
     const sprinting = p.cmd.turbo && Math.hypot(p.vx || 0, p.vz || 0) > 60 && p.turboOK && p.turboOK();
     if (sprinting) { g.save(); g.shadowColor = '#8fe3ff'; g.shadowBlur = 10; g.fillStyle = 'rgba(143,227,255,0.35)'; roundRect(g, x + 61, y + 22, 156, 14, 7); g.fill(); g.restore(); }   // v7: sprint glow
-    meter(g, x + 64, y + 25, 150, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : sprinting ? '#bff0ff' : '#4fc3ff');
+    meter(g, x + 64, y + 25, 150, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : sprinting ? '#bff0ff' : '#4fc3ff');   // red: winded, refilling
     if (noor) { g.fillStyle = '#9fb3c8'; g.fillText('NOOR', x + 20, y + 45); meter(g, x + 64, y + 39, 150, 6, p.boost > 0 ? p.boost / 12 : p.hifz / 100, p.boost > 0 ? '#ffe38a' : '#57d68d'); }
     drawCompRow(g, p, x, y + ch - 16, y);
+    g.globalAlpha = 1;
   }
   g.restore();
   drawCalloutsOnly(g);
   if (M.phase === 'break' && (Game.screen === 'play' || Game.screen === 'netplay') && M.breakText !== 'HALFTIME') banner(g, M.breakText, '');
   if (Input.touchMode && !TouchUI.shown && !M.attract) drawTouch(g);
+}
+// is a player or the ball on screen behind this HUD box? (box in the scaled HUD space: y measured up from H by hk)
+function hudBehind(x, y, w, h, hk) {
+  if (!M.players) return false;
+  const bc = broadcastOn(), z = bc ? cam.zoom : 1, fy = bc ? cam.fy : H / 2;
+  const pts = M.players.map(p => P(p.x, 50, p.z)); pts.push(P(ball.x, ball.y, ball.z));
+  for (const [px, py] of pts) {
+    const sx = W / 2 + (px - W / 2) * z, sy = H / 2 + (py - fy) * z, hx = sx / hk, hy = H - (H - sy) / hk;
+    if (hx > x - 24 && hx < x + w + 24 && hy > y - 60 && hy < y + h + 50) return true;
+  }
+  return false;
 }
 function banner(g, a, b) {
   g.fillStyle = 'rgba(8,16,24,0.8)'; g.fillRect(-400, H / 2 - 48, W + 800, 96);
@@ -8775,39 +8788,74 @@ function drawFtBanner(g) {
 }
 
 // ============================================================ LOGO
-// The logo as one reusable function. The emblem (a basketball cradled by a
-// crescent) sits above the wordmark with clear space. `s` scales everything;
-// opts.tagline adds the subtitle. drawLogoIcon() is the emblem alone on a
-// rounded tile, for small sizes (app icon, thumbnails).
-function drawLogoEmblem(g, cx, cy, r) {
-  // crescent: a gold disc with an offset disc cut out, hugging the ball's lower left
-  g.save();
-  g.beginPath(); g.arc(cx - r * 0.12, cy + r * 0.12, r * 1.38, 0, Math.PI * 2); g.arc(cx + r * 0.3, cy - r * 0.3, r * 1.2, 0, Math.PI * 2, true); g.closePath();
-  const cg = g.createLinearGradient(cx - r, cy - r, cx + r, cy + r); cg.addColorStop(0, '#ffe79a'); cg.addColorStop(1, '#c9921f');
-  g.fillStyle = cg; g.fill('evenodd'); g.lineWidth = Math.max(1, r * 0.07); g.strokeStyle = '#0d3b30'; g.stroke();
-  g.restore();
-  // ball
-  const bg = g.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r);
-  bg.addColorStop(0, '#ffb65c'); bg.addColorStop(0.7, '#e3772a'); bg.addColorStop(1, '#b2521a');
-  g.fillStyle = bg; g.beginPath(); g.arc(cx + r * 0.18, cy - r * 0.18, r * 0.82, 0, Math.PI * 2); g.fill();
-  const bx = cx + r * 0.18, by = cy - r * 0.18, br = r * 0.82;
-  g.strokeStyle = '#3a1a08'; g.lineWidth = Math.max(1, r * 0.075); g.lineCap = 'round';
-  g.beginPath(); g.arc(bx, by, br, 0, Math.PI * 2); g.stroke();
-  g.beginPath(); g.moveTo(bx - br, by); g.lineTo(bx + br, by); g.moveTo(bx, by - br); g.lineTo(bx, by + br); g.stroke();
-  g.beginPath(); g.ellipse(bx - br * 0.95, by, br * 0.55, br * 0.95, 0, -Math.PI / 2, Math.PI / 2); g.stroke();
-  g.beginPath(); g.ellipse(bx + br * 0.95, by, br * 0.55, br * 0.95, 0, Math.PI / 2, Math.PI * 1.5); g.stroke();
-  // small star in the crescent's mouth
-  g.fillStyle = '#ffe79a'; star8(g, cx + r * 1.05, cy - r * 1.05, r * 0.2); g.fill();
+// v7.9: the mark is a dunker in a thawb and kufi, in the classic split-leg, ball-overhead dunk pose,
+// as one solid silhouette (gold on the title, on a green tile for the app icon). The wordmark below
+// is unchanged. `s` scales everything; opts.tagline adds the subtitle. drawLogoIcon() is the mark
+// alone on a rounded tile, for small sizes (app icon, thumbnails).
+const DUNKER = {   // generated: body shapes (filled one by one), cut lines (negative space), ball, bounds; 400x400 design space
+  body: [
+    'M204.7 123.3L205 121.6L204.9 119.8L204.5 118.1L203.7 116.6L202.5 115.2L201.2 114.2L199.6 113.4L197.9 113L196.1 113L194.4 113.4L192.8 114.2L191.5 115.2L190.3 116.6L189.5 118.1L171.7 164.4L171.1 166.6L171 168.9L171.5 171.2L172.5 173.2L173.9 175L175.7 176.5L177.8 177.5L180 178L182.3 177.9L184.5 177.4L186.6 176.3L188.3 174.8L189.7 173L190.6 170.8Z',
+    'M216.2 85.9L216.5 84.5L216.4 83.1L216.1 81.7L215.5 80.5L214.6 79.4L213.4 78.5L212.2 77.9L210.8 77.5L209.4 77.5L208 77.8L206.7 78.4L205.5 79.3L204.6 80.4L204 81.6L189.6 118.1L189.1 119.8L189 121.7L189.4 123.5L190.2 125.1L191.3 126.6L192.7 127.7L194.3 128.5L196.1 129L198 128.9L199.8 128.5L201.4 127.7L202.8 126.5L203.9 125L204.6 123.4Z',
+    'M120.2 197.5L118.9 198.5L117.8 199.7L117.1 201.1L116.6 202.7L116.5 204.3L116.8 206L117.4 207.5L118.3 208.8L119.5 210L120.9 210.8L122.4 211.3L124 211.5L125.7 211.3L127.2 210.8L170 190.6L171.9 189.4L173.4 187.9L174.6 186L175.3 184L175.5 181.8L175.2 179.6L174.4 177.6L173.2 175.8L171.6 174.3L169.7 173.2L167.6 172.6L165.4 172.5L163.2 172.9L161.2 173.8Z',
+    'M88.9 217.1L87.9 217.9L87.1 218.8L86.6 220L86.3 221.2L86.2 222.4L86.4 223.7L86.9 224.8L87.7 225.9L88.6 226.7L89.7 227.3L90.9 227.7L92.2 227.8L93.4 227.6L94.6 227.2L127.4 210.7L128.8 209.8L130 208.5L130.9 207L131.4 205.3L131.5 203.6L131.2 201.9L130.5 200.3L129.5 198.9L128.2 197.8L126.7 197L125 196.6L123.3 196.5L121.6 196.9L120 197.6Z',
+    'M69.8 219.6L69.3 219.7L68.8 219.9L68.4 220.2L68.1 220.6L67.8 221L67.7 221.5L67.6 222L67.7 222.5L67.8 223L68.1 223.4L68.4 223.8L68.8 224.1L69.3 224.3L69.8 224.4L91.6 226.4L92.6 226.4L93.6 226.1L94.6 225.6L95.3 224.9L95.9 224L96.3 223L96.4 222L96.3 221L95.9 220L95.3 219.1L94.6 218.4L93.6 217.9L92.6 217.6L91.6 217.6Z',
+    'M70.8 228.9L70.4 229.2L70.1 229.6L69.8 230L69.7 230.5L69.6 231L69.7 231.5L69.8 232L70.1 232.4L70.4 232.8L70.8 233.1L71.3 233.3L71.8 233.4L72.3 233.4L72.8 233.3L93.4 226.2L94.4 225.7L95.2 225L95.8 224.2L96.2 223.3L96.4 222.2L96.3 221.2L96 220.2L95.5 219.3L94.7 218.6L93.9 218L92.9 217.7L91.8 217.6L90.8 217.8L89.8 218.2Z',
+    'M76 237.6L75.8 238.1L75.6 238.6L75.6 239.1L75.7 239.6L75.8 240.1L76.1 240.5L76.5 240.9L76.9 241.1L77.4 241.3L77.9 241.4L78.4 241.4L78.9 241.2L79.3 241L79.7 240.7L94.9 224.8L95.5 224L95.8 223.2L96 222.2L95.9 221.3L95.7 220.4L95.2 219.6L94.5 218.9L93.8 218.4L92.9 218.1L91.9 218L91 218.1L90.1 218.5L89.4 219L88.7 219.7Z',
+    'M87.7 204.4L87.3 204.1L86.9 203.9L86.4 203.7L85.9 203.7L85.4 203.8L85 203.9L84.5 204.2L84.2 204.6L83.9 205L83.8 205.5L83.7 205.9L83.7 206.4L83.9 206.9L84.1 207.3L92.4 218.9L92.9 219.4L93.5 219.8L94.2 220.1L95 220.2L95.7 220.1L96.4 219.9L97 219.5L97.5 218.9L97.9 218.3L98.1 217.6L98.2 216.8L98.1 216.1L97.8 215.4L97.3 214.8Z',
+    'M105.4 266.5L103.5 267.7L101.9 269.3L100.6 271.2L99.8 273.4L99.5 275.6L99.7 277.9L100.3 280.1L101.4 282L102.9 283.8L104.8 285.1L106.8 286L109.1 286.5L111.3 286.4L113.6 285.9L176.7 263.2L179.6 261.7L182.1 259.7L184.1 257.1L185.4 254.1L186 250.9L185.8 247.7L184.9 244.6L183.3 241.8L181.1 239.4L178.4 237.6L175.4 236.4L172.2 236L169 236.3L165.9 237.4Z',
+    'M60.8 308.6L59.8 309.8L59 311.3L58.6 312.8L58.5 314.5L58.8 316.1L59.4 317.6L60.3 318.9L61.5 320L62.9 320.8L64.5 321.3L66.1 321.5L67.7 321.3L69.2 320.8L70.6 319.9L116.4 284.3L118.2 282.6L119.5 280.5L120.3 278.2L120.5 275.8L120.2 273.4L119.3 271.1L117.9 269.1L116.2 267.5L114 266.3L111.7 265.6L109.3 265.5L106.9 266L104.7 267L102.7 268.4Z',
+    'M256.6 291.5L258.8 292.3L261 292.5L263.3 292.2L265.4 291.5L267.4 290.3L269 288.8L270.3 286.9L271.1 284.8L271.5 282.5L271.4 280.2L270.7 278.1L269.7 276L268.2 274.3L266.3 273L207.1 237.9L204.2 236.6L201 236L197.8 236.2L194.6 237.1L191.8 238.6L189.4 240.8L187.6 243.5L186.4 246.5L186 249.7L186.3 252.9L187.4 256L189.1 258.8L191.4 261L194.1 262.7Z',
+    'M316.9 318.8L318.5 319.3L320.1 319.5L321.7 319.3L323.2 318.8L324.6 317.9L325.8 316.8L326.7 315.4L327.3 313.9L327.5 312.3L327.4 310.6L326.9 309.1L326.1 307.6L325 306.4L323.7 305.5L266.2 272.9L264 271.9L261.6 271.5L259.2 271.7L256.8 272.4L254.7 273.6L253 275.2L251.6 277.2L250.8 279.5L250.5 281.9L250.8 284.3L251.6 286.6L252.9 288.6L254.6 290.3L256.7 291.6Z',
+    'M161.3 180.8L162.4 182.7L163.9 184.3L165.8 185.5L167.9 186.3L170.2 186.5L172.4 186.2L174.4 185.4L176.3 184.1L177.8 182.5L178.8 180.5L179.4 178.3L179.5 176.1L179 173.9L178 171.9L167.8 155.7L166.7 154.4L165.4 153.3L163.9 152.5L162.2 152.1L160.5 152L158.8 152.3L157.3 152.9L155.8 153.9L154.7 155.1L153.8 156.6L153.2 158.2L153 159.9L153.2 161.6L153.7 163.2Z',
+    'M141.5 150a15.5 15.5 0 1 0 31 0a15.5 15.5 0 1 0 -31 0Z',
+    'M203 79a8 8 0 1 0 16 0a8 8 0 1 0 -16 0Z',
+    'M160 166C155.7 170.3 150.7 180.7 150 190C149.3 199.3 156.3 213 156 222C155.7 231 154 237.3 148 244C142 250.7 128 255.8 120 262C112 268.2 98.3 276.2 100 281C101.7 285.8 119.7 289 130 291C140.3 293 152.3 293.7 162 293C171.7 292.3 179.3 287 188 287C196.7 287 204 291.7 214 293C224 294.3 239 295.5 248 295C257 294.5 266.5 294 268 290C269.5 286 266 278.3 257 271C248 263.7 223.8 255.5 214 246C204.2 236.5 201.3 225.7 198 214C194.7 202.3 197.7 184.3 194 176C190.3 167.7 181.7 165.7 176 164C170.3 162.3 164.3 161.7 160 166Z',
+    'M60 310C65.7 306.3 71.3 311.3 74 314C76.7 316.7 78.3 321.3 76 326C73.7 330.7 65.7 339 60 342C54.3 345 45.3 345 42 344C38.7 343 37 341.7 40 336C43 330.3 54.3 313.7 60 310Z',
+    'M316 306C316.7 303 324.3 305.3 330 308C335.7 310.7 344.7 317.7 350 322C355.3 326.3 362.7 331.3 362 334C361.3 336.7 352 339.3 346 338C340 336.7 331 331.3 326 326C321 320.7 315.3 309 316 306Z',
+    'M163 158L173 154L178 170L169 173Z'
+  ],
+  cuts: [['M141.5 146L149 140.5L158 138.5L167 139.5L173 143', 3.4], ['M188 289L187 267', 3.4], ['M44 338L60 337', 2.4], ['M345 333L360 334', 2.4]],
+  ball: [216, 54, 19], bbox: [35, 33, 365, 347]
+};
+const _dunkCache = new Map();
+// the silhouette rendered once per size + style to an offscreen canvas (cuts need destination-out)
+function dunkerSprite(h, style) {
+  const key = Math.round(h) + style; let c = _dunkCache.get(key); if (c) return c;
+  const [x0, y0, x1, y1] = DUNKER.bbox, k = h / (y1 - y0), dpr = Math.min(3, Math.max(1, (typeof devicePixelRatio !== 'undefined' ? devicePixelRatio : 1))) * 1.5;
+  c = document.createElement('canvas'); c.width = Math.ceil((x1 - x0) * k * dpr) + 2; c.height = Math.ceil(h * dpr) + 2;
+  const x = c.getContext('2d'); x.scale(k * dpr, k * dpr); x.translate(-x0, -y0);
+  for (const d of DUNKER.body) x.fill(new Path2D(d));
+  x.beginPath(); x.arc(DUNKER.ball[0], DUNKER.ball[1], DUNKER.ball[2], 0, Math.PI * 2); x.fill();
+  x.globalCompositeOperation = 'destination-out'; x.lineCap = 'round'; x.lineJoin = 'round';
+  for (const [d, w] of DUNKER.cuts) { x.lineWidth = w; x.stroke(new Path2D(d)); }
+  x.globalCompositeOperation = 'source-in'; x.setTransform(1, 0, 0, 1, 0, 0);
+  if (style === 'gold') { const gr = x.createLinearGradient(0, 0, 0, c.height); gr.addColorStop(0, '#fff3c4'); gr.addColorStop(0.45, '#f2cf6b'); gr.addColorStop(1, '#c08a1c'); x.fillStyle = gr; }
+  else x.fillStyle = style;
+  x.fillRect(0, 0, c.width, c.height);
+  c.dw = (x1 - x0) * k; c.dh = h; c.cx = ((x0 + x1) / 2 - x0) * k;
+  _dunkCache.set(key, c); return c;
+}
+// the mark centered at (cx, cy), h tall: dark extrude + outline, then the gold figure
+function drawLogoEmblem(g, cx, cy, r, plain) {
+  const h = r * 3.0;
+  if (typeof document === 'undefined') return;
+  const gold = dunkerSprite(h, plain ? '#f2cf6b' : 'gold'), dark = dunkerSprite(h, '#082a22');
+  const x = cx - gold.dw / 2, y = cy - h / 2, o = Math.max(1, r * 0.06);
+  if (!plain) {
+    for (let d = Math.round(r * 0.16); d > 0; d--) g.drawImage(dark, x, y + d, gold.dw, h);                       // extrude, like the wordmark
+    for (const [ox, oy] of [[-o, 0], [o, 0], [0, -o], [0, o]]) g.drawImage(dark, x + ox, y + oy, gold.dw, h);     // outline
+  }
+  g.drawImage(gold, x, y, gold.dw, h);
 }
 function drawLogoMark(g, cx, top, s = 1, opts = {}) {
-  const r = 30 * s, ey = top + r * 1.45;
+  const r = 30 * s, ey = top + r * 1.6;
   g.save();
   // soft glow behind the emblem
   const gl = g.createRadialGradient(cx, ey, r * 0.3, cx, ey, r * 2.4); gl.addColorStop(0, 'rgba(242,207,107,0.28)'); gl.addColorStop(1, 'rgba(242,207,107,0)');
   g.fillStyle = gl; g.fillRect(cx - r * 2.6, ey - r * 2.6, r * 5.2, r * 5.2);
   drawLogoEmblem(g, cx, ey, r);
   // wordmark below with clear space: heavy letters, green extrude, gold face
-  const wy = ey + r * 1.55 + 58 * s, fs = Math.round(70 * s), txt = 'ISLAM DUNK';
+  const wy = ey + r * 1.62 + 58 * s, fs = Math.round(70 * s), txt = 'ISLAM DUNK';
   g.font = `${fs}px ${FONT}`; g.textAlign = 'center'; g.lineJoin = 'round';
   if (g.letterSpacing !== undefined) g.letterSpacing = `${Math.round(2 * s)}px`;
   for (let d = Math.round(7 * s); d > 0; d--) { g.fillStyle = d > 3 * s ? '#082a22' : '#0f4a3b'; g.fillText(txt, cx, wy + d); }   // extrude
@@ -8825,13 +8873,19 @@ function drawLogoMark(g, cx, top, s = 1, opts = {}) {
   g.restore();
   return bottom;
 }
+// full-bleed square (iOS / maskable icons: the OS rounds or masks it), mark inside the safe zone
+function drawLogoIconFull(g, size, k = 1) {
+  const bg = g.createLinearGradient(0, 0, 0, size); bg.addColorStop(0, '#1e7a5e'); bg.addColorStop(1, '#0b3a2e');
+  g.fillStyle = bg; g.fillRect(0, 0, size, size);
+  drawLogoEmblem(g, size / 2, size / 2, size * 0.21 * k, true);
+}
 function drawLogoIcon(g, cx, cy, size) {
   const h = size / 2;
   g.save();
   const bg = g.createLinearGradient(0, cy - h, 0, cy + h); bg.addColorStop(0, '#1e7a5e'); bg.addColorStop(1, '#0b3a2e');
   g.fillStyle = bg; roundRect(g, cx - h, cy - h, size, size, size * 0.22); g.fill();
   g.strokeStyle = '#f2cf6b'; g.lineWidth = Math.max(1, size * 0.035); roundRect(g, cx - h + size * 0.05, cy - h + size * 0.05, size * 0.9, size * 0.9, size * 0.18); g.stroke();
-  drawLogoEmblem(g, cx - size * 0.04, cy + size * 0.04, size * 0.27);
+  drawLogoEmblem(g, cx, cy + size * 0.01, size * 0.21, true);
   g.restore();
 }
 
@@ -12201,7 +12255,7 @@ drawHowTo = function (g) {
   dim(g, 0.86);
   const o = Math.round((W - 960) / 2); g.save(); g.translate(o, 0); const rw = W; W = 960;
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('How to play', W / 2, 44);
-  const keys = [['Move', 'W A S D', 'Arrows'], ['Sprint', 'double-tap a direction, keep holding', 'same'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move button', 'H', 'Num0 / M']];
+  const keys = [['Move', 'W A S D', 'Arrows'], ['Sprint', 'hold Left Shift while moving', 'Right Shift'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move button', 'H', 'Num0 / M']];
   g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; g.fillText('P1', 610, 72); g.fillText('P2', 800, 72);
   keys.forEach((r, i) => { const y = 92 + i * 21; g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(r[0], 150, y); g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.fillText(r[1], 610, y); g.fillText(r[2], 800, y); });
   const col = (x, title, lines) => { g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText(title, x, 222); g.font = `12px ${BODY}`; lines.forEach((t, i) => { g.fillStyle = t.startsWith('\u2022') ? '#9fb3c8' : IVORY; g.fillText(t, x, 242 + i * 18); }); };
@@ -12211,7 +12265,7 @@ drawHowTo = function (g) {
   col(500, 'DEFENSE', ['Pass: tap to steal  \u2022  hold: stance (box out on a shot)', 'Sprint + Pass: shove (hard foul)', 'Shoot: jump, block, contest', 'Sprint + Shoot: swipe  \u2022  from behind: chase-down',
     'Tap Move: plant your feet to take a charge', 'Hold Move: your partner doubles the ball', '\u2022 Reach across his body and it\u2019s a foul', '\u2022 Sprint while in stance fights over screens',
     '\u2022 Final minute: sprint + Pass dives for loose balls', '\u2022 Pause for timeouts and set plays']);
-  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Touch: push the stick to the edge to sprint. Buttons: SHOOT, PASS, MOVE (labels change with the play).', W / 2, 438);
+  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Touch: push the stick past the dashed ring to sprint. Buttons: SHOOT, PASS, MOVE (labels change with the play).', W / 2, 438);
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText('Press Enter or tap to go back', W / 2, 520);
   W = rw; g.restore();
   addRect(0, 0, W, H, goTitle);
@@ -13580,6 +13634,140 @@ function loadDisplayFont() {
   };
 }
 
+// ================================================= v7.9: FEEL + FAIRNESS PASS
+// Faster base speed with a bigger sprint, sprint on Shift (keyboard) or a deliberate push past
+// the touch stick's edge, CPU stamina that runs out like yours, walls the ball bounces off and
+// players can't walk into, and restarts that never hand the ball over with a defender on top of it.
+
+// ---- speed: everyone a bit quicker, sprint a bigger step up from that
+const SPEED_BASE = 1.08, SPRINT_K = 1.5 / 1.42;      // jog +8%, sprint x1.5 of the jog (was x1.42)
+{
+  const _spd = Player.prototype.speed;
+  Player.prototype.speed = function () { let s = _spd.call(this) * SPEED_BASE; if (this.cmd.turbo && this.turboOK()) s *= SPRINT_K; return s; };
+}
+
+// ---- stamina, same rule for everyone: run the bar dry and you're winded until it's back to 45%.
+// While winded you can't sprint, and the bar refills even if you keep holding sprint (it used to
+// refill only with the button released, so holding it pinned you at zero while the CPU, which lets
+// go, sprinted about twice as often). The CPU check also runs in its brain so its plans see it.
+const WIND_LO = 12, WIND_HI = 45;
+function windCheck(p) {
+  if (p.fire) { p.winded = false; return; }
+  if (p.turbo < WIND_LO && p.cmd.turbo) p.winded = true; else if (p.turbo > WIND_HI) p.winded = false;
+  if (p.winded) p.cmd.turbo = false;
+}
+{
+  const _bu = Brain.prototype.update;
+  Brain.prototype.update = function () { const r = _bu.apply(this, arguments); if (this.p.human < 0) windCheck(this.p); return r; };
+}
+
+// ---- sprint input: hold Shift while moving (left Shift for player 1, right Shift for player 2,
+// either when you're alone), or on touch push the stick on past its ring
+const SPRINT_KEYS = [['ShiftLeft'], ['ShiftRight']];
+sprintStep = function (pad, c) {
+  const d = Input.down, b = BINDS[pad], solo = !(M.players && M.players.some(p => p.human === 1));
+  const shift = SPRINT_KEYS[pad].some(k => d[k]) || (pad === 0 && solo && d.ShiftRight);
+  const dir = ['up', 'down', 'left', 'right'].some(k => b[k].some(x => d[x]));
+  const stick = pad === 0 && Input.touchMode && TouchUI.sid != null && !!Input.stick.deep;
+  c.turbo = !!(shift && dir) || stick;
+};
+// touch: the base only follows the thumb past 1.5x its radius, so between the ring (full speed)
+// and 1.3x the ring there's room to move flat out without sprinting; past 1.3x you sprint
+{
+  TouchUI.moveStick = function (e) {
+    const R = this.R(), RM = R * 1.5; let dx = e.clientX - this.ox, dy = e.clientY - this.oy; const L = Math.hypot(dx, dy);
+    if (L > RM) { this.ox += dx * (1 - RM / L); this.oy += dy * (1 - RM / L); dx = e.clientX - this.ox; dy = e.clientY - this.oy; }
+    const L2 = Math.hypot(dx, dy), k = L2 < 0.14 * R ? 0 : Math.min(1, L2 / R) / (L2 || 1);
+    Input.stick.ax = dx * k; Input.stick.az = dy * k; Input.stick.deep = L2 >= R * 1.3;
+    this.raw = [dx, dy]; Input.touchMode = true; this.drawStick();
+  };
+  const _ds = TouchUI.drawStick;
+  TouchUI.drawStick = function () {
+    _ds.apply(this, arguments);
+    const R = this.R(), active = this.sid != null, deep = active && Input.stick.deep;
+    if (!active) Input.stick.deep = false;
+    if (!this.ring) { this.ring = document.createElement('div'); this.ring.style.cssText = 'position:absolute;border-radius:50%;border:2px dashed rgba(143,227,255,.5);pointer-events:none'; this.zone.insertBefore(this.ring, this.knob); }
+    const r = this.zone.getBoundingClientRect(), cx = active ? this.ox - r.left : this.homeX, cy = active ? this.oy - r.top : this.homeY, RR = R * 1.3;
+    Object.assign(this.ring.style, { left: cx - RR + 'px', top: cy - RR + 'px', width: RR * 2 + 'px', height: RR * 2 + 'px', display: active ? 'block' : 'none', borderColor: deep ? 'rgba(143,227,255,.95)' : 'rgba(143,227,255,.4)' });
+    if (active && this.raw) {                                         // the knob follows the thumb into the sprint band
+      const [dx, dy] = this.raw, L = Math.hypot(dx, dy), m = Math.min(L, R * 1.5) / (L || 1), kr = R * 0.42;
+      Object.assign(this.knob.style, { left: cx + dx * m - kr + 'px', top: cy + dy * m - kr + 'px' });
+    }
+    Object.assign(this.knob.style, { background: deep ? 'rgba(143,227,255,.85)' : '', boxShadow: deep ? '0 0 16px rgba(143,227,255,.9)' : '' });
+  };
+}
+// touch controls on the walk outside the masjid (career intro): stick + TALK
+{
+  const _tu = TouchUI.update;
+  TouchUI.update = function () {
+    if (Game.screen !== 'introout') return _tu.apply(this, arguments);
+    if (!this.el) { _tu.apply(this, arguments); if (!this.el) return; }
+    const want = Input.touchMode && typeof INTRO !== 'undefined' && INTRO && !INTRO.fadeDir;
+    if (want !== this.shown) { this.shown = want; this.el.style.display = want ? 'block' : 'none'; if (want) this.layout(); else { Input.stick.ax = Input.stick.az = 0; this.sid = null; } }
+    if (!want) return;
+    for (const k of ['pass', 'turbo', 'cross', 'skill']) this.btns[k].style.display = 'none';
+    this.btns.shoot.style.display = ''; this.btns.shoot.innerHTML = '<span>TALK</span>';
+    this.btns.shoot.classList.toggle('hint', !!INTRO.talk);
+    this.last = ''; this.v7key = null; this.v6last = null;           // relabel properly once play starts
+  };
+}
+
+// ---- walls: players stop at the baselines (no walking into the end walls) and a loose ball
+// bounces off the walls and the near sideline back toward the court instead of leaving the frame
+const WALL_X0 = 2, WALL_X1 = COURT.L - 2, BALL_X0 = -8, BALL_X1 = COURT.L + 8, BALL_Z1 = COURT.D - 12, WALL_E = 0.55;
+{
+  const _up = updatePlayer;
+  updatePlayer = function (p) {
+    windCheck(p);
+    const r = _up.apply(this, arguments);
+    if (p.x < WALL_X0) { p.x = WALL_X0; if (p.vx < 0) p.vx = 0; } else if (p.x > WALL_X1) { p.x = WALL_X1; if (p.vx > 0) p.vx = 0; }
+    return r;
+  };
+  const _cp = collidePlayers;
+  collidePlayers = function () {
+    const r = _cp.apply(this, arguments);
+    for (const p of M.players) { p.x = clamp(p.x, WALL_X0, WALL_X1); p.z = clamp(p.z, 20, COURT.D - 20); }   // a shove can't push anyone through a wall
+    return r;
+  };
+  const _ub = updateBall;
+  updateBall = function () {
+    const r = _ub.apply(this, arguments);
+    if (!ball.owner) {
+      let hit = 0;
+      if (ball.x < BALL_X0) { ball.x = BALL_X0; hit = Math.abs(ball.vx); ball.vx = Math.abs(ball.vx) * WALL_E; }
+      else if (ball.x > BALL_X1) { ball.x = BALL_X1; hit = Math.abs(ball.vx); ball.vx = -Math.abs(ball.vx) * WALL_E; }
+      if (ball.z > BALL_Z1) { ball.z = BALL_Z1; hit = Math.max(hit, Math.abs(ball.vz)); ball.vz = -Math.abs(ball.vz) * WALL_E; }
+      if (hit > 120) SFX.bounce(clamp(hit / 900, 0.1, 0.6));
+    }
+    return r;
+  };
+}
+
+// ---- fair restarts: whenever the ball is handed over in place (side-outs, check balls, 1-on-1,
+// half court), no defender starts closer than an arm's length: anyone crowding the handler steps
+// back to a spot between his man and the basket, and a teammate on top of the handler spreads out.
+const FAIR_GAP = 95, MATE_GAP = 140;
+function fairRestart(team) {
+  const bo = ball.owner; if (!bo || bo.team !== team || !M.teams) return;
+  const a = attackHoop(team), O = M.teams[team].players, D = M.teams[1 - team].players, mate = O.find(q => q !== bo);
+  if (mate && dxz(mate, bo) < MATE_GAP) {
+    const sx = sgn(a.x - bo.x) || 1;
+    place(mate, clamp(bo.x + sx * 150, 60, COURT.L - 60), clamp(bo.z + (bo.z < COURT.D / 2 ? 190 : -190), 60, COURT.D - 60));
+  }
+  const byDist = D.slice().sort((p, q) => dxz(p, bo) - dxz(q, bo));
+  byDist.forEach((d, i) => {
+    const man = i === 0 || !mate ? bo : mate;
+    if (dxz(d, bo) >= FAIR_GAP && (man === bo || dxz(d, man) >= 50)) return;
+    const ux = a.x - man.x, uz = a.z - man.z, L = Math.hypot(ux, uz) || 1, gap = Math.min(FAIR_GAP + 15, L * 0.6);
+    place(d, clamp(man.x + ux / L * gap, WALL_X0 + 10, WALL_X1 - 10), clamp(man.z + uz / L * gap, 30, COURT.D - 30));
+    d.face = sgn(man.x - d.x) || d.face;
+  });
+}
+{
+  const _ib = inbound;
+  inbound = function (team) { const r = _ib.apply(this, arguments); fairRestart(team); return r; };
+}
+
 // ===================================================== CAREER: BODY BUILDS (v7.8)
 // Height, build and play style each trade some stats for others (tables in career.js, every row sums
 // to zero), applied on top of the levels you buy, so changing your look later moves them back.
@@ -13692,12 +13880,15 @@ const INTRO_OUT = [
   ['you', 'Wa alaikum assalam. I heard you have a team?'],
   ['saleem', 'We do. Come in, the brothers are in the gym.']
 ];
-const INTRO_CAST = {   // gym spots (world x, z), what they say when you walk up
-  khalil: { x: 1150, z: 420, lines: [['khalil', 'Welcome! Gym, overflow musalla, potluck hall. Mind the folding chairs.']] },
-  nasser: { x: 1010, z: 590, lines: [['nasser', 'Shooting tip: let it go at the top of your jump. Green on the meter is money.']] },
-  mahmoud: { x: 720, z: 150, lines: [['mahmoud', 'In 1987 I scored forty points in this gym, beta.'], ['mahmoud', 'Nobody kept score. But I know.']] },
-  tariq: { x: 680, z: 520, lines: [['tariq', 'I’m Tariq. I keep the stat sheet now. Every shot, every assist.']] },
-  siddiq: { x: 1240, z: 150, lines: [['siddiq', 'Chai after Isha, brother. The chalkboard by the door keeps our streak.']] }
+// v7.9: everyone is busy with something when you walk in (act), and stops to talk when you come over:
+//   Khalil shoots around at the far hoop, Nasser stretches, Uncle Mahmoud sits on a folding chair by
+//   the wall, Tariq keeps the stat sheet on a clipboard, Uncle Siddiq pours chai at a little table.
+const INTRO_CAST = {   // gym spots (world x, z), what they're doing, what they say when you walk up
+  khalil: { x: 1120, z: 430, act: 'shoot', face: 1, lines: [['khalil', 'Welcome! Gym, overflow musalla, potluck hall. Mind the folding chairs.']] },
+  nasser: { x: 980, z: 600, act: 'stretch', face: -1, lines: [['nasser', 'Shooting tip: let it go at the top of your jump. Green on the meter is money.']] },
+  mahmoud: { x: 720, z: 140, act: 'sit', face: 1, lines: [['mahmoud', 'In 1987 I scored forty points in this gym, beta.'], ['mahmoud', 'Nobody kept score. But I know.']] },
+  tariq: { x: 700, z: 500, act: 'clip', face: 1, lines: [['tariq', 'I’m Tariq. I keep the stat sheet now. Every shot, every assist.']] },
+  siddiq: { x: 1200, z: 140, act: 'chai', face: 1, lines: [['siddiq', 'Chai after Isha, brother. The chalkboard by the door keeps our streak.']] }
 };
 const INTRO_SALEEM = { x: 860, z: 300 };
 const INTRO_WRAP = [
@@ -13726,7 +13917,7 @@ function introSkip() {
   INTRO = null; Gym.intro = null;
   C.seen.intro = true; C.seen.meetNew = true; slog(0); careerHub();
 }
-const introOk = () => Input.pressed.Enter || Input.pressed.NumpadEnter || Input.pressed.KeyE || Input.pressed.Space;
+const introOk = () => Input.pressed.Enter || Input.pressed.NumpadEnter || Input.pressed.KeyE || Input.pressed.Space || Input.pressed.KeyK;   // K = the touch TALK button
 
 // ---- speech bubble above a head at screen (x, y)
 function introBubble(g, x, y, who, text, more) {
@@ -13847,17 +14038,17 @@ function startIntroGym() {
   setupPractice('free');
   const me = M.players[0]; place(me, 820, 640); me.face = 1; giveBall(me, 'inbound');
   const npcs = {};
-  for (const id of Object.keys(INTRO_CAST)) { const p = introPlayer(id), s = INTRO_CAST[id]; p.x = s.x; p.z = s.z; p.face = s.x > 900 ? -1 : 1; npcs[id] = p; }
-  const sal = introPlayer('saleem'); sal.x = INTRO_SALEEM.x; sal.z = INTRO_SALEEM.z; sal.face = -1; npcs.saleem = sal;
-  INTRO = { scene: 'gym', t: 0, npcs, met: {}, near: null, talk: null, fade: 1, done: false };
+  for (const id of Object.keys(INTRO_CAST)) { const p = introPlayer(id), s = INTRO_CAST[id]; p.x = s.x; p.z = s.z; p.face = s.face; p.introAct = s.act; p.actPh = Math.random() * 6; npcs[id] = p; }
+  const sal = introPlayer('saleem'); sal.x = 890; sal.z = 600; sal.face = -1; sal.introAct = 'host'; npcs.saleem = sal;   // walked in with you
+  INTRO = { scene: 'gym', t: 0, npcs, met: {}, near: null, talk: null, with: 'saleem', fade: 1, done: false, lb: 0, shoot: { ph: 'drib', t: 0, x: 0, y: 0, z: 0, rot: 0 } };
   Gym.intro = INTRO;
   Game.screen = 'gym';
-  introSay([['saleem', 'This is our gym. Go say salaam to the brothers, then come find me.']], null);
+  introSay([['saleem', 'This is our gym. Go say salaam to the brothers, then come find me.']], () => { sal.goto = { x: INTRO_SALEEM.x, z: INTRO_SALEEM.z }; });
 }
 function introCastLeft() { return Object.keys(INTRO_CAST).filter(id => !INTRO.met[id]); }
 function introTalkTo(id) {
   const I = INTRO; if (I.talk) return;
-  const p = I.npcs[id], me = M.players[0]; p.face = sgn(me.x - p.x) || 1; me.face = -p.face;
+  const p = I.npcs[id], me = M.players[0]; p.face = sgn(me.x - p.x) || 1; me.face = -p.face; I.with = id;
   if (id === 'saleem') {
     if (introCastLeft().length) introSay([['saleem', 'Say salaam to everyone first: ' + introCastLeft().map(k => castDef(k).name).join(', ') + '.']], null);
     else introSay(INTRO_WRAP, () => { I.done = true; I.fade = 0; I.fadeDir = 1; });
@@ -13875,8 +14066,26 @@ function introTalkTo(id) {
     if (I.fadeDir) { I.fade = Math.min(1, I.fade + dt * 1.4); if (I.fade >= 1) { introSkip(); return; } }
     if (menuHit('back')) { introSkip(); return; }
     const me = M.players[0];
-    for (const id in I.npcs) { const p = I.npcs[id]; p.fakeIdle = true; p.vx = p.vz = 0; if (!I.talk && dxz(p, me) < 220) p.face = sgn(me.x - p.x) || p.face; animate(p, dt); }
-    if (I.talk) { if (introOk()) introAdvance(); }
+    if (!I.talk) I.with = null;
+    I.lb += ((I.talk ? 1 : 0) - I.lb) * Math.min(1, dt * 6);                    // cinematic bars while talking
+    for (const id in I.npcs) {
+      const p = I.npcs[id]; p.fakeIdle = true; p.vx = p.vz = 0;
+      if (p.goto) {                                                                // walking somewhere (Saleem after the welcome)
+        const dx = p.goto.x - p.x, dz = p.goto.z - p.z, d = Math.hypot(dx, dz), v = 150;
+        if (d < 6) { p.goto = null; p.face = sgn(me.x - p.x) || -1; }
+        else { p.vx = dx / d * v; p.vz = dz / d * v; p.x += p.vx * dt; p.z += p.vz * dt; p.face = sgn(dx) || p.face; }
+      } else if (I.with === id) p.face = sgn(me.x - p.x) || p.face;                // talking: face you
+      else if (p.introAct === 'clip') p.face = sgn(I.npcs.khalil.x - p.x) || 1;     // Tariq watches Khalil's shots
+      else if (p.introAct === 'host' && dxz(p, me) < 260) p.face = sgn(me.x - p.x) || p.face;
+      else if (INTRO_CAST[id]) p.face = INTRO_CAST[id].face;
+      introActStep(p, id, dt);
+      animate(p, dt);
+    }
+    if (I.talk) {
+      const key = I.talk.i + '|' + I.talk.lines.length;
+      if (I.lineKey !== key) { I.lineKey = key; const who = I.talk.lines[I.talk.i][0]; if (who !== 'you') react(me, 'nod', 0.5); else if (I.with && I.npcs[I.with]) react(I.npcs[I.with], 'nod', 0.5); }
+      if (introOk()) introAdvance();
+    }
     else {
       let best = null, bd = 120;
       for (const id in I.npcs) { const d = dxz(I.npcs[id], me); if (d < bd) { bd = d; best = id; } }
@@ -13898,7 +14107,8 @@ function introTalkTo(id) {
   gymExtras = function (E, g) {
     _ex.apply(this, arguments);
     if (!Gym.intro || Gym.intro !== INTRO || Game.screen !== 'gym') return;
-    for (const id in INTRO.npcs) { const p = INTRO.npcs[id]; E.push({ z: p.z, f: () => { drawShadow(g, p.x, 0, p.z, 18); drawPlayer(g, p); } }); }
+    for (const id in INTRO.npcs) { const p = INTRO.npcs[id]; E.push({ z: p.z, f: () => { introPropBack(g, p); drawShadow(g, p.x, 0, p.z, 18); drawPlayer(g, p); introPropFront(g, p); } }); }
+    const S = INTRO.shoot; if (S.on) E.push({ z: S.z + 1, f: () => { drawShadow(g, S.x, 0, S.z, 7); drawBallAt(g, S.x, S.y, S.z, S.rot, false); } });
   };
   // the intro has its own Skip button (top-right); the gym's Back button would sit under the checklist
   const _bv = backVisible;
@@ -13909,15 +14119,18 @@ function introTalkTo(id) {
     const I = INTRO, me = M.players[0], head = p => P(p.x, 112, p.z);
     // checklist
     const ids = Object.keys(INTRO_CAST), n = ids.filter(id => I.met[id]).length;
+    if (I.lb > 0.01) { const b = 40 * I.lb; g.fillStyle = 'rgba(4,8,12,0.92)'; g.fillRect(-400, 0, W + 800, b); g.fillRect(-400, H - b, W + 800, b); }
+    g.save(); g.globalAlpha = 1 - I.lb;
     g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, 12, 12, 196, 36 + ids.length * 20, 12); g.fill();
     g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('Meet the brothers  ' + n + '/' + ids.length, 26, 34);
     ids.forEach((id, i) => { g.fillStyle = I.met[id] ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((I.met[id] ? '✓ ' : '• ') + castDef(id).name, 30, 56 + i * 20); });
+    g.restore();
     // names over heads, talk prompt for the nearest
     for (const id in I.npcs) {
       const p = I.npcs[id], [x, y] = head(p);
       if (I.talk) continue;
       if (id === I.near) introPrompt(g, x, y - 6, 'Talk to ' + castDef(id).name + (Input.touchMode ? '' : '  (E)'), () => introTalkTo(id));
-      else if (!I.met[id] && id !== 'saleem') { g.fillStyle = 'rgba(242,207,107,0.9)'; g.textAlign = 'center'; g.font = `11px ${FONT}`; g.fillText(castDef(id).name, x, y - 10); }
+      else if (!I.met[id] && id !== 'saleem' && dxz(p, me) < 340) { g.fillStyle = 'rgba(242,207,107,0.9)'; g.textAlign = 'center'; g.font = `11px ${FONT}`; g.fillText(castDef(id).name, x, y - 10); }
       else if (id === 'saleem' && !introCastLeft().length) { const b = 0.5 + 0.5 * Math.sin(Game.t * 6); g.fillStyle = `rgba(242,207,107,${0.6 + 0.4 * b})`; g.textAlign = 'center'; g.font = `16px ${FONT}`; g.fillText('!', x, y - 12); }
     }
     if (I.talk) {
@@ -13941,6 +14154,132 @@ function introTalkTo(id) {
   careerRender = function (g) { if (Game.screen === 'introout') return drawIntroOut(g); return _cr.apply(this, arguments); };
   const _ch = careerHub;
   careerHub = function () { Gym.intro = null; return _ch.apply(this, arguments); };
+}
+
+// ---- v7.9: what the brothers are doing when you walk in
+// Khalil's shootaround: dribble, gather, jumper, swish, the ball bounces back out to him. He holds it
+// at his hip while you talk. (A drawn ball of his own, separate from the practice ball.)
+function introActStep(p, id, dt) {
+  const I = INTRO; p.actT = (p.actT || 0) + dt;
+  if (p.introAct !== 'shoot') return;
+  const S = I.shoot, h = hoops[1], talking = I.with === id;
+  S.on = true; S.t += dt; S.rot += dt * 7;
+  if (talking && (S.ph === 'drib' || S.ph === 'set')) { S.ph = 'hold'; S.t = 0; }
+  if (S.ph === 'hold') {
+    p.fakeHold = false; p.y = 0; const hd = p.hands.n; S.x = hd.x + p.face * 3; S.y = hd.y - 2; S.z = hd.z + 2;
+    if (!talking) { S.ph = 'drib'; S.t = 0; }
+  } else if (S.ph === 'drib') {
+    p.fakeHold = true; const hd = p.hands[p.dh] || p.hands.n;
+    S.x = hd.x + p.face * 5; S.y = BALL_R + (hd.y - 4 - BALL_R) * Math.abs(Math.cos(Math.PI * p.dp)); S.z = hd.z + 3;
+    if (S.t > 2.2 && p.dp < 0.15) { S.ph = 'set'; S.t = 0; }
+  } else if (S.ph === 'set') {
+    p.fakeHold = false; const k = Math.min(1, S.t / 0.3);
+    S.x = lerp(S.x, p.x + p.face * 6, k); S.y = lerp(S.y, 112, k); S.z = p.z + 2;
+    if (S.t > 0.32) { S.ph = 'jump'; S.t = 0; }
+  } else if (S.ph === 'jump' || S.ph === 'fly') {
+    const air = S.ph === 'jump' ? S.t : S.t + 0.26;
+    p.y = Math.max(0, 28 * Math.sin(Math.PI * Math.min(1, air / 0.6)));
+    if (S.ph === 'jump') { S.x = p.x + p.face * 8; S.y = p.y + 128; S.z = p.z + 2; if (S.t >= 0.26) { S.fly = { x0: S.x, y0: S.y, z0: S.z }; S.ph = 'fly'; S.t = 0; } }
+    else {
+      const F = S.fly, u = Math.min(1, S.t / 0.95);
+      S.x = lerp(F.x0, h.x, u); S.z = lerp(F.z0, h.z, u); S.y = lerp(F.y0, RIM_Y + 6, u) + 80 * 4 * u * (1 - u);
+      if (u >= 1) { S.ph = 'drop'; S.t = 0; if (SFX.netSwish && onScreen(h.x)) try { SFX.netSwish(0.4, 0, 1); } catch (e) {} }
+    }
+  } else if (S.ph === 'drop') {
+    p.y = 0; S.x = h.x; S.z = h.z; S.y = Math.max(BALL_R, RIM_Y + 6 - 450 * S.t * S.t);
+    if (S.y <= BALL_R) { S.ph = 'back'; S.t = 0; S.bx = S.x; S.bz = S.z; }
+  } else if (S.ph === 'back') {
+    const u = Math.min(1, S.t / 1.3), tx = p.x + p.face * 16, tz = p.z + 4;
+    S.x = lerp(S.bx, tx, u); S.z = lerp(S.bz, tz, u); S.y = BALL_R + 55 * (1 - u) * Math.abs(Math.sin(u * Math.PI * 2.5));
+    if (u >= 1) { S.ph = 'drib'; S.t = 0; }
+  }
+}
+// body language for each activity; whoever you're talking to stops and talks with his hands
+{
+  const _pt = poseTargets;
+  poseTargets = function (p, sp) {
+    const t = _pt.apply(this, arguments);
+    if (!p.introAct || !INTRO || INTRO.scene !== 'gym') return t;
+    const I = INTRO, tt = (p.actT || 0) + (p.actPh || 0), talking = !!I.with && I.npcs[I.with] === p;
+    const speaking = talking && I.talk && I.talk.lines[I.talk.i][0] !== 'you', beat = Math.max(0, Math.sin(tt * 4.5));
+    const gest = (side = 'n') => { t[side + 's'] = 0.85 + 0.35 * beat; t[side + 'e'] = 1.05 - 0.3 * beat; };
+    switch (p.introAct) {
+      case 'sit':
+        t.nh = t.fh = 1.45; t.nk = t.fk = 1.5; t.lean = 0.1; t.ns = 0.75; t.ne = 1.0; t.fs = 0.8; t.fe = 0.95; t.K = 300;
+        if (speaking) gest(); break;
+      case 'stretch':
+        if (talking) { if (speaking) gest(); break; }
+        { const c = tt % 7;
+          if (c < 3) { t.ns = t.fs = 3.0; t.ne = t.fe = 0.15; t.lean = -0.06; }                       // reach up
+          else if (c < 5.5) { t.lean = 1.0; t.ns = t.fs = 0.25; t.ne = t.fe = 0.05; t.nk = t.fk = 0.02; t.nh = t.fh = 0; }   // touch the toes
+          t.K = 200; t.D = 22; }
+        break;
+      case 'clip':
+        t.ns = t.fs = 0.75; t.ne = t.fe = 1.5 + (talking ? 0 : 0.1 * Math.sin(tt * 11) * (Math.sin(tt * 0.9) > 0 ? 1 : 0));   // writing
+        if (speaking) { t.ns = 0.95; t.ne = 1.2 + 0.15 * beat; } break;
+      case 'chai': {
+        const pour = !talking && tt % 6 < 1.6; p.pouring = pour;
+        if (pour) { t.ns = 1.25; t.ne = 0.45; t.fs = 0.7; t.fe = 1.5; t.lean = 0.18; }
+        else { t.ns = 0.65; t.ne = 1.75; t.fs = 0.3; t.fe = 0.5; }                                      // a cup in hand
+        if (speaking) gest('f'); break;
+      }
+      case 'host':
+        if (speaking) gest(); else if (!p.goto) { t.ns = 0.55; t.ne = 2.25; t.fs = 0.5; t.fe = 2.35; }   // arms folded
+        break;
+      case 'shoot': {
+        const S = I.shoot;
+        if (S.ph === 'set') { t.ns = t.fs = 2.3; t.ne = t.fe = 1.9; t.nk = t.fk = 0.7; t.nh = t.fh = 0.45; }
+        else if (S.ph === 'jump') { t.ns = t.fs = 2.9; t.ne = t.fe = 0.6; }
+        else if (S.ph === 'fly') { t.ns = 2.95; t.ne = 0.15; t.fs = 2.5; t.fe = 0.9; }                // follow-through
+        else if (S.ph === 'hold') { t.ns = 0.6; t.ne = 1.6; t.fs = 0.2; t.fe = 0.4; if (speaking) gest('f'); }
+        t.K = Math.max(t.K, 900); t.D = Math.max(t.D, 50); break;
+      }
+    }
+    return t;
+  };
+}
+// props: a folding chair, a clipboard, the chai table (thermos, cups, steam)
+function introPropBack(g, p) {
+  const k = depthK(p.z), q = (x, y, z) => P(x, y, z);
+  if (p.introAct === 'sit') {
+    const f = p.face, sx = p.x - f * 2, bx = p.x - f * 16;
+    g.strokeStyle = '#5b6470'; g.lineWidth = 3 * k; g.lineCap = 'round';
+    const line = (a, b) => { g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke(); };
+    line(q(sx - 14, 0, p.z - 8), q(sx + 12, 22, p.z - 8)); line(q(sx + 12, 0, p.z - 8), q(sx - 14, 22, p.z - 8));   // crossed legs
+    line(q(bx, 22, p.z - 8), q(bx, 62, p.z - 8));
+    g.fillStyle = '#7c8794'; const a = q(sx - 16, 23, p.z - 8), b = q(sx + 16, 23, p.z - 8); roundRect(g, Math.min(a[0], b[0]), a[1] - 4 * k, Math.abs(b[0] - a[0]), 5 * k, 2); g.fill();   // seat
+    const c = q(bx, 62, p.z - 8); roundRect(g, c[0] - 4 * k, c[1], 8 * k, 18 * k, 3); g.fill();                     // backrest
+  } else if (p.introAct === 'chai') {
+    const tx = p.x + p.face * 40, tz = p.z - 4, [x, y] = q(tx, 32, tz), w = 46 * k;
+    g.fillStyle = '#6b4a2b'; g.fillRect(x - w / 2 + 3 * k, y, 3 * k, 32 * k); g.fillRect(x + w / 2 - 6 * k, y, 3 * k, 32 * k);   // legs
+    g.fillStyle = '#e9e2d0'; roundRect(g, x - w / 2, y - 5 * k, w, 7 * k, 2); g.fill();                                      // cloth-covered top
+    g.fillStyle = '#c0392b'; roundRect(g, x - 18 * k, y - 22 * k, 9 * k, 18 * k, 3); g.fill();                               // thermos
+    if (!p.pouring) { g.fillStyle = '#2b2b2b'; g.fillRect(x - 17 * k, y - 25 * k, 7 * k, 4 * k); }
+    for (let i = 0; i < 3; i++) {                                                                                             // glasses of chai
+      const cx = x - 2 * k + i * 9 * k; g.fillStyle = 'rgba(255,255,255,0.75)'; g.fillRect(cx, y - 11 * k, 6 * k, 8 * k);
+      g.fillStyle = '#b5652b'; g.fillRect(cx + 0.8 * k, y - 8 * k, 4.4 * k, 4.5 * k);
+      const st = (Game.t * 0.6 + i * 0.33) % 1; g.strokeStyle = `rgba(255,255,255,${0.35 * (1 - st)})`; g.lineWidth = 1.5 * k;
+      g.beginPath(); g.moveTo(cx + 3 * k, y - 12 * k - st * 16 * k); g.quadraticCurveTo(cx + 3 * k + Math.sin(Game.t * 3 + i) * 4 * k, y - 18 * k - st * 16 * k, cx + 3 * k, y - 24 * k - st * 16 * k); g.stroke();
+    }
+  }
+}
+function introPropFront(g, p) {
+  const k = depthK(p.z);
+  if (p.introAct === 'clip') {
+    const n = p.hands.n, f = p.hands.f, [x, y] = P((n.x + f.x) / 2, (n.y + f.y) / 2 + 3, p.z + 8);
+    g.save(); g.translate(x, y); g.rotate(-0.12 * p.face); g.scale(k, k);
+    g.fillStyle = '#8a5a2b'; roundRect(g, -8, -11, 16, 21, 2); g.fill();
+    g.fillStyle = '#f7f4ea'; g.fillRect(-6, -8, 12, 16);
+    g.fillStyle = '#9aa7b3'; for (let i = 0; i < 4; i++) g.fillRect(-4, -5 + i * 3.5, 8 - (i % 2) * 3, 1);
+    g.fillStyle = '#c9c9c9'; g.fillRect(-3, -12, 6, 3);
+    g.restore();
+  } else if (p.introAct === 'chai') {
+    const n = p.hands.n, [x, y] = P(n.x, n.y, p.z + 8);
+    g.save(); g.translate(x, y); g.scale(k, k);
+    if (p.pouring) { g.rotate(p.face * 0.9); g.fillStyle = '#c0392b'; roundRect(g, -4, -9, 9, 18, 3); g.fill(); }
+    else { g.fillStyle = 'rgba(255,255,255,0.8)'; g.fillRect(-3, -6, 6, 8); g.fillStyle = '#b5652b'; g.fillRect(-2.2, -3, 4.4, 4.5); }
+    g.restore();
+  }
 }
 
 // ================================================= v7.7: ADAPTIVE RESOLUTION

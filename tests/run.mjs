@@ -9,6 +9,8 @@
 //   controls     scripted human input: pump fake -> double dribble rules, legal pivot and shot
 //   half-court   lobby-driven half-court / points-target games run to completion
 //   career       new career -> 3 matches -> post-game -> save written
+//   feel         v7.9 rules: holding sprint gets at least the CPU's sprint time (same stamina rule), nobody
+//                walks through the end walls, a loose ball bounces off them, side-outs start with room
 //   career-intro creator (Start career) -> walk to Saleem outside the masjid -> up the path -> gym -> meet
 //                all five brothers -> hub; body builds sum to zero; CPU stages have 2/3/2 strength tiers
 //   online-loop  loopback transport: lobby, 3 game types, back to lobby, direct (P2P) link + fallback
@@ -112,6 +114,7 @@ T['controls'] = async ({ browser, base }) => {
         t += STEP; if (t < 0.05) return true; if (!me.pick && t < 0.5 && me.state === 'free') { startFake(me); return true; } if (t > 0.5) after(c, t); return true; };
       for (let i = 0; i < 150; i++) updateMatch(STEP);
       M.cmdHook = null;
+      for (let i = 0; i < 300 && !ball.owner && (M.inb || M.phase === 'dead'); i++) updateMatch(STEP);   // let a turnover inbound finish
       return { dd: calls.includes('DOUBLE DRIBBLE!'), owner: ball.owner ? ball.owner.team : null };
     };
     out.walkOff = scenario(c => { c.mx = 1; });
@@ -164,6 +167,38 @@ T['career'] = async ({ browser, base }) => {
   await ctx.close();
   const ok = r.out.every((x, i) => x.over && x.screen === 'postgame' && x.played === i + 1) && r.saved && r.savedGames === 3 && !errs.length;
   return { ok, detail: [...r.out.map(x => JSON.stringify(x)), 'save written: ' + r.saved, ...errs] };
+};
+
+T['feel'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'feel');
+  const r = await p.evaluate(() => {
+    const out = {};
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 600 } });
+    let spr = 0, frames = 0, outside = 0, ballOut = 0;
+    for (let i = 0; i < 60 * 90; i++) {
+      updateMatch(STEP); if (M.phase !== 'live') continue;
+      for (const q of M.players) { frames++; if (q.cmd.turbo && q.turboOK() && Math.hypot(q.vx, q.vz) > 40) spr++; if (q.x < 0 || q.x > COURT.L) outside++; }
+      if (!ball.owner && (ball.x < -10 || ball.x > COURT.L + 10)) ballOut++;
+    }
+    out.cpuSprint = +(spr / frames).toFixed(3); out.outside = outside; out.ballOut = ballOut;
+    newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 600 } });
+    for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
+    const me = M.players[0]; let hs = 0, dir = 1;
+    M.cmdHook = q => { if (q !== me) return false; zeroCmd(q.cmd); if (me.x > 1200) dir = -1; if (me.x < 150) dir = 1; q.cmd.mx = dir; q.cmd.turbo = true; return true; };
+    for (let i = 0; i < 60 * 60; i++) { updateMatch(STEP); if (me.cmd.turbo && me.turboOK() && Math.hypot(me.vx, me.vz) > 40) hs++; }
+    out.holdSprint = +(hs / 3600).toFixed(3); M.cmdHook = null;
+    ball.owner = null; ball.state = 'loose'; Object.assign(ball, { x: 200, y: 60, z: 500, vx: -900, vy: 100, vz: 500 });
+    let worst = 0; for (let i = 0; i < 120; i++) { updateMatch(STEP); worst = Math.max(worst, -ball.x); } out.ballWorst = Math.round(worst);
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 600 } });
+    for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
+    const v = M.players[0], d = M.players[2]; place(v, 600, 300); place(d, 620, 305); giveBall(v, 'inbound');
+    sideOut(v, 'REACH-IN!', ''); M.deadT = 0; updateMatch(STEP);
+    out.sideOutGap = Math.round(Math.min(...M.players.filter(q => q.team !== v.team).map(q => dxz(q, v)))); out.sideOutBall = ball.owner === v;
+    return out;
+  });
+  await ctx.close();
+  const ok = r.holdSprint >= r.cpuSprint * 0.9 && r.outside === 0 && r.ballOut === 0 && r.ballWorst <= 10 && r.sideOutGap >= 90 && r.sideOutBall && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
 T['career-intro'] = async ({ browser, base }) => {
