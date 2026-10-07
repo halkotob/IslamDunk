@@ -1,5 +1,13 @@
 # Changelog
 
+## 7.9.1: new logo
+- The mark is redrawn from scratch as one simple silhouette (no internal lines): a brother in a kufi
+  and a full-length thawb taking off for a dunk. He leans in, the ball arm is fully extended, the free
+  arm is out for balance, the front knee drives up, and the thawb streams back off the trailing leg.
+  Picked from four rounds of options.
+- Stored as a baked alpha mask (`DUNKER_PNG` in `src/render/logo.js`), tinted gold on the title and
+  splash, and gold on the green tile for the app icons (regenerated with `scripts/make-icons.mjs`).
+
 ## 7.9: feel and fairness, new logo, intro staging
 - **New logo.** A dunker in a thawb and kufi, in the split-leg, ball-overhead dunk pose, as one gold
   silhouette. It's on the title screen and splash, and in the app icons (regenerated from the game's own

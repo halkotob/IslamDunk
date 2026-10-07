@@ -7,7 +7,7 @@ const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const html = fs.readFileSync(path.join(ROOT, 'dist/web/index.html'), 'utf8');
 const b = await chromium.launch(); const p = await b.newPage();
 await p.route('**/*', r => r.request().url().startsWith('http://icons.local/') ? r.fulfill({ status: 200, contentType: 'text/html', body: html }) : r.abort());
-await p.goto('http://icons.local/'); await p.waitForFunction(() => typeof drawLogoIcon === 'function');
+await p.goto('http://icons.local/'); await p.waitForFunction(() => typeof drawLogoIcon === 'function' && DUNKER_IMG && DUNKER_IMG.complete && DUNKER_IMG.naturalWidth > 0);
 const icons = await p.evaluate(() => {
   const mk = (size, fn) => { const c = document.createElement('canvas'); c.width = c.height = size; fn(c.getContext('2d'), size); return c.toDataURL('image/png'); };
   return {
