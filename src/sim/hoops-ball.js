@@ -307,9 +307,8 @@ function giveBall(p, how) {
   ball.fire = p.fire;
 }
 function fumble(t) {
-  const y0 = ball.owner === t && t.ctlY != null ? t.ctlY : ball.y;   // held: the control point's height (see attachBall)
   ball.owner = null; ball.state = 'loose'; ball.shot = null; ball.pass = null;
-  ball.x = t.x; ball.z = t.z; ball.y = Math.max(y0, 40);
+  ball.x = t.x; ball.z = t.z; ball.y = Math.max(ball.y, 40);
   ball.vx = rand(-150, 150); ball.vy = rand(150, 280); ball.vz = rand(-150, 150); ball.grabLock = 0.3; ball.lastTouch = t;
 }
 

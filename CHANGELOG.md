@@ -1,6 +1,10 @@
 # Changelog
 
-## 7.9.2: dribble smoothing and realism
+## 7.9.3: dribble rollback
+- The 7.9.2 dribble rework is rolled back: dribbling looks and plays exactly as in 7.9.1 again.
+  (Kept: the `controls` test parks defenders during its rules scenarios, so a random steal can't flake it.)
+
+## 7.9.2: dribble smoothing and realism (rolled back in 7.9.3)
 - **Steady tempo.** The ball has its own dribble clock instead of riding the run cycle: about 2.2
   bounces/s standing, 2.7 jogging and 3.4 sprinting (was 2.4 / 5.3 / 7.9). The tempo eases between
   speeds, so it never jumps when you start or stop sprinting.

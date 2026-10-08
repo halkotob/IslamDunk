@@ -441,9 +441,7 @@ function trySteal(p) {
   }
   SFX.swipe();
 }
-// is the ball on the defender's side? For a held ball this reads the owner's control point (the
-// pre-v8 dribble-hand position), so the dribble's look never changes steal odds
-function ballExposed(p, h) { const own = ball.owner === h && h.ctlX != null, bx = own ? h.ctlX : ball.x, bz = own ? h.ctlZ : ball.z; return Math.hypot(bx - p.x, bz - p.z) < dxz(h, p) - 4; }
+function ballExposed(p, h) { return Math.hypot(ball.x - p.x, ball.z - p.z) < dxz(h, p) - 4; }
 function tryShove(p) {
   if (p.cd.shove > 0) return;
   p.cd.shove = 1.0; p.shoves = (p.shoves || 0) + 1; if (!p.fire) p.turbo = Math.max(0, p.turbo - 25);
