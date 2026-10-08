@@ -303,8 +303,8 @@ function introActStep(p, id, dt) {
     if (!talking) { S.ph = 'drib'; S.t = 0; }
   } else if (S.ph === 'drib') {
     p.fakeHold = true; const hd = p.hands[p.dh] || p.hands.n;
-    S.x = hd.x + p.face * 5; S.y = BALL_R + (hd.y - 4 - BALL_R) * Math.abs(Math.cos(Math.PI * p.dp)); S.z = hd.z + 3;
-    if (S.t > 2.2 && p.dp < 0.15) { S.ph = 'set'; S.t = 0; }
+    S.x = hd.x + p.face * 5; S.y = dribBallY(p, hd.y - 4); S.z = hd.z + 3;
+    if (S.t > 2.2 && (p.dribU || 0) < 0.08) { S.ph = 'set'; S.t = 0; }
   } else if (S.ph === 'set') {
     p.fakeHold = false; const k = Math.min(1, S.t / 0.3);
     S.x = lerp(S.x, p.x + p.face * 6, k); S.y = lerp(S.y, 112, k); S.z = p.z + 2;

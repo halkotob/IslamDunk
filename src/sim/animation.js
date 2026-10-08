@@ -20,7 +20,7 @@ function poseTargets(p, sp) {
     }
     if (holding) {
       const d = p.move ? (p.move.t / p.move.dur < 0.5 ? p.move.from : p.move.to) : p.dh, o = d === 'n' ? 'f' : 'n';
-      t[d + 's'] = 0.45 + 0.18 * Math.cos(p.dp * Math.PI * 2); t[d + 'e'] = 0.3;
+      t[d + 's'] = p.pick && ball.owner === p ? 0.45 : 0.45 + 0.18 * Math.cos(((p.dribU || 0) - DRIB_HAND_LAG) * Math.PI * 2); t[d + 'e'] = 0.3;   // pump rides the dribble clock, a touch behind the ball (still once the dribble is picked up)
       t[o + 's'] = 0.95; t[o + 'e'] = 0.9;
     }
     if (s === 'land') { t.nk = 1.2; t.fk = 1.0; t.nh = 0.6; t.fh = 0.5; t.lean = 0.3; t.K = 700; }
@@ -98,12 +98,16 @@ function animate(p, dt) {
     const prevDp = p.dp;
     p.phase += dt * rate;
     p.dp = (p.phase / Math.PI) % 1;
-    if (holding && !p.move && prevDp < 0.5 && p.dp >= 0.5) { if (onScreen(p.x)) SFX.bounce(0.3); }
     if (sp > 260 && prevDp < 0.5 && p.dp >= 0.5 && chance(0.4)) FX.dust(p.x, p.z, 1);
   }
+  if (holding || p.fakeHold) {
+    if (!p.dribOn) { p.dribOn = true; p.dribT = Math.floor(p.dribT || 0); p.dribF = null; }   // a new possession starts with the ball in the hand
+    const hit = dribStep(p, sp, dt);
+    if (hit && holding && !p.move && p.attMode === 'drib' && onScreen(p.x)) SFX.bounce(DRIB_SFX + DRIB_SFX_SPRINT * clamp(sp / DRIB_SPRINT_SPEED, 0, 1));
+  } else p.dribOn = false;
   if (p.move) {
     p.move.t += dt;
-    if (p.move.t >= p.move.dur) { p.dh = p.move.to; p.move = null; p.phase = Math.round(p.phase / Math.PI) * Math.PI; p.dp = 0; }
+    if (p.move.t >= p.move.dur) { p.dh = p.move.to; p.move = null; p.phase = Math.round(p.phase / Math.PI) * Math.PI; p.dp = 0; p.dribT = Math.ceil(p.dribT || 0); p.dribU = 0; }   // the move ends with the ball in the new hand: resume at the top
   }
   const T = poseTargets(p, sp);
   for (const k of JOINTS) {
@@ -129,30 +133,99 @@ function animate(p, dt) {
   }
   if (holding) attachBall(p, dt);
 }
-// Where the ball sits while owned: dribble synced to footsteps, crossovers, holds
-function attachBall(p) {
-  let bx, by, bz, behind = false;
+
+// ---- dribble clock: the ball keeps its own rhythm instead of riding the run cycle.
+// Tempo rises only a little with speed (eased, so it never jumps); a sprint changes the bounce's
+// shape (pushed further ahead, a lower apex, longer travel per bounce), not its tempo.
+const DRIB_BPS_STAND = 2.2, DRIB_BPS_JOG = 2.7, DRIB_BPS_SPRINT = 3.4;   // bounces per second
+const DRIB_JOG_SPEED = 245, DRIB_SPRINT_SPEED = 365;                       // speeds (world units/s) where the jog / sprint tempo is reached
+const DRIB_EASE = 3;                                                       // 1/s: how quickly the tempo follows a change of speed
+const DRIB_PUSH_JOG = 5, DRIB_PUSH_SPRINT = 20;                            // how far ahead of the hand the ball meets the floor
+const DRIB_DROP_SPRINT = 6;                                                // the sprint apex sits this much lower: hip height, not the hand's top
+const DRIB_HAND_LAG = 0.05;                                                // the hand trails the ball by this fraction of a bounce
+const DRIB_LOWGRAV = 0.8;                                                  // Low Gravity fun mode: a floatier tempo
+const DRIB_SFX = 0.24, DRIB_SFX_SPRINT = 0.1;                              // bounce volume, plus up to this much at full sprint
+const DRIB_BLEND = 0.09;                                                   // s: dribble <-> two-hand hold handoff
+const DRIB_HAND_SMOOTH = 7;                                                // 1/s: low-pass on the hand point the ball aims at (drops the stride bob)
+const DRIB_APEX_LIFT = 2;                                                  // the smoothed hand sits at the pump's middle: lift the apex to meet the palm
+// height fraction over one bounce: u = 0 apex (in the hand), 0.5 floor contact. Gravity-shaped:
+// quick off the floor, a hang at the top, a sharp contact with no stall
+function dribArc(u) { const s = Math.abs(2 * u - 1); return 1 - (1 - s) * (1 - s); }
+function dribSprintK(p, sp) { return p.cmd && p.cmd.turbo && p.turboOK && p.turboOK() ? clamp((sp - 120) / (DRIB_SPRINT_SPEED - 120), 0, 1) : 0; }
+// advance the clock; returns true on the frame the ball meets the floor
+function dribStep(p, sp, dt) {
+  const sk = dribSprintK(p, sp);
+  let f = lerp(DRIB_BPS_STAND, DRIB_BPS_JOG, clamp(sp / DRIB_JOG_SPEED, 0, 1));
+  f = lerp(f, DRIB_BPS_SPRINT, sk);
+  if (M && M.fun && M.fun.lowGrav) f *= DRIB_LOWGRAV;
+  if (p.dribF == null) p.dribF = f;
+  const e = Math.min(1, dt * DRIB_EASE);
+  p.dribF += (f - p.dribF) * e;
+  p.dribSk = (p.dribSk || 0) + (sk - (p.dribSk || 0)) * Math.min(1, dt * 5);   // the bounce's shape eases in too
+  const u0 = (p.dribT || 0) % 1; p.dribT = (p.dribT || 0) + dt * p.dribF; const u1 = p.dribT % 1;
+  p.dribU = u1;
+  return u0 < 0.5 && u1 >= 0.5;
+}
+// the dribble ball's height for an apex at `top` (shared by the menu portraits and the career intro)
+function dribBallY(p, top) { return BALL_R + (top - BALL_R) * dribArc(p.dribU || 0); }
+// Where the ball sits while owned: the dribble (own clock), crossovers, holds.
+// p.ctlX / ctlY / ctlZ keep the pre-v8 held-ball position (dribble hand, run-phase height). The
+// gameplay reads of a held ball (ballExposed: steals, reach-ins, stance; fumble height) use it, so
+// steal and strip balance don't depend on how the dribble looks.
+function attachBall(p, dt = STEP) {
+  let bx, by, bz, behind = false, mode;
   if (GROUND_STATES.includes(p.state) && p.state !== 'windup' && p.state !== 'pass' && p.state !== 'fake') {
     if (p.move) {
+      mode = 'move';
       const u = p.move.t / p.move.dur, A = p.hands[p.move.from], B = p.hands[p.move.to];
       const fx = p.x + p.face * (p.move.type === 'btb' ? -12 : 16), fz = p.z;
       const k = u < 0.5 ? u * 2 : (u - 0.5) * 2, S = u < 0.5 ? A : B;
       bx = u < 0.5 ? lerp(S.x, fx, k) : lerp(fx, S.x, k); bz = u < 0.5 ? lerp(S.z, fz, k) : lerp(fz, S.z, k);
       by = BALL_R + (S.y - 4 - BALL_R) * Math.abs(Math.cos(Math.PI * u));
+      p.ctlX = bx; p.ctlY = by; p.ctlZ = bz;                                    // gameplay: unchanged
+      bx += p.face * 2.5 * Math.abs(Math.cos(Math.PI * u));                       // meets the dribble's hand offset at both ends (no pop)
+      if (p.move.b0x == null) { p.move.b0x = ball.x - p.x; p.move.b0y = ball.y; p.move.b0z = ball.z - p.z; }   // start from wherever the dribble had the ball
+      const w = clamp(u / 0.3, 0, 1), ws = w * w * (3 - 2 * w);
+      bx = lerp(p.x + p.move.b0x, bx, ws); by = lerp(p.move.b0y, by, ws); bz = lerp(p.z + p.move.b0z, bz, ws);
       behind = p.move.type === 'btb';
       if (u >= 0.5 && p.move.bounced !== true) { p.move.bounced = true; if (onScreen(p.x)) SFX.bounce(0.3); }
     } else {
-      const hd = p.hands[p.dh], top = hd.y - 4;
+      mode = 'drib';
+      const hd = p.hands[p.dh], top = hd.y - 4, sp = Math.hypot(p.vx, p.vz);
       const fast = p.cmd.turbo && p.turboOK(), stride = Math.abs(Math.cos(Math.PI * p.dp));
-      by = BALL_R + (top - BALL_R) * (fast ? stride * 0.72 : stride);
-      bx = hd.x + p.face * 2.5; bz = hd.z + (p.dh === 'n' ? 2 : -2); behind = p.dh === 'f';
+      bz = hd.z + (p.dh === 'n' ? 2 : -2); behind = p.dh === 'f';
+      p.ctlX = hd.x + p.face * 2.5; p.ctlY = BALL_R + (top - BALL_R) * (fast ? stride * 0.72 : stride); p.ctlZ = bz;   // gameplay: the pre-v8 position
+      const u = p.dribU || 0, sk = p.dribSk || 0, jk = clamp(sp / DRIB_JOG_SPEED, 0, 1);
+      // the arc aims at a smoothed hand: the hand bobs with the stride, the ball's path shouldn't
+      const hx = (hd.x - p.x) * p.face, e = p.attMode === 'drib' ? Math.min(1, dt * DRIB_HAND_SMOOTH) : 1;
+      p.dribTop = p.dribTop == null || e === 1 ? top : p.dribTop + (top - p.dribTop) * e;
+      p.dribHX = p.dribHX == null || e === 1 ? hx : p.dribHX + (hx - p.dribHX) * e;
+      by = BALL_R + (p.dribTop + DRIB_APEX_LIFT - DRIB_DROP_SPRINT * sk - BALL_R) * dribArc(u);
+      bx = p.x + p.face * (p.dribHX + 2.5 + (DRIB_PUSH_JOG * jk + (DRIB_PUSH_SPRINT - DRIB_PUSH_JOG) * sk) * Math.sin(Math.PI * u));
+      if (p.pick && ball.owner === p) { mode = 'hold'; const m = handsMid(p); bx = m.x + p.face * 3; by = m.y + 2; bz = m.z + 3; }   // dribble picked up (pump fake): held, not bouncing
     }
   } else if (p.state === 'dunk' && (p.act.type === 'tomahawk' || p.act.type === 'windmill') && p.act.s > 0.12) {
-    const hd = p.hands.n; bx = hd.x; by = hd.y + 4; bz = hd.z;
+    mode = 'hold'; const hd = p.hands.n; bx = hd.x; by = hd.y + 4; bz = hd.z; p.ctlX = bx; p.ctlY = by; p.ctlZ = bz;
   } else {
-    const m = handsMid(p); bx = m.x + p.face * 3; by = m.y + (p.state === 'shoot' ? 7 : 2); bz = m.z + 3;
+    mode = 'hold'; const m = handsMid(p); bx = m.x + p.face * 3; by = m.y + (p.state === 'shoot' ? 7 : 2); bz = m.z + 3; p.ctlX = bx; p.ctlY = by; p.ctlZ = bz;
+  }
+  // the body is drawn scaled by height and build around the feet: keep the dribble on the drawn hand.
+  // (Holds stay unscaled: shots and passes leave from the unscaled hands, and the hold blend covers the change.)
+  if (mode !== 'hold') {
+    const d = p.def, lk = d && d.look, sw = lk ? BUILD_W[lk.build] : d && d.bw != null ? BUILD_W[d.bw] : 1, sh = lk ? HEIGHT_S[lk.height] : d && d.bh != null ? HEIGHT_S[d.bh] : 1;
+    if (sw !== 1 || sh !== 1) { bx = p.x + (bx - p.x) * sw; by = p.y < 1 ? BALL_R + (by - BALL_R) * sh : p.y + (by - p.y) * sh; }
+  }
+  // dribble <-> two-hand hold (gather, pump fake, pass, shot): a short blend instead of a pop
+  if (p.attMode !== mode) {
+    if (p.attMode && (p.attMode === 'hold') !== (mode === 'hold')) { p.attBl = DRIB_BLEND; p.attX = ball.x - p.x; p.attY = ball.y; p.attZ = ball.z - p.z; }
+    if (mode === 'drib' && p.attMode === 'hold') { p.dribT = Math.ceil(p.dribT || 0); p.dribU = 0; by = dribBallY(p, p.hands[p.dh].y - 4); }   // back to the dribble: from the hand
+    p.attMode = mode;
+  }
+  if (p.attBl > 0) {
+    const w = 1 - p.attBl / DRIB_BLEND, ws = w * w * (3 - 2 * w);
+    bx = lerp(p.x + p.attX, bx, ws); by = lerp(p.attY, by, ws); bz = lerp(p.z + p.attZ, bz, ws);
+    p.attBl -= dt;
   }
   ball.x = bx; ball.y = Math.max(BALL_R, by); ball.z = bz; ball.behind = behind;
   ball.rot += (p.move ? 0.3 : 0.08) * p.face;
 }
-

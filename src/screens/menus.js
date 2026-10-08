@@ -123,7 +123,7 @@ function drawPortrait(g, x, y, def, T, s = 1.5, outfit = null, anim = null) {
   if (anim) { d.fakeHold = anim === 'dribble'; d.fakeIdle = true; d.vx = d.vz = 0; animate(d, Math.min(Game.rdt || STEP, 0.05)); }
   g.save(); g.translate(x, y); g.scale(s, s); g.translate(-x, -y); drawPlayer(g, d);
   if (anim === 'dribble') {         // a ball bouncing from the dribble hand, in time with the arm
-    const hd = d.hands[d.dh], by = BALL_R + (hd.y - 4 - BALL_R) * Math.abs(Math.cos(Math.PI * d.dp));
+    const hd = d.hands[d.dh], by = dribBallY(d, hd.y - 4);
     drawBallAt(g, hd.x + d.face * 5, by, hd.z + 3, Game.t * 3, false);
   }
   g.restore();

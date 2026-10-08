@@ -9,6 +9,8 @@
 //   controls     scripted human input: pump fake -> double dribble rules, legal pivot and shot
 //   half-court   lobby-driven half-court / points-target games run to completion
 //   career       new career -> 3 matches -> post-game -> save written
+//   dribble      dribble tempo per speed (stand ~2.2, jog ~2.7, sprint ~3.4 bounces/s), a smooth ramp on
+//                stand -> sprint -> stop, no ball pops on crossovers / behind-the-back / pump fakes
 //   feel         v7.9 rules: holding sprint gets at least the CPU's sprint time (same stamina rule), nobody
 //                walks through the end walls, a loose ball bounces off them, side-outs start with room
 //   career-intro creator (Start career) -> walk to Saleem outside the masjid -> up the path -> gym -> meet
@@ -109,8 +111,9 @@ T['controls'] = async ({ browser, base }) => {
       newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] });
       for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
       const me = M.players[0]; M.phase = 'live'; ball.shot = null; giveBall(me, 'inbound'); place(me, 900, 350); me.state = 'free';
+      for (const q of M.players) if (q !== me) place(q, 200, 640);       // rules only: no defender can steal mid-scenario
       let t = 0; calls.length = 0;
-      M.cmdHook = q => { if (q !== me) return false; const c = q.cmd; for (const k of ['a', 'b', 'x', 's', 'turbo', 'bHeld', 'aHeld', 'xHeld']) c[k] = false; c.mx = c.mz = 0; c.face = 0; c.passTo = null; c.alley = null;
+      M.cmdHook = q => { if (q !== me) { zeroCmd(q.cmd); return true; } const c = q.cmd; for (const k of ['a', 'b', 'x', 's', 'turbo', 'bHeld', 'aHeld', 'xHeld']) c[k] = false; c.mx = c.mz = 0; c.face = 0; c.passTo = null; c.alley = null;
         t += STEP; if (t < 0.05) return true; if (!me.pick && t < 0.5 && me.state === 'free') { startFake(me); return true; } if (t > 0.5) after(c, t); return true; };
       for (let i = 0; i < 150; i++) updateMatch(STEP);
       M.cmdHook = null;
@@ -167,6 +170,45 @@ T['career'] = async ({ browser, base }) => {
   await ctx.close();
   const ok = r.out.every((x, i) => x.over && x.screen === 'postgame' && x.played === i + 1) && r.saved && r.savedGames === 3 && !errs.length;
   return { ok, detail: [...r.out.map(x => JSON.stringify(x)), 'save written: ' + r.saved, ...errs] };
+};
+
+T['dribble'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'dribble');
+  const r = await p.evaluate(() => {
+    const setup = () => {
+      newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 600 } });
+      for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
+      const me = M.players[0]; M.phase = 'live'; ball.shot = null; giveBall(me, 'inbound'); place(me, 200, 350); me.state = 'free';
+      return me;
+    };
+    const step = me => { me.turbo = 100; updateMatch(STEP); if (me.x > 1150) me.x = 200; for (const q of M.players) if (q !== me) { q.x = 1100; q.z = 650; } };
+    // tempo: count floor contacts (local minima of the height curve) over 2.5 s per speed, after 0.5 s to settle
+    const tempo = (mx, turbo) => {
+      const me = setup(); M.cmdHook = q => { zeroCmd(q.cmd); if (q === me) { q.cmd.mx = mx; q.cmd.turbo = turbo; } return true; };
+      const ys = [], ts = [];
+      for (let i = 0; i < 180; i++) { step(me); if (i >= 30) { ys.push(ball.y); ts.push(i * STEP); } }
+      const c = []; for (let i = 1; i < ys.length - 1; i++) if (ys[i] < ys[i - 1] && ys[i] <= ys[i + 1] && ys[i] < BALL_R + 18) c.push(ts[i]);
+      M.cmdHook = null; return +((c.length - 1) / (c[c.length - 1] - c[0])).toFixed(2);
+    };
+    const out = { stand: tempo(0, false), jog: tempo(1, false), sprint: tempo(1, true) };
+    // ramp: stand 1.2 s -> sprint 2.5 s -> stop 2 s; neighbouring bounce intervals never jump
+    { const me = setup(); let ph = 0, t = 0; M.cmdHook = q => { zeroCmd(q.cmd); if (q === me) { q.cmd.mx = ph === 1 ? 1 : 0; q.cmd.turbo = ph === 1; } return true; };
+      const ys = [], ts = []; for (let i = 0; i < 342; i++) { t = i * STEP; ph = t < 1.2 ? 0 : t < 3.7 ? 1 : 2; step(me); ys.push(ball.y); ts.push(t); }
+      const c = []; for (let i = 1; i < ys.length - 1; i++) if (ys[i] < ys[i - 1] && ys[i] <= ys[i + 1] && ys[i] < BALL_R + 18) c.push(ts[i]);
+      const f = c.slice(1).map((x, i) => 1 / (x - c[i])); out.rampMaxJump = +Math.max(...f.slice(1).map((x, i) => Math.abs(x - f[i]))).toFixed(2); M.cmdHook = null; }
+    // pops: the ball relative to its dribbler never jumps far in one frame during moves and pick-ups
+    let pop = 0;
+    for (const trig of [me => startMove(me, 'cross'), me => startMove(me, 'btb'), me => startFake(me)]) for (let rep = 0; rep < 6; rep++) {
+      const me = setup(); M.cmdHook = q => { zeroCmd(q.cmd); return true; }; let prev = null;
+      for (let i = 0; i < 90; i++) { if (i === 40 + rep * 3) trig(me); step(me); const rel = [ball.x - me.x, ball.y, ball.z - me.z]; if (prev && ball.owner === me && i > 20) pop = Math.max(pop, Math.hypot(rel[0] - prev[0], rel[1] - prev[1], rel[2] - prev[2])); prev = rel; }
+      M.cmdHook = null;
+    }
+    out.maxFrameJump = +pop.toFixed(1);
+    return out;
+  });
+  await ctx.close();
+  const ok = r.stand >= 2.0 && r.stand <= 2.4 && r.jog >= 2.5 && r.jog <= 2.85 && r.sprint >= 3.2 && r.sprint <= 3.6 && r.rampMaxJump < 0.7 && r.maxFrameJump < 20 && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
 T['feel'] = async ({ browser, base }) => {
