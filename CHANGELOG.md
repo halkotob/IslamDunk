@@ -1,5 +1,19 @@
 # Changelog
 
+## 7.9.2: dribble smoothing and realism
+- **Steady tempo.** The ball has its own dribble clock instead of riding the run cycle: about 2.2
+  bounces/s standing, 2.7 jogging and 3.4 sprinting (was 2.4 / 5.3 / 7.9). The tempo eases between
+  speeds, so it never jumps when you start or stop sprinting.
+- **Gravity-shaped bounce.** Quick off the floor, a hang at the top, a short contact. Sprinting changes
+  the bounce's shape, not its tempo: the ball goes out ahead on a lower, longer bounce. Standing keeps it
+  high and close.
+- **Hand and sound.** The hand pump follows the ball; the bounce sound plays on the real floor contact.
+- **No pops.** Crossovers, behind-the-backs and pump fakes no longer make the ball jump. A picked-up
+  dribble is held instead of still bouncing. The dribble follows tall/short and solid/lean bodies.
+- **Gameplay unchanged.** Steals and fumbles read the old hand-based ball position; steal odds and
+  CPU-vs-CPU stats measured the same. Details: [halkotob/IslamDunk#1](https://github.com/halkotob/IslamDunk/pull/1).
+- New `dribble` test; the `controls` test no longer flakes on a random steal.
+
 ## 7.9.1: new logo
 - The mark is redrawn from scratch as one simple silhouette (no internal lines): a brother in a kufi
   and a full-length thawb taking off for a dunk. He leans in, the ball arm is fully extended, the free
