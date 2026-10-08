@@ -189,7 +189,12 @@ const hoops = HOOP_DEFS.map((d, i) => new Hoop(d, i));
 const attackHoop = t => M.halfCourt ? hoops[1] : hoops[1 - t];
 const defendHoop = t => M.halfCourt ? hoops[1] : hoops[t];
 // Per-team AI config: career stages give each side its own level.
-function aiCfg(team) { return (M.aiCfg && M.aiCfg[team]) || DIFF[SETTINGS.difficulty]; }
+function aiCfg(team) {
+  if (M.aiCfg && M.aiCfg[team]) return M.aiCfg[team];
+  // Very easy: the CPU on your side still plays a normal game, so it helps instead of holding you back
+  if (SETTINGS.difficulty === 'veryeasy' && M.players && M.players.some(p => p.team === team && p.human >= 0)) return DIFF.medium;
+  return DIFF[SETTINGS.difficulty] || DIFF.medium;
+}
 function isThree(x, z, h) { const dx = Math.abs(x - h.x), dz = Math.abs(z - h.z); return Math.hypot(dx, dz) >= THREE_R || (dz >= 300 && dx < 150); }
 
 // Gravity (Low Gravity fun mode) and jump apex used by shot timing.

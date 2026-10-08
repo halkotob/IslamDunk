@@ -1,5 +1,32 @@
 # Changelog
 
+## 8.0.0: Phase 1 — test tools, mini games, Very easy
+- **Lightning, rebuilt to the real rules.** Five players line up single file behind the arc. The front of
+  the line shoots first from the spot; the next player can't shoot until he has. Miss and you chase your
+  own rebound and keep shooting until it drops. Make it and the ball is passed to the next in line. If the
+  player behind you scores first, you're out. Last one standing wins.
+- **HORSE options.** Pick the word (HORSE, SABR or HAQ) and the time to match a shot (6, 10 or 15 s) in
+  Quick Play, the online lobby, and the career gym (uses your last choice).
+- **CPU misses in mini games now scale with difficulty.** CPU HORSE make rate measured at about 38%
+  on Very easy, 42% Easy, 62% Medium and 71% Hard (it was 79 to 87% on every setting).
+- **Mini games in Quick Play.** Quick Play → Mini games: Lightning or HORSE against the CPU, no career
+  save or friend needed. The finish screen comes back to the menu for another round.
+- **Very easy difficulty** (Options → Settings, lobby, mini games). Slower, sloppier CPU, a wider green
+  window for you, fewer fouls called, and your CPU teammate still plays a normal game. In career it is one
+  more step below Easy.
+- **Test panel (`?dev=1`).** A DEV tab (or the ` key) to jump to any career stage, round or season, win
+  or lose the next game, give BP/HB, max stats, unlock everything for the tab, set the score or clock,
+  launch any mode, change difficulty, and run the sim at 2x or 4x.
+- **Possession log.** Every full game is logged possession by possession (start, length, shots, how
+  it ended). The last 30 games stay in the browser; download them or see a summary from the DEV tab.
+  `tests/perf/loop-report.mjs` simulates CPU and scripted-human games; findings in
+  `docs/reports/gameplay-loop.md`.
+- **Human review packet** in `docs/review/`: every line of game text as an editable spreadsheet (with
+  speakers), the same grouped for reading, and a gallery of every court and team kit.
+- Fixes: "You leads" / "YOU WINS" now read "You lead" / "YOU WIN"; the career gym's Lightning tip
+  describes the new rules.
+- New `minis` test (Lightning rules over 6 CPU games, blocked early shot, HORSE word/timer).
+
 ## 7.9.3: dribble rollback
 - The 7.9.2 dribble rework is rolled back: dribbling looks and plays exactly as in 7.9.1 again.
   (Kept: the `controls` test parks defenders during its rules scenarios, so a random steal can't flake it.)

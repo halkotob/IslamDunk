@@ -151,7 +151,7 @@ function startMatchFromSelect(venue) {
 }
 // ------------------------------------------------------------- SETTINGS
 const SET_ITEMS = [
-  { label: 'Difficulty', get: () => SETTINGS.difficulty[0].toUpperCase() + SETTINGS.difficulty.slice(1), step: d => { const o = ['easy', 'medium', 'hard']; SETTINGS.difficulty = o[(o.indexOf(SETTINGS.difficulty) + d + 3) % 3]; } },
+  { label: 'Difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); } },
   { label: 'Keep games close (rubber-band)', get: () => SETTINGS.rubber ? 'On' : 'Off', step: () => { SETTINGS.rubber = !SETTINGS.rubber; } },
   { label: 'Format', get: () => FORMAT_TXT[SETTINGS.format], step: d => { SETTINGS.format = FORMATS[(FORMATS.indexOf(SETTINGS.format) + d + FORMATS.length) % FORMATS.length]; } },
   { label: 'Period length', get: () => SETTINGS.format === 'first21' ? 'Untimed, win by 2' : periodTxt(SETTINGS.periodLen), step: d => { if (SETTINGS.format !== 'first21') SETTINGS.periodLen = PERIOD_OPTS[(PERIOD_OPTS.indexOf(SETTINGS.periodLen) + d + PERIOD_OPTS.length) % PERIOD_OPTS.length]; } },

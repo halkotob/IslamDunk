@@ -11,9 +11,10 @@
 //   career       new career -> 3 matches -> post-game -> save written
 //   feel         v7.9 rules: holding sprint gets at least the CPU's sprint time (same stamina rule), nobody
 //                walks through the end walls, a loose ball bounces off them, side-outs start with room
+//   minis        Lightning rules (threes first, in order, own rebounds), HORSE word/timer options
 //   career-intro creator (Start career) -> walk to Saleem outside the masjid -> up the path -> gym -> meet
 //                all five brothers -> hub; body builds sum to zero; CPU stages have 2/3/2 strength tiers
-//   online-loop  loopback transport: lobby, 3 game types, back to lobby, direct (P2P) link + fallback
+//   online-loop  loopback transport: lobby, 5 game types (HORSE with the HAQ word), back to lobby, direct (P2P) link + fallback
 //   online-room  claude.ai room adapter (faked locally): lobby -> game -> lobby
 //   online-fb    Firebase adapter (fake SDK): lobby -> game -> lobby
 //   mobile       iPhone landscape/portrait layout, touch controls, no errors
@@ -202,6 +203,48 @@ T['feel'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
+T['minis'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'minis');
+  const r = await p.evaluate(() => {
+    const out = { games: 0, done: 0, firstShots: 0, notThree: 0, outOfOrder: 0, wrongGrab: 0 }, h = hoops[1];
+    // Lightning, CPU only: every first shot is a three from behind the arc, the second in line never
+    // shoots before the first, and only the shooter can pick up his own rebound
+    for (let g = 0; g < 6; g++) {
+      setupMini('lightning', { humans: [] }); const mg = M.mini, seen = new Set(); out.games++;
+      for (let n = 0; n < 60 * 300 && !mg.done; n++) {
+        const before = new Set(mg.taken), act = mg.active.slice();
+        miniStep(STEP);
+        for (const st of M.balls) {
+          if (st.state === 'shot' && st.shot && !seen.has(st.shot)) {
+            seen.add(st.shot); const s = st.shot.shooter, si = M.players.indexOf(s);
+            if (!before.has(si)) { out.firstShots++; if (Math.hypot(s.x - h.x, s.z - h.z) < THREE_R) out.notThree++; if (act[1] === si && !before.has(act[0])) out.outOfOrder++; }
+          }
+          if (st.owner && st.kShooter && st.owner !== st.kShooter) out.wrongGrab++;
+        }
+      }
+      if (mg.done) out.done++;
+    }
+    // Lightning, human second in line: shooting before the front of the line is blocked
+    setupMini('lightning', { humans: [{ team: 0, slot: 0, pad: 0 }] });
+    const mg = M.mini; mg.active = [1, 0]; mg.queue = [2, 3, 4]; mg.give(0, 1); mg.give(1, 0);
+    M.players.forEach((q, i) => { const sp = mg.spotFor(i); place(q, sp.x, sp.z); });
+    mg.wait[1] = 99; const me = M.players[0];
+    M.cmdHook = null; const _hc = humanCmd; humanCmd = (pad, c) => { zeroCmd(c); c.b = true; c.bHeld = true; };
+    for (let n = 0; n < 60; n++) miniStep(STEP);
+    humanCmd = _hc;
+    out.blocked = !!mg.blocked && !mg.taken.has(0) && ballStateOf(me).owner === me;
+    // HORSE: word and timer options
+    setupMini('horse', { roster: ['you', 'saleem'], humans: [], word: 'HAQ', timer: 6 });
+    out.horse = M.mini.word + '/' + M.mini.timerLen;
+    const hm = M.mini; for (let n = 0; n < 60 * 400 && !hm.done; n++) miniStep(STEP);
+    out.horseDone = hm.done && Math.max(...hm.letters) === 3;
+    return out;
+  });
+  await ctx.close();
+  const ok = r.done === r.games && r.firstShots > 20 && !r.notThree && !r.outOfOrder && !r.wrongGrab && r.blocked && r.horse === 'HAQ/6' && r.horseDone && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
 T['career-intro'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'career-intro');
   const st = () => p.evaluate(() => ({ scr: Game.screen, scene: typeof INTRO !== 'undefined' && INTRO ? INTRO.scene : null, x: INTRO && Math.round(INTRO.x || 0), talk: INTRO && INTRO.talk ? INTRO.talk.lines[INTRO.talk.i][0] : null, met: INTRO && INTRO.met ? Object.keys(INTRO.met).length : 0 }));
@@ -262,14 +305,15 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
   const p2p = await H.evaluate(() => (typeof P2P !== 'undefined' ? P2P.open : null));
   log.push('direct (P2P) link: ' + p2p);
   for (const game of games) {
-    await H.evaluate(g => { Lobby.opts().game = g; Net.mode = g; Lobby.changed(); }, game);
+    await H.evaluate(g => { const o = Lobby.opts(); o.game = g; if (g === 'horse') { o.word = 'HAQ'; o.timer = 6; } Net.mode = g; Lobby.changed(); }, game);
     await G.evaluate(() => Lobby.setReady(1)); await sleep(800);
     await H.evaluate(() => Lobby.start());
     await G.waitForFunction(() => Game.screen === 'netplay' && M.players && M.players.length > 0, null, { timeout: 10000 }).catch(() => {});
     await sleep(2500);
     const st = await G.evaluate(() => ({ screen: Game.screen, players: M.players.length, snaps: Net.snaps.length }));
     const hs = await H.evaluate(() => ({ screen: Game.screen, players: M.players.length }));
-    const good = st.screen === 'netplay' && st.players === hs.players && st.players >= 2 && hs.screen === 'play';
+    const word = game === 'horse' ? await G.evaluate(() => M.mini && M.mini.word + '/' + M.mini.timerLen) : null;
+    const good = st.screen === 'netplay' && st.players === hs.players && st.players >= 2 && hs.screen === 'play' && (game !== 'horse' || word === 'HAQ/6');
     if (dropP2P && game === games[0] && p2p) {
       await H.evaluate(() => P2P.close('test')); await sleep(2500);
       const after = await G.evaluate(() => ({ screen: Game.screen, gap: Math.round(nowMs() - Net.lastSnapAt) }));
@@ -279,13 +323,13 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
     await H.evaluate(() => Lobby.back());
     await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 8000 }).catch(() => {});
     const back = await G.evaluate(() => Game.screen);
-    log.push(`${game}: guest ${st.screen} (${st.players} players, ${st.snaps} snapshots buffered), host ${hs.screen}; back to ${back}`);
+    log.push(`${game}: guest ${st.screen} (${st.players} players, ${st.snaps} snapshots buffered), host ${hs.screen}${word ? ', guest sees ' + word : ''}; back to ${back}`);
     ok = ok && good && back === 'lobby';
   }
   await ctx.close();
   return { ok: ok && !errs.length, detail: log.concat(errs) };
 }
-T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co'], dropP2P: true });
+T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'lightning', 'horse'], dropP2P: true });
 T['online-room'] = ({ browser, base }) => onlineFlow(browser, base, { room: true, games: ['vs', 'one'] });
 T['online-fb'] = ({ browser, base }) => onlineFlow(browser, base, { games: ['vs', 'co'] });
 

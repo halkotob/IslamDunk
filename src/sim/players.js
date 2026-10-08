@@ -209,7 +209,7 @@ function shotProbability(p, x, z, contestDist) {
 function humanDiffMult() {
   if (M.dmOverride != null) return M.dmOverride;                     // online guest: host's value
   if (M.career && M.careerL != null) { const L = M.careerL; return L <= 1 ? lerp(1.5, 1.0, L) : lerp(1.0, 0.7, Math.min(1, L - 1)); }
-  return { easy: 1.5, medium: 1.0, hard: 0.7 }[SETTINGS.difficulty];
+  return { veryeasy: 2.0, easy: 1.5, medium: 1.0, hard: 0.7 }[SETTINGS.difficulty] || 1.0;
 }
 function shotWindow(p, x = p.x, z = p.z) {
   const h = attackHoop(p.team), d = Math.hypot(x - h.x, z - h.z);

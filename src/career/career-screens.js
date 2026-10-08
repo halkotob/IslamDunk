@@ -158,7 +158,7 @@ function savesSelect(i) {
 function startCareerMatch() {
   const m = ourMatch(), oppId = m.a === 0 ? m.b : m.a;
   const lv = careerLevels(C.stage), tier = teamOf(C.stage, oppId).tier || 0;
-  lv.opp = Math.max(0, lv.opp + tier * 0.2);              // v7.8: stronger teams also play a little smarter
+  lv.opp = Math.max(SETTINGS.difficulty === 'veryeasy' ? -1 : 0, lv.opp + tier * 0.2);              // v7.8: stronger teams also play a little smarter
   Game.lastMatch = null;
   if (!Game.cv) prepCareerVenue();
   const venue = Game.cv.v;
@@ -428,9 +428,9 @@ function drawPregame(g) {
   if (C.prayBonus) { g.fillStyle = '#9dffb0'; g.fillText('Salah bonus: +10% shooting, +10% stamina this game', 62, 380); }
   else { g.fillStyle = '#9fb3c8'; g.fillText('No salah bonus. Answer the adhan during practice to earn one.', 62, 380); }
   const lv = careerLevels(C.stage), shift = diffShift(), oT = opp.tier || 0;
-  lv.opp = Math.max(0, lv.opp + oT * 0.2);
+  lv.opp = Math.max(SETTINGS.difficulty === 'veryeasy' ? -1 : 0, lv.opp + oT * 0.2);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
-  g.fillText('CPU difficulty: ' + diffLabel(lv.opp) + (shift ? ' (' + S.name + ' stage, one step ' + (shift < 0 ? 'easier' : 'harder') + ' because Difficulty is set to ' + (shift < 0 ? 'Easy' : 'Hard') + ')' : ' (' + S.name + ' stage)'), 62, 404);
+  g.fillText('CPU difficulty: ' + diffLabel(lv.opp) + (shift ? ' (' + S.name + ' stage, one step ' + (shift < 0 ? 'easier' : 'harder') + ' because Difficulty is set to ' + diffName(SETTINGS.difficulty) + ')' : ' (' + S.name + ' stage)'), 62, 404);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(castDef(Game.tipBy || 'rafiq').name + ': \u201C' + (Game.tip || STORY.tips[0]) + '\u201D', 62, 434);
   g.fillStyle = GOLD; roundRect(g, W / 2 - 90, 470, 180, 40, 20); g.fill();
   g.textAlign = 'center'; g.fillStyle = NIGHT; g.font = `17px ${FONT}`; g.fillText('Tip off', W / 2, 496);

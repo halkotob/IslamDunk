@@ -38,7 +38,7 @@ function popOnce(p, key, txt, col, cd = 1.2) { p.popT = p.popT || {}; if ((p.pop
 // difficulty (Easy needs more repeats). Mixing it up is the skill.
 const MOVE_LABEL = { cross: 'CROSSOVER', btb: 'BEHIND THE BACK', spin: 'SPIN', hesi: 'HESITATION', stepback: 'STEP-BACK', drop: 'DROP STEP', fake: 'PUMP FAKE',
   euro: 'EURO STEP', fade: 'FADEAWAY', floater: 'FLOATER', hook: 'HOOK', bake: 'SHEIKH AND BAKE', layup: 'LAYUP', reverse: 'REVERSE', pullup: 'PULL-UP', jumper: 'JUMPER', putback: 'PUTBACK', upunder: 'UP AND UNDER', gg: 'GIVE AND GO' };
-function defLevel() { return M.career && M.careerL != null ? M.careerL : ({ easy: 0, medium: 1, hard: 2 }[SETTINGS.difficulty] || 1); }
+function defLevel() { return M.career && M.careerL != null ? M.careerL : ({ veryeasy: -1, easy: 0, medium: 1, hard: 2 }[SETTINGS.difficulty] || 1); }
 function readN() { const L = defLevel(); return L < 0.7 ? 5 : L < 1.6 ? 4 : 3; }
 function logMove(p, k) {
   if (!M.time && M.time !== 0) return;

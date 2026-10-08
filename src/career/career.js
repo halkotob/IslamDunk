@@ -57,16 +57,18 @@ const HARD_PLUS = { react: 0.08, noise: 0.02, relErr: 0.015, contest: 0.02, anti
 const LADDER = [0, 0.35, 1.0, 1.55, 2.0, 2.5];              // [easier than Local, Local, State, National, World, harder than World]
 function diffAt(L) {
   const mix = (A, B, t) => { const o = {}; for (const k in A) o[k] = lerp(A[k], B[k], t); return o; };
+  if (L < 0) return mix(DIFF.veryeasy, DIFF.easy, clamp(L + 1, 0, 1));
   if (L <= 1) return mix(DIFF.easy, DIFF.medium, clamp(L, 0, 1));
   if (L <= 2) return mix(DIFF.medium, DIFF.hard, L - 1);
   return mix(DIFF.hard, HARD_PLUS, clamp((L - 2) / 0.5, 0, 1));
 }
-function diffShift() { return { easy: -1, medium: 0, hard: 1 }[SETTINGS.difficulty] || 0; }
+function diffShift() { return { veryeasy: -1, easy: -1, medium: 0, hard: 1 }[SETTINGS.difficulty] || 0; }
 function careerLevels(stage) {
   const sh = diffShift();
-  return { opp: LADDER[clamp(stage + 1 + sh, 0, LADDER.length - 1)], mate: LADDER[clamp(2 + sh, 0, LADDER.length - 1)] };   // teammate's base is medium
+  const ve = SETTINGS.difficulty === 'veryeasy' ? 1 : 0;                       // Very easy: one more notch below
+  return { opp: LADDER[clamp(stage + 1 + sh, 0, LADDER.length - 1)] - ve, mate: LADDER[clamp(2 + sh, 0, LADDER.length - 1)] };   // teammate's base is medium
 }
-function diffLabel(L) { return L < 0.2 ? 'Easy' : L < 0.7 ? 'Easy-Medium' : L < 1.3 ? 'Medium' : L < 1.8 ? 'Medium-Hard' : L < 2.2 ? 'Hard' : 'Very Hard'; }
+function diffLabel(L) { return L < -0.5 ? 'Very Easy' : L < 0.2 ? 'Easy' : L < 0.7 ? 'Easy-Medium' : L < 1.3 ? 'Medium' : L < 1.8 ? 'Medium-Hard' : L < 2.2 ? 'Hard' : 'Very Hard'; }
 const STAT_ROWS = [['sht', 'Shooting'], ['spd', 'Speed'], ['dnk', 'Dunking'], ['def', 'Defense'], ['sta', 'Stamina'], ['pas', 'Passing'], ['hus', 'Hustle'], ['clu', 'Clutch']];
 const statCost = l => Math.round(40 * Math.pow(1.35, l - 4));
 

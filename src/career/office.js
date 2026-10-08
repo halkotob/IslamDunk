@@ -3,13 +3,13 @@ function startMini(kind, opp) {
   Gym.overlay = null;
   setupMini(kind, { opp, humans: [{ team: 0, slot: 0, pad: 0 }] });
   Gym.drill = { kind, mini: true };
-  gymToast(kind === 'lightning' ? 'Lightning: shoot from the line. If the player behind you scores first, you\u2019re out.' : 'HORSE: make a shot, then your opponent has 10 seconds to match it from the same spot.', 4.5);
+  gymToast(kind === 'lightning' ? 'Lightning: wait your turn on the spot behind the arc. Miss and chase your rebound. If the player behind you scores first, you\u2019re out.' : 'HORSE: make a shot, then your opponent has ' + M.mini.timerLen + ' seconds to match it from the same spot.', 4.5);
   SFX.blip();
 }
 function finishMini() {
   const mg = M.mini, r = mg.result(); let bp, line;
   if (mg.kind === 'lightning') { bp = [0, 60, 35, 20, 12, 6][r.place] || 6; line = 'You finished ' + ordinal(r.place) + ' of 5'; }
-  else { bp = r.won ? 45 + (5 - r.mine) * 3 : 12 + r.theirs * 2; line = (r.won ? 'You won, ' : 'You lost, ') + 'you had ' + ('HORSE'.slice(0, r.mine) || 'no letters') + (r.won ? '' : ''); }
+  else { bp = r.won ? 45 + (mg.word.length - r.mine) * 3 : 12 + r.theirs * 2; line = (r.won ? 'You won, ' : 'You lost, ') + 'you had ' + (mg.word.slice(0, r.mine) || 'no letters') + (r.won ? '' : ''); }
   const won = mg.kind === 'lightning' ? r.place === 1 : !!r.won;
   bp = drillBP(bp); const hb = practiceHB(won);
   bankPractice(bp, hb);

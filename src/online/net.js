@@ -159,7 +159,7 @@ const Net = {
     const s = this.sel, gs = this.guestSlot();
     this.mid++; this.evs = []; Game.lastMatch = null;
     if (this.mode === 'brun') { Run.team = this.sel.a; Run.duo = 'online'; startBarakah(); this.syncCounters(); return; }   // Barakah Run duos
-    if (this.isMini()) setupMini(this.mode, { online: true, roster: MINI_ONLINE[this.mode], humans: [{ team: 0, slot: 0, pad: 0 }, { team: 0, slot: 1, pad: 1 }] });
+    if (this.isMini()) setupMini(this.mode, { online: true, roster: MINI_ONLINE[this.mode], word: Lobby.o && Lobby.o.word, timer: Lobby.o && Lobby.o.timer, humans: [{ team: 0, slot: 0, pad: 0 }, { team: 0, slot: 1, pad: 1 }] });
     else newMatch(TEAMS[s.a], TEAMS[s.b], { humans: [{ team: 0, slot: 0, pad: 0 }, { team: gs.team, slot: gs.slot, pad: 1 }], venue: s.venue });
     M.online = true; Game.screen = 'play'; Game.paused = false;
     const g = this.peers().find(p => p.peer === this.guestPeer), i = (g && g.presence.in) || {};

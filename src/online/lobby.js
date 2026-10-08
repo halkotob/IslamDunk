@@ -28,6 +28,10 @@ const Lobby = {
     const o = this.opts(), g = o.game, R = [], cyc = (arr, v, d) => arr[(arr.indexOf(v) + d + arr.length) % arr.length];
     const team = (key, label) => R.push({ label, get: () => TEAMS[o[key]].name, step: d => { o[key] = (o[key] + d + TEAMS.length) % TEAMS.length; } });
     if (g === 'brun') team('a', 'Your masjid');
+    if (g === 'horse') {
+      R.push({ label: 'Word', get: () => o.word || MiniOpts.word, step: d => { o.word = cyc(MINI_WORDS, o.word || MiniOpts.word, d); } });
+      R.push({ label: 'Time to match a shot', get: () => (o.timer || MiniOpts.timer) + ' seconds', step: d => { o.timer = cyc(MINI_TIMERS, o.timer || MiniOpts.timer, d); } });
+    }
     if (g === 'co' || g === 'vs' || g === 'one') {
       team('a', g === 'co' ? 'Your masjid' : 'Your masjid (host)');
       if (g === 'one') R.push({ label: 'Your player', get: () => TEAMS[o.a].players[o.ctrl | 0].name, step: () => { o.ctrl ^= 1; } });
@@ -35,7 +39,7 @@ const Lobby = {
       if (g === 'one') R.push({ label: 'Friend’s player', get: () => TEAMS[o.b].players[o.ctrlB | 0].name, step: () => { o.ctrlB ^= 1; } });
       const vs = ['random', ...VENUE_LIST.filter(v => !venueLocked(v)).map(v => v.id)];
       R.push({ label: 'Venue', get: () => o.venue === 'random' ? 'Random' : (VENUE_LIST.find(v => v.id === o.venue) || {}).name || 'Random', step: d => { o.venue = cyc(vs, vs.includes(o.venue) ? o.venue : 'random', d); } });
-      R.push({ label: g === 'one' ? 'Difficulty (timing)' : 'CPU difficulty', get: () => o.diff[0].toUpperCase() + o.diff.slice(1), step: d => { o.diff = cyc(['easy', 'medium', 'hard'], o.diff, d); } });
+      R.push({ label: g === 'one' ? 'Difficulty (timing)' : 'CPU difficulty', get: () => diffName(o.diff), step: d => { o.diff = cyc(DIFF_ORDER, o.diff, d); } });
       R.push({ label: 'Format', get: () => FORMAT_TXT[o.format], step: d => { o.format = cyc(FORMATS, o.format, d); } });
       if (o.format !== 'first21') R.push({ label: 'Period length', get: () => periodTxt(o.len), step: d => { o.len = cyc(PERIOD_OPTS, PERIOD_OPTS.includes(o.len) ? o.len : PERIOD_OPTS[0], d); } });
       for (const m of FUN_MODES) if (Unlocks[m.key]) R.push({ label: m.name, get: () => (o.fun[m.key] ? 'On' : 'Off'), step: () => { o.fun[m.key] = !o.fun[m.key]; } });

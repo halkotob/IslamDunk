@@ -61,6 +61,9 @@
     "sim/v79-tuning.js",
     "career/builds.js",
     "career/intro-world.js",
+    "sim/poss-log.js",
+    "screens/minis-menu.js",
+    "screens/dev-panel.js",
     "render/adaptive-res.js",
     "render/bench.js",
     "boot.js"

@@ -53,7 +53,7 @@ Object.assign(SFX, {
 // and sends the fouled player to the line for two live free throws. After a
 // team's 5th foul in a period every shove is called (the other team is in the
 // bonus).
-const FOUL_BASE = { easy: 0.2, medium: 0.34, hard: 0.46 };   // v6: the shove is a hard foul and gets called more
+const FOUL_BASE = { veryeasy: 0.12, easy: 0.2, medium: 0.34, hard: 0.46 };   // v6: the shove is a hard foul and gets called more
 const BONUS_AT = 5;
 function teamFouls(t) { return (M.teamFouls || [0, 0])[t]; }
 function inBonus(t) { return teamFouls(1 - t) >= BONUS_AT; }            // team t shoots free throws on every foul

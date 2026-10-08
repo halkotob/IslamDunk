@@ -71,7 +71,7 @@ function musallaDetails(g, bx0, bx1, by0, by1, t) {
 // CPU foul caution: fewer shoves near/in the bonus, after earlier shoves, and on Hard (stricter refs)
 function shoveRiskK(p) {
   const tf = teamFouls(p.team), n = p.shoves || 0;
-  return (tf >= BONUS_AT ? 0.12 : tf === BONUS_AT - 1 ? 0.45 : 1) * Math.max(0.3, 1 - 0.15 * n) * ({ easy: 1, medium: 0.85, hard: 0.6 }[SETTINGS.difficulty] || 0.85);
+  return (tf >= BONUS_AT ? 0.12 : tf === BONUS_AT - 1 ? 0.45 : 1) * Math.max(0.3, 1 - 0.15 * n) * ({ veryeasy: 1, easy: 1, medium: 0.85, hard: 0.6 }[SETTINGS.difficulty] || 0.85);
 }
 
 // ================================================= v4.2: WALKABLE MUSALLA
