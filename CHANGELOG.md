@@ -1,5 +1,37 @@
 # Changelog
 
+## 8.2.0: Phase 3 — easier to play, better feel, and fixes
+- **Fix: mini games start and their settings change again.** On touch, tapping a row in Quick Play →
+  Mini games was undone the same frame, so no setting could change and Start could never be reached.
+  Now one tap changes a setting and one tap on Start starts the game.
+- **Fix: Lightning, on deck.** The second shooter can shoot as soon as the ball ahead of him leaves the
+  shooter's hand. He shoots from his spot first in line instead of waiting for the spot to clear.
+- **Fix: Lightning, last two.** A made shot could be undone by the two-ball code. The scorer's ball went
+  back to "in the air" and was his again, so he could grab his own make and dunk for the knockout without
+  going back behind the arc. Fixed at the source. A shoot button held while running back can no longer
+  fire the moment the pass lands either. Every knockout now needs a three first.
+- **Fix: resets.**
+  - Side-outs (fouls, reach-ins) in your own half get the same protected space as other restarts.
+  - New watchdog: a dead ball always restarts, a stalled check-up or inbound goes live, a ball that ends
+    up out of reach comes back as an out-of-bounds restart, and a ball nobody can pick up is freed.
+    Nothing can eat a whole possession.
+- **Tutorial** (Quick Play → Tutorial: learn to play). Nine hands-on steps on a real court: move, sprint,
+  shoot, dunk, pass, dribble moves, defend, steal and block. Each step waits until you've done it (or
+  you skip it); the text matches keyboard or touch.
+- **Casual controls** (Settings → Controls, off by default). Tap SHOOT and the release times itself
+  near the top (no pump fakes). On defense, leaving the stick alone guards your man. Online stays
+  Classic.
+- **Stride dribble** (Settings → Dribble, off by default). NBA Jam rhythm: one bounce every other step,
+  locked to the feet. About 2 to 2.5 bounces a second jogging and 3 to 4 sprinting (Classic is 5 to 8).
+  Sprinting pushes the ball out in front on a lower bounce. Only the look and sound change.
+- **Skill moves that read.** Each move has its own body language: a low, wide crossover, a
+  pause-then-burst hesitation, a step-back that leans away, arms out on the spin. A dust kick off the
+  plant and a short trail behind the ball show what happened.
+- **Game reactions:** scoring runs ("8-0 RUN!"), lead changes, a late tie, and "LOCKDOWN!" after three
+  stops in a row on your end.
+- Settings: "Control" is now "Team control". New `phase3` test; `minis` and `defense` tests cover the
+  fixes.
+
 ## 8.1.0: Phase 2 — the Defense button, contested dunks, real resets
 - **Defense button (replaces stance).** On defense the MOVE button is now DEFEND, and L (Numpad 3 for
   player 2) is a dedicated key for it.

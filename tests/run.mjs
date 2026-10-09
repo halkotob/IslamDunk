@@ -11,9 +11,12 @@
 //   career       new career -> 3 matches -> post-game -> save written
 //   feel         v7.9 rules: holding sprint gets at least the CPU's sprint time (same stamina rule), nobody
 //                walks through the end walls, a loose ball bounces off them, side-outs start with room
-//   minis        Lightning rules (threes first, in order, own rebounds), HORSE word/timer options
+//   minis        Lightning rules (threes first, in order, own rebounds, on deck shoots once the ball ahead
+//                is in the air, last two can't skip the three), HORSE word/timer options
 //   defense      v8.1: hold DEFEND guards the ball, contested dunks miss, no steals off a restart in
 //                your own half, half-court check-ups, whole-team control (off by default)
+//   phase3       mini-game menu taps start games, Stride dribble pace, Casual controls (auto release, auto
+//                guard), the tutorial runs to the end, the ball watchdog recovers a lost ball
 //   career-intro creator (Start career) -> walk to Saleem outside the masjid -> up the path -> gym -> meet
 //                all five brothers -> hub; body builds sum to zero; CPU stages have 2/3/2 strength tiers
 //   online-loop  loopback transport: lobby, 5 game types (HORSE with the HAQ word), back to lobby, direct (P2P) link + fallback
@@ -235,6 +238,38 @@ T['minis'] = async ({ browser, base }) => {
     for (let n = 0; n < 60; n++) miniStep(STEP);
     humanCmd = _hc;
     out.blocked = !!mg.blocked && !mg.taken.has(0) && ballStateOf(me).owner === me;
+    // Lightning, human on deck: you can shoot the moment the ball ahead is in the air (not when it lands)
+    setupMini('lightning', { humans: [{ team: 0, slot: 0, pad: 0 }] });
+    { const mg = M.mini; mg.active = [1, 0]; mg.queue = [2, 3, 4]; mg.give(0, 1); mg.give(1, 0);
+      M.players.forEach((q, i) => { const sp = mg.spotFor(i); place(q, sp.x, sp.z); }); mg.wait[1] = 0.1;
+      let rel = -1, mine = -1; const _hc = humanCmd;
+      humanCmd = (pad, c) => { zeroCmd(c); if (mg.taken.has(1) && mine < 0) { c.b = true; c.bHeld = true; } };
+      for (let n = 0; n < 240 && mine < 0; n++) { miniStep(STEP); if (rel < 0 && mg.taken.has(1)) rel = M.time; if (mine < 0 && (M.players[0].state === 'windup' || M.players[0].state === 'shoot')) mine = M.time; }   // you're up into your shot
+      humanCmd = _hc;
+      const front = M.balls.find(b => b.kShooter === M.players[1]);
+      out.onDeck = rel >= 0 && mine >= 0 ? +(mine - rel).toFixed(2) : -1;
+    }
+    // Lightning, last two, a human who sprints at the rim and dunks: every knockout still needs a three first
+    { let illegal = 0, kos = 0;
+      for (let g = 0; g < 10; g++) {
+        setupMini('lightning', { roster: ['you', 'saleem'], humans: [{ team: 0, slot: 0, pad: 0 }] });
+        const mg = M.mini, h = hoops[1], me = M.players[0], first = {}, seen = new Set(); let act = mg.active.slice(), hold = 0;
+        const _hc = humanCmd;
+        humanCmd = (pad, c) => { zeroCmd(c); const st = ballStateOf(me);
+          if (st && st.owner === me) { const d = dxz(me, h); if (d > 150) { c.mx = (h.x - me.x) / d; c.mz = (h.z - me.z) / d; c.turbo = true; }
+            if (hold > 0) { hold += STEP; c.bHeld = hold < 0.45; if (hold > 0.5) hold = 0; } else { c.b = true; c.bHeld = true; c.turbo = true; hold = 0.01; } }
+          else if (st && st.state === 'loose') { const d = Math.hypot(st.x - me.x, st.z - me.z) || 1; c.mx = (st.x - me.x) / d; c.mz = (st.z - me.z) / d; } };
+        const _ko = mg.knockOut.bind(mg); mg.knockOut = (o, by) => { kos++; if (!(first[by] >= THREE_R)) illegal++; return _ko(o, by); };
+        for (let n = 0; n < 60 * 200 && !mg.done; n++) {
+          miniStep(STEP);
+          for (const i of mg.active) if (!act.includes(i)) delete first[i];
+          act = mg.active.slice();
+          for (const st of M.balls) if (st.state === 'shot' && st.shot && !seen.has(st.shot)) { seen.add(st.shot); const s = st.shot.shooter, i = M.players.indexOf(s); if (first[i] == null) first[i] = Math.hypot(s.x - h.x, s.z - h.z); }
+        }
+        humanCmd = _hc;
+      }
+      out.lastTwo = { kos, illegal };
+    }
     // HORSE: word and timer options
     setupMini('horse', { roster: ['you', 'saleem'], humans: [], word: 'HAQ', timer: 6 });
     out.horse = M.mini.word + '/' + M.mini.timerLen;
@@ -243,13 +278,14 @@ T['minis'] = async ({ browser, base }) => {
     return out;
   });
   await ctx.close();
-  const ok = r.done === r.games && r.firstShots > 20 && !r.notThree && !r.outOfOrder && !r.wrongGrab && r.blocked && r.horse === 'HAQ/6' && r.horseDone && !errs.length;
+  const ok = r.done === r.games && r.firstShots > 20 && !r.notThree && !r.outOfOrder && !r.wrongGrab && r.blocked && r.onDeck >= 0 && r.onDeck < 0.6 && r.lastTwo.kos >= 5 && !r.lastTwo.illegal && r.horse === 'HAQ/6' && r.horseDone && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
 T['defense'] = async ({ browser, base }) => {
-  const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'defense');
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'defense');
   const r = await p.evaluate(() => {
+    window.__seed(4242);                                              // deterministic: the dunk and inbound numbers are odds
     const out = {}; SETTINGS.difficulty = 'medium';
     // hold DEFEND: you lock onto the ball, stay between him and the rim, and keep pace
     newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 600 } });
@@ -295,6 +331,55 @@ T['defense'] = async ({ browser, base }) => {
   const g = r.guard;
   const ok = g.onBall > 600 && g.between >= 0.85 && g.dist < 90 && r.openDunk >= 0.9 && r.contestedDunk <= 0.75 && parseInt(r.lostOnInbound) <= 2 && r.games === 2
     && r.checks >= 3 && r.checksLive >= r.checks - 1 && r.ctlDefault && r.ctl >= 0.95 && r.humans === 1 && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
+T['phase3'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'phase3');
+  const r = await p.evaluate(() => {
+    window.__seed(777); const out = {};
+    // mini games menu: one tap changes a setting, one tap on Start starts the game
+    openMinis('horse'); render(document.querySelector('canvas').getContext('2d'));
+    const R = minisRows(), tapRow = label => { const i = R.findIndex(x => x.label === label); const rr = Game.rects.filter(x => x.w === 460)[i]; rr.fn(); };
+    const w0 = MiniOpts.word; tapRow('Word'); out.wordTap = MiniOpts.word !== w0;
+    render(document.querySelector('canvas').getContext('2d')); Game.rects.filter(x => x.w === 460)[minisRows().findIndex(x => x.start)].fn();
+    out.miniStarted = Game.screen === 'play' && !!M.mini && M.mini.kind === 'horse';
+    goTitle();
+    // stride dribble: fewer bounces than classic at a jog
+    const bounces = mode => { SETTINGS.dribble = mode; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 600 } });
+      for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
+      const me = M.players[0]; giveBall(me, 'inbound'); place(me, 200, 350); M.players.forEach(q => { if (q !== me) place(q, 1300, 640); });
+      M.cmdHook = q => { zeroCmd(q.cmd); if (q === me) q.cmd.mx = 1; return true; }; let b = 0, prev = me.dp;
+      for (let i = 0; i < 120; i++) { updateMatch(STEP); if (prev < 0.5 && me.dp >= 0.5) b++; prev = me.dp; } M.cmdHook = null; return b / 2; };
+    out.classicBps = bounces('classic'); out.strideBps = bounces('stride'); SETTINGS.dribble = 'classic';
+    // casual: a tap shoots with an automatic release; leaving the stick alone on defense guards
+    SETTINGS.casual = true;
+    newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 600 } });
+    for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
+    const me = M.players[0]; M.phase = 'live'; M.bc = null; giveBall(me, 'inbound'); place(me, 1000, 300); M.players.forEach(q => { if (q !== me) place(q, 200, 640); });
+    let k = 0; const _hc0 = Input.pressed; M.cmdHook = q => q !== me ? (zeroCmd(q.cmd), true) : false;
+    const hk = Input.down; Input.pressed = { KeyK: true }; Input.down = { KeyK: true }; updateMatch(STEP); Input.pressed = {}; Input.down = {};
+    for (let i = 0; i < 90 && !(ball.state === 'shot'); i++) updateMatch(STEP);
+    out.casualShot = ball.state === 'shot';
+    M.cmdHook = null; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 600 } });
+    for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
+    const me2 = M.players[0], o = me2.opps[0]; M.phase = 'live'; M.bc = null; giveBall(o, 'inbound'); place(o, 800, 350); place(me2, 1000, 350);
+    let held = 0; for (let i = 0; i < 60; i++) { updateMatch(STEP); if (me2.v8 && me2.v8.held) held++; }
+    out.casualGuard = held > 40; SETTINGS.casual = false;
+    // the tutorial runs start to finish (each step skipped) and ends back at the title
+    startTutorial(); let steps = 0;
+    for (let i = 0; i < TUT_STEPS.length - 1; i++) { for (let f = 0; f < 30; f++) updateMatch(STEP); tutGo(TUT.i + 1); steps++; }
+    out.tutFinal = !!TUT_STEPS[TUT.i].final && TUT.on; tutEnd(); out.tutEnded = !TUT.on && Game.screen === 'title';
+    // watchdog: a loose ball nobody is allowed to pick up (stuck lock) is freed and the game goes on
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 600 } });
+    for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
+    M.phase = 'live'; M.bc = null; ball.owner = null; Object.assign(ball, { state: 'loose', x: 600, y: 12, z: 350, vx: 0, vy: 0, vz: 0, grabLock: 99, lastTouch: M.players[0] });
+    let back = false; for (let i = 0; i < 480; i++) { if (ball.grabLock > 0.4 && i < 60) ball.grabLock = 99; updateMatch(STEP); if (ball.owner && M.phase === 'live') { back = true; break; } }
+    out.watchdog = back;
+    return out;
+  });
+  await ctx.close();
+  const ok = r.wordTap && r.miniStarted && r.strideBps < r.classicBps && r.strideBps >= 1.8 && r.strideBps <= 3.5 && r.casualShot && r.casualGuard && r.tutFinal && r.tutEnded && r.watchdog && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 

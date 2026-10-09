@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '8.1.0';
+const VERSION = '8.2.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -1392,7 +1392,7 @@ function animate(p, dt) {
     const rate = sp > 15 ? Math.max(7, sp * 0.068) : (holding || p.fakeHold) ? 7.5 : 0;
     const prevDp = p.dp;
     p.phase += dt * rate;
-    p.dp = (p.phase / Math.PI) % 1;
+    p.dp = dribblePhase(p, dt, sp, holding);
     if (holding && !p.move && prevDp < 0.5 && p.dp >= 0.5) { if (onScreen(p.x)) SFX.bounce(0.3); }
     if (sp > 260 && prevDp < 0.5 && p.dp >= 0.5 && chance(0.4)) FX.dust(p.x, p.z, 1);
   }
@@ -1424,6 +1424,9 @@ function animate(p, dt) {
   }
   if (holding) attachBall(p, dt);
 }
+// dribble phase 0..1 (0 = in the hand, 0.5 = on the floor). Classic: one bounce per step.
+// (v8.2 adds a "Stride" option in Settings; see sim/v8-dribble.js)
+let dribblePhase = (p) => (p.phase / Math.PI) % 1;
 // Where the ball sits while owned: dribble synced to footsteps, crossovers, holds
 function attachBall(p) {
   let bx, by, bz, behind = false;
@@ -6202,7 +6205,7 @@ function miniRelease(p, st) {                  // CPU release timing: character 
 // ================================================================ LIGHTNING
 // Knockout (v8 rules): everyone lines up single file behind the three-point line at the top of the
 // key. The front player steps onto the spot and shoots a three; the next player waits on deck with the
-// second ball and can't shoot until the player ahead has shot. Miss: chase your own rebound and keep
+// second ball and shoots from there as soon as the ball ahead of him is in the air. Miss: chase your own rebound and keep
 // shooting from anywhere until it goes in. Make: you go to the back of the line and the ball is passed
 // out to the next player in line. If the player behind you scores before you do, you're out (both
 // balls are passed out to the next two in line). Last one standing wins.
@@ -6240,19 +6243,21 @@ class Lightning {
   spotFor(i) {
     if (this.places[i]) { const k = Object.keys(this.places).indexOf(String(i)); return { x: 760 + k * 44, z: 650 }; }   // out: along the sideline
     if (this.active[0] === i && !this.taken.has(i)) return LK_SPOT;
-    if (this.active[1] === i && !this.taken.has(i)) return this.aheadShot(i) ? LK_SPOT : lkLine(0);
+    if (this.active[1] === i && !this.taken.has(i)) return lkLine(0);      // on deck: shoots from here once the ball ahead is in the air
     return lkLine(this.queue.indexOf(i) + 1);                              // in line behind the on-deck spot
   }
-  // humans: walked into line / onto the spot automatically; you only shoot from the spot, and only once
-  // the player ahead has shot. After your first shot you're free to chase your rebound.
+  // humans: walked into line automatically. Your first shot comes from your spot behind the arc (front:
+  // the spot, on deck: first in line), as soon as the ball ahead is in the air; after it you're free to chase your rebound.
   lock(p, c) {
     const i = M.players.indexOf(p); c.a = false;
-    if (this.done || this.places[i] || !this.active.includes(i)) { const sp = this.spotFor(i); lkGo(p, c, sp, 0.7); c.b = false; c.bHeld = false; return; }
+    if (this.done || this.places[i] || !this.active.includes(i)) { const sp = this.spotFor(i); lkGo(p, c, sp, 0.7); c.b = false; c.bHeld = false; p.buf = null; return; }
     if (this.taken.has(i)) return;                                        // chasing your own rebound: free
     const st = ballStateOf(p);
-    if (!st || st.owner !== p) { const sp = this.spotFor(i); lkGo(p, c, sp, 0.8); c.b = false; c.bHeld = false; return; }   // ball on its way
+    if (!st || st.owner !== p) { const sp = this.spotFor(i); lkGo(p, c, sp, 0.8); c.b = false; c.bHeld = false; p.buf = null; return; }   // ball on its way: back behind the arc
     const sp = this.spotFor(i), d = Math.hypot(p.x - sp.x, p.z - sp.z);
-    if (sp !== LK_SPOT || d > 8) { const pressed = c.b; lkGo(p, c, sp, 0.75); c.face = 1; if (pressed) this.blocked = { i, t: 1.2 }; c.b = false; c.bHeld = false; return; }   // lkGo resets the command
+    // first shot: from your spot behind the arc, as soon as the ball ahead of you is in the air.
+    // p.buf is the input buffer: a press made while running must not fire once the ball lands in your hands
+    if (d > 10 || !this.aheadShot(i)) { const pressed = c.b; lkGo(p, c, sp, 0.75); c.face = 1; if (pressed && !this.aheadShot(i)) this.blocked = { i, t: 1.2 }; c.b = false; c.bHeld = false; p.buf = null; return; }
     c.mx = 0; c.mz = 0; c.turbo = false; c.face = 1;                       // on the spot: shoot when ready
   }
   ai(p, c) {
@@ -6264,8 +6269,9 @@ class Lightning {
     zeroCmd(c);
     if (st.owner === p && !this.taken.has(i)) {                           // first shot: from the spot, after the player ahead
       const sp = this.spotFor(i), d = Math.hypot(p.x - sp.x, p.z - sp.z);
-      if (sp !== LK_SPOT || d > 8) { lkGo(p, c, sp, 0.75); return; }
-      c.face = 1; if ((this.wait[i] -= STEP) <= 0 && p.state === 'free') c.b = true; return;
+      if (d > 10) { lkGo(p, c, sp, 0.75); return; }
+      c.face = 1; if (!this.aheadShot(i)) return;
+      if ((this.wait[i] -= STEP) <= 0 && p.state === 'free') c.b = true; return;
     }
     if (st.owner === p) {                                                 // after the rebound: each character has a comfort distance
       const want = { mahmoud: 300, saleem: 180, rafiq: 130, hamid: 125, khalil: 150, nasser: 220 }[id] || 170;
@@ -6282,7 +6288,14 @@ class Lightning {
       if (Math.hypot(st.x - p.x, st.z - p.z) < 28 && st.y < p.y + 80) Object.assign(st, { owner: p, state: 'held', shot: null, vx: 0, vy: 0, vz: 0 });
     }
   }
+  // onScore runs inside withBall (the scoring ball is swapped into the global ball while it updates):
+  // copy our changes back into the global, or withBall's write-back would undo them (the made ball
+  // went back to 'shot', its shooter could grab it again and score without going back behind the arc)
   onScore(h) {
+    const bi = M.curBall; this.scoreBall(h);
+    if (bi >= 0 && M.balls[bi]) for (const k of BALL_KEYS) ball[k] = M.balls[bi][k];
+  }
+  scoreBall(h) {
     const bi = M.curBall, st = M.balls[bi], shooter = st.kShooter || (st.shot && st.shot.shooter);
     h.kick(st.shot && st.shot.touched ? 'rimin' : 'swish', 1.1, st.x - h.x, st.z - h.z, st.shot && st.shot.green ? 1 : 0);
     st.state = 'scored'; st.shot = null; st.kShooter = null;
@@ -6297,11 +6310,12 @@ class Lightning {
       Object.assign(M.balls[ob], { kShooter: null, dead: true });          // the knocked-out player's ball comes back too
       if (M.balls[ob].owner) { M.balls[ob].owner = null; M.balls[ob].state = 'loose'; }
       this.active = [this.queue.shift(), this.queue.shift()];
+      for (const a of this.active) this.taken.delete(a);                 // a fresh turn: three from the line first
       this.feed(ob, this.active[0], 0.3); this.feed(bi, this.active[1], 0.55);
     } else {                                                              // the front scored first: safe, back of the line
       this.queue.push(si);
       const next = this.queue.shift();
-      this.active = [this.active[1], next];
+      this.active = [this.active[1], next]; this.taken.delete(next);      // (with two left, next is the scorer himself)
       this.feed(bi, next, 0.35);
       FX.pop(M.players[si].x, 120, M.players[si].z, 'SAFE', '#9dffb0');
     }
@@ -14121,6 +14135,58 @@ function checkCmd(p) {
   trySteal = function (p) { if (M.bc && retreating(p)) return; return _ts.apply(this, arguments); };
 }
 
+// ---- v8.2: side-outs in your own half get the same space (a reach-in or foul back there used to
+// restart with the defender standing on you)
+{
+  const _ib2 = inbound;
+  inbound = function (team) {
+    const s = M.sideOut && M.sideOut.team === team ? M.sideOut : null;
+    const r = _ib2.apply(this, arguments);
+    if (s && !M.halfCourt && ball.owner && ball.owner.team === team && inBackcourt(ball.owner.x, team)) bcStart(team);
+    return r;
+  };
+}
+// ---- v8.2: watchdog. Whatever happens, the ball never sits dead, stuck or off the floor for a
+// possession: a dead ball always restarts, a stalled check-up or inbound goes live, a ball out of
+// reach (behind a wall, under the stands) goes to the team that didn't touch it last, and a ball
+// nobody can pick up is freed.
+const WD = { dead: 0, loose: 0, out: 0 };
+function watchdog(dt) {
+  if (M.mini || M.practice && M.practice.kind !== '1v1' || M.phase === 'over' || M.phase === 'break' || M.phase === 'tip' || Game.trivia || Net.role === 'guest') { WD.dead = WD.loose = WD.out = 0; return; }
+  // stuck restarts
+  if (M.phase === 'dead' && !M.check) WD.dead += dt; else WD.dead = 0;
+  if (WD.dead > 6) { WD.dead = 0; M.inb = null; M.check = null; ball.grabLock = 0; inbound(M.nextInbound != null ? M.nextInbound : (M.possTeam >= 0 ? M.possTeam : 0)); return; }
+  if (M.check && M.check.t > 5) checkLive();
+  if (M.inb && M.inb.t > 5) { const I = M.inb; M.inb = null; ball.grabLock = 0; if (!ball.owner) giveBall(I.p, 'inbound'); M.phase = 'live'; M.shotClock = scReset(); }
+  if (M.phase !== 'live') { WD.loose = WD.out = 0; return; }
+  // off the floor
+  const off = ball.x < -40 || ball.x > COURT.L + 40 || ball.z < 0 || ball.z > COURT.D + 6 || ball.y < -4 || !isFinite(ball.x + ball.y + ball.z);
+  if (off && !ball.owner && ball.state !== 'shot') WD.out += dt; else WD.out = 0;
+  if (WD.out > 0.6) {
+    WD.out = 0;
+    const lt = ball.lastTouch, team = lt ? 1 - lt.team : (M.possTeam >= 0 ? 1 - M.possTeam : 0), T = M.teams[team].players;
+    const sx = clamp(isFinite(ball.x) ? ball.x : COURT.L / 2, 60, COURT.L - 60), sz = clamp(isFinite(ball.z) ? ball.z : 350, 30, COURT.D - 30);
+    const p = T.slice().sort((a, b) => Math.hypot(a.x - sx, a.z - sz) - Math.hypot(b.x - sx, b.z - sz))[0];
+    Object.assign(ball, { x: sx, y: 40, z: sz, vx: 0, vy: 0, vz: 0, state: 'loose', shot: null, pass: null, grabLock: 0 });
+    FX.callout('OUT OF BOUNDS', '#ffffff', M.teamDefs[team].name.toUpperCase() + ' BALL');
+    M.sideOut = { team, p, x: sx, z: sz, sc: Math.max(M.shotClock, 14) };
+    M.phase = 'dead'; M.deadT = 0.9; M.nextInbound = team;
+    return;
+  }
+  // loose and nobody can get it (locked, or resting where no one goes)
+  if (!ball.owner && ball.state === 'loose') WD.loose += dt; else WD.loose = 0;
+  if (WD.loose > 1.5 && ball.grabLock > 0.2) ball.grabLock = 0;
+  if (WD.loose > 5) {
+    WD.loose = 0;
+    const p = M.players.filter(q => q.state === 'free').sort((a, b) => Math.hypot(a.x - ball.x, a.z - ball.z) - Math.hypot(b.x - ball.x, b.z - ball.z))[0];
+    if (p) { ball.x = clamp(ball.x, 30, COURT.L - 30); ball.z = clamp(ball.z, 30, COURT.D - 30); giveBall(p, 'loose'); }
+  }
+}
+{
+  const _um2 = updateMatch;
+  updateMatch = function (dt) { const r = _um2.apply(this, arguments); if (!M.mini) watchdog(dt); return r; };
+}
+
 // ================================================= v8.1: CONTROL THE WHOLE TEAM (option, off by default)
 // Options → Settings → Control: "Your player" (default) or "Whole team". With Whole team, you
 // play whoever has the ball on offense (control follows every pass) and, on defense, whoever is
@@ -14152,7 +14218,7 @@ function teamCtlStep() {
   const _um = updateMatch;
   updateMatch = function (dt) { if (!M.mini) teamCtlStep(); return _um.apply(this, arguments); };
   const i = SET_ITEMS.findIndex(s => s.label === 'Keep games close (rubber-band)');
-  SET_ITEMS.splice(i + 1, 0, { label: 'Control', get: () => SETTINGS.teamCtl ? 'Whole team' : 'Your player', step: () => { SETTINGS.teamCtl = !SETTINGS.teamCtl; try { localStorage.setItem('islamdunk.teamctl', SETTINGS.teamCtl ? '1' : '0'); } catch (e) {} } });
+  SET_ITEMS.splice(i + 1, 0, { label: 'Team control', get: () => SETTINGS.teamCtl ? 'Whole team' : 'Your player', step: () => { SETTINGS.teamCtl = !SETTINGS.teamCtl; try { localStorage.setItem('islamdunk.teamctl', SETTINGS.teamCtl ? '1' : '0'); } catch (e) {} } });
 }
 // the settings list grew past the bottom of the screen: rows close up to fit
 drawSettings = function (g) {
@@ -14162,6 +14228,147 @@ drawSettings = function (g) {
   const n = SET_ITEMS.length, gap = Math.min(40, Math.floor((H - 172) / n));
   drawMenu(g, SET_ITEMS.map(s => s.label), Game.idx, 160, i => { if (i === n - 1) goTitle(); else SET_ITEMS[i].step(1); }, SET_ITEMS.map(s => s.get()), gap);
 };
+
+// ================================================= v8.2: DRIBBLE OPTION (Settings → Dribble)
+// Classic (default): the ball bounces once per step, which reads frantic at speed (6+ a second).
+// Stride: NBA Jam rhythm. One bounce per stride (every other step), so the ball stays locked to the
+// feet at every speed: about 2 a second standing, 2.5 jogging, 3 to 4 at a full sprint. Sprinting
+// pushes the ball out in front on a lower bounce. Only the look and the bounce sound change;
+// steals, moves and everything else read the same hands.
+SETTINGS.dribble = 'classic';
+(() => { try { if (localStorage.getItem('islamdunk.dribble') === 'stride') SETTINGS.dribble = 'stride'; } catch (e) {} })();
+const DRIB_STAND = 2.1;                                   // bounces a second standing still
+{
+  const _dp = dribblePhase;
+  dribblePhase = function (p, dt, sp, holding) {
+    if (SETTINGS.dribble !== 'stride') return _dp(p, dt, sp, holding);
+    // running: half the leg cycle's rate (one bounce per two steps); standing: a steady pound.
+    // The two blend, so starting and stopping never jumps the ball.
+    const run = clamp((sp - 15) / 60, 0, 1), legHz = (sp > 15 ? Math.max(7, sp * 0.068) : 0) / (2 * Math.PI);
+    p.bph = ((p.bph || 0) + dt * lerp(DRIB_STAND, Math.max(DRIB_STAND, legHz), run)) % 1;
+    return p.bph;
+  };
+  const _ab = attachBall;
+  attachBall = function (p) {
+    _ab.apply(this, arguments);
+    if (SETTINGS.dribble !== 'stride' || p.move || !GROUND_STATES.includes(p.state) || p.state === 'windup' || p.state === 'pass' || p.state === 'fake') return;
+    const sp = Math.hypot(p.vx || 0, p.vz || 0), push = clamp((sp - 180) / 200, 0, 1);
+    ball.x += p.face * 9 * push;                                                     // out in front at speed
+    ball.y = BALL_R + (ball.y - BALL_R) * (1 - 0.18 * push);                         // and a little lower
+  };
+  const i = SET_ITEMS.findIndex(s => s.label === 'Team control');
+  SET_ITEMS.splice(i + 1, 0, { label: 'Dribble', get: () => SETTINGS.dribble === 'stride' ? 'Stride (NBA Jam pace)' : 'Classic', step: () => { SETTINGS.dribble = SETTINGS.dribble === 'stride' ? 'classic' : 'stride'; try { localStorage.setItem('islamdunk.dribble', SETTINGS.dribble); } catch (e) {} } });
+}
+
+// ================================================= v8.2: CASUAL CONTROLS (Settings → Controls)
+// Classic (default) is unchanged. Casual makes the game easier to pick up:
+//   * Shooting: tap SHOOT and the release happens on its own near the top of your jump (a good,
+//     not perfect, release; no pump fakes). Holding still works the same as a tap.
+//   * Defense: when you leave the stick alone on defense you guard your man automatically, as if
+//     you were holding DEFEND. Move the stick and you're free again.
+// Single-player and local co-op; online games keep Classic so both sides play the same game.
+SETTINGS.casual = false;
+(() => { try { SETTINGS.casual = localStorage.getItem('islamdunk.casual') === '1'; } catch (e) {} })();
+function casualOn() { return SETTINGS.casual && !Net.role && !M.attract; }
+{
+  const _hc = humanCmd;
+  humanCmd = function (pad, c) {
+    _hc.apply(this, arguments);
+    if (!casualOn() || !M.players) return;
+    const p = M.players.find(q => q.human === pad); if (!p) return;
+    if ((p.state === 'windup' || p.state === 'shoot') && ball.owner === p) {
+      if (p.caRel == null) p.caRel = apexT(p) + gauss() * 0.035 * (M.mini ? 1.3 : 1);
+      c.bHeld = p.state === 'windup' || p.st_t < p.caRel;
+    } else p.caRel = null;
+    const bo = ball.owner;
+    if (!M.mini && bo && bo.team !== p.team && Math.hypot(c.mx, c.mz) < 0.2 && !c.a && !c.aHeld && !c.b) c.xHeld = true;
+  };
+  const i = SET_ITEMS.findIndex(s => s.label === 'Team control');
+  SET_ITEMS.splice(i, 0, { label: 'Controls', get: () => SETTINGS.casual ? 'Casual (auto release, auto guard)' : 'Classic', step: () => { SETTINGS.casual = !SETTINGS.casual; try { localStorage.setItem('islamdunk.casual', SETTINGS.casual ? '1' : '0'); } catch (e) {} } });
+}
+
+// ================================================= v8.2: SKILL MOVES THAT READ + GAME REACTIONS
+// Moves: each dribble move gets its own body language (a low, wide crossover; a pause-then-burst
+// hesitation; a step-back that leans away; arms out on the spin), a dust kick off the plant foot,
+// and a short trail behind the ball, so you can tell what happened at a glance.
+// Reactions: the game calls out what's happening in it: scoring runs ("8-0 RUN"), lead changes and
+// ties late, comebacks, and a "LOCKDOWN" when your team gets three stops in a row.
+{
+  const _pt = poseTargets;
+  poseTargets = function (p, sp) {
+    const t = _pt.apply(this, arguments), mv = p.mv;
+    if (!mv || p.state !== 'free') return t;
+    const u = clamp(mv.t / mv.dur, 0, 1), arc = Math.sin(Math.PI * u);
+    switch (mv.kind) {
+      case 'cross': case 'btb': t.nk += 0.45 * arc; t.fk += 0.45 * arc; t.nh += 0.25 * arc; t.lean += 0.18 * arc; break;
+      case 'hesi': if (u < 0.5) { t.lean -= 0.08; t.nk = 0.15; t.fk = 0.15; } else { t.lean += 0.3 * arc + 0.1; t.nk += 0.5; } break;
+      case 'stepback': t.lean -= 0.3 * arc; t.nk += 0.55 * arc; t.fk += 0.35 * arc; t.nh -= 0.3 * arc; break;
+      case 'spin': t.ns = Math.max(t.ns, 1.1); t.fs = Math.max(t.fs, 1.1); t.lean += 0.1; t.nk += 0.3 * arc; t.fk += 0.3 * arc; break;
+      case 'drop': t.nk += 0.6 * arc; t.fk += 0.4 * arc; t.lean += 0.22 * arc; break;
+    }
+    return t;
+  };
+  const _sm = startDribbleMove;
+  startDribbleMove = function (p, kind) {
+    const ok = _sm.apply(this, arguments);
+    if (ok && onScreen(p.x)) { FX.dust(p.x, p.z, kind === 'spin' || kind === 'stepback' ? 3 : 2); p.trail = []; }
+    return ok;
+  };
+}
+// ball trail while a move is on
+const BallTrail = { pts: [], owner: null };
+{
+  const _db = drawBall;
+  drawBall = function (g) {
+    const o = ball.owner, on = o && (o.mv || o.move) && !M.mini;
+    if (on) { BallTrail.pts.push([ball.x, ball.y, ball.z]); if (BallTrail.pts.length > 7) BallTrail.pts.shift(); }
+    else if (BallTrail.pts.length) BallTrail.pts.shift();
+    if (BallTrail.pts.length > 1 && !REDUCED_MOTION) {
+      g.save(); g.lineCap = 'round';
+      for (let i = 1; i < BallTrail.pts.length; i++) {
+        const a = BallTrail.pts[i - 1], b = BallTrail.pts[i], [ax, ay] = P(a[0], a[1], a[2]), [bx, by] = P(b[0], b[1], b[2]), k = i / BallTrail.pts.length;
+        g.strokeStyle = `rgba(255,214,140,${0.35 * k})`; g.lineWidth = (BALL_R * 1.6) * k * depthK(b[2]);
+        g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+      }
+      g.restore();
+    }
+    return _db.apply(this, arguments);
+  };
+}
+// ---- game reactions
+const React8 = { run: [0, 0], lead: 0, stops: [0, 0], lastPoss: -1, scores: [0, 0], tied: 0, said: 0 };
+function react8Reset() { Object.assign(React8, { run: [0, 0], lead: 0, stops: [0, 0], lastPoss: -1, scores: [0, 0], said: 0 }); }
+function react8Say(t, c, sub) { if (M.time - React8.said < 2.5) return; React8.said = M.time; FX.callout(t, c, sub); }
+function react8Step() {
+  if (!M.teams || M.mini || M.practice || M.attract || M.phase === 'over' || (typeof TUT !== 'undefined' && TUT.on)) return;
+  const R = React8, s = [M.teams[0].score, M.teams[1].score];
+  if (M.time < 0.5) { react8Reset(); R.scores = s.slice(); return; }
+  for (const t of [0, 1]) {
+    const d = s[t] - R.scores[t]; if (d <= 0) continue;
+    R.run[t] += d; R.run[1 - t] = 0; R.stops[1 - t] = 0;
+    const lead = Math.sign(s[0] - s[1]), late = !M.fmt.first21 && M.quarter >= M.fmt.periods && M.clock < 40;
+    if (R.run[t] >= 8 && R.run[t] - d < 8) react8Say(R.run[t] + '-0 RUN!', '#ffd76a', M.teamDefs[t].name.toUpperCase() + ' ROLLING');
+    else if (lead !== 0 && R.lead !== 0 && lead !== R.lead) react8Say('LEAD CHANGE!', '#8fe3ff', M.teamDefs[t].name.toUpperCase() + ' IN FRONT');
+    else if (lead === 0 && late) react8Say('ALL TIED UP', '#ffffff', 'ANYBODY’S GAME');
+    if (lead !== 0) R.lead = lead;
+  }
+  R.scores = s.slice();
+  // stops: a possession for the other team that ended without points
+  const pt = M.possTeam; if (pt < 0) return;                          // between possessions (an inbound)
+  if (R.lastPoss >= 0 && pt !== R.lastPoss) {
+    const def = pt, off = R.lastPoss;
+    if (R.lastOffScore === s[off]) {
+      R.stops[def]++;
+      const humanD = M.teams[def].players.some(q => q.human >= 0);
+      if (R.stops[def] === 3 && humanD) react8Say('LOCKDOWN!', '#8fe3ff', 'THREE STOPS IN A ROW');
+    }
+  }
+  if (pt !== R.lastPoss) { R.lastPoss = pt; R.lastOffScore = pt >= 0 ? s[pt] : 0; }
+}
+{
+  const _um = updateMatch;
+  updateMatch = function (dt) { const r = _um.apply(this, arguments); react8Step(); return r; };
+}
 
 // ===================================================== CAREER: BODY BUILDS (v7.8)
 // Height, build and play style each trade some stats for others (tables in career.js, every row sums
@@ -14787,7 +14994,7 @@ function startQuickMini() {
   Game.screen = 'play';
 }
 function minisUpdate() {
-  const R = minisRows(); MiniMenu.idx = Math.min(MiniMenu.idx, R.length - 1); Game.idx = MiniMenu.idx;
+  const R = minisRows(); Game.idx = clamp(Game.idx | 0, 0, R.length - 1); MiniMenu.idx = Game.idx;   // Game.idx is the truth: taps and hover set it
   menuNav(R.length, i => R[i].step(1)); MiniMenu.idx = Game.idx;
   const r = R[MiniMenu.idx];
   if (!r.start && !r.back) { if (menuHit('left')) { r.step(-1); SFX.blip(); } if (menuHit('right')) { r.step(1); SFX.blip(); } }
@@ -14798,7 +15005,9 @@ function drawMinis(g) {
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `32px ${FONT}`; g.fillText('Mini games', W / 2, 92);
   g.fillStyle = IVORY; g.font = `13px ${BODY}`; minisHelp().forEach((t, i) => g.fillText(t, W / 2, 124 + i * 19));
   const R = minisRows();
-  drawMenu(g, R.map(r => r.label), MiniMenu.idx, 214, i => { MiniMenu.idx = Game.idx = i; R[i].step(1); }, R.map(r => r.start || r.back ? null : r.get()), 44);
+  // one tap does it: a setting row steps to its next value, Start starts, Back goes back
+  const list = R.map(r => ({ label: r.label, value: r.start || r.back ? null : r.get() }));
+  drawMenuList(g, 'minis:214', list, Game.idx, 214, 44, i => { MiniMenu.idx = Game.idx = i; R[i].step(1); }, i => { Game.idx = i; }, true, 460);
 }
 {
   const _tm = TITLE_MENU;
@@ -14918,6 +15127,135 @@ if (DEV.on) {
   const _sim = sim; sim = function (rdt, h) { return _sim(rdt * DEV.speed, h); };
   const _gu = gameUpdate; let lastScr = '';
   gameUpdate = function (rdt) { if (!DEV.el && document.body) devBuild(); const r = _gu.apply(this, arguments); if (DEV.open && Game.screen !== lastScr) { lastScr = Game.screen; devRefresh(); } return r; };
+}
+
+// ================================================= v8.2: TUTORIAL (Quick Play → Tutorial)
+// A short, hands-on walk through the controls on a real court: move, sprint, shoot, dunk, pass,
+// dribble moves, defend (the Defense button), steal and block. Each step waits until you've done
+// it once (or you skip it), then sets up the next. Nobody else moves unless the step needs them.
+const TUT = { on: false, i: 0, t: 0, s: {} };
+const tk = (kb, touch) => Input.touchMode ? touch : kb;
+const TUT_STEPS = [
+  { title: 'Move', text: () => tk('Move with W A S D (or the arrow keys).', 'Move with the stick on the left.'),
+    setup() { tutPlace({ me: [380, 350] }); }, done: s => s.dist > 260 },
+  { title: 'Sprint', text: () => tk('Hold Shift while you move to sprint. It uses stamina.', 'Push the stick past the dashed ring to sprint. It uses stamina.'),
+    setup() { tutPlace({ me: [300, 350] }); }, done: s => s.sprint > 0.7 },
+  { title: 'Shoot', text: () => tk('Hold K to jump, let go at the top of your jump. A green flash means a perfect release.', 'Hold SHOOT to jump, let go at the top. A green flash means a perfect release.'),
+    setup() { tutPlace({ me: [1000, 300], ball: true }); }, done: s => s.shotDone },
+  { title: 'Dunk', text: () => tk('Sprint at the rim with the ball and press K.', 'Sprint at the rim with the ball and press SHOOT.'),
+    setup() { tutPlace({ me: [830, 420], ball: true }); }, done: s => s.dunk },
+  { title: 'Pass', text: () => tk('Tap J to pass to your partner. The pass type picks itself.', 'Tap PASS to throw it to your partner.'),
+    setup() { tutPlace({ me: [760, 300], mate: [1000, 520], ball: true }); }, done: s => s.passed },
+  { title: 'Dribble moves', text: () => tk('Press H while pushing a direction: crossover, spin or step-back. Double-tap H for your signature move.', 'Tap MOVE while pushing the stick: crossover, spin or step-back.'),
+    setup() { tutPlace({ me: [700, 350], opp: [790, 350], ball: true }); }, done: s => s.moved },
+  { title: 'Defend', text: () => tk('Hold H (or L) on defense: you guard your man, staying between him and the rim. Stay with him.', 'Hold DEFEND on defense: you guard your man, between him and the rim. Stay with him.'),
+    setup() { tutPlace({ me: [980, 350], opp: [760, 330], oppBall: true }); }, done: s => s.guard > 2, drive: true },
+  { title: 'Steal', text: () => tk('Get close to the ball and tap J to swipe at it. Reach across his body and it’s a foul.', 'Get close and tap STEAL to swipe at the ball.'),
+    setup() { tutPlace({ me: [900, 350], opp: [860, 350], oppBall: true }); }, done: s => s.swiped },
+  { title: 'Block', text: () => tk('He’s going to shoot. Press K to jump and contest when he goes up.', 'He’s going to shoot. Press BLOCK to jump when he goes up.'),
+    setup() { tutPlace({ me: [1010, 350], opp: [960, 350], oppBall: true }); TUT.s.shootAt = 1.4; }, done: s => s.contested },
+  { title: 'You’re ready', text: () => 'That’s the whole game. Try a Quick Play match, and if you want it simpler, set Controls to Casual in Settings.', final: true }
+];
+function tutMe() { return M.players.find(q => q.human === 0); }
+function tutPlace(o) {
+  const me = tutMe(), mate = me.mate, opp = me.opps[0], opp2 = me.opps[1];
+  M.phase = 'live'; M.inb = null; M.check = null; M.bc = null; M.nextInbound = null; M.sideOut = null; M.ft = null; M.pendingEnd = false;
+  for (const q of M.players) { q.v7 = {}; q.v8 = {}; q.buf = null; q.turbo = 100; q.winded = false; }
+  place(me, o.me[0], o.me[1]); place(mate, ...(o.mate || [260, 620])); place(opp, ...(o.opp || [240, 120])); if (opp2) place(opp2, 200, 640);
+  Object.assign(ball, { shot: null, pass: null, vx: 0, vy: 0, vz: 0, grabLock: 0 });
+  if (o.ball) giveBall(me, 'inbound'); else if (o.oppBall) giveBall(opp, 'inbound'); else giveBall(mate, 'inbound');   // your partner holds it out of the way
+  me.face = 1; opp.face = -1;
+}
+function startTutorial() {
+  goTitle(); Game.paused = false; Game.trivia = null;
+  newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'first21', target: 99, len: 120 } });
+  for (const q of M.players) q.hifzUsed = true;                        // no Noor questions in the middle of a lesson
+  M.introT = 0; Game.screen = 'play'; TUT.on = true; tutGo(0);
+}
+function tutGo(i) {
+  TUT.i = i; TUT.t = 0; TUT.s = { dist: 0, sprint: 0, guard: 0, last: null };
+  const st = TUT_STEPS[i]; if (st.setup) st.setup();
+  SFX.blip && SFX.blip();
+}
+function tutEnd() { TUT.on = false; M.cmdHook = null; goTitle(); }
+function tutStep(dt) {
+  if (!TUT.on || !M.teams) return;
+  const st = TUT_STEPS[TUT.i], s = TUT.s, me = tutMe(); if (!me) return;
+  TUT.t += dt;
+  if (st.final) return;
+  // what you've done this step
+  const sp = Math.hypot(me.vx, me.vz);
+  if (s.last) s.dist += Math.hypot(me.x - s.last.x, me.z - s.last.z); s.last = { x: me.x, z: me.z };
+  if (me.cmd.turbo && sp > 200) s.sprint += dt;
+  if (ball.state === 'shot' && ball.shot && ball.shot.shooter === me && !ball.shot.dunk) s.shot = true;
+  if (s.shot && ball.state !== 'shot') s.shotDone = true;
+  if (me.state === 'dunk') s.dunk = true;
+  if (ball.owner === me) s.hadBall = true;
+  if (s.hadBall && (ball.owner === me.mate || (ball.pass && ball.pass.from === me))) s.passed = true;
+  if (me.move) s.moved = true;
+  if (me.v8 && me.v8.held && me.v8.inPos) s.guard += dt;
+  if (me.state === 'steal') s.swiped = true;
+  if (me.state === 'jump' && me.opps.some(o => o.state === 'windup' || o.state === 'shoot' || ball.state === 'shot')) s.contested = true;
+  if (st.done(s)) { s.doneT = (s.doneT || 0) + dt; if (s.doneT > (TUT.i === 2 ? 0.2 : 0.6)) { TUT.nice = { t: 1.1, title: st.title }; SFX.good && SFX.good(); tutGo(TUT.i + 1); } }
+  // keep the lesson tidy: if the ball ends up somewhere useless, set the step up again
+  if (TUT.t > 2 && (M.phase !== 'live' || (!ball.owner && ball.state === 'loose' && !st.done(s) && TUT.i !== 2))) { if (!s.resetT) s.resetT = TUT.t; if (TUT.t - s.resetT > 1.5) { st.setup && st.setup(); s.resetT = 0; TUT.t = 0.5; } } else s.resetT = 0;
+}
+// everyone but you holds still, except what the step needs
+function tutCmd(q) {
+  if (!TUT.on || q.human === 0) return false;
+  const c = q.cmd, st = TUT_STEPS[TUT.i]; zeroCmd(c);
+  const me = tutMe();
+  if (q === me.opps[0] && ball.owner === q) {
+    const h = attackHoop(q.team);
+    if (st.drive) { const t = TUT.t % 6, tx = t < 3 ? 700 : 1000, tz = t < 3 ? 250 : 450, d = Math.hypot(tx - q.x, tz - q.z); if (d > 10) { c.mx = (tx - q.x) / d * 0.55; c.mz = (tz - q.z) / d * 0.55; } }
+    if (TUT.s.shootAt && TUT.t > TUT.s.shootAt && q.state === 'free') { c.b = true; c.bHeld = true; TUT.s.shootAt = null; TUT.s.holdT = 0.45; }
+    if (TUT.s.holdT > 0) { TUT.s.holdT -= STEP; c.bHeld = TUT.s.holdT > 0; }
+    c.face = sgn(h.x - q.x) || q.face;
+  }
+  if (q === me.mate && ball.owner === q && st.title === 'Pass' && TUT.t > 0.8) { c.a = true; }   // your partner gives it back
+  return true;
+}
+{
+  const _um = updateMatch;
+  updateMatch = function (dt) {
+    if (TUT.on && !M.mini) { const hook = M.cmdHook; if (hook !== tutCmd) M.cmdHook = tutCmd; }
+    const r = _um.apply(this, arguments);
+    if (TUT.on) { tutStep(dt); if (M.teams) for (const t of M.teams) t.score = Math.min(t.score, 90); M.clock = Infinity; }
+    return r;
+  };
+  const _ach = Ach.unlock; Ach.unlock = function () { if (TUT.on) return; return _ach.apply(this, arguments); };   // no achievements for a lesson
+  const _fo = foulsOn; foulsOn = function () { return !TUT.on && _fo.apply(this, arguments); };
+  const _gt = goTitle; goTitle = function () { if (TUT.on) { TUT.on = false; M.cmdHook = null; } return _gt.apply(this, arguments); };
+  const _tm = TITLE_MENU;
+  TITLE_MENU = function () {
+    return _tm().map(e => e.label !== 'Quick Play' ? e : Object.assign({}, e, { sub: [{ label: 'Tutorial: learn to play', act: () => startTutorial() }, ...e.sub] }));
+  };
+  // the lesson card
+  const _r = render;
+  render = function (g) {
+    _r(g);
+    if (!TUT.on || Game.screen !== 'play' || Game.paused) return;
+    const st = TUT_STEPS[TUT.i], w = Math.min(560, W - 40), x = W / 2 - w / 2, y = 64, h = 96;
+    g.save();
+    g.fillStyle = 'rgba(8,16,28,0.9)'; roundRect(g, x, y, w, h, 14); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.6)'; g.lineWidth = 1.5; g.stroke();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `18px ${FONT}`; g.fillText((st.final ? '' : (TUT.i + 1) + '/' + (TUT_STEPS.length - 1) + '  ') + st.title, x + 16, y + 28);
+    g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapText(g, st.text(), x + 16, y + 52, w - 150, 18);
+    if (st.final) { uiButton(g, x + w - 124, y + 18, 108, 34, 'Finish', () => tutEnd(), true); uiButton(g, x + w - 124, y + 56, 108, 30, 'Again', () => tutGo(0)); }
+    else uiButton(g, x + w - 112, y + 30, 96, 34, 'Skip', () => tutGo(TUT.i + 1));
+    if (TUT.nice && (TUT.nice.t -= 1 / 60) > 0) { g.textAlign = 'right'; g.fillStyle = '#9dffb0'; g.font = `14px ${FONT}`; g.fillText('\u2713 ' + TUT.nice.title + ' done', x + w - 16, y + h - 6); } else TUT.nice = null;
+    for (let k = 0; k < TUT_STEPS.length - 1; k++) { g.fillStyle = k < TUT.i ? '#9dffb0' : k === TUT.i ? GOLD : 'rgba(255,255,255,0.2)'; g.beginPath(); g.arc(x + 20 + k * 14, y + h - 10, 4, 0, Math.PI * 2); g.fill(); }
+    g.restore();
+  };
+}
+{
+  const _hw = drawHowTo;
+  drawHowTo = function (g) {
+    _hw.apply(this, arguments);
+    const o = Math.round((W - 960) / 2);
+    g.save(); g.translate(o, 0); g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `13px ${FONT}`;
+    g.fillText('New to the game? Quick Play → Tutorial.   Want it simpler? Settings → Controls: Casual.', 480, 466);
+    g.restore();
+  };
 }
 
 // ================================================= v7.7: ADAPTIVE RESOLUTION

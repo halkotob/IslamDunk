@@ -32,7 +32,7 @@ function startQuickMini() {
   Game.screen = 'play';
 }
 function minisUpdate() {
-  const R = minisRows(); MiniMenu.idx = Math.min(MiniMenu.idx, R.length - 1); Game.idx = MiniMenu.idx;
+  const R = minisRows(); Game.idx = clamp(Game.idx | 0, 0, R.length - 1); MiniMenu.idx = Game.idx;   // Game.idx is the truth: taps and hover set it
   menuNav(R.length, i => R[i].step(1)); MiniMenu.idx = Game.idx;
   const r = R[MiniMenu.idx];
   if (!r.start && !r.back) { if (menuHit('left')) { r.step(-1); SFX.blip(); } if (menuHit('right')) { r.step(1); SFX.blip(); } }
@@ -43,7 +43,9 @@ function drawMinis(g) {
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `32px ${FONT}`; g.fillText('Mini games', W / 2, 92);
   g.fillStyle = IVORY; g.font = `13px ${BODY}`; minisHelp().forEach((t, i) => g.fillText(t, W / 2, 124 + i * 19));
   const R = minisRows();
-  drawMenu(g, R.map(r => r.label), MiniMenu.idx, 214, i => { MiniMenu.idx = Game.idx = i; R[i].step(1); }, R.map(r => r.start || r.back ? null : r.get()), 44);
+  // one tap does it: a setting row steps to its next value, Start starts, Back goes back
+  const list = R.map(r => ({ label: r.label, value: r.start || r.back ? null : r.get() }));
+  drawMenuList(g, 'minis:214', list, Game.idx, 214, 44, i => { MiniMenu.idx = Game.idx = i; R[i].step(1); }, i => { Game.idx = i; }, true, 460);
 }
 {
   const _tm = TITLE_MENU;

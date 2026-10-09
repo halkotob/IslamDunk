@@ -51,7 +51,7 @@ function miniRelease(p, st) {                  // CPU release timing: character 
 // ================================================================ LIGHTNING
 // Knockout (v8 rules): everyone lines up single file behind the three-point line at the top of the
 // key. The front player steps onto the spot and shoots a three; the next player waits on deck with the
-// second ball and can't shoot until the player ahead has shot. Miss: chase your own rebound and keep
+// second ball and shoots from there as soon as the ball ahead of him is in the air. Miss: chase your own rebound and keep
 // shooting from anywhere until it goes in. Make: you go to the back of the line and the ball is passed
 // out to the next player in line. If the player behind you scores before you do, you're out (both
 // balls are passed out to the next two in line). Last one standing wins.
@@ -89,19 +89,21 @@ class Lightning {
   spotFor(i) {
     if (this.places[i]) { const k = Object.keys(this.places).indexOf(String(i)); return { x: 760 + k * 44, z: 650 }; }   // out: along the sideline
     if (this.active[0] === i && !this.taken.has(i)) return LK_SPOT;
-    if (this.active[1] === i && !this.taken.has(i)) return this.aheadShot(i) ? LK_SPOT : lkLine(0);
+    if (this.active[1] === i && !this.taken.has(i)) return lkLine(0);      // on deck: shoots from here once the ball ahead is in the air
     return lkLine(this.queue.indexOf(i) + 1);                              // in line behind the on-deck spot
   }
-  // humans: walked into line / onto the spot automatically; you only shoot from the spot, and only once
-  // the player ahead has shot. After your first shot you're free to chase your rebound.
+  // humans: walked into line automatically. Your first shot comes from your spot behind the arc (front:
+  // the spot, on deck: first in line), as soon as the ball ahead is in the air; after it you're free to chase your rebound.
   lock(p, c) {
     const i = M.players.indexOf(p); c.a = false;
-    if (this.done || this.places[i] || !this.active.includes(i)) { const sp = this.spotFor(i); lkGo(p, c, sp, 0.7); c.b = false; c.bHeld = false; return; }
+    if (this.done || this.places[i] || !this.active.includes(i)) { const sp = this.spotFor(i); lkGo(p, c, sp, 0.7); c.b = false; c.bHeld = false; p.buf = null; return; }
     if (this.taken.has(i)) return;                                        // chasing your own rebound: free
     const st = ballStateOf(p);
-    if (!st || st.owner !== p) { const sp = this.spotFor(i); lkGo(p, c, sp, 0.8); c.b = false; c.bHeld = false; return; }   // ball on its way
+    if (!st || st.owner !== p) { const sp = this.spotFor(i); lkGo(p, c, sp, 0.8); c.b = false; c.bHeld = false; p.buf = null; return; }   // ball on its way: back behind the arc
     const sp = this.spotFor(i), d = Math.hypot(p.x - sp.x, p.z - sp.z);
-    if (sp !== LK_SPOT || d > 8) { const pressed = c.b; lkGo(p, c, sp, 0.75); c.face = 1; if (pressed) this.blocked = { i, t: 1.2 }; c.b = false; c.bHeld = false; return; }   // lkGo resets the command
+    // first shot: from your spot behind the arc, as soon as the ball ahead of you is in the air.
+    // p.buf is the input buffer: a press made while running must not fire once the ball lands in your hands
+    if (d > 10 || !this.aheadShot(i)) { const pressed = c.b; lkGo(p, c, sp, 0.75); c.face = 1; if (pressed && !this.aheadShot(i)) this.blocked = { i, t: 1.2 }; c.b = false; c.bHeld = false; p.buf = null; return; }
     c.mx = 0; c.mz = 0; c.turbo = false; c.face = 1;                       // on the spot: shoot when ready
   }
   ai(p, c) {
@@ -113,8 +115,9 @@ class Lightning {
     zeroCmd(c);
     if (st.owner === p && !this.taken.has(i)) {                           // first shot: from the spot, after the player ahead
       const sp = this.spotFor(i), d = Math.hypot(p.x - sp.x, p.z - sp.z);
-      if (sp !== LK_SPOT || d > 8) { lkGo(p, c, sp, 0.75); return; }
-      c.face = 1; if ((this.wait[i] -= STEP) <= 0 && p.state === 'free') c.b = true; return;
+      if (d > 10) { lkGo(p, c, sp, 0.75); return; }
+      c.face = 1; if (!this.aheadShot(i)) return;
+      if ((this.wait[i] -= STEP) <= 0 && p.state === 'free') c.b = true; return;
     }
     if (st.owner === p) {                                                 // after the rebound: each character has a comfort distance
       const want = { mahmoud: 300, saleem: 180, rafiq: 130, hamid: 125, khalil: 150, nasser: 220 }[id] || 170;
@@ -131,7 +134,14 @@ class Lightning {
       if (Math.hypot(st.x - p.x, st.z - p.z) < 28 && st.y < p.y + 80) Object.assign(st, { owner: p, state: 'held', shot: null, vx: 0, vy: 0, vz: 0 });
     }
   }
+  // onScore runs inside withBall (the scoring ball is swapped into the global ball while it updates):
+  // copy our changes back into the global, or withBall's write-back would undo them (the made ball
+  // went back to 'shot', its shooter could grab it again and score without going back behind the arc)
   onScore(h) {
+    const bi = M.curBall; this.scoreBall(h);
+    if (bi >= 0 && M.balls[bi]) for (const k of BALL_KEYS) ball[k] = M.balls[bi][k];
+  }
+  scoreBall(h) {
     const bi = M.curBall, st = M.balls[bi], shooter = st.kShooter || (st.shot && st.shot.shooter);
     h.kick(st.shot && st.shot.touched ? 'rimin' : 'swish', 1.1, st.x - h.x, st.z - h.z, st.shot && st.shot.green ? 1 : 0);
     st.state = 'scored'; st.shot = null; st.kShooter = null;
@@ -146,11 +156,12 @@ class Lightning {
       Object.assign(M.balls[ob], { kShooter: null, dead: true });          // the knocked-out player's ball comes back too
       if (M.balls[ob].owner) { M.balls[ob].owner = null; M.balls[ob].state = 'loose'; }
       this.active = [this.queue.shift(), this.queue.shift()];
+      for (const a of this.active) this.taken.delete(a);                 // a fresh turn: three from the line first
       this.feed(ob, this.active[0], 0.3); this.feed(bi, this.active[1], 0.55);
     } else {                                                              // the front scored first: safe, back of the line
       this.queue.push(si);
       const next = this.queue.shift();
-      this.active = [this.active[1], next];
+      this.active = [this.active[1], next]; this.taken.delete(next);      // (with two left, next is the scorer himself)
       this.feed(bi, next, 0.35);
       FX.pop(M.players[si].x, 120, M.players[si].z, 'SAFE', '#9dffb0');
     }

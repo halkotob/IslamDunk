@@ -97,7 +97,7 @@ function animate(p, dt) {
     const rate = sp > 15 ? Math.max(7, sp * 0.068) : (holding || p.fakeHold) ? 7.5 : 0;
     const prevDp = p.dp;
     p.phase += dt * rate;
-    p.dp = (p.phase / Math.PI) % 1;
+    p.dp = dribblePhase(p, dt, sp, holding);
     if (holding && !p.move && prevDp < 0.5 && p.dp >= 0.5) { if (onScreen(p.x)) SFX.bounce(0.3); }
     if (sp > 260 && prevDp < 0.5 && p.dp >= 0.5 && chance(0.4)) FX.dust(p.x, p.z, 1);
   }
@@ -129,6 +129,9 @@ function animate(p, dt) {
   }
   if (holding) attachBall(p, dt);
 }
+// dribble phase 0..1 (0 = in the hand, 0.5 = on the floor). Classic: one bounce per step.
+// (v8.2 adds a "Stride" option in Settings; see sim/v8-dribble.js)
+let dribblePhase = (p) => (p.phase / Math.PI) % 1;
 // Where the ball sits while owned: dribble synced to footsteps, crossovers, holds
 function attachBall(p) {
   let bx, by, bz, behind = false;

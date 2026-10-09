@@ -106,3 +106,55 @@ function checkCmd(p) {
   const _ts = trySteal;
   trySteal = function (p) { if (M.bc && retreating(p)) return; return _ts.apply(this, arguments); };
 }
+
+// ---- v8.2: side-outs in your own half get the same space (a reach-in or foul back there used to
+// restart with the defender standing on you)
+{
+  const _ib2 = inbound;
+  inbound = function (team) {
+    const s = M.sideOut && M.sideOut.team === team ? M.sideOut : null;
+    const r = _ib2.apply(this, arguments);
+    if (s && !M.halfCourt && ball.owner && ball.owner.team === team && inBackcourt(ball.owner.x, team)) bcStart(team);
+    return r;
+  };
+}
+// ---- v8.2: watchdog. Whatever happens, the ball never sits dead, stuck or off the floor for a
+// possession: a dead ball always restarts, a stalled check-up or inbound goes live, a ball out of
+// reach (behind a wall, under the stands) goes to the team that didn't touch it last, and a ball
+// nobody can pick up is freed.
+const WD = { dead: 0, loose: 0, out: 0 };
+function watchdog(dt) {
+  if (M.mini || M.practice && M.practice.kind !== '1v1' || M.phase === 'over' || M.phase === 'break' || M.phase === 'tip' || Game.trivia || Net.role === 'guest') { WD.dead = WD.loose = WD.out = 0; return; }
+  // stuck restarts
+  if (M.phase === 'dead' && !M.check) WD.dead += dt; else WD.dead = 0;
+  if (WD.dead > 6) { WD.dead = 0; M.inb = null; M.check = null; ball.grabLock = 0; inbound(M.nextInbound != null ? M.nextInbound : (M.possTeam >= 0 ? M.possTeam : 0)); return; }
+  if (M.check && M.check.t > 5) checkLive();
+  if (M.inb && M.inb.t > 5) { const I = M.inb; M.inb = null; ball.grabLock = 0; if (!ball.owner) giveBall(I.p, 'inbound'); M.phase = 'live'; M.shotClock = scReset(); }
+  if (M.phase !== 'live') { WD.loose = WD.out = 0; return; }
+  // off the floor
+  const off = ball.x < -40 || ball.x > COURT.L + 40 || ball.z < 0 || ball.z > COURT.D + 6 || ball.y < -4 || !isFinite(ball.x + ball.y + ball.z);
+  if (off && !ball.owner && ball.state !== 'shot') WD.out += dt; else WD.out = 0;
+  if (WD.out > 0.6) {
+    WD.out = 0;
+    const lt = ball.lastTouch, team = lt ? 1 - lt.team : (M.possTeam >= 0 ? 1 - M.possTeam : 0), T = M.teams[team].players;
+    const sx = clamp(isFinite(ball.x) ? ball.x : COURT.L / 2, 60, COURT.L - 60), sz = clamp(isFinite(ball.z) ? ball.z : 350, 30, COURT.D - 30);
+    const p = T.slice().sort((a, b) => Math.hypot(a.x - sx, a.z - sz) - Math.hypot(b.x - sx, b.z - sz))[0];
+    Object.assign(ball, { x: sx, y: 40, z: sz, vx: 0, vy: 0, vz: 0, state: 'loose', shot: null, pass: null, grabLock: 0 });
+    FX.callout('OUT OF BOUNDS', '#ffffff', M.teamDefs[team].name.toUpperCase() + ' BALL');
+    M.sideOut = { team, p, x: sx, z: sz, sc: Math.max(M.shotClock, 14) };
+    M.phase = 'dead'; M.deadT = 0.9; M.nextInbound = team;
+    return;
+  }
+  // loose and nobody can get it (locked, or resting where no one goes)
+  if (!ball.owner && ball.state === 'loose') WD.loose += dt; else WD.loose = 0;
+  if (WD.loose > 1.5 && ball.grabLock > 0.2) ball.grabLock = 0;
+  if (WD.loose > 5) {
+    WD.loose = 0;
+    const p = M.players.filter(q => q.state === 'free').sort((a, b) => Math.hypot(a.x - ball.x, a.z - ball.z) - Math.hypot(b.x - ball.x, b.z - ball.z))[0];
+    if (p) { ball.x = clamp(ball.x, 30, COURT.L - 30); ball.z = clamp(ball.z, 30, COURT.D - 30); giveBall(p, 'loose'); }
+  }
+}
+{
+  const _um2 = updateMatch;
+  updateMatch = function (dt) { const r = _um2.apply(this, arguments); if (!M.mini) watchdog(dt); return r; };
+}

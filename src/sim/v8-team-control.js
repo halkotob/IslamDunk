@@ -30,7 +30,7 @@ function teamCtlStep() {
   const _um = updateMatch;
   updateMatch = function (dt) { if (!M.mini) teamCtlStep(); return _um.apply(this, arguments); };
   const i = SET_ITEMS.findIndex(s => s.label === 'Keep games close (rubber-band)');
-  SET_ITEMS.splice(i + 1, 0, { label: 'Control', get: () => SETTINGS.teamCtl ? 'Whole team' : 'Your player', step: () => { SETTINGS.teamCtl = !SETTINGS.teamCtl; try { localStorage.setItem('islamdunk.teamctl', SETTINGS.teamCtl ? '1' : '0'); } catch (e) {} } });
+  SET_ITEMS.splice(i + 1, 0, { label: 'Team control', get: () => SETTINGS.teamCtl ? 'Whole team' : 'Your player', step: () => { SETTINGS.teamCtl = !SETTINGS.teamCtl; try { localStorage.setItem('islamdunk.teamctl', SETTINGS.teamCtl ? '1' : '0'); } catch (e) {} } });
 }
 // the settings list grew past the bottom of the screen: rows close up to fit
 drawSettings = function (g) {
