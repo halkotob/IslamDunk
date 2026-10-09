@@ -8,7 +8,7 @@ const SPRINT_REL = 0.12;     // sprint ends after all directions are released th
 const STICK_SPRINT = 0.9;    // touch: stick deflection that sprints
 const FLICK_DT = 0.3;        // touch: two flicks within this window start a sprint
 const PASS_HOLD = 0.3;       // PASS held this long (with the ball) calls a screen instead of passing
-const STEAL_TAP = 0.16;      // PASS on defense: release before this = steal, held past it = stance
+const STEAL_TAP = 0.16;      // PASS on defense: release before this = steal (v8.1: held = double team)
 const MOVE_DT = 0.2;         // MOVE double-tap window (signature move); a single tap's hesitation waits this long
 const DOUBLE_HOLD = 0.3;     // MOVE held on defense this long = double team
 const PLANT_T = 0.6, PLANT_CD = 1.5;
@@ -215,8 +215,8 @@ preStep = function (p, dt) {
     const bo = ball.owner, mine = bo === me, off = bo && bo.team === me.team && !mine, def = bo && bo.team !== me.team;
     const L = mine ? [['SHOOT', ''], ['PASS', 'hold: SCREEN'], [me.postUp ? 'DROP' : 'MOVE', '2\u00d7: SIGNATURE']]
       : off ? [['CALL', ''], ['SCREEN', ''], ['\u2013', '']]
-      : def ? [['BLOCK', ''], ['STEAL', 'hold: STANCE'], ['CHARGE', 'hold: DOUBLE']]
-      : [['JUMP', ''], ['BOX OUT', ''], ['\u2013', '']];
+      : def ? [['BLOCK', ''], ['STEAL', 'hold: DOUBLE'], ['DEFEND', 'hold: GUARD']]
+      : [['JUMP', ''], ['\u2013', ''], ['BOX OUT', 'hold']];
     const key = JSON.stringify(L);
     if (this.v7key !== key) {
       this.v7key = key;
@@ -230,15 +230,15 @@ drawHowTo = function (g) {
   dim(g, 0.86);
   const o = Math.round((W - 960) / 2); g.save(); g.translate(o, 0); const rw = W; W = 960;
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('How to play', W / 2, 44);
-  const keys = [['Move', 'W A S D', 'Arrows'], ['Sprint', 'hold Left Shift while moving', 'Right Shift'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move button', 'H', 'Num0 / M']];
+  const keys = [['Move', 'W A S D', 'Arrows'], ['Sprint', 'hold Left Shift while moving', 'Right Shift'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move  \u2022  Defend', 'H (or L to defend)', 'Num0 / M (Num3 / /)']];
   g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; g.fillText('P1', 610, 72); g.fillText('P2', 800, 72);
   keys.forEach((r, i) => { const y = 92 + i * 21; g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(r[0], 150, y); g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.fillText(r[1], 610, y); g.fillText(r[2], 800, y); });
   const col = (x, title, lines) => { g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText(title, x, 222); g.font = `12px ${BODY}`; lines.forEach((t, i) => { g.fillStyle = t.startsWith('\u2022') ? '#9fb3c8' : IVORY; g.fillText(t, x, 242 + i * 18); }); };
   col(60, 'OFFENSE', ['Shoot: hold and release at the top  \u2022  tap: pump fake', 'Sprint + Shoot in range: dunk', 'Pass: tap  \u2022  type is automatic (bounce, lob, alley-oop)', 'Hold Pass: call a screen  \u2022  hold Pass + tap Move: pass fake',
     'Move + direction: crossover, behind the back, spin, step-back', 'Tap Move: hesitation  \u2022  double-tap: signature move', 'Hold Move near the paint: post up', '\u2022 Without the ball: Shoot calls for it (give-and-go,',
     '\u2022   or alley-oop while sprinting at the rim)', '\u2022 Without the ball: Pass sets a screen for your partner']);
-  col(500, 'DEFENSE', ['Pass: tap to steal  \u2022  hold: stance (box out on a shot)', 'Sprint + Pass: shove (hard foul)', 'Shoot: jump, block, contest', 'Sprint + Shoot: swipe  \u2022  from behind: chase-down',
-    'Tap Move: plant your feet to take a charge', 'Hold Move: your partner doubles the ball', '\u2022 Reach across his body and it\u2019s a foul', '\u2022 Sprint while in stance fights over screens',
+  col(500, 'DEFENSE', ['Hold Defend (Move button or L): guard your man.', '\u2022   You slide with him, between him and the rim', '\u2022   Feet set in his path: he charges into you', 'Hold Defend on a shot: box out',
+    'Pass: tap to steal  \u2022  hold: partner doubles the ball', 'Sprint + Pass: shove (hard foul)', 'Shoot: jump, block, contest  \u2022  sprint + Shoot: swipe', '\u2022 Reach across his body and it\u2019s a foul',
     '\u2022 Final minute: sprint + Pass dives for loose balls', '\u2022 Pause for timeouts and set plays']);
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Touch: push the stick past the dashed ring to sprint. Buttons: SHOOT, PASS, MOVE (labels change with the play).', W / 2, 438);
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText('Press Enter or tap to go back', W / 2, 520);

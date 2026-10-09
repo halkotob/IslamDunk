@@ -98,7 +98,7 @@ function updateMatch(dt) {
   M.assignT -= dt;
   if (M.assignT <= 0) { M.assignT = 0.25; updateAssign(0); updateAssign(1); }
   for (const p of M.players) {
-    if (M.inb && inbCmd(p)) continue;                 // smooth inbound: everyone jogs into place
+    if ((M.inb || M.check || M.bc) && inbCmd(p)) continue;   // smooth inbound / v8.1 check-up and backcourt space: jog into place
     if (M.cmdHook && M.cmdHook(p)) continue;
     if (M.phase === 'ft' && M.ft) { ftCmd(p); continue; }
     if (p.human >= 0 && !M.attract) { if (Net.role === 'host' && p.human === 1) Net.remoteCmd(p.cmd); else humanCmd(p.human, p.cmd); }

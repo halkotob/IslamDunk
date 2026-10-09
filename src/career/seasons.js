@@ -368,7 +368,7 @@ function scoutCore(oppId) {
   const top = ['sht', 'dnk', 'spd', 'def', 'stl'].sort((a, c) => tot[c] - tot[a])[0];
   let tip = SCOUT_TIPS[top][Math.floor(R() * 2)];
   const note = (ARCH_NOTE[arch] || '') + (star.huffath ? ' He\u2019s a hafiz, so expect a Noor boost at some point.' : '');
-  if (oppId === 1) tip = 'Jalal loves his first move. Stay in your stance and don\u2019t bite on his fakes.';
+  if (oppId === 1) tip = 'Jalal loves his first move. Hold Defend, stay in front, and don\u2019t bite on his fakes.';
   const v = Game.cv, road = !!(v && v.v.host === 1 && v.v.kind !== 'arena');
   return { oppId, opp, record: sw + '\u2013' + sl, path: [], star, label, note, tip, extra: '', where: v ? v.name : '', home: !!(v && v.v.host === 0), road };
 }

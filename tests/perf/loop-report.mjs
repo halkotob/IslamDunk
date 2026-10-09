@@ -1,5 +1,6 @@
-// Gameplay loop report: possessions, scoring and shot mix for CPU vs CPU and three scripted
-// "human" styles (idle, sprint-and-dunk, catch-and-shoot) vs the CPU at every difficulty.
+// Gameplay loop report: possessions, scoring and shot mix for CPU vs CPU and four scripted
+// "human" styles (idle, sprint-and-dunk, catch-and-shoot, catch-and-shoot + hold DEFEND) vs the
+// CPU at every difficulty.
 //   npm run build:web && node tests/perf/loop-report.mjs [games per row, default 3]
 // Prints a table; the possession logger it reads is src/sim/poss-log.js.
 import { chromium } from 'playwright'; import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
@@ -34,6 +35,10 @@ await p.goto('http://127.0.0.1:8791/'); await p.waitForFunction(() => typeof Gam
         return true;
       }
     };
+    bots.guard = (me, c, st) => {        // catch-and-shoot on offense, hold DEFEND on defense
+      if (ball.owner && ball.owner.team !== me.team) { zeroCmd(c); c.xHeld = true; return true; }
+      return bots.shooter(me, c, st);
+    };
     const play = (bot, diff, n) => {
       SETTINGS.difficulty = diff; const games = [];
       for (let g = 0; g < n; g++) {
@@ -50,7 +55,7 @@ await p.goto('http://127.0.0.1:8791/'); await p.waitForFunction(() => typeof Gam
     for (const diff of ['veryeasy', 'easy', 'medium', 'hard']) {
       const cpu = play(null, diff, N);
       out['cpu-vs-cpu ' + diff] = possSummary(cpu);
-      for (const bot of ['idle', 'rusher', 'shooter']) {
+      for (const bot of ['idle', 'rusher', 'shooter', 'guard']) {
         const gs = play(bot, diff, N);
         out[bot + ' ' + diff] = { you: possSummary(gs, (g, t) => t === 0), cpu: possSummary(gs, (g, t) => t === 1), finals: gs.map(g => g.final.join('-')).join(' ') };
       }

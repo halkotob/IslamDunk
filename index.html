@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '8.0.0';
+const VERSION = '8.1.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -1919,7 +1919,7 @@ function updateMatch(dt) {
   M.assignT -= dt;
   if (M.assignT <= 0) { M.assignT = 0.25; updateAssign(0); updateAssign(1); }
   for (const p of M.players) {
-    if (M.inb && inbCmd(p)) continue;                 // smooth inbound: everyone jogs into place
+    if ((M.inb || M.check || M.bc) && inbCmd(p)) continue;   // smooth inbound / v8.1 check-up and backcourt space: jog into place
     if (M.cmdHook && M.cmdHook(p)) continue;
     if (M.phase === 'ft' && M.ft) { ftCmd(p); continue; }
     if (p.human >= 0 && !M.attract) { if (Net.role === 'host' && p.human === 1) Net.remoteCmd(p.cmd); else humanCmd(p.human, p.cmd); }
@@ -11446,7 +11446,7 @@ function scoutCore(oppId) {
   const top = ['sht', 'dnk', 'spd', 'def', 'stl'].sort((a, c) => tot[c] - tot[a])[0];
   let tip = SCOUT_TIPS[top][Math.floor(R() * 2)];
   const note = (ARCH_NOTE[arch] || '') + (star.huffath ? ' He\u2019s a hafiz, so expect a Noor boost at some point.' : '');
-  if (oppId === 1) tip = 'Jalal loves his first move. Stay in your stance and don\u2019t bite on his fakes.';
+  if (oppId === 1) tip = 'Jalal loves his first move. Hold Defend, stay in front, and don\u2019t bite on his fakes.';
   const v = Game.cv, road = !!(v && v.v.host === 1 && v.v.kind !== 'arena');
   return { oppId, opp, record: sw + '\u2013' + sl, path: [], star, label, note, tip, extra: '', where: v ? v.name : '', home: !!(v && v.v.host === 0), road };
 }
@@ -12081,7 +12081,7 @@ const SPRINT_REL = 0.12;     // sprint ends after all directions are released th
 const STICK_SPRINT = 0.9;    // touch: stick deflection that sprints
 const FLICK_DT = 0.3;        // touch: two flicks within this window start a sprint
 const PASS_HOLD = 0.3;       // PASS held this long (with the ball) calls a screen instead of passing
-const STEAL_TAP = 0.16;      // PASS on defense: release before this = steal, held past it = stance
+const STEAL_TAP = 0.16;      // PASS on defense: release before this = steal (v8.1: held = double team)
 const MOVE_DT = 0.2;         // MOVE double-tap window (signature move); a single tap's hesitation waits this long
 const DOUBLE_HOLD = 0.3;     // MOVE held on defense this long = double team
 const PLANT_T = 0.6, PLANT_CD = 1.5;
@@ -12288,8 +12288,8 @@ preStep = function (p, dt) {
     const bo = ball.owner, mine = bo === me, off = bo && bo.team === me.team && !mine, def = bo && bo.team !== me.team;
     const L = mine ? [['SHOOT', ''], ['PASS', 'hold: SCREEN'], [me.postUp ? 'DROP' : 'MOVE', '2\u00d7: SIGNATURE']]
       : off ? [['CALL', ''], ['SCREEN', ''], ['\u2013', '']]
-      : def ? [['BLOCK', ''], ['STEAL', 'hold: STANCE'], ['CHARGE', 'hold: DOUBLE']]
-      : [['JUMP', ''], ['BOX OUT', ''], ['\u2013', '']];
+      : def ? [['BLOCK', ''], ['STEAL', 'hold: DOUBLE'], ['DEFEND', 'hold: GUARD']]
+      : [['JUMP', ''], ['\u2013', ''], ['BOX OUT', 'hold']];
     const key = JSON.stringify(L);
     if (this.v7key !== key) {
       this.v7key = key;
@@ -12303,15 +12303,15 @@ drawHowTo = function (g) {
   dim(g, 0.86);
   const o = Math.round((W - 960) / 2); g.save(); g.translate(o, 0); const rw = W; W = 960;
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('How to play', W / 2, 44);
-  const keys = [['Move', 'W A S D', 'Arrows'], ['Sprint', 'hold Left Shift while moving', 'Right Shift'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move button', 'H', 'Num0 / M']];
+  const keys = [['Move', 'W A S D', 'Arrows'], ['Sprint', 'hold Left Shift while moving', 'Right Shift'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move  \u2022  Defend', 'H (or L to defend)', 'Num0 / M (Num3 / /)']];
   g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; g.fillText('P1', 610, 72); g.fillText('P2', 800, 72);
   keys.forEach((r, i) => { const y = 92 + i * 21; g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(r[0], 150, y); g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.fillText(r[1], 610, y); g.fillText(r[2], 800, y); });
   const col = (x, title, lines) => { g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText(title, x, 222); g.font = `12px ${BODY}`; lines.forEach((t, i) => { g.fillStyle = t.startsWith('\u2022') ? '#9fb3c8' : IVORY; g.fillText(t, x, 242 + i * 18); }); };
   col(60, 'OFFENSE', ['Shoot: hold and release at the top  \u2022  tap: pump fake', 'Sprint + Shoot in range: dunk', 'Pass: tap  \u2022  type is automatic (bounce, lob, alley-oop)', 'Hold Pass: call a screen  \u2022  hold Pass + tap Move: pass fake',
     'Move + direction: crossover, behind the back, spin, step-back', 'Tap Move: hesitation  \u2022  double-tap: signature move', 'Hold Move near the paint: post up', '\u2022 Without the ball: Shoot calls for it (give-and-go,',
     '\u2022   or alley-oop while sprinting at the rim)', '\u2022 Without the ball: Pass sets a screen for your partner']);
-  col(500, 'DEFENSE', ['Pass: tap to steal  \u2022  hold: stance (box out on a shot)', 'Sprint + Pass: shove (hard foul)', 'Shoot: jump, block, contest', 'Sprint + Shoot: swipe  \u2022  from behind: chase-down',
-    'Tap Move: plant your feet to take a charge', 'Hold Move: your partner doubles the ball', '\u2022 Reach across his body and it\u2019s a foul', '\u2022 Sprint while in stance fights over screens',
+  col(500, 'DEFENSE', ['Hold Defend (Move button or L): guard your man.', '\u2022   You slide with him, between him and the rim', '\u2022   Feet set in his path: he charges into you', 'Hold Defend on a shot: box out',
+    'Pass: tap to steal  \u2022  hold: partner doubles the ball', 'Sprint + Pass: shove (hard foul)', 'Shoot: jump, block, contest  \u2022  sprint + Shoot: swipe', '\u2022 Reach across his body and it\u2019s a foul',
     '\u2022 Final minute: sprint + Pass dives for loose balls', '\u2022 Pause for timeouts and set plays']);
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Touch: push the stick past the dashed ring to sprint. Buttons: SHOOT, PASS, MOVE (labels change with the play).', W / 2, 438);
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText('Press Enter or tap to go back', W / 2, 520);
@@ -13820,6 +13820,349 @@ function fairRestart(team) {
   inbound = function (team) { const r = _ib.apply(this, arguments); fairRestart(team); return r; };
 }
 
+// ================================================= v8.1: THE DEFENSE BUTTON
+// On defense the MOVE button (H / Numpad 0 / touch) is DEFEND, and L (Numpad 3 for player 2) is a
+// dedicated DEFEND key. It replaces the old hold-PASS stance:
+//   hold DEFEND  you lock onto your man (the ball handler if you're the closer defender, else the
+//                other one) and the game moves you: between him and the rim, an arm's length off
+//                the ball, a step further off the ball. You keep pace with him, so he can't simply
+//                run past you; a dribble move or a screen still can. Running a quick man costs
+//                stamina, like sprinting. Moving the stick while you hold adds a lean.
+//                Feet set in his path = a charge when he drives into you.
+//                On a shot or loose ball, holding DEFEND boxes out.
+//   hold PASS    call the double team (was on MOVE)
+// Tap PASS (steal), SHOOT (jump, block, contest) and sprint + PASS (shove) are unchanged.
+const DEF_KEYS = [['KeyL'], ['Numpad3', 'Slash']];
+const GUARD_ON = 36, GUARD_OFF_MIN = 46, GUARD_OFF_MAX = 120;
+{
+  const _hc = humanCmd;
+  humanCmd = function (pad, c) {
+    _hc.apply(this, arguments);
+    const k = DEF_KEYS[pad] || [];
+    if (k.some(x => Input.down[x])) c.xHeld = true;
+    if (k.some(x => Input.pressed[x])) c.x = true;
+  };
+}
+function defCtx(p) {
+  const bo = ball.owner;
+  if (bo) return bo === p ? 'ball' : bo.team === p.team ? 'off' : 'def';
+  if (ball.pass) return ball.pass.from.team === p.team ? 'off' : 'def';
+  return 'reb';
+}
+// the man you guard: the ball (or the pass target) if you're the closer of the two defenders
+function guardPick(p) {
+  const bm = ball.owner && ball.owner.team !== p.team ? ball.owner : ball.pass && ball.pass.to && ball.pass.to.team !== p.team ? ball.pass.to : null;
+  if (!bm) { let best = null, bd = 1e9; for (const o of p.opps) { const d = dxz(o, p); if (d < bd) { bd = d; best = o; } } return best; }
+  const mate = p.mate, h = defendHoop(p.team), cur = p.v8 && p.v8.man, other = p.opps.find(o => o !== bm) || bm;
+  if (!mate || mate.state === 'down') return bm;
+  // your partner already has the ball covered (on him, between him and the rim) and you're away: take the other man
+  if (dxz(mate, bm) < 70 && dxz(mate, h) < dxz(bm, h) && dxz(p, bm) > 130) return other;
+  // a pass to the man your partner is on: stay with yours unless you're clearly closer (no scramble on every pass)
+  if (cur && cur !== bm && cur.team !== p.team && dxz(mate, bm) + 40 < dxz(p, bm)) return cur;
+  return bm;
+}
+// your CPU partner takes whoever you aren't guarding
+{
+  const _td = Brain.prototype.thinkDefense;
+  Brain.prototype.thinkDefense = function () {
+    _td.apply(this, arguments);
+    const p = this.p, hum = p.mate && p.mate.human >= 0 ? p.mate : null, G = hum && hum.v8;
+    if (!G || !G.held || !G.man || !this.plan || !this.plan.man || this.plan.man !== G.man) return;
+    const other = p.opps.find(o => o !== G.man); if (!other) return;
+    this.plan = ball.owner === other ? { type: 'guardBall', man: other } : { type: 'deny', man: other };
+  };
+}
+{
+  const _v7 = v7Input;
+  v7Input = function (p, dt) {
+    const c = p.cmd, ctx = defCtx(p), D = p.v8 || (p.v8 = {});
+    D.held = (ctx === 'def' || ctx === 'reb') && !!c.xHeld;
+    if (ctx === 'def' || ctx === 'reb') { c.x = false; c.xHeld = false; }      // MOVE belongs to DEFEND here: no plant, no MOVE-held double
+    _v7.apply(this, arguments);
+    const V = p.v7 || {};
+    c.stanceHeld = D.held;                                                     // stance and box-out now come from DEFEND
+    // hold PASS on defense: double team (tap is still a steal)
+    const dbl = !!(V.a && V.a.ctx === 'def' && c.aHeld && V.a.t >= DOUBLE_HOLD);
+    if (dbl !== !!D.dbl) { doubleTeam(p, dbl); D.dbl = dbl; }
+  };
+}
+function guardStep(p, dt) {
+  const D = p.v8; if (!D) return;
+  if (!D.held || defCtx(p) !== 'def' || p.state !== 'free' || p.y > 1) { D.man = null; D.pickT = 0; D.inPos = false; D.boost = false; return; }
+  if (!D.man || D.man.team === p.team || D.man.state === 'down' || (D.pickT = (D.pickT || 0) - dt) <= 0) { D.man = guardPick(p); D.pickT = 0.35; }   // follows the ball as it moves
+  const m = D.man; if (!m) return;
+  const c = p.cmd, h = defendHoop(p.team), bo = ball.owner, onBall = m === bo;
+  // you react a few frames behind him (less with a good defense rating)
+  const lag = Math.round(clamp(5 - (st7(p, 'def') - 5) * 0.6, 2, 8)), r = m.hist[m.hist.length - 1 - lag] || m;
+  const hd = Math.hypot(h.x - r.x, h.z - r.z) || 1, gap = onBall ? GUARD_ON + Math.max(0, hd - 430) * 0.25 : clamp(hd * 0.28, GUARD_OFF_MIN, GUARD_OFF_MAX);
+  let tx = r.x + (h.x - r.x) / hd * gap, tz = r.z + (h.z - r.z) / hd * gap;
+  if (!onBall) { const ref = bo || ball; tx += (ref.x - tx) * 0.15; tz += (ref.z - tz) * 0.15; }   // shade toward the ball
+  const dx = tx - p.x, dz = tz - p.z, dist = Math.hypot(dx, dz);
+  c.turbo = false;
+  const base = p.speed(), manSp = Math.hypot(m.vx || 0, m.vz || 0);
+  const K = clamp(0.97 + (st7(p, 'def') - st7(m, 'spd')) * 0.02, 0.9, 1.06);
+  let vmax = Math.max(base, (onBall ? manSp * K : manSp) + (dist > 70 ? 60 : 0));
+  vmax = Math.min(vmax, base / (p.stance ? 0.84 : 1) * 1.5);                      // never faster than a full sprint
+  D.boost = vmax > base * 1.05;
+  if (D.boost) { if (p.turbo < 6 || p.winded) { vmax = base; D.boost = false; } else p.turbo = Math.max(0, p.turbo - 26 * dt); }
+  const want = Math.min(vmax, dist / 0.09), lean = 0.35 * base;
+  let vx = dist > 1 ? dx / dist * want : 0, vz = dist > 1 ? dz / dist * want : 0;
+  vx += c.mx * lean; vz += c.mz * lean;                                          // the stick leans you (cheat a side)
+  c.mx = vx / base; c.mz = vz / base;
+  c.face = sgn(m.x - p.x) || p.face;
+  D.inPos = dist < 26 && dxz(p, h) < dxz(m, h);
+}
+{
+  const _ps = preStep;
+  preStep = function (p, dt) { _ps.apply(this, arguments); if (p.human >= 0) guardStep(p, dt); };
+}
+// charges: a guard in position who isn't moving into the driver has legal guarding position, even
+// while sliding with him (the old rule only counted a defender standing still)
+{
+  const _cc = chargeCheck;
+  chargeCheck = function (dt) {
+    const h = ball.owner, saved = [];
+    if (h && h.state === 'free') for (const o of h.opps) {
+      if (!o.v8 || !o.v8.inPos) continue;
+      const tx = h.x - o.x, tz = h.z - o.z, d = Math.hypot(tx, tz) || 1, into = ((o.vx || 0) * tx + (o.vz || 0) * tz) / d;
+      if (into < 30 && Math.hypot(o.vx || 0, o.vz || 0) < 120) { saved.push([o, o.vx, o.vz]); o.vx = 0; o.vz = 0; }       // counts as set for the check
+    }
+    try { return _cc.apply(this, arguments); } finally { for (const [o, vx, vz] of saved) { o.vx = vx; o.vz = vz; } }
+  };
+}
+
+// ---- contested dunks. A dunk used to go in every time unless a defender happened to be in the
+// air at the ball. Now the take-off reads the defense: a body set in your path or a man at the rim
+// makes it a contest, and a contested dunk can be stuffed or rattle out. From range you can't take
+// off through a defender standing in your lane; beat him first (or pull up).
+function dunkContestOf(p, h) {
+  let best = 0, by = null;
+  for (const o of p.opps) {
+    if (o.state === 'down' || o.state === 'getup' || o.state === 'dunk' || (o.stumble || 0) > 0.1) continue;
+    const s = segDist(o.x, o.z, p.x, p.z, h.x, h.z);
+    let c = s.t > 0.05 && s.d < 46 ? (1 - s.d / 46) : 0;                              // in the way
+    const rd = dxz(o, h); if (rd < 72) c = Math.max(c, 0.8 * (1 - rd / 72));           // protecting the rim
+    const od = dxz(o, p); if (od < 70) c = Math.max(c, 0.45 * (1 - od / 70));           // right on him (trailing or beside)
+    if (!c) continue;
+    const set = (o.v8 && o.v8.inPos) || o.stance || (o.setT || 0) > 0.2 || o.y > 20 ? 1 : 0.6;
+    c *= set * clamp(1 + (st7(o, 'def') - st7(p, 'dnk')) * 0.06, 0.6, 1.4);
+    if (c > best) { best = c; by = o; }
+  }
+  return { c: Math.min(1, best), by };
+}
+function laneBlocked(p, h) {
+  for (const o of p.opps) {
+    if (o.state !== 'free' || o.y > 1 || (o.stumble || 0) > 0.1) continue;
+    const s = segDist(o.x, o.z, p.x, p.z, h.x, h.z);
+    if (s.t > 0.08 && s.t < 0.92 && s.d < 30) return o;
+  }
+  return null;
+}
+{
+  const _cd = canDunk;
+  canDunk = function (p) {
+    if (!_cd.apply(this, arguments)) return false;
+    if (M.mini || M.practice) return true;
+    const h = attackHoop(p.team), d = dxz(p, h), turbo = p.cmd.turbo && p.turboOK();
+    const R = (turbo ? 195 : 115) + (p.fire ? 40 : 0) + (p.boost > 0 ? 20 : 0) + st7(p, 'dnk') * 3;   // runway was 250 + : take-offs from the arc
+    if (d >= R) return false;
+    return d <= 120 || !laneBlocked(p, h);
+  };
+  const _sd = startDunk;
+  startDunk = function (p, opts) {
+    _sd.apply(this, arguments);
+    const a = p.act; if (!a || p.state !== 'dunk' || M.mini || M.practice) return;
+    const k = dunkContestOf(p, a.hoop);
+    a.contest = k.c; a.contestBy = k.by;
+    a.miss = chance(clamp(k.c * 0.62 - (st7(p, 'dnk') - 5) * 0.02, 0, 0.68));
+    if (ball.owner === p || opts.alley) PossLog.addShot(p, a.hoop, 2, true);
+    const o = k.by;                                                                   // the contest jump
+    if (o && k.c > 0.25 && o.state === 'free' && o.y < 1 && dxz(o, p) < 120) {
+      if (o.human >= 0 ? o.v8 && o.v8.held : chance(0.35 + 0.5 * (aiCfg(o.team).antic || 0))) startJump(o);
+    }
+  };
+  const _sl = slam;
+  slam = function (p, a) {
+    if (!a.miss || ball.owner !== p) return _sl.apply(this, arguments);
+    const h = a.hoop, by = a.contestBy;                                               // rattled out
+    ball.owner = null; ball.pass = null; ball.shot = null;
+    Object.assign(ball, { x: h.x - h.dir * 6, z: h.z + rand(-8, 8), y: RIM_Y + 8, vx: -h.dir * rand(140, 240), vz: rand(-140, 140), vy: rand(260, 380), state: 'loose', grabLock: 0.2, lastTouch: p });
+    h.dy = -5; h.vy -= 140; a.didSlam = false;
+    SFX.clank(1.3); FX.shake && FX.shake(2, 0.15);
+    FX.callout(by ? 'DENIED AT THE RIM!' : 'OFF THE RIM!', '#8fe3ff', by ? by.def.name.toUpperCase() + ' CONTESTS' : '', true);
+    M.lastShot = { team: p.team, t: M.time, hoop: h };
+    if (by) compAdd(by, 3);
+  };
+}
+
+// ---- difficulty moves the CPU's finishing, not just its timing: on lower settings the CPU misses
+// more of everything it shoots (scaled from the difficulty's release error, so career levels blend)
+function cpuMakeK(p) { const e = (aiCfg(p.team) || DIFF.medium).relErr; return clamp(1.04 - e, 0.75, 1.04); }
+{
+  const _rs = releaseShot;
+  releaseShot = function (p) {
+    if (M.mini || M.practice || p.human >= 0 || ball.owner !== p) return _rs.apply(this, arguments);
+    const ck = p.contactK; p.contactK = (ck || 1) * cpuMakeK(p);
+    try { return _rs.apply(this, arguments); } finally { p.contactK = ck; }
+  };
+  const _sd = startDunk;
+  startDunk = function (p, opts) {
+    _sd.apply(this, arguments);
+    const a = p.act; if (!a || p.state !== 'dunk' || M.mini || M.practice || p.human >= 0 || a.miss) return;
+    a.miss = chance((1.04 - cpuMakeK(p)) * 0.9);
+  };
+}
+
+// ================================================= v8.1: RESETS
+// Full court: after a basket or a dead-ball inbound the offense gets its own half. The defense
+// runs back past half court (nobody can steal, shove or pick off a pass in there) and picks the
+// ball up at the line. The space ends when the ball crosses half court, is shot or turned over,
+// or after 8 seconds.
+// Half court: every restart is a check-up at the top of the key. Everyone walks to his spot, the
+// defender checks the ball, then it's live. The game and shot clocks wait.
+const BC_MAX = 8, CHECK_MAX = 2.6, CHECK_BEAT = 0.55;
+function bcMid() { return COURT.L / 2; }
+function inBackcourt(x, team) { const h = defendHoop(team); return (x - bcMid()) * (h.x - bcMid()) > 0; }   // on the side of the hoop this team defends
+function bcStart(team) {
+  if (M.halfCourt || M.practice || M.mini || M.attract && !PossLog.force) return;
+  M.bc = { team, t: 0, popped: false };
+}
+function bcStep(dt) {
+  const B = M.bc; if (!B) return;
+  B.t += dt;
+  const o = ball.owner;
+  const over = B.t > BC_MAX || ball.state === 'shot' || (o && o.team !== B.team) || (M.phase === 'live' && ball.state === 'loose' && !M.inb) || (o && o.team === B.team && !inBackcourt(o.x, B.team) && M.phase === 'live');
+  if (over || M.phase === 'ft' || M.phase === 'over' || M.phase === 'break') M.bc = null;
+}
+function retreating(p) { return !!(M.bc && p.team !== M.bc.team && inBackcourt(p.x + (defendHoop(M.bc.team).x > bcMid() ? 30 : -30), M.bc.team)); }   // until 30 past the line
+function retreatCmd(p) {
+  const c = p.cmd, team = M.bc.team, a = attackHoop(team), D = M.teams[1 - team].players, i = D.indexOf(p);
+  const sp = [{ x: a.x + a.dir * 330, z: 300 }, { x: a.x + a.dir * 300, z: 440 }][i] || { x: bcMid(), z: 350 };
+  const mx = bcMid() - (defendHoop(team).x > bcMid() ? 40 : -40);                     // just over half court
+  const tx = Math.abs(sp.x - bcMid()) < Math.abs(mx - bcMid()) ? mx : sp.x, tz = sp.z;
+  zeroCmd(c);
+  const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz) || 1;
+  c.mx = dx / d; c.mz = dz / d; c.turbo = d > 200 && p.turbo > 30; c.face = sgn(dx) || p.face;
+  if (p.human >= 0 && !M.bc.popped && !M.attract) { M.bc.popped = true; FX.pop(p.x, p.y + 140, p.z, 'GET BACK', '#8fe3ff'); }
+  return true;
+}
+// ---- half-court check-up
+function checkStart(team) {
+  const h = hoops[1], d = h.dir, O = M.teams[team].players, D = M.teams[1 - team].players, bo = ball.owner;
+  if (!bo) return;
+  const top = { x: h.x + d * 390, z: 350 }, ux = h.x - top.x, uz = h.z - top.z, L = Math.hypot(ux, uz) || 1;
+  const mate = O.find(q => q !== bo), dOn = D.slice().sort((a, b) => dxz(a, bo) - dxz(b, bo))[0], dOff = D.find(q => q !== dOn);
+  const side = mate && mate.z < 350 ? -1 : 1, wing = { x: h.x + d * 255, z: 350 + side * 200 };
+  const S = new Map();
+  S.set(bo, top);
+  if (dOn) S.set(dOn, { x: top.x + ux / L * 56, z: top.z + uz / L * 56 });
+  if (mate) S.set(mate, wing);
+  if (dOff && mate) { const wx = h.x - wing.x, wz = h.z - wing.z, W2 = Math.hypot(wx, wz) || 1; S.set(dOff, { x: wing.x + wx / W2 * 60, z: wing.z + wz / W2 * 60 }); }
+  M.check = { team, S, t: 0, stage: 'walk', bo };
+  M.phase = 'dead'; M.deadT = 99; M.nextInbound = null; M.mustClear = [false, false];
+  ball.grabLock = 9;
+}
+function checkStep(dt) {
+  const K = M.check; if (!K) return;
+  K.t += dt;
+  if (K.bo !== ball.owner) { checkLive(); return; }
+  if (K.stage === 'walk') {
+    let far = 0; for (const [q, s] of K.S) far = Math.max(far, Math.hypot(q.x - s.x, q.z - s.z));
+    if (far < 14 || K.t > CHECK_MAX) { K.stage = 'check'; K.tc = K.t; if (!M.attract) { FX.pop(K.bo.x, K.bo.y + 140, K.bo.z, 'CHECK', '#ffd76a'); SFX.bounce && SFX.bounce(0.3); } }
+  } else if (K.t - K.tc > CHECK_BEAT) checkLive();
+}
+function checkLive() {
+  const K = M.check; M.check = null;
+  M.phase = 'live'; M.deadT = 0; ball.grabLock = 0;
+  if (K && K.bo && ball.owner === K.bo && !M.attract) FX.pop(K.bo.x, K.bo.y + 140, K.bo.z, 'BALL IN', '#9dffb0');
+}
+function checkCmd(p) {
+  const K = M.check, c = p.cmd, s = K.S.get(p); zeroCmd(c);
+  if (s) { const dx = s.x - p.x, dz = s.z - p.z, d = Math.hypot(dx, dz); if (d > 5) { const k = Math.min(1, d / 50); c.mx = dx / d * k; c.mz = dz / d * k; c.turbo = d > 160; } }
+  const h = hoops[1]; c.face = p.team === K.team ? sgn(h.x - p.x) || p.face : sgn(K.bo.x - p.x) || p.face;
+  return true;
+}
+// ---- hooks
+{
+  const _ic = inbCmd;
+  inbCmd = function (p) {
+    if (M.check) return checkCmd(p);
+    if (M.inb) { if (retreating(p)) return retreatCmd(p); return _ic.apply(this, arguments); }
+    if (M.bc && retreating(p)) return retreatCmd(p);
+    return false;
+  };
+  const _ib = inbound;
+  inbound = function (team) {
+    const side = !!M.sideOut;
+    const r = _ib.apply(this, arguments);
+    if (M.halfCourt && !M.mini) checkStart(team);
+    else if (!side) bcStart(team);
+    return r;
+  };
+  const _is = inbStep;
+  inbStep = function (dt) { const had = !!M.inb; const r = _is.apply(this, arguments); if (!had && M.inb) bcStart(M.inb.team); return r; };
+  const _um = updateMatch;
+  updateMatch = function (dt) {
+    if (M.mini) return _um.apply(this, arguments);
+    if (M.check) checkStep(dt);
+    const r = _um.apply(this, arguments);
+    bcStep(dt);
+    return r;
+  };
+  // nobody in the protected half can take the ball
+  const _pl = passLaneCheck;
+  passLaneCheck = function (pa) {
+    if (!M.bc || pa.from.team !== M.bc.team) return _pl.apply(this, arguments);
+    const out = M.players.filter(o => o.team !== pa.from.team && retreating(o));
+    pa.lane = pa.lane || new Set(); for (const o of out) pa.lane.add(o);
+    return _pl.apply(this, arguments);
+  };
+  const _ts = trySteal;
+  trySteal = function (p) { if (M.bc && retreating(p)) return; return _ts.apply(this, arguments); };
+}
+
+// ================================================= v8.1: CONTROL THE WHOLE TEAM (option, off by default)
+// Options → Settings → Control: "Your player" (default) or "Whole team". With Whole team, you
+// play whoever has the ball on offense (control follows every pass) and, on defense, whoever is
+// guarding the ball when it changes hands. Your teammate plays the other spot as usual.
+// Single-player games with a CPU partner only (Quick Play, Barakah Run, scenarios); career,
+// co-op and online keep one player each.
+SETTINGS.teamCtl = false;
+(() => { try { SETTINGS.teamCtl = localStorage.getItem('islamdunk.teamctl') === '1'; } catch (e) {} })();
+function teamCtlOn() { return SETTINGS.teamCtl && !M.career && !M.online && !Net.role && !M.attract && !M.mini && !M.practice && M.teams; }
+function ctlSwitch(from, to) {
+  if (!from || !to || from === to || to.human >= 0) return;
+  const pad = from.human; from.human = -1; to.human = pad;
+  for (const q of [from, to]) { zeroCmd(q.cmd); q.v7 = {}; q.v8 = {}; q.buf = null; q.ai.t = 0; q.ai.plan = { type: 'idle' }; }
+  if (!M.attract) FX.pop(to.x, to.y + 140, to.z, 'YOU', '#ffd76a');
+}
+function teamCtlStep() {
+  if (!teamCtlOn()) return;
+  const bo = ball.owner, st = M.ctl || (M.ctl = { owner: null });
+  for (const T of M.teams) {
+    const P = T.players, hs = P.filter(q => q.human >= 0);
+    if (hs.length !== 1 || P.length < 2) continue;
+    const me = hs[0], mate = P.find(q => q !== me);
+    if (bo && bo.team === me.team && bo === mate && bo.state !== 'dunk') ctlSwitch(me, mate);      // offense: you are the ball
+    else if (bo && bo.team !== me.team && bo !== st.owner && me.state === 'free' && mate.state === 'free' && dxz(mate, bo) + 60 < dxz(me, bo)) ctlSwitch(me, mate);   // defense: take the man on the ball
+  }
+  st.owner = bo;
+}
+{
+  const _um = updateMatch;
+  updateMatch = function (dt) { if (!M.mini) teamCtlStep(); return _um.apply(this, arguments); };
+  const i = SET_ITEMS.findIndex(s => s.label === 'Keep games close (rubber-band)');
+  SET_ITEMS.splice(i + 1, 0, { label: 'Control', get: () => SETTINGS.teamCtl ? 'Whole team' : 'Your player', step: () => { SETTINGS.teamCtl = !SETTINGS.teamCtl; try { localStorage.setItem('islamdunk.teamctl', SETTINGS.teamCtl ? '1' : '0'); } catch (e) {} } });
+}
+// the settings list grew past the bottom of the screen: rows close up to fit
+drawSettings = function (g) {
+  dim(g, 0.72);
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `32px ${FONT}`; g.fillText('Settings', W / 2, 92);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('Difficulty changes CPU reaction, decisions and timing. Player stats never change.', W / 2, 118);
+  const n = SET_ITEMS.length, gap = Math.min(40, Math.floor((H - 172) / n));
+  drawMenu(g, SET_ITEMS.map(s => s.label), Game.idx, 160, i => { if (i === n - 1) goTitle(); else SET_ITEMS[i].step(1); }, SET_ITEMS.map(s => s.get()), gap);
+};
+
 // ===================================================== CAREER: BODY BUILDS (v7.8)
 // Height, build and play style each trade some stats for others (tables in career.js, every row sums
 // to zero), applied on top of the levels you buy, so changing your look later moves them back.
@@ -14357,16 +14700,18 @@ const PossLog = {
     this.game.poss.push(c);
     return c.end;
   },
+  addShot(sh, h, pts, dunk) {
+    if (!this.game) return;
+    if (!this.cur || this.cur.team !== sh.team) { const e = this.close(); this.open(sh.team, e ? afterWhy(e) : 'loose'); }
+    const open = Math.min(...sh.opps.map(q => Math.hypot(q.x - sh.x, q.z - sh.z)));
+    this.cur.shots.push({ d: Math.round(Math.hypot(sh.x - h.x, sh.z - h.z)), pts, dunk, human: sh.human >= 0, open: Math.round(open), made: false, t: +(M.time - this.cur.t0).toFixed(1) });
+    this.cur.shotT = M.time;
+  },
   step() {
     if (!this.game) return;
     if (M.phase === 'over') { this.close(); this.game.final = [M.teams[0].score, M.teams[1].score]; this.store(this.game); this.done = this.game; this.game = null; return; }
     const s = ball.shot;
-    if (ball.state === 'shot' && s && s !== this.lastShot) {             // a new shot
-      this.lastShot = s; if (!this.cur || this.cur.team !== s.team) { const e = this.close(); this.open(s.team, e ? afterWhy(e) : 'loose'); }
-      const h = s.hoop, sh = s.shooter, opp = M.players.filter(q => q.team !== sh.team), open = Math.min(...opp.map(q => Math.hypot(q.x - sh.x, q.z - sh.z)));
-      this.cur.shots.push({ d: Math.round(Math.hypot(sh.x - h.x, sh.z - h.z)), pts: s.pts, dunk: !!s.dunk, human: sh.human >= 0, open: Math.round(open), made: false, t: +(M.time - this.cur.t0).toFixed(1) });
-      this.cur.shotT = M.time;
-    }
+    if (ball.state === 'shot' && s && s !== this.lastShot) { this.lastShot = s; if (!s.dunk) this.addShot(s.shooter, s.hoop, s.pts, false); }   // dunks are logged at take-off
     for (const t of [0, 1]) {                                             // points (shots and free throws)
       const d = M.teams[t].score - this.scores[t]; if (d <= 0) continue; this.scores[t] = M.teams[t].score;
       if (!this.cur || this.cur.team !== t) { this.close(); this.open(t, 'loose'); }

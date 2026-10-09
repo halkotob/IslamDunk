@@ -1,5 +1,37 @@
 # Changelog
 
+## 8.1.0: Phase 2 — the Defense button, contested dunks, real resets
+- **Defense button (replaces stance).** On defense the MOVE button is now DEFEND, and L (Numpad 3 for
+  player 2) is a dedicated key for it.
+  - Hold it and you lock onto your man: the ball handler, unless your partner already has him.
+  - The game moves you between him and the rim at arm's length and keeps pace with him, so he can't
+    just run past you. A dribble move, a fake or a screen can still beat you.
+  - Staying with a quick man costs stamina, like sprinting. The stick adds a lean.
+  - Feet set in his path draws a charge.
+  - On a shot or a loose ball, holding DEFEND boxes out.
+  - Your CPU partner takes the other man. Hold PASS on defense to have your partner double the ball
+    (tap PASS is still a steal).
+- **Contested dunks.**
+  - A defender in your path or at the rim turns a dunk into a contest that can rattle out
+    ("DENIED AT THE RIM!"). He jumps to contest if he's holding DEFEND or is a CPU who reads it.
+  - You can't take off from range through a defender standing in your lane.
+  - The sprint-dunk runway is shorter: no more dunks taking off from near the three-point line.
+- **Resets.**
+  - Full court: after a basket or a dead-ball inbound, the offense gets its own half. The defense
+    runs back past half court ("GET BACK") and can't steal, shove or pick off a pass there until the
+    ball crosses half court.
+  - Half court: every restart is a check-up at the top of the key. Everyone walks to his spot, the
+    defender checks the ball ("CHECK", "BALL IN"), and the clocks wait. This includes after a score in 1 on 1.
+- **Control the whole team (option, off by default).** Options → Settings → Control: Your player /
+  Whole team. With Whole team you play whoever has the ball, and on defense the man guarding the ball.
+  This applies to single-player games with a CPU partner; career, co-op and online are unchanged.
+- **Difficulty changes outcomes.** The CPU misses more of everything it shoots on lower settings.
+  Measured against a player holding DEFEND, CPU points per possession go from 0.9 on Very easy to 1.3 on
+  Medium and 1.6 on Hard. Details in `docs/reports/gameplay-loop.md`.
+- Settings rows close up so the whole list fits on screen. The How to play page and the touch button
+  labels show DEFEND / hold: GUARD, STEAL / hold: DOUBLE and BOX OUT.
+- New `defense` test. `tests/perf/loop-report.mjs` gains a "guard" style (holds DEFEND).
+
 ## 8.0.0: Phase 1 — test tools, mini games, Very easy
 - **Lightning, rebuilt to the real rules.** Five players line up single file behind the arc. The front of
   the line shoots first from the spot; the next player can't shoot until he has. Miss and you chase your

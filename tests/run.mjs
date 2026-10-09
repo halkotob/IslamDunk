@@ -12,6 +12,8 @@
 //   feel         v7.9 rules: holding sprint gets at least the CPU's sprint time (same stamina rule), nobody
 //                walks through the end walls, a loose ball bounces off them, side-outs start with room
 //   minis        Lightning rules (threes first, in order, own rebounds), HORSE word/timer options
+//   defense      v8.1: hold DEFEND guards the ball, contested dunks miss, no steals off a restart in
+//                your own half, half-court check-ups, whole-team control (off by default)
 //   career-intro creator (Start career) -> walk to Saleem outside the masjid -> up the path -> gym -> meet
 //                all five brothers -> hub; body builds sum to zero; CPU stages have 2/3/2 strength tiers
 //   online-loop  loopback transport: lobby, 5 game types (HORSE with the HAQ word), back to lobby, direct (P2P) link + fallback
@@ -242,6 +244,57 @@ T['minis'] = async ({ browser, base }) => {
   });
   await ctx.close();
   const ok = r.done === r.games && r.firstShots > 20 && !r.notThree && !r.outOfOrder && !r.wrongGrab && r.blocked && r.horse === 'HAQ/6' && r.horseDone && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
+T['defense'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'defense');
+  const r = await p.evaluate(() => {
+    const out = {}; SETTINGS.difficulty = 'medium';
+    // hold DEFEND: you lock onto the ball, stay between him and the rim, and keep pace
+    newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 600 } });
+    for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
+    const me = M.players.find(q => q.human === 0); let held = 0, onBall = 0, between = 0, dist = 0, near = 0;
+    M.cmdHook = q => { if (q !== me) return false; zeroCmd(q.cmd); if (ball.owner && ball.owner.team !== me.team) q.cmd.xHeld = true; else if (ball.owner === me) q.cmd.a = true; return true; };
+    for (let i = 0; i < 60 * 90; i++) { updateMatch(STEP); const D = me.v8; if (!D || !D.held || !D.man) continue; held++;
+      if (D.man === ball.owner && M.phase === 'live') { onBall++; const h = defendHoop(me.team); if (dxz(me, h) < dxz(D.man, h)) between++; if (dxz(D.man, h) < 450) { dist += dxz(me, D.man); near++; } } }
+    M.cmdHook = null;
+    out.guard = { held, onBall, between: +(between / Math.max(1, onBall)).toFixed(2), dist: Math.round(dist / Math.max(1, near)) };
+    // contested dunks: open take-offs go in, a set defender at the rim makes it a coin flip at best
+    const dunks = setD => { let made = 0, n = 0;
+      for (let k = 0; k < 40; k++) {
+        newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 600 } }); M.phase = 'live';
+        const s = M.players[0], h = attackHoop(0); place(s, h.x - h.dir * 90, h.z); giveBall(s, 'inbound');
+        M.players.forEach(q => { if (q !== s) place(q, 200, 640); });
+        if (setD) { const d = M.players.find(q => q.team === 1); place(d, h.x - h.dir * 30, h.z); d.setT = 1; d.stance = true; }
+        s.state = 'free'; startDunk(s, {}); n++;
+        const before = M.teams[0].score; for (let i = 0; i < 120; i++) updateMatch(STEP); if (M.teams[0].score > before) made++;
+      }
+      return made / n; };
+    out.openDunk = dunks(false); out.contestedDunk = dunks(true);
+    // full court: the defense can't take the ball in your own half off a restart (the metric also counts
+    // losses just after crossing half court, so allow a little)
+    PossLog.force = true; const games = [];
+    for (let g = 0; g < 2; g++) { newMatch(TEAMS[g], TEAMS[g + 2], { humans: [], fmt: { format: 'quarters', len: 60 } });
+      for (let i = 0; i < 60 * 400 && M.phase !== 'over'; i++) { if (Game.screen === 'halftime') Game.screen = 'play'; updateMatch(STEP); }
+      if (PossLog.done) { games.push(PossLog.done); PossLog.done = null; } }
+    out.lostOnInbound = possSummary(games).lostOnInbound; out.games = games.length;
+    // half court: every restart is a check-up that ends live
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'first21', len: 120 } }); M.halfCourt = true; formation(0); inbound(0);
+    let checks = 0, live = 0, was = false;
+    for (let i = 0; i < 60 * 120; i++) { updateMatch(STEP); if (M.check && !was) checks++; if (!M.check && was && M.phase === 'live') live++; was = !!M.check; }
+    out.checks = checks; out.checksLive = live;
+    // whole-team control: off by default; on, you always have the ball on offense
+    out.ctlDefault = SETTINGS.teamCtl === false || localStorage.getItem('islamdunk.teamctl') === '1';
+    SETTINGS.teamCtl = true; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 600 } });
+    let off = 0, mine = 0; for (let i = 0; i < 60 * 60; i++) { updateMatch(STEP); if (M.phase === 'live' && ball.owner && ball.owner.team === 0) { off++; if (ball.owner.human === 0) mine++; } }
+    SETTINGS.teamCtl = false; out.ctl = +(mine / Math.max(1, off)).toFixed(2); out.humans = M.players.filter(q => q.human >= 0).length;
+    return out;
+  });
+  await ctx.close();
+  const g = r.guard;
+  const ok = g.onBall > 600 && g.between >= 0.85 && g.dist < 90 && r.openDunk >= 0.9 && r.contestedDunk <= 0.75 && parseInt(r.lostOnInbound) <= 2 && r.games === 2
+    && r.checks >= 3 && r.checksLive >= r.checks - 1 && r.ctlDefault && r.ctl >= 0.95 && r.humans === 1 && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 

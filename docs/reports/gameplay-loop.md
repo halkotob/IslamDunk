@@ -82,3 +82,49 @@ Shot mix (share of shots / FG):
   - Full-court games need a clear backcourt to bring the ball up.
 - **Difficulty should change outcomes.** CPU vs you should range from about 1.0 points per possession on Very easy to about 1.4 on Hard.
 - **Re-measure with the same script** (`node tests/perf/loop-report.mjs`) after each Phase 2 change. Also ask testers to send their play log from the DEV tab, so the "human" rows come from real people.
+
+## Phase 2 results (v8.1)
+
+Same script (`node tests/perf/loop-report.mjs 2`), with a fourth scripted style:
+- **guard**: catch-and-shoot on offense, holds DEFEND on defense. This is the closest bot to a real player using the new button.
+
+**What changed in Phase 2:**
+- the Defense button;
+- contested dunks, and no take-off through a defender standing in your lane;
+- a shorter dunk runway;
+- backcourt space after restarts;
+- half-court check-ups;
+- CPU finishing that scales with difficulty.
+
+**How the CPU does against you** (the "guard" bot holding DEFEND):
+
+| Difficulty | CPU points per possession | Possessions the CPU scores | CPU dunk FG | Before Phase 2 (vs a player chasing the ball) |
+|---|---|---|---|---|
+| Very easy | 0.89 | 37% | 41% | 1.38 to 1.49 |
+| Easy | 1.19 | 51% | 68% | 1.21 to 1.53 |
+| Medium | 1.26 | 55% | 73% | 1.31 to 1.47 |
+| Hard | 1.58 | 69% | 77% | 1.21 to 1.38 |
+
+**CPU vs CPU:**
+
+| Difficulty | Points per possession | Possessions that score | Dunk FG | Lost straight off the inbound |
+|---|---|---|---|---|
+| Very easy | 1.21 | 57% | 59% | 0% |
+| Easy | 1.49 | 68% | 69% | 0% |
+| Medium | 1.35 | 63% | 71% | 0% |
+| Hard | 1.42 | 62% | 82% | 1% |
+
+**What changed:**
+- **Difficulty now changes the result.** Against a player who uses DEFEND, the CPU goes from 0.9 points per possession on Very easy to 1.6 on Hard. Before, every setting was roughly 1.3 to 1.5.
+- **Dunks are no longer automatic.**
+  - CPU dunk FG is now 41 to 82% depending on difficulty and defense (it was 100% everywhere).
+  - With you holding DEFEND, the CPU's share of shots that are dunks drops from about 80% to 24 to 54%. It has to take threes and pull-ups instead.
+- **Sprint-and-dunk is still strong, but no longer the only answer.**
+  - On Medium and Hard, the rusher bot (1.36 to 1.40 points per possession) is level with a catch-and-shoot player who defends (1.29 to 1.37).
+  - Its dunks go in 64 to 67% of the time now (89 to 98% before).
+- **Inbound steals are gone.**
+  - Losses right after an inbound fell from 2 to 13% to 0 to 1%. The remaining 1% are steals just after crossing half court, which is allowed.
+  - Possessions are a little longer (6 to 7 seconds), because teams now bring the ball up.
+- **Charges.** A player who holds DEFEND in the driving lane draws about 3 to 4 charges a game against a CPU that keeps driving into him.
+
+Sample sizes are 2 games per row, roughly 150 to 200 possessions per side, so expect a few points of noise.

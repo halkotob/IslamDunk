@@ -22,16 +22,18 @@ const PossLog = {
     this.game.poss.push(c);
     return c.end;
   },
+  addShot(sh, h, pts, dunk) {
+    if (!this.game) return;
+    if (!this.cur || this.cur.team !== sh.team) { const e = this.close(); this.open(sh.team, e ? afterWhy(e) : 'loose'); }
+    const open = Math.min(...sh.opps.map(q => Math.hypot(q.x - sh.x, q.z - sh.z)));
+    this.cur.shots.push({ d: Math.round(Math.hypot(sh.x - h.x, sh.z - h.z)), pts, dunk, human: sh.human >= 0, open: Math.round(open), made: false, t: +(M.time - this.cur.t0).toFixed(1) });
+    this.cur.shotT = M.time;
+  },
   step() {
     if (!this.game) return;
     if (M.phase === 'over') { this.close(); this.game.final = [M.teams[0].score, M.teams[1].score]; this.store(this.game); this.done = this.game; this.game = null; return; }
     const s = ball.shot;
-    if (ball.state === 'shot' && s && s !== this.lastShot) {             // a new shot
-      this.lastShot = s; if (!this.cur || this.cur.team !== s.team) { const e = this.close(); this.open(s.team, e ? afterWhy(e) : 'loose'); }
-      const h = s.hoop, sh = s.shooter, opp = M.players.filter(q => q.team !== sh.team), open = Math.min(...opp.map(q => Math.hypot(q.x - sh.x, q.z - sh.z)));
-      this.cur.shots.push({ d: Math.round(Math.hypot(sh.x - h.x, sh.z - h.z)), pts: s.pts, dunk: !!s.dunk, human: sh.human >= 0, open: Math.round(open), made: false, t: +(M.time - this.cur.t0).toFixed(1) });
-      this.cur.shotT = M.time;
-    }
+    if (ball.state === 'shot' && s && s !== this.lastShot) { this.lastShot = s; if (!s.dunk) this.addShot(s.shooter, s.hoop, s.pts, false); }   // dunks are logged at take-off
     for (const t of [0, 1]) {                                             // points (shots and free throws)
       const d = M.teams[t].score - this.scores[t]; if (d <= 0) continue; this.scores[t] = M.teams[t].score;
       if (!this.cur || this.cur.team !== t) { this.close(); this.open(t, 'loose'); }
