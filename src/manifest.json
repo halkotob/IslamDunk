@@ -78,6 +78,7 @@
     "sim/v8-3v3.js",
     "render/adaptive-res.js",
     "render/bench.js",
+    "sim/v8-guards.js",
     "boot.js"
   ]
 }

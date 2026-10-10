@@ -68,6 +68,7 @@ function guardPick(p) {
 function guardStep(p, dt) {
   const D = p.v8; if (!D) return;
   if (!D.held || defCtx(p) !== 'def' || p.state !== 'free' || p.y > 1) { D.man = null; D.pickT = 0; D.inPos = false; D.boost = false; return; }
+  if (M.bc && M.bc.team !== p.team) { D.inPos = false; D.boost = false; return; }   // v8.4: their half is protected; you wait at the line
   if (!D.man || D.man.team === p.team || D.man.state === 'down' || (D.pickT = (D.pickT || 0) - dt) <= 0) { D.man = guardPick(p); D.pickT = 0.35; }   // follows the ball as it moves
   const m = D.man; if (!m) return;
   const c = p.cmd, h = defendHoop(p.team), bo = ball.owner, onBall = m === bo;

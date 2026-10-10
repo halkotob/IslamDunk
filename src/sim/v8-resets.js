@@ -22,16 +22,20 @@ function bcStep(dt) {
 }
 function retreating(p) { return !!(M.bc && p.team !== M.bc.team && inBackcourt(p.x + (defendHoop(M.bc.team).x > bcMid() ? 30 : -30), M.bc.team)); }   // until 30 past the line
 function retreatCmd(p) {
-  const c = p.cmd, team = M.bc.team, a = attackHoop(team), D = M.teams[1 - team].players, i = D.indexOf(p);
-  const sp = [{ x: a.x + a.dir * 330, z: 300 }, { x: a.x + a.dir * 300, z: 440 }][i] || { x: bcMid(), z: 350 };
-  const mx = bcMid() - (defendHoop(team).x > bcMid() ? 40 : -40);                     // just over half court
-  const tx = Math.abs(sp.x - bcMid()) < Math.abs(mx - bcMid()) ? mx : sp.x, tz = sp.z;
+  // v8.4: the CPU defense waits at a pick-up spot just over half court (across from its man) for the
+  // whole protected spell; you run back until you're over the line. Both slow into the spot: full
+  // speed right up to it used to overshoot and flip direction every frame (the half-court "spaz")
+  const c = p.cmd, team = M.bc.team, D = M.teams[1 - team].players, i = D.indexOf(p);
+  const side = defendHoop(team).x > bcMid() ? -1 : 1, man = M.teams[team].players[(M.assign[1 - team] || [])[i]] || ball.owner;
+  const tx = bcMid() + side * (55 + i * 30), tz = clamp(man ? man.z : 350, 90, COURT.D - 90);
   zeroCmd(c);
-  const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz) || 1;
-  c.mx = dx / d; c.mz = dz / d; c.turbo = d > 200 && p.turbo > 30; c.face = sgn(dx) || p.face;
+  const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
+  if (d > 8) { const k = Math.min(1, d / 45); c.mx = dx / d * k; c.mz = dz / d * k; c.turbo = d > 220 && p.turbo > 30; }
+  const ref = ball.owner || ball; c.face = sgn(ref.x - p.x) || p.face;
   if (p.human >= 0 && !M.bc.popped && !M.attract) { M.bc.popped = true; FX.pop(p.x, p.y + 140, p.z, 'GET BACK', '#8fe3ff'); }
   return true;
 }
+function bcHolds(p) { return !!(M.bc && p.team !== M.bc.team && (p.human < 0 || retreating(p))); }
 // ---- half-court check-up
 function checkStart(team) {
   const h = hoops[1], d = h.dir, O = M.teams[team].players, D = M.teams[1 - team].players, bo = ball.owner;
@@ -73,8 +77,8 @@ function checkCmd(p) {
   const _ic = inbCmd;
   inbCmd = function (p) {
     if (M.check) return checkCmd(p);
-    if (M.inb) { if (retreating(p)) return retreatCmd(p); return _ic.apply(this, arguments); }
-    if (M.bc && retreating(p)) return retreatCmd(p);
+    if (M.inb) { if (bcHolds(p)) return retreatCmd(p); return _ic.apply(this, arguments); }
+    if (bcHolds(p)) return retreatCmd(p);
     return false;
   };
   const _ib = inbound;
@@ -161,4 +165,18 @@ function watchdog(dt) {
 {
   const _um2 = updateMatch;
   updateMatch = function (dt) { const r = _um2.apply(this, arguments); if (!M.mini) watchdog(dt); return r; };
+}
+
+// v8.4: a human defender who has run back can't walk into the protected half again: a soft wall at
+// the line (no bouncing, he just stops there)
+{
+  const _cp2 = collidePlayers;
+  collidePlayers = function () {
+    const r = _cp2.apply(this, arguments);
+    if (M.bc) {
+      const side = defendHoop(M.bc.team).x > bcMid() ? -1 : 1, lim = bcMid() + side * 10;
+      for (const q of M.players) if (q.team !== M.bc.team && q.human >= 0 && !retreating(q) && (q.x - lim) * side < 0) { q.x = lim; if ((q.vx || 0) * side < 0) q.vx = 0; }
+    }
+    return r;
+  };
 }
