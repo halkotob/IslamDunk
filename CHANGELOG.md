@@ -1,5 +1,18 @@
 # Changelog
 
+## 8.3.1: two crucial fixes
+- **Fix: players no longer twitch at half court.** After a basket, the defense runs back past half
+  court. It used to sprint at full speed right into its spot, overshoot, and flip direction every frame
+  (worst in Barakah Run). Now it slows into a pick-up spot across from its man and waits there. A
+  player holding Defend also waits at the line until the offense crosses.
+- **Fix: the ball no longer vanishes for a whole possession.**
+  - The cause: restart state from a finished game carried into the next one. When a game ended
+    mid-inbound (common in Barakah Run), the next game's first inbound went to a player from the
+    previous game. The ball went off screen, nobody could touch it, and the shot clock ran out.
+    Every game now starts clean.
+  - Also fixed: a ball left "in the air" with no shot (after a foul whistled mid-flight) froze in place.
+    A guard now repairs any such ball, and a match step that ever throws recovers instead of stalling.
+
 ## 8.3.0: Phase 4: reasons to play
 - **Fix: players no longer jump into place at half-court restarts.** Before every check-up, everyone
   was teleported up to 300 units in one frame. Now they walk to their spots from where they are.

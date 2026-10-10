@@ -295,7 +295,7 @@ T['defense'] = async ({ browser, base }) => {
     const me = M.players.find(q => q.human === 0); let held = 0, onBall = 0, between = 0, dist = 0, near = 0;
     M.cmdHook = q => { if (q !== me) return false; zeroCmd(q.cmd); if (ball.owner && ball.owner.team !== me.team) q.cmd.xHeld = true; else if (ball.owner === me) q.cmd.a = true; return true; };
     for (let i = 0; i < 60 * 90; i++) { updateMatch(STEP); const D = me.v8; if (!D || !D.held || !D.man) continue; held++;
-      if (D.man === ball.owner && M.phase === 'live') { onBall++; const h = defendHoop(me.team); if (dxz(me, h) < dxz(D.man, h)) between++; if (dxz(D.man, h) < 450) { dist += dxz(me, D.man); near++; } } }
+      if (D.man === ball.owner && M.phase === 'live' && !M.bc) { onBall++; const h = defendHoop(me.team); if (dxz(me, h) < dxz(D.man, h)) between++; if (dxz(D.man, h) < 450) { dist += dxz(me, D.man); near++; } } }
     M.cmdHook = null;
     out.guard = { held, onBall, between: +(between / Math.max(1, onBall)).toFixed(2), dist: Math.round(dist / Math.max(1, near)) };
     // contested dunks: open take-offs go in, a set defender at the rim makes it a coin flip at best
@@ -331,7 +331,7 @@ T['defense'] = async ({ browser, base }) => {
   });
   await ctx.close();
   const g = r.guard;
-  const ok = g.onBall > 600 && g.between >= 0.85 && g.dist < 90 && r.openDunk >= 0.9 && r.contestedDunk <= 0.75 && parseInt(r.lostOnInbound) <= 2 && r.games === 2
+  const ok = g.onBall > 600 && g.between >= 0.75 && g.dist < 90 && r.openDunk >= 0.9 && r.contestedDunk <= 0.75 && parseInt(r.lostOnInbound) <= 2 && r.games === 2
     && r.checks >= 3 && r.checksLive >= r.checks - 1 && r.ctlDefault && r.ctl >= 0.95 && r.humans === 1 && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };

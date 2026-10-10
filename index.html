@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '8.3.0';
+const VERSION = '8.3.1';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -13903,6 +13903,7 @@ function guardPick(p) {
 function guardStep(p, dt) {
   const D = p.v8; if (!D) return;
   if (!D.held || defCtx(p) !== 'def' || p.state !== 'free' || p.y > 1) { D.man = null; D.pickT = 0; D.inPos = false; D.boost = false; return; }
+  if (M.bc && M.bc.team !== p.team) { D.inPos = false; D.boost = false; return; }   // v8.4: their half is protected; you wait at the line
   if (!D.man || D.man.team === p.team || D.man.state === 'down' || (D.pickT = (D.pickT || 0) - dt) <= 0) { D.man = guardPick(p); D.pickT = 0.35; }   // follows the ball as it moves
   const m = D.man; if (!m) return;
   const c = p.cmd, h = defendHoop(p.team), bo = ball.owner, onBall = m === bo;
@@ -14050,16 +14051,20 @@ function bcStep(dt) {
 }
 function retreating(p) { return !!(M.bc && p.team !== M.bc.team && inBackcourt(p.x + (defendHoop(M.bc.team).x > bcMid() ? 30 : -30), M.bc.team)); }   // until 30 past the line
 function retreatCmd(p) {
-  const c = p.cmd, team = M.bc.team, a = attackHoop(team), D = M.teams[1 - team].players, i = D.indexOf(p);
-  const sp = [{ x: a.x + a.dir * 330, z: 300 }, { x: a.x + a.dir * 300, z: 440 }][i] || { x: bcMid(), z: 350 };
-  const mx = bcMid() - (defendHoop(team).x > bcMid() ? 40 : -40);                     // just over half court
-  const tx = Math.abs(sp.x - bcMid()) < Math.abs(mx - bcMid()) ? mx : sp.x, tz = sp.z;
+  // v8.4: the CPU defense waits at a pick-up spot just over half court (across from its man) for the
+  // whole protected spell; you run back until you're over the line. Both slow into the spot: full
+  // speed right up to it used to overshoot and flip direction every frame (the half-court "spaz")
+  const c = p.cmd, team = M.bc.team, D = M.teams[1 - team].players, i = D.indexOf(p);
+  const side = defendHoop(team).x > bcMid() ? -1 : 1, man = M.teams[team].players[(M.assign[1 - team] || [])[i]] || ball.owner;
+  const tx = bcMid() + side * (55 + i * 30), tz = clamp(man ? man.z : 350, 90, COURT.D - 90);
   zeroCmd(c);
-  const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz) || 1;
-  c.mx = dx / d; c.mz = dz / d; c.turbo = d > 200 && p.turbo > 30; c.face = sgn(dx) || p.face;
+  const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
+  if (d > 8) { const k = Math.min(1, d / 45); c.mx = dx / d * k; c.mz = dz / d * k; c.turbo = d > 220 && p.turbo > 30; }
+  const ref = ball.owner || ball; c.face = sgn(ref.x - p.x) || p.face;
   if (p.human >= 0 && !M.bc.popped && !M.attract) { M.bc.popped = true; FX.pop(p.x, p.y + 140, p.z, 'GET BACK', '#8fe3ff'); }
   return true;
 }
+function bcHolds(p) { return !!(M.bc && p.team !== M.bc.team && (p.human < 0 || retreating(p))); }
 // ---- half-court check-up
 function checkStart(team) {
   const h = hoops[1], d = h.dir, O = M.teams[team].players, D = M.teams[1 - team].players, bo = ball.owner;
@@ -14101,8 +14106,8 @@ function checkCmd(p) {
   const _ic = inbCmd;
   inbCmd = function (p) {
     if (M.check) return checkCmd(p);
-    if (M.inb) { if (retreating(p)) return retreatCmd(p); return _ic.apply(this, arguments); }
-    if (M.bc && retreating(p)) return retreatCmd(p);
+    if (M.inb) { if (bcHolds(p)) return retreatCmd(p); return _ic.apply(this, arguments); }
+    if (bcHolds(p)) return retreatCmd(p);
     return false;
   };
   const _ib = inbound;
@@ -14189,6 +14194,20 @@ function watchdog(dt) {
 {
   const _um2 = updateMatch;
   updateMatch = function (dt) { const r = _um2.apply(this, arguments); if (!M.mini) watchdog(dt); return r; };
+}
+
+// v8.4: a human defender who has run back can't walk into the protected half again: a soft wall at
+// the line (no bouncing, he just stops there)
+{
+  const _cp2 = collidePlayers;
+  collidePlayers = function () {
+    const r = _cp2.apply(this, arguments);
+    if (M.bc) {
+      const side = defendHoop(M.bc.team).x > bcMid() ? -1 : 1, lim = bcMid() + side * 10;
+      for (const q of M.players) if (q.team !== M.bc.team && q.human >= 0 && !retreating(q) && (q.x - lim) * side < 0) { q.x = lim; if ((q.vx || 0) * side < 0) q.vx = 0; }
+    }
+    return r;
+  };
 }
 
 // ================================================= v8.1: CONTROL THE WHOLE TEAM (option, off by default)
@@ -16159,6 +16178,47 @@ if (BENCH) {
     _boot.apply(this, arguments);
     note('Benchmark: starting in 2 s. Leave the window in front and don’t touch anything.');
     setTimeout(() => start(0), 2000);
+  };
+}
+
+// ================================================= v8.4: BALL STATE GUARDS
+// A ball can never be "in the air as a shot" without its shot, or "a pass" without its pass. That
+// mismatch (a foul whistled while the ball was in flight cleared the shot but left the state) made
+// the ball update throw every frame: the clock and players kept running while the ball sat frozen
+// where it was and nobody could pick it up. Any such ball is now a loose ball, and if anything in
+// a match step ever throws, the step repairs the ball and the game carries on instead of stalling.
+const BallGuard = { fixes: 0, errors: 0, last: '' };
+function ballSane() {
+  if (ball.state === 'shot' && !ball.shot) { ball.state = 'loose'; BallGuard.fixes++; BallGuard.last = 'shot without shot'; }
+  if (ball.state === 'pass' && !ball.pass) { ball.state = 'loose'; BallGuard.fixes++; BallGuard.last = 'pass without pass'; }
+  if (ball.owner && !M.players.includes(ball.owner) && !M.balls) { ball.owner = null; ball.state = 'loose'; BallGuard.fixes++; BallGuard.last = 'owner not in game'; }
+  if (!isFinite(ball.x + ball.y + ball.z + ball.vx + ball.vy + ball.vz)) { Object.assign(ball, { x: COURT.L / 2, y: 60, z: COURT.D / 2, vx: 0, vy: 0, vz: 0, state: 'loose', shot: null, pass: null, owner: null }); BallGuard.fixes++; BallGuard.last = 'NaN ball'; }
+}
+{
+  const _ub = updateBall;
+  updateBall = function () { if (!M.balls) ballSane(); return _ub.apply(this, arguments); };
+  const _fs = foulShots;
+  foulShots = function () { const r = _fs.apply(this, arguments); if (ball.state === 'shot' || ball.state === 'pass') ball.state = 'loose'; return r; };
+  const _um = updateMatch;
+  updateMatch = function (dt) {
+    try { return _um.apply(this, arguments); }
+    catch (e) {
+      BallGuard.errors++; if (BallGuard.errors < 5) console.error('match step recovered:', e);
+      if (!M.mini) { ballSane(); if (ball.state !== 'held' && ball.state !== 'loose' && ball.state !== 'scored') ball.state = 'loose'; ball.grabLock = 0; }
+    }
+  };
+}
+// The root of the "ball off screen, nobody can get it, shot clock runs out" glitch: restart state
+// (a smooth inbound in progress, a protected backcourt, a check-up, a side-out, a pinned ball)
+// outlived the match it belonged to. A game that ended mid-inbound (common in Barakah Run, where the
+// buzzer ends the game) handed the next game's first inbound to a player from the previous game.
+// Every new match now starts clean.
+{
+  const _nm = newMatch;
+  newMatch = function () {
+    M.inb = null; M.bc = null; M.check = null; M.sideOut = null; M.frontIn = null; M.pin = null; M.pinGrab = null; M.ctl = null; M.nextInbound = null;
+    ball.owner = null; ball.shot = null; ball.pass = null;
+    return _nm.apply(this, arguments);
   };
 }
 
