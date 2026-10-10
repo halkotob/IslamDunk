@@ -1,5 +1,36 @@
 # Changelog
 
+## 8.3.0: Phase 4: reasons to play
+- **Fix: players no longer jump into place at half-court restarts.** Before every check-up, everyone
+  was teleported up to 300 units in one frame. Now they walk to their spots from where they are.
+- **King of the Court** (Mini games, and online with a friend):
+  - Real 1 on 1, half court, with a check-up at the top, DEFEND and contested dunks. Pickup rules:
+    ones and twos, first to 3, no fouls.
+  - Winner stays, loser goes to the back of the line. Hold the court 3 games in a row to be crowned;
+    after 12 games, the most wins takes it.
+  - Games you're not in can be watched or skipped.
+- **Around the World** (Mini games, and online with a friend):
+  - Seven spots around the key. Make it to move on and keep shooting; a miss ends your turn.
+  - Miss twice in a row on the same spot and you go back one. First to make the last spot wins.
+- **Profile and XP** (Options → Profile):
+  - Every mode earns XP: matches, mini games, King of the Court, dailies, Barakah Run, online, and
+    the tutorial once.
+  - 30 levels, each unlocking a cosmetic:
+    - thawb, kufi and sneaker colours, which appear in the career creator;
+    - ball skins (Ramadan Night, Desert Sand, Green and Gold, Crescent, Pearl, Golden);
+    - celebrations (hand on heart, fist pump, both arms up, salute, sujood of thanks);
+    - titles.
+  - Your profile card shows your level, title and records, and saves as an image. Cosmetic only.
+- **Barakah Run 2.0** (solo runs; duo runs keep the classic ladder):
+  - Take a vow first: a trade-off for the whole run (Fast Break, Quiet Focus, Iron Lungs, or none).
+  - Then choose your path through 9 stops: a game, an elite rival (two upgrades), training (an upgrade
+    without a game) or a masjid stop (a One More Chance shield).
+  - The final is against the Champions. Beat them for the run, a Champion badge and bonus XP.
+- **3 on 3 (beta)** in Quick Play: each masjid adds a guest player. Marking, restarts and passing were
+  taught about the third man; the CPU's spacing is still tuned for 2 on 2.
+- Mini games menu: four games. The online lobby lists Around the World and King of the Court.
+- New `phase4` test. `online-loop` covers the two new mini games.
+
 ## 8.2.0: Phase 3 — easier to play, better feel, and fixes
 - **Fix: mini games start and their settings change again.** On touch, tapping a row in Quick Play →
   Mini games was undone the same frame, so no setting could change and Start could never be reached.

@@ -79,9 +79,13 @@ function checkCmd(p) {
   };
   const _ib = inbound;
   inbound = function (team) {
-    const side = !!M.sideOut;
+    const side = !!M.sideOut, hc = M.halfCourt && !M.mini;
+    const pos = hc && M.players.map(q => [q.x, q.z]);                   // v8.3: half court, nobody teleports
     const r = _ib.apply(this, arguments);
-    if (M.halfCourt && !M.mini) checkStart(team);
+    if (hc) {
+      M.players.forEach((q, i) => { if (pos[i][0] == null) return; q.x = clamp(pos[i][0], 30, COURT.L - 30); q.z = clamp(pos[i][1], 30, COURT.D - 30); q.vx = q.vz = 0; q.hist.length = 0; });
+      checkStart(team);                                                // everyone walks to his spot from where he was
+    }
     else if (!side) bcStart(team);
     return r;
   };
@@ -124,7 +128,7 @@ function checkCmd(p) {
 // nobody can pick up is freed.
 const WD = { dead: 0, loose: 0, out: 0 };
 function watchdog(dt) {
-  if (M.mini || M.practice && M.practice.kind !== '1v1' || M.phase === 'over' || M.phase === 'break' || M.phase === 'tip' || Game.trivia || Net.role === 'guest') { WD.dead = WD.loose = WD.out = 0; return; }
+  if (M.mini || M.practice && M.practice.kind !== '1v1' || M.phase === 'over' || M.phase === 'break' || M.phase === 'tip' || Game.trivia || Net.role === 'guest' || (typeof KOTC !== 'undefined' && KOTC.on && (KOTC.done || KOTC.overT > 0))) { WD.dead = WD.loose = WD.out = 0; return; }
   // stuck restarts
   if (M.phase === 'dead' && !M.check) WD.dead += dt; else WD.dead = 0;
   if (WD.dead > 6) { WD.dead = 0; M.inb = null; M.check = null; ball.grabLock = 0; inbound(M.nextInbound != null ? M.nextInbound : (M.possTeam >= 0 ? M.possTeam : 0)); return; }

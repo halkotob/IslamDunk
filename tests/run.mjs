@@ -17,9 +17,11 @@
 //                your own half, half-court check-ups, whole-team control (off by default)
 //   phase3       mini-game menu taps start games, Stride dribble pace, Casual controls (auto release, auto
 //                guard), the tutorial runs to the end, the ball watchdog recovers a lost ball
+//   phase4       half-court restarts don't teleport, Around the World and King of the Court play out,
+//                profile XP and unlocks, Barakah Run 2.0 (vow, map, the final), 3 on 3 beta
 //   career-intro creator (Start career) -> walk to Saleem outside the masjid -> up the path -> gym -> meet
 //                all five brothers -> hub; body builds sum to zero; CPU stages have 2/3/2 strength tiers
-//   online-loop  loopback transport: lobby, 5 game types (HORSE with the HAQ word), back to lobby, direct (P2P) link + fallback
+//   online-loop  loopback transport: lobby, 7 game types (HORSE with the HAQ word, Around the World, King of the Court), back to lobby, direct (P2P) link + fallback
 //   online-room  claude.ai room adapter (faked locally): lobby -> game -> lobby
 //   online-fb    Firebase adapter (fake SDK): lobby -> game -> lobby
 //   mobile       iPhone landscape/portrait layout, touch controls, no errors
@@ -383,6 +385,43 @@ T['phase3'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
+T['phase4'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'phase4');
+  const r = await p.evaluate(() => {
+    window.__seed(99); const out = {};
+    // half court restarts: nobody teleports into the check-up
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'first21', len: 120 } }); M.halfCourt = true; M.mustClear = [false, false]; formation(0); inbound(0);
+    let jumps = 0; const prev = new Map();
+    for (let i = 0; i < 60 * 90; i++) { updateMatch(STEP); for (const q of M.players) { const a = prev.get(q); if (a && Math.hypot(q.x - a[0], q.z - a[1]) > 14 && q.state !== 'dunk') jumps++; prev.set(q, [q.x, q.z]); } }
+    out.hcJumps = jumps;
+    // Around the World, CPU vs CPU, plays to a winner
+    setupMini('atw', { roster: ['saleem', 'khalil'], humans: [] }); { const mg = M.mini; for (let n = 0; n < 60 * 400 && !mg.done; n++) miniStep(STEP); out.atw = mg.done && mg.winner != null && mg.pos[mg.winner] === ATW_N; }
+    // King of the Court, all CPU, crowns somebody
+    startKotc({ roster: ['saleem', 'nasser', 'khalil'], humans: {} }); { let n = 0; for (; n < 60 * 900 && !KOTC.done; n++) { if (KOTC.spect && KOTC.overT <= 0 && n % 600 === 599) kotcSkip(); updateMatch(STEP); } out.kotc = KOTC.done && !!KOTC.champ; out.kotcOnes = Math.max(...M.teams.map(t => t.score)) <= KOTC_TO + 1; KOTC.on = false; }
+    // profile: a mini game pays XP
+    localStorage.removeItem('islamdunk.profile'); Profile.d = null;
+    setupMini('atw', { roster: ['you', 'saleem'], humans: [{ team: 0, slot: 0, pad: 0 }] }); M.mini.done = true; M.mini.winner = 0; updateMatch(STEP);
+    out.xp = Profile.load().xp; Profile.d.xp = 5000; out.lv = Profile.level().n; out.unlocked = Profile.has('ball', 'night') && !Profile.has('ball', 'gold');
+    // Barakah Run 2.0: vow, the map, and the final
+    goTitle(); Run.duo = null; startBarakah(); out.vowScreen = Game.screen === 'runvow'; runPickVow(1);
+    let guard = 0;
+    while (Run.active && guard++ < 60) {
+      if (Game.screen === 'runmap') { const i = Math.max(0, Run.choicesV2.findIndex(x => x === 'game' || x === 'elite' || x === 'boss')); runChooseNode(i); if (Game.screen === 'play') { M.teams[0].score = 30; M.teams[1].score = 10; M.winner = 0; barakahContinue(); } }
+      else if (Game.screen === 'runchoice') pickRunPower(0); else break;
+    }
+    out.runChamp = Run.champion && Game.screen === 'runend';
+    // 3 on 3 beta
+    Game.threeNext = true; newMatch(TEAMS[2], TEAMS[5], { humans: [], fmt: { format: 'quarters', len: 30 } });
+    for (let i = 0; i < 60 * 200 && M.phase !== 'over'; i++) { if (Game.screen === 'halftime') Game.screen = 'play'; updateMatch(STEP); }
+    out.three = M.three && M.players.length === 6 && M.assign[0].length === 3 && M.phase === 'over';
+    Game.threeNext = false; newMatch(TEAMS[2], TEAMS[5], { humans: [] }); out.twoAfter = !M.three && M.players.length === 4;
+    return out;
+  });
+  await ctx.close();
+  const ok = r.hcJumps === 0 && r.atw && r.kotc && r.kotcOnes && r.xp >= 60 && r.lv > 10 && r.unlocked && r.vowScreen && r.runChamp && r.three && r.twoAfter && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
 T['career-intro'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'career-intro');
   const st = () => p.evaluate(() => ({ scr: Game.screen, scene: typeof INTRO !== 'undefined' && INTRO ? INTRO.scene : null, x: INTRO && Math.round(INTRO.x || 0), talk: INTRO && INTRO.talk ? INTRO.talk.lines[INTRO.talk.i][0] : null, met: INTRO && INTRO.met ? Object.keys(INTRO.met).length : 0 }));
@@ -467,7 +506,7 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
   await ctx.close();
   return { ok: ok && !errs.length, detail: log.concat(errs) };
 }
-T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'lightning', 'horse'], dropP2P: true });
+T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'lightning', 'horse', 'atw', 'kotc'], dropP2P: true });
 T['online-room'] = ({ browser, base }) => onlineFlow(browser, base, { room: true, games: ['vs', 'one'] });
 T['online-fb'] = ({ browser, base }) => onlineFlow(browser, base, { games: ['vs', 'co'] });
 
