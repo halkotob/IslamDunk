@@ -84,6 +84,7 @@ function drawGymHUD(g) {
     if (d.kind === 'ft') txt = 'Free throws  ' + d.shots + '/10   Made ' + d.made;
     else if (d.kind === 'three') txt = 'Three-point challenge   ' + Math.ceil(d.left) + 's   Score ' + d.score;
     else if (d.kind === 'cones') txt = 'Cone dribble   ' + d.time.toFixed(1) + 's   Cone ' + Math.min(d.idx + 1, CONES.length) + '/' + CONES.length;
+    else if (typeof DRILL_HUD !== 'undefined' && DRILL_HUD[d.kind]) txt = DRILL_HUD[d.kind](d);
     else txt = 'You ' + M.teams[0].score + '  \u2013  ' + M.teams[1].score + ' Nasser   (first to 11)';
     g.fillStyle = 'rgba(8,16,24,0.82)'; roundRect(g, W / 2 - 200, 70, 400, 34, 17); g.fill();
     g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = `15px ${FONT}`; g.fillText(txt, W / 2, 93);

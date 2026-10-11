@@ -1,5 +1,43 @@
 # Changelog
 
+## 8.4.0: Phase 5: career depth
+- **Cutscenes look like scenes now.** No more four giant brothers filling the screen. Characters stand
+  at a natural size in the room, with letterbox bars, a soft vignette, a slow camera that drifts to
+  whoever is speaking, and subtitles in the bottom bar. Some scenes let you answer (← → and Enter).
+- **Journal** (My Player → Journal): every scene you've seen, in order, and you can replay them.
+- **Always a next goal.** A NEXT line on the hub says what to do next and what it pays (tap it).
+  - **Rookie checklist:** finish a drill, visit the musalla, win a game, upgrade a stat, sit with the
+    sheikh. +40 BP each, +100 BP for all five.
+  - **Weekly goals** (career only): a week is 3 career games, with 3 goals drawn from what you do
+    (stops holding Defend, green releases, assists, praying first, gym work, steals, dunks, charges,
+    clean wins).
+- **Badges are earned, never bought** (My Player → Goals & badges). Do the thing again and again, or
+  follow a storyline to its end. Each has a small effect in career games only:
+  - Mikan Man (finishes at the rim), Lockdown (stops holding Defend), Routine at the Line (free
+    throws), Floor General (assists), Second Lungs (conditioning in the gym)
+  - Storyline badges: Sabr (keep 5 intentions with Sh. Saleem), Big Stage (answer Jalal on the court)
+- **More in the gym** (the drill menu is now grouped):
+  - **Mikan drill:** layups at the rim, alternating sides, 40 seconds.
+  - **Defensive slides:** stay in front of a sliding marker. Holding Defend counts full.
+  - **Passing:** Khalil cuts to a spot and lights up. Hit him while he's open.
+  - **Conditioning:** line sprints against the clock.
+  - **Around the World** and **King of the Court** against the brothers, right from the gym.
+  - **Today's plan:** three routines picked for the day. Finish all three for a bonus.
+- **Niyyah before games.** Sh. Saleem asks your intention (or just play). After the game he reflects
+  on it. Keep it and the masjid gets Halal Bucks, it counts toward Sabr, and it opens the next of
+  eight lessons in his office (each with two questions to ask him).
+- **Stories that happen naturally:**
+  - Rival: after a game against Al-Burhan, Jalal says his piece, and you choose whether to answer.
+  - Partner: as chemistry grows, your partner opens up (three scenes for each partner).
+  - End of season: a small ceremony at the masjid with awards drawn from your season.
+  - People in the musalla have new things to say after things happen. Look for the **!**.
+- **Projects you can use** (no effect in games, ever). Walk up and press F (E in the musalla), or tap:
+  - Gym: drink from the water cooler (bubbles in the jug), test the scoreboard buzzer, look at the
+    trophy case, flip the lights (old tubes flicker, LED panels snap on), read the whiteboard.
+  - Musalla: pray two rak'ahs at the mihrab, sit on the carpet, read the calligraphy and the mushaf,
+    look up at the chandelier.
+  - Outside (My Masjid): tap the minaret, dome, garden, fountain and parking lot.
+
 ## 8.3.1: two crucial fixes
 - **Fix: players no longer twitch at half court.** After a basket, the defense runs back past half
   court. It used to sprint at full speed right into its spot, overshoot, and flip direction every frame

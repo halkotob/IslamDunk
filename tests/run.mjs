@@ -422,6 +422,62 @@ T['phase4'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
+T['phase5'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'phase5');
+  const r = await p.evaluate(() => {
+    window.__seed(5); const out = {};
+    C = freshCareer(); C.name = 'Yusuf'; C.bracket = makeBracket(0); saveCareer(); careerHub();
+    // goals: rookie pays once, badges are earned (never bought), a week is 3 games
+    const bp0 = C.bp; rookieDo('masjid'); rookieDo('masjid'); out.rookie = C.bp - bp0 === 40;
+    badgeAdd('lungs', 5); out.notYet = !hasBadge('lungs'); badgeAdd('lungs'); out.badge = hasBadge('lungs');
+    // niyyah before a game, kept, opens the first lesson
+    Game.screen = 'pregame'; startCareerMatch(); out.asked = Game.screen === 'story';
+    while (storyLine(Game.story)[0] !== 'choice') { Game.story.t = 99; storyNext(Game.story); }
+    storyChoose(Game.story, 1); out.picked = !!C.niyyah;
+    for (let i = 0; i < 20 && Game.screen === 'story'; i++) { Game.story.t = 99; storyNext(Game.story); }
+    out.played = Game.screen === 'play' && M.career;
+    C.niyyah = 'pass'; M.players.find(q => q.human === 0).stats.ast = 5;
+    for (let n = 0; n < 60 * 60 * 20 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; }
+    careerAfterMatch(); out.kept = C.niyyahKept === 1 && C.lessons === 1 && (sheikhSituation() || {}).key === 'lesson0';
+    for (let g = 0; g < 2; g++) { startCareerMatch(); for (let n = 0; n < 60 * 60 * 20 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; } careerAfterMatch(); }
+    out.week = cg().week.n === 2;
+    // gym routines run and pay
+    enterGym(); const res = {};
+    for (const k of ['mikan', 'slides', 'passing', 'cond']) {
+      Gym.result = null; startDrill(k);
+      for (let n = 0; n < 60 * 4; n++) {
+        gymUpdate(STEP);
+        const d = Gym.drill; if (!d) break;
+        if (k === 'passing' && d.open > 0.1 && ball.owner === M.players[0]) doPass(M.players[0], M.players[1], false);
+        if (k === 'cond' && n % 20 === 0) { d.started = true; place(M.players[0], COND_LINES[Math.min(d.idx, COND_LINES.length - 1)], 350); }
+      }
+      if (Gym.drill) Gym.drill.left = 0;
+      for (let n = 0; n < 240 && !Gym.result; n++) gymUpdate(STEP);
+      res[k] = Gym.result ? Gym.result.kind : null;
+    }
+    out.routines = res;
+    Gym.result = null; startMini('atw', 'khalil'); M.mini.done = true; M.mini.doneT = 0; M.mini.winner = 1;
+    for (let n = 0; n < 200 && !Gym.result; n++) gymUpdate(STEP);
+    out.atwGym = Gym.result && Gym.result.kind === 'atw';
+    // a project you can use: the water cooler
+    Gym.result = null; C.up.fountain = 1; enterGym(); M.players[0].turbo = 10; useGymProp(GYM_PROPS[0]);
+    for (let n = 0; n < 60 * 3; n++) gymUpdate(STEP);
+    out.cooler = !Gym.prop && M.players[0].turbo === 100;
+    // musalla: new lines, then heard
+    C.wins = Math.max(1, C.wins); const before = newsFor('khalil').length; TALK.khalil.options[0][1](); out.news = before > 0 && newsFor('khalil').length === before - 1;
+    // end of season ceremony, once
+    C.done = true; careerHub(); out.awards = Game.screen === 'story' && /awards/.test(Game.story.title); careerHub(); out.awardsOnce = Game.screen === 'hub';
+    return out;
+  });
+  for (const s of ['hub', 'cgoals', 'journal']) { await p.evaluate(sc => { Game.screen = sc; }, s); await sleep(300); }
+  await p.evaluate(() => { openMusalla(); }); await sleep(300);
+  await p.evaluate(() => { Object.assign(C.up, { minaret: 1, dome: 1, garden: 2, parking: 1 }); Game.screen = 'masjid'; Game.masjidView = 'ext'; ExtFx.id = 'fount'; ExtFx.t = 0; }); await sleep(400);
+  await ctx.close();
+  const R = r.routines || {};
+  const ok = r.rookie && r.notYet && r.badge && r.asked && r.picked && r.played && r.kept && r.week && R.mikan === 'mikan' && R.slides === 'slides' && R.passing === 'passing' && R.cond === 'cond' && r.atwGym && r.cooler && r.news && r.awards && r.awardsOnce && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
 T['career-intro'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'career-intro');
   const st = () => p.evaluate(() => ({ scr: Game.screen, scene: typeof INTRO !== 'undefined' && INTRO ? INTRO.scene : null, x: INTRO && Math.round(INTRO.x || 0), talk: INTRO && INTRO.talk ? INTRO.talk.lines[INTRO.talk.i][0] : null, met: INTRO && INTRO.met ? Object.keys(INTRO.met).length : 0 }));
