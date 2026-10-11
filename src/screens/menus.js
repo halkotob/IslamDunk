@@ -49,26 +49,52 @@ function drawMenu(g, items, idx, y, onSel, values, gap = 40) {
     i => { if (Game.idx === i || !values) onSel(i); Game.idx = i; }, i => { Game.idx = i; }, true, values ? 460 : 320);
 }
 // ---- menus with in-place submenus (title screen, career hub)
-function menuState(id) { const M_ = Game.menus || (Game.menus = {}); return M_[id] || (M_[id] = { idx: 0, sub: -1, sidx: 0, t: 0, last: 0 }); }
-function menuActivate(id, items, i) {
-  const m = menuState(id); SFX.blip();
-  if (m.sub >= 0) { m.sidx = i; items[m.sub].sub[i].act(); return; }
-  m.idx = i;
-  if (items[i].sub) { m.sub = i; m.last = i; m.sidx = 0; } else items[i].act();
+// v8.5: submenus can nest (a group inside a group). m.path holds the open groups; m.sub mirrors
+// its first entry so older code that reads or resets m.sub keeps working.
+function menuState(id) { const M_ = Game.menus || (Game.menus = {}); return M_[id] || (M_[id] = { idx: 0, sub: -1, sidx: 0, t: 0, last: 0, path: [], sidxs: [] }); }
+function menuSync(m) {
+  if (!m.path) { m.path = []; m.sidxs = []; }
+  if (m.sub < 0) { m.path.length = 0; m.sidxs.length = 0; }
+  else if (m.path[0] !== m.sub) { m.path = [m.sub]; m.sidxs = []; }
 }
-function closeSub(id) { const m = menuState(id); if (m.sub >= 0) { m.sub = -1; SFX.blip(); return true; } return false; }
+function menuListAt(items, path) { let l = items; for (const i of path) { l = l && l[i] && l[i].sub; if (!l) return null; } return l; }
+function menuActivate(id, items, i) {
+  const m = menuState(id); SFX.blip(); menuSync(m);
+  const list = menuListAt(items, m.path); if (!list || !list[i]) return;
+  if (m.path.length) m.sidx = i; else m.idx = i;
+  const it = list[i];
+  if (it.sub) { if (m.path.length) m.sidxs.push(i); m.path.push(i); m.sub = m.path[0]; m.last = m.sub; m.sidx = 0; m.dt = 0; }
+  else it.act();
+}
+function closeSub(id) {
+  const m = menuState(id); menuSync(m);
+  if (!m.path.length) return false;
+  m.path.pop(); SFX.blip();
+  if (m.path.length) { m.sidx = m.sidxs.pop() || 0; m.dt = 0; } else m.sub = -1;
+  return true;
+}
 function menuStackUpdate(id, items, onRootBack) {
-  const m = menuState(id), inSub = m.sub >= 0, n = inSub ? items[m.sub].sub.length : items.length;
-  const key = inSub ? 'sidx' : 'idx';
+  const m = menuState(id); menuSync(m);
+  const list = menuListAt(items, m.path) || (m.path.length = 0, m.sub = -1, items), inSub = m.path.length > 0, n = list.length;
+  const key = inSub ? 'sidx' : 'idx'; m[key] = Math.min(m[key], n - 1);
   if (menuHit('up')) { m[key] = (m[key] + n - 1) % n; SFX.blip(); }
   if (menuHit('down')) { m[key] = (m[key] + 1) % n; SFX.blip(); }
   if (inSub && menuHit('left')) { closeSub(id); return; }
-  if (menuHit('ok') || (!inSub && items[m.idx].sub && menuHit('right'))) menuActivate(id, items, m[key]);
+  if (menuHit('ok') || (list[m[key]] && list[m[key]].sub && menuHit('right'))) menuActivate(id, items, m[key]);
   else if (menuHit('back')) { if (!closeSub(id) && onRootBack) onRootBack(); }
 }
 function drawMenuStack(g, id, items, y, gap = 40) {
-  const m = menuState(id);
-  if (m.sub >= 0 && !(items[m.sub] && items[m.sub].sub)) m.sub = -1;
+  const m = menuState(id); menuSync(m);
+  if (m.path.length && !menuListAt(items, m.path)) { m.path.length = 0; m.sub = -1; }
+  if (m.path.length >= 2) {                           // a group inside a group: show just that list
+    const par = menuListAt(items, m.path.slice(0, -1))[m.path[m.path.length - 1]];
+    m.dt = Math.min(1, (m.dt || 0) + (Game.rdt || STEP) * 8);
+    g.save(); g.globalAlpha = m.dt; g.translate((1 - m.dt) * 60, 0);
+    g.textAlign = 'center'; g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.fillText('‹  ' + par.label.toUpperCase(), W / 2, y - 18);
+    addRect(W / 2 - 110, y - 36, 220, 26, () => closeSub(id));
+    drawMenuList(g, id + ':d' + m.path.join('.'), par.sub, m.sidx, y + 14, gap, i => menuActivate(id, items, i), i => { m.sidx = i; }, true);
+    g.restore(); return;
+  }
   if (m.sub >= 0) m.last = m.sub;
   m.t += ((m.sub >= 0 ? 1 : 0) - m.t) * Math.min(1, (Game.rdt || STEP) * 12);
   if (m.t < 0.98) {
@@ -79,7 +105,7 @@ function drawMenuStack(g, id, items, y, gap = 40) {
   const par = items[m.sub >= 0 ? m.sub : m.last];
   if (m.t > 0.02 && par && par.sub) {
     g.save(); g.globalAlpha = m.t; g.translate((1 - m.t) * 90, 0);
-    g.textAlign = 'center'; g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.fillText('\u2039  ' + par.label.toUpperCase(), W / 2, y - 18);
+    g.textAlign = 'center'; g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.fillText('‹  ' + par.label.toUpperCase(), W / 2, y - 18);
     if (m.sub >= 0) addRect(W / 2 - 110, y - 36, 220, 26, () => closeSub(id));
     drawMenuList(g, id + ':s' + m.last, par.sub, m.sidx, y + 14, gap, i => menuActivate(id, items, i), i => { m.sidx = i; }, m.sub >= 0);
     g.restore();
@@ -173,8 +199,8 @@ function drawSelect(g) {
   g.fillText(subs[s.mode] || '', W / 2, 74);
   const showB = s.step >= 1;
   const ax = showB ? 40 : W / 2 - 210;
-  drawTeamPanel(g, ax, 96, TEAMS[s.a], s.step === 0 || s.step === 2, s.step === 2 && s.mode !== '2p' ? s.ctrl : s.mode === '2p' && s.step > 0 ? -1 : -1);
-  if (showB) drawTeamPanel(g, 500, 96, TEAMS[s.b], s.step === 1, -1);
+  drawTeamPanel(g, ax, 96, teamAt(s.a), s.step === 0 || s.step === 2, s.step === 2 && s.mode !== '2p' ? s.ctrl : s.mode === '2p' && s.step > 0 ? -1 : -1);
+  if (showB) drawTeamPanel(g, 500, 96, teamAt(s.b), s.step === 1, -1);
   // arrows + confirm (tap targets)
   const ay = 262, lx = s.step === 1 ? 486 : ax - 14, rx = s.step === 1 ? 934 : ax + 434;
   roundButton(g, lx, ay - 12, 20, '\u2039', () => Game.selChange && Game.selChange(-1));

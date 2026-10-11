@@ -19,14 +19,14 @@ const Lobby = {
     return this.o;
   },
   changed() { this.rev++; try { sessionStorage.setItem(LOBBY_KEY + '.opts', JSON.stringify(this.o)); } catch (e) {} this.publish(); },
-  publish() { if (Net.role === 'host') Net.setP({ lobby: { g: this.o.game, o: this.o, rev: this.rev }, v: VERSION }); },
+  publish() { if (Net.role === 'host' && this.o) { this.o.an = teamAt(this.o.a | 0).name; this.o.bn = teamAt(this.o.b | 0).name; } if (Net.role === 'host') Net.setP({ lobby: { g: this.o.game, o: this.o, rev: this.rev }, v: VERSION }); },
   remember(code, role) { try { localStorage.setItem(LOBBY_KEY, JSON.stringify({ code, role, t: Date.now() })); } catch (e) {} },
   forget() { try { localStorage.removeItem(LOBBY_KEY); } catch (e) {} },
   last() { try { const o = JSON.parse(localStorage.getItem(LOBBY_KEY) || 'null'); return o && Date.now() - o.t < 3 * 3600e3 ? o : null; } catch (e) { return null; } },
   // ---- settings rows for the selected game
   rows() {
     const o = this.opts(), g = o.game, R = [], cyc = (arr, v, d) => arr[(arr.indexOf(v) + d + arr.length) % arr.length];
-    const team = (key, label) => R.push({ label, get: () => TEAMS[o[key]].name, step: d => { o[key] = (o[key] + d + TEAMS.length) % TEAMS.length; } });
+    const team = (key, label) => R.push({ label, get: () => (Net.role === 'guest' && o[key + 'n']) || teamAt(o[key]).name, step: d => { o[key] = (o[key] + d + teamCount()) % teamCount(); } });
     if (g === 'brun') team('a', 'Your masjid');
     if (g === 'horse') {
       R.push({ label: 'Word', get: () => o.word || MiniOpts.word, step: d => { o.word = cyc(MINI_WORDS, o.word || MiniOpts.word, d); } });
@@ -34,9 +34,9 @@ const Lobby = {
     }
     if (g === 'co' || g === 'vs' || g === 'one') {
       team('a', g === 'co' ? 'Your masjid' : 'Your masjid (host)');
-      if (g === 'one') R.push({ label: 'Your player', get: () => TEAMS[o.a].players[o.ctrl | 0].name, step: () => { o.ctrl ^= 1; } });
+      if (g === 'one') R.push({ label: 'Your player', get: () => teamAt(o.a).players[o.ctrl | 0].name, step: () => { o.ctrl ^= 1; } });
       team('b', g === 'co' ? 'Opponent' : 'Friend’s masjid');
-      if (g === 'one') R.push({ label: 'Friend’s player', get: () => TEAMS[o.b].players[o.ctrlB | 0].name, step: () => { o.ctrlB ^= 1; } });
+      if (g === 'one') R.push({ label: 'Friend’s player', get: () => teamAt(o.b).players[o.ctrlB | 0].name, step: () => { o.ctrlB ^= 1; } });
       const vs = ['random', ...VENUE_LIST.filter(v => !venueLocked(v)).map(v => v.id)];
       R.push({ label: 'Venue', get: () => o.venue === 'random' ? 'Random' : (VENUE_LIST.find(v => v.id === o.venue) || {}).name || 'Random', step: d => { o.venue = cyc(vs, vs.includes(o.venue) ? o.venue : 'random', d); } });
       R.push({ label: g === 'one' ? 'Difficulty (timing)' : 'CPU difficulty', get: () => diffName(o.diff), step: d => { o.diff = cyc(DIFF_ORDER, o.diff, d); } });

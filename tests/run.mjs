@@ -478,6 +478,51 @@ T['phase5'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
+T['phase6'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/?review=1', errs, 'phase6');
+  const r = await p.evaluate(() => {
+    window.__seed(6); const out = {};
+    // menus: every list is short, groups nest
+    const depth = (L, d = 0) => Math.max(L.length, ...L.filter(e => e.sub).map(e => depth(e.sub, d + 1)));
+    const TM = TITLE_MENU(); out.top = TM.map(e => e.label).join(',');
+    out.short = depth(TM.filter(e => e.label !== 'Review')) <= 6;
+    const qp = TM.find(e => e.label === 'Quick Play'); menuActivate('title', TM, TM.indexOf(qp)); menuActivate('title', TM, qp.sub.findIndex(e => e.label === 'Play a game'));
+    out.nested = menuState('title').path.length === 2; closeSub('title'); closeSub('title'); out.closed = menuState('title').sub === -1;
+    out.settings = SET_GROUPS.map((g, i) => setGroupItems(i).length).every(n => n > 0 && n <= 6) && SET_GROUPS.reduce((a, g, i) => a + setGroupItems(i).length, 0) === SET_ITEMS.length - 1;
+    // career card: the career player shows up in Quick Play
+    C = freshCareer(); C.name = 'Yusuf'; C.bracket = makeBracket(0); C.lv.spd = 7; saveCareer(); C = null;
+    const you = teamPool().find(t => t.custom === 'career'); out.card = !!you && you.players[1].name === 'Yusuf' && you.players[1].stats.spd >= 7;
+    // creator: sandbox player and team, share code round trip
+    const d = csLoad(), pl = csNewPlayer(); pl.name = 'Bilal'; for (const [k] of CS_STATS) pl.stats[k] = 10; d.players.push(pl);
+    const tm = csNewTeam(); tm.name = 'Masjid Al-Fajr'; tm.short = 'FAJR'; tm.roster = [{ k: 'career' }, { k: 'p', id: pl.id }]; d.teams.push(tm); d.league = [tm.id]; csSave();
+    const code = csShareCode('team', tm), bad = csImport(code.slice(0, -6)), good = csImport(code), pc = csImport(csShareCode('player', pl));
+    out.share = !!bad.err && !!good.ok && !!pc.ok && csLoad().teams.length === 2 && csLoad().teams[1].roster[1].def.stats.spd === 10;
+    out.clean = csClean('shit team', 'X') === 'X' && csClean('Hassan', 'X') === 'Hassan';
+    // a custom team plays a full game
+    const ti = teamPool().findIndex(t => t.custom === tm.id);
+    startSelect('1p'); Object.assign(Game.sel, { a: ti, b: 0, step: 2, ctrl: 0 }); startMatchFromSelect(null);
+    out.custom = M.teamDefs[0].name === 'Masjid Al-Fajr' && M.players.some(q => q.def.name === 'Bilal');
+    for (let n = 0; n < 60 * 60 * 30 && M.phase !== 'over'; n++) { if (Game.screen === 'halftime') Game.screen = 'play'; updateMatch(STEP); }
+    out.over = M.phase === 'over';
+    // career league: your team is an opponent, never your side; your player keeps his earned stats
+    goTitle(); loadCareer(SAVE_AUTO);
+    const T = stageTeams(0); out.league = T.some(t => t && t.name === 'Masjid Al-Fajr') && amanahTeam().players.every(q => q.name !== 'Bilal') && playerDef().stats.spd < 10;
+    // review mode: scenes, a mark, export
+    C = null; out.scenes = rvScenes().length > 40;
+    rvMark('That was a... strategic loss.', 'cut'); rvLoad().feel[0] = { r: 4 }; rvExport();
+    out.export = /strategic loss.*cut/.test(RV.lastExport) && /feel/.test(RV.lastExport);
+    rvExit(); out.noSave = (readSave(SAVE_AUTO) || {}).name === 'Yusuf';
+    return out;
+  });
+  for (const s of ['cslist', 'csedit', 'review']) {
+    await p.evaluate(sc => { if (sc === 'csedit') { CSUI.tab = 1; openCSEdit(csLoad().players[0]); } else if (sc === 'cslist') openCS(0); else { Game.screen = 'review'; } }, s); await sleep(300);
+  }
+  await p.evaluate(() => { Game.screen = 'settings'; Game.setGroup = 1; }); await sleep(300);
+  await ctx.close();
+  const ok = Object.entries(r).every(([k, v]) => k === 'top' || v === true) && r.top === 'Career,Quick Play,Online,Teams & Players,Options,Review' && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
 T['career-intro'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'career-intro');
   const st = () => p.evaluate(() => ({ scr: Game.screen, scene: typeof INTRO !== 'undefined' && INTRO ? INTRO.scene : null, x: INTRO && Math.round(INTRO.x || 0), talk: INTRO && INTRO.talk ? INTRO.talk.lines[INTRO.talk.i][0] : null, met: INTRO && INTRO.met ? Object.keys(INTRO.met).length : 0 }));
@@ -522,7 +567,7 @@ T['career-intro'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(checks), 'start: ' + JSON.stringify(s0), 'greeted by ' + greeted, 'gym: ' + JSON.stringify(s1), 'met: ' + JSON.stringify(s2), 'end: ' + JSON.stringify(end), ...errs] };
 };
 
-async function onlineFlow(browser, base, { query = '', room = false, games = ['vs'], dropP2P = false }) {
+async function onlineFlow(browser, base, { query = '', room = false, games = ['vs'], dropP2P = false, custom = false }) {
   const errs = [], ctx = await newContext(browser, { room });
   const H = await open(ctx, base + '/' + query, errs, 'host'), G = await open(ctx, base + '/' + query, errs, 'guest');
   const log = [];
@@ -537,7 +582,11 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
   await sleep(3500);
   const p2p = await H.evaluate(() => (typeof P2P !== 'undefined' ? P2P.open : null));
   log.push('direct (P2P) link: ' + p2p);
+  if (custom) {                                   // a team only the host has (kept in memory, not in shared storage)
+    await H.evaluate(() => { const d = csLoad(), p = csNewPlayer(); p.name = 'Zayd'; p.stats.spd = 10; d.players.push(p); const t = csNewTeam(); t.name = 'Masjid Test Host'; t.short = 'THOST'; t.roster = [{ k: 'p', id: p.id }, { k: 'cast', id: 'khalil' }]; d.teams.push(t); CS.rev++; });
+  }
   for (const game of games) {
+    if (custom) await H.evaluate(() => { const o = Lobby.opts(); o.a = teamCount() - 1; Lobby.changed(); });
     await H.evaluate(g => { const o = Lobby.opts(); o.game = g; if (g === 'horse') { o.word = 'HAQ'; o.timer = 6; } Net.mode = g; Lobby.changed(); }, game);
     await G.evaluate(() => Lobby.setReady(1)); await sleep(800);
     await H.evaluate(() => Lobby.start());
@@ -546,7 +595,9 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
     const st = await G.evaluate(() => ({ screen: Game.screen, players: M.players.length, snaps: Net.snaps.length }));
     const hs = await H.evaluate(() => ({ screen: Game.screen, players: M.players.length }));
     const word = game === 'horse' ? await G.evaluate(() => M.mini && M.mini.word + '/' + M.mini.timerLen) : null;
-    const good = st.screen === 'netplay' && st.players === hs.players && st.players >= 2 && hs.screen === 'play' && (game !== 'horse' || word === 'HAQ/6');
+    const cust = custom ? await G.evaluate(() => [M.teamDefs[0].name, M.players.map(q => q.def.name).join('/')]) : null;
+    if (cust) log.push(`${game}: guest sees ${cust[0]} (${cust[1]})`);
+    const good = st.screen === 'netplay' && st.players === hs.players && st.players >= 2 && hs.screen === 'play' && (game !== 'horse' || word === 'HAQ/6') && (!cust || (cust[0] === 'Masjid Test Host' && cust[1].includes('Zayd')));
     if (dropP2P && game === games[0] && p2p) {
       await H.evaluate(() => P2P.close('test')); await sleep(2500);
       const after = await G.evaluate(() => ({ screen: Game.screen, gap: Math.round(nowMs() - Net.lastSnapAt) }));
@@ -565,6 +616,7 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
 T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'lightning', 'horse', 'atw', 'kotc'], dropP2P: true });
 T['online-room'] = ({ browser, base }) => onlineFlow(browser, base, { room: true, games: ['vs', 'one'] });
 T['online-fb'] = ({ browser, base }) => onlineFlow(browser, base, { games: ['vs', 'co'] });
+T['online-custom'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=30&jit=5&room=c', games: ['vs', 'co', 'one'], custom: true });
 
 T['mobile'] = async ({ browser, base }) => {
   const detail = []; let ok = true;

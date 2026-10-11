@@ -84,6 +84,9 @@
     "render/adaptive-res.js",
     "render/bench.js",
     "sim/v8-guards.js",
+    "screens/creator-suite.js",
+    "screens/review-mode.js",
+    "screens/menus-v85.js",
     "boot.js"
   ]
 }

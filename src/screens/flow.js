@@ -119,8 +119,8 @@ function selectUpdate() {
   const s = Game.sel;
   const change = d => {
     SFX.blip();
-    if (s.step === 0) s.a = (s.a + d + 8) % 8;
-    else if (s.step === 1) { do { s.b = (s.b + d + 8) % 8; } while (s.b === s.a); }
+    if (s.step === 0) s.a = (s.a + d + teamCount()) % teamCount();
+    else if (s.step === 1) { do { s.b = (s.b + d + teamCount()) % teamCount(); } while (s.b === s.a); }
     else s.ctrl ^= 1;
   };
   Game.selChange = change;
@@ -133,7 +133,7 @@ function selectUpdate() {
 }
 function selectOK() {
   const s = Game.sel; SFX.blip();
-  if (s.step === 0) { if (s.b === s.a) s.b = (s.a + 1) % 8; s.step = 1; }
+  if (s.step === 0) { if (s.b === s.a) s.b = (s.a + 1) % teamCount(); s.step = 1; }
   else if (s.step === 1) { if (s.mode === 'oco' || s.mode === 'ovs') openVenueSelect(v => { s.venue = v; Net.host(s.mode === 'oco' ? 'co' : 'vs', s); }); else if (s.mode === '2p') openVenueSelect(startMatchFromSelect); else s.step = 2; }
   else openVenueSelect(startMatchFromSelect);
 }
@@ -145,8 +145,8 @@ function selectBack() {
 function startMatchFromSelect(venue) {
   const s = Game.sel;
   const humans = s.mode === '2p' ? [{ team: 0, slot: 0, pad: 0 }, { team: 0, slot: 1, pad: 1 }] : [{ team: 0, slot: s.ctrl, pad: 0 }];
-  Game.lastMatch = { tA: TEAMS[s.a], tB: TEAMS[s.b], humans, venue };
-  newMatch(TEAMS[s.a], TEAMS[s.b], { humans, venue });
+  Game.lastMatch = { tA: teamAt(s.a), tB: teamAt(s.b), humans, venue };
+  newMatch(teamAt(s.a), teamAt(s.b), { humans, venue });
   Game.screen = 'play'; Game.paused = false; startVenueIntro(venue);
 }
 // ------------------------------------------------------------- SETTINGS

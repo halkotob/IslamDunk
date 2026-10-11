@@ -293,7 +293,7 @@ function drawCreator(g) {
 }
 function drawNameKeys(g) {
   panel(g, W / 2 - 360, 40, 720, 440, true);
-  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `24px ${FONT}`; g.fillText('Your name', W / 2, 84);
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `24px ${FONT}`; g.fillText(Game.nameCb && Game.nameTitle || 'Your name', W / 2, 84);
   g.fillStyle = 'rgba(255,255,255,0.08)'; roundRect(g, W / 2 - 180, 102, 360, 50, 10); g.fill();
   g.fillStyle = '#fff'; g.font = `26px ${FONT}`; g.fillText(Game.nameBuf + (Game.t % 1 < 0.5 ? '|' : ''), W / 2, 137);
   NAME_KEYS.forEach((ch, i) => {
@@ -305,7 +305,7 @@ function drawNameKeys(g) {
   btn(W / 2 - 240, 'Space', () => { if (Game.nameBuf && Game.nameBuf.length < 12) Game.nameBuf += ' '; }, false);
   btn(W / 2 - 75, 'Delete', () => { Game.nameBuf = Game.nameBuf.slice(0, -1); }, false);
   btn(W / 2 + 90, 'Done', nameDone, true);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Type your name, Enter when done', W / 2, 400);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(Game.nameCb ? 'Type, then Enter when done' : 'Type your name, Enter when done', W / 2, 400);
 }
 function drawStory(g) {
   const s = Game.story, line = s.lines[Math.min(s.i, s.lines.length - 1)], speaker = line[0];

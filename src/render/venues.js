@@ -403,7 +403,7 @@ function drawVenueSelect(g) {
   dim(g, 0.75);
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `26px ${FONT}`; g.fillText('Choose a venue', W / 2, 44);
   g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Venues change the look and the crowd. The court and gameplay are the same everywhere.', W / 2, 66);
-  const opts = venueOptions(), tB = Game.sel ? TEAMS[Game.sel.b] : TEAMS[1], tA = Game.sel ? TEAMS[Game.sel.a] : TEAMS[0];
+  const opts = venueOptions(), tB = Game.sel ? teamAt(Game.sel.b) : TEAMS[1], tA = Game.sel ? teamAt(Game.sel.a) : TEAMS[0];
   opts.forEach((v, i) => {
     const col = i % 6, row = Math.floor(i / 6), w = 146, h = 82, x = 18 + col * 156, y = 80 + row * 108, on = i === Game.idx, locked = v.kind !== 'random' && venueLocked(v);
     if (hovering(x, y, w, h + 30)) Game.idx = i;

@@ -160,7 +160,7 @@ const Net = {
     this.mid++; this.evs = []; Game.lastMatch = null;
     if (this.mode === 'brun') { Run.team = this.sel.a; Run.duo = 'online'; startBarakah(); this.syncCounters(); return; }   // Barakah Run duos
     if (this.isMini()) setupMini(this.mode, { online: true, roster: MINI_ONLINE[this.mode], word: Lobby.o && Lobby.o.word, timer: Lobby.o && Lobby.o.timer, humans: [{ team: 0, slot: 0, pad: 0 }, { team: 0, slot: 1, pad: 1 }] });
-    else newMatch(TEAMS[s.a], TEAMS[s.b], { humans: [{ team: 0, slot: 0, pad: 0 }, { team: gs.team, slot: gs.slot, pad: 1 }], venue: s.venue });
+    else newMatch(teamAt(s.a), teamAt(s.b), { humans: [{ team: 0, slot: 0, pad: 0 }, { team: gs.team, slot: gs.slot, pad: 1 }], venue: s.venue });
     M.online = true; Game.screen = 'play'; Game.paused = false;
     const g = this.peers().find(p => p.peer === this.guestPeer), i = (g && g.presence.in) || {};
     this.lastAc = i.ac | 0; this.lastBc = i.bc | 0; this.lastXc = i.xc | 0; this.lastSc = i.sc | 0;
@@ -480,9 +480,9 @@ function drawHostLobby(g) {
   bigCode(g, Net.code, 88);
   g.fillStyle = IVORY; g.font = `15px ${BODY}`;
   g.fillText('Your friend opens this same page, picks Online, then Join with a code.', W / 2, 200);
-  const modeTxt = Net.mode === 'brun' ? 'Barakah Run duos: one run, one team, you and your friend against the CPU ladder' : Net.mode === 'lightning' ? 'Mini game: Lightning. You, your friend and three masjid members' : Net.mode === 'horse' ? 'Mini game: HORSE, head to head' : Net.mode === 'co' ? `You and your friend play for ${TEAMS[s.a].name} against ${TEAMS[s.b].name}` : `You play for ${TEAMS[s.a].name}, your friend plays for ${TEAMS[s.b].name}`;
+  const modeTxt = Net.mode === 'brun' ? 'Barakah Run duos: one run, one team, you and your friend against the CPU ladder' : Net.mode === 'lightning' ? 'Mini game: Lightning. You, your friend and three masjid members' : Net.mode === 'horse' ? 'Mini game: HORSE, head to head' : Net.mode === 'co' ? `You and your friend play for ${netTeam(s, 0).name} against ${netTeam(s, 1).name}` : `You play for ${netTeam(s, 0).name}, your friend plays for ${netTeam(s, 1).name}`;
   g.fillText(modeTxt, W / 2, 226);
-  if (!Net.isMini()) { drawCrest(g, W / 2 - 60, 280, 26, TEAMS[s.a]); drawCrest(g, W / 2 + 60, 280, 26, TEAMS[s.b]); g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.fillText('vs', W / 2, 287); }
+  if (!Net.isMini()) { drawCrest(g, W / 2 - 60, 280, 26, netTeam(s, 0)); drawCrest(g, W / 2 + 60, 280, 26, netTeam(s, 1)); g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.fillText('vs', W / 2, 287); }
   const ready = !!Net.guestPeer;
   g.fillStyle = ready ? '#9dffb0' : '#9fb3c8'; g.font = `18px ${FONT}`;
   g.fillText(ready ? 'Your friend is here!' : 'Waiting for your friend' + '.'.repeat(1 + (Game.t * 2 | 0) % 3), W / 2, 350);

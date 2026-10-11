@@ -31,8 +31,8 @@ function soloMatch() { return !!(M.teams && !M.practice && !M.mini && M.teams.so
     g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `28px ${FONT}`; g.fillText(head, W / 2, 50);
     g.font = `14px ${BODY}`; g.fillStyle = IVORY; g.fillText('Online 1 on 1: just you and your friend, no CPU on the floor', W / 2, 74);
     const showB = s.step >= 1, ax = showB ? 40 : W / 2 - 210;
-    drawTeamPanel(g, ax, 96, TEAMS[s.a], s.step === 0 || s.step === 2, s.step >= 2 ? s.ctrl : -1);
-    if (showB) drawTeamPanel(g, 500, 96, TEAMS[s.b], s.step === 1 || s.step === 3, s.step >= 3 ? s.ctrlB : -1);
+    drawTeamPanel(g, ax, 96, teamAt(s.a), s.step === 0 || s.step === 2, s.step >= 2 ? s.ctrl : -1);
+    if (showB) drawTeamPanel(g, 500, 96, teamAt(s.b), s.step === 1 || s.step === 3, s.step >= 3 ? s.ctrlB : -1);
     const ay = 262, onB = s.step === 1 || s.step === 3, lx = onB ? 486 : ax - 14, rx = onB ? 934 : ax + 434;
     roundButton(g, lx, ay - 12, 20, '‹', () => Game.selChange && Game.selChange(-1));
     roundButton(g, rx, ay - 12, 20, '›', () => Game.selChange && Game.selChange(1));
@@ -49,7 +49,7 @@ function soloMatch() { return !!(M.teams && !M.practice && !M.mini && M.teams.so
     if (!this.guestPeer) return;
     const s = this.sel;
     this.mid++; this.evs = []; Game.lastMatch = null;
-    newMatch(soloTeam(TEAMS[s.a], s.ctrl), soloTeam(TEAMS[s.b], s.ctrlB), { humans: [{ team: 0, slot: 0, pad: 0 }, { team: 1, slot: 0, pad: 1 }], venue: s.venue });
+    newMatch(soloTeam(teamAt(s.a), s.ctrl), soloTeam(teamAt(s.b), s.ctrlB), { humans: [{ team: 0, slot: 0, pad: 0 }, { team: 1, slot: 0, pad: 1 }], venue: s.venue });
     M.online = true; M.one = [s.ctrl | 0, s.ctrlB | 0]; Game.screen = 'play'; Game.paused = false;
     this.syncCounters();
   };
@@ -71,10 +71,10 @@ function soloMatch() { return !!(M.teams && !M.practice && !M.mini && M.teams.so
   drawHostLobby = function (g) {
     _dhl(g);
     if (Net.mode !== 'one') return;
-    const s = Net.sel, a = TEAMS[s.a].players[s.ctrl | 0], b = TEAMS[s.b].players[s.ctrlB | 0];
+    const s = Net.sel, a = teamAt(s.a).players[s.ctrl | 0], b = teamAt(s.b).players[s.ctrlB | 0];
     g.fillStyle = 'rgba(8,14,22,0.96)'; g.fillRect(W / 2 - 330, 212, 660, 24);
     g.textAlign = 'center'; g.fillStyle = IVORY; g.font = `15px ${BODY}`;
-    g.fillText(`1 on 1, no CPU: you play ${a.name} (${TEAMS[s.a].short}), your friend plays ${b.name} (${TEAMS[s.b].short})`, W / 2, 229);
+    g.fillText(`1 on 1, no CPU: you play ${a.name} (${teamAt(s.a).short}), your friend plays ${b.name} (${teamAt(s.b).short})`, W / 2, 229);
   };
 }
 // ---- nobody to pass to: PASS with the ball does nothing in 1 on 1 (no "no screen yet" nag)

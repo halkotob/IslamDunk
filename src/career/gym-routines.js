@@ -255,10 +255,11 @@ function gymDrillMenu() {
     { label: 'Shooting', sub: ['ft', 'three', 'mikan'].map(k => ({ label: label(k), act: go(k) })) },
     { label: 'Skills', sub: ['cones', 'passing', 'slides', 'cond'].map(k => ({ label: label(k), act: go(k) })) },
     { label: tick('v1') + '1v1 vs Nasser', act: go('v1') },
-    { label: 'Lightning', act: () => startMini('lightning') },
-    { label: 'HORSE', sub: opps.map(([id, name]) => ({ label: 'vs ' + name, act: () => startMini('horse', id) })) },
-    { label: 'Around the World', sub: opps.map(([id, name]) => ({ label: 'vs ' + name, act: () => startMini('atw', id) })) },
-    { label: 'King of the Court', act: () => startGymKotc() },
+    { label: 'Pickup games', sub: [
+      { label: 'Lightning', act: () => startMini('lightning') },
+      { label: 'HORSE', sub: opps.map(([id, name]) => ({ label: 'vs ' + name, act: () => startMini('horse', id) })) },
+      { label: 'Around the World', sub: opps.map(([id, name]) => ({ label: 'vs ' + name, act: () => startMini('atw', id) })) },
+      { label: 'King of the Court', act: () => startGymKotc() }] },
     { label: 'Back', act: () => { Gym.overlay = null; } }
   ];
 }

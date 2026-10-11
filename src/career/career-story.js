@@ -174,7 +174,7 @@ const NEWS = {
   saleem: [{ key: 'mentor', topic: 'The lessons', when: () => (C.lessons || 0) >= 1, lines: () => ['I’m glad you come to the office. Most young brothers only come when they’re in trouble.', 'Keep your intentions, and the lessons will keep coming.'] },
     { key: 'season2', topic: 'A new season', when: () => (C.season || 1) >= 2, lines: () => ['A new season. Same masjid, same intention.', 'Last season is written. This one is a blank page. Fill it well.'] }]
 };
-function newsFor(id) { const heard = (C && C.heard) || {}; return (NEWS[id] || []).filter(n => !heard[id + ':' + n.key] && n.when()); }
+function newsFor(id) { if (!C) return []; const heard = (C && C.heard) || {}; return (NEWS[id] || []).filter(n => !heard[id + ':' + n.key] && n.when()); }
 function anyNews() { return C && MUS_CAST.some(id => newsFor(id).length); }
 for (const id of MUS_CAST) {
   const T = TALK[id], base = T.options;

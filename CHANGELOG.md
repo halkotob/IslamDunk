@@ -1,5 +1,33 @@
 # Changelog
 
+## 8.5.0: Phase 6: your teams, shorter menus, and the review tools
+- **Teams & Players** (new on the title screen): make your own.
+  - **Players** are a sandbox: any look (the same options as the career creator), player or sheikh,
+    and all nine skills from 1 to 10, plus a play style.
+  - **Teams:** name, short name, two colors, a crest, a home court (picked first on the venue
+    screen), and two players from your players, your career player, the masjid brothers, or anyone
+    on the built-in teams.
+  - **Where they play:** Quick Play and online. Your friend sees your team exactly as you made it.
+  - **Your career player** is in Quick Play and online too, as "Al-Amanah (your career)", with exactly
+    the stats you've earned. Nothing made in the sandbox ever changes him.
+  - **Career league:** up to six of your teams can replace league opponents in your career (Join
+    career). They only ever play against you, never on your side.
+  - **Share codes:** copy a code for any team or player and send it to a friend, who imports it by
+    pasting. Names pass through a word filter.
+- **Shorter menus.** Every list is now six entries or fewer, grouped by what you want to do:
+  - Title: Career, Quick Play, Online, Teams & Players, Options. Quick Play groups Play a game
+    (1 player, co-op, 3 on 3), Barakah Run, Mini games, Daily challenges and the Tutorial. Options
+    groups Fun modes, Achievements and Personal bests under Extras.
+  - Settings opens three short groups: Game, Controls & camera, Sound & display.
+  - Career hub, My Player: Upgrade stats, Goals & badges, Customize, Records (stats, season
+    summaries, journal).
+  - Gym drills: the pickup games (Lightning, HORSE, Around the World, King of the Court) are one group.
+- **Review tools** for the human review pass:
+  - In the game: open with `?review=1` for a Review entry. Play any scene and mark each line Keep,
+    Change or Cut, with notes. There's also a 15-question feel checklist. Export everything as a CSV.
+  - In a spreadsheet: `npm run review:export` rebuilds `docs/review/game-text.csv` from the game,
+    with every line that's new since the first packet marked. Earlier marks are kept.
+
 ## 8.4.0: Phase 5: career depth
 - **Cutscenes look like scenes now.** No more four giant brothers filling the screen. Characters stand
   at a natural size in the room, with letterbox bars, a soft vignette, a slow camera that drifts to
