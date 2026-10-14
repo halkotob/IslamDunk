@@ -1,5 +1,43 @@
 # Changelog
 
+## 8.6.0: transition, flair, and new mini games
+- **Fast breaks.** After a steal or a rebound, the CPU teammate leaks out and runs a lane, and the
+  handler can hit him ahead. Passes ahead are quicker ("HIT AHEAD"), and a bucket off one is a
+  FAST BREAK. Both teams play this way.
+- **Skill moves look like moves.** Crossovers dip and reach across, behind-the-backs swing, spins
+  tuck, hesitations rise and burst, with a trail on the ball.
+- **Ankles broken.** Once in a while (rare), a defender who bites on a good move goes down. Slow
+  motion, a callout, the crowd. Better handles do it more.
+- **New stat: Dribbling (1-10).** Faster, sharper moves, more broken ankles, and a safer handle
+  against steals. Built-in players get it from their speed, steals and passing. In career it's a new
+  stat to train, and the sandbox creator has it too.
+- **Tomahawk, LeBron-style.** Cocked back behind the head, knee up, then thrown down. Fast breaks
+  favour it.
+- **Alley-oops off the glass.** Hold Turbo while you throw a lob to a cutting teammate and it goes
+  off the backboard. On an open run at the rim, Turbo + MOVE lobs it off the glass to yourself. The
+  CPU does both now and then.
+- **Blocked and missed dunks fly.** A blocked shot gets sent away (sometimes to the sideline) and a
+  missed dunk caroms long. No more easy put-backs right under the rim.
+- **Swats and celebrations.** Blocks get a full arm swing and a finger wag after. Clutch buckets get
+  a celebration.
+- **Taunts.** After a block, a big dunk or a clutch bucket you have 3 seconds: tap MOVE (H) to
+  taunt. Point to the sky, du'a, flex, finger wag, sujood of thanks (after a basket only), chest
+  pound, brush it off, takbir, too small and raise the roof. Unlock them by levelling up and choose
+  yours in Options → Profile.
+- **Defense:** a defender holding DEFEND who gets beaten gets a short recovery burst.
+- **King of the Court:**
+  - Fixed: the CPU no longer gets stuck in the corners (it was trying to clear the ball to a spot
+    that was still inside the arc).
+  - The winner starts the next game with the ball.
+- **7 Up** (Mini games, and online): pick any spot and shoot. Inside the arc is 1, a three is 2.
+  Keep shooting until you miss. First to exactly 7 wins: go over and you bust back to 4.
+- **Custom game room** (Mini games → Custom game, and online). Build your own shooting game:
+  - scoring (makes, inside 1 / three 2, makes in a row, spots cleared)
+  - where you shoot from (pick your spot, fixed spots, random spots)
+  - how long a turn lasts (until you miss, 1, 3 or 5 shots, 20 or 30 seconds)
+  - the target, an exact finish, time per shot, best of 3 or 5, players, and a no-layups circle
+  - Name it, save it and share it with a code. Presets: 7 Up, 21, Hot Hand, Beat the Clock, Spot Up.
+
 ## 8.5.0: Phase 6: your teams, shorter menus, and the review tools
 - **Teams & Players** (new on the title screen): make your own.
   - **Players** are a sandbox: any look (the same options as the career creator), player or sheikh,

@@ -86,6 +86,8 @@
     "sim/v8-guards.js",
     "screens/creator-suite.js",
     "screens/review-mode.js",
+    "sim/v86-play.js",
+    "sim/v86-minis.js",
     "screens/menus-v85.js",
     "boot.js"
   ]

@@ -390,7 +390,7 @@ function drawCSShare(g) {
   g.fillStyle = '#cfe6f3'; g.font = `12px monospace`; g.textAlign = 'left';
   const code = CSUI.share || '', per = 92; for (let i = 0, y = 176; i < code.length && y < 370; i += per, y += 16) g.fillText(code.slice(i, i + per), 152, y);
   uiButton(g, W / 2 - 200, 396, 190, 40, 'Copy code', () => csCopy(code), true);
-  uiButton(g, W / 2 + 10, 396, 190, 40, 'Back', () => { Game.screen = 'cslist'; }, false);
+  uiButton(g, W / 2 + 10, 396, 190, 40, 'Back', () => BACK.csshare(), false);
   W = rw; Game.ox = 0; g.restore();
 }
 function openCSImport() { CSUI.imp = { msg: '', err: false }; Game.screen = 'csimport'; }
@@ -414,7 +414,7 @@ function drawCSImport(g) {
 }
 // ---- screens and title entry
 {
-  const SCR = { cslist: [csListUpdate, drawCSList], csedit: [csEditUpdate, drawCSEdit], csshare: [() => { if (menuHit('back')) Game.screen = 'cslist'; else if (menuHit('ok')) csCopy(CSUI.share); }, drawCSShare],
+  const SCR = { cslist: [csListUpdate, drawCSList], csedit: [csEditUpdate, drawCSEdit], csshare: [() => { if (menuHit('back')) BACK.csshare(); else if (menuHit('ok')) csCopy(CSUI.share); }, drawCSShare],
     csimport: [() => { if (menuHit('back')) Game.screen = 'cslist'; else if (menuHit('ok')) csPasteButton(); }, drawCSImport] };
   const _gu = gameUpdate;
   gameUpdate = function (rdt) { const sc = Game.screen, was = SCR[sc]; _gu.apply(this, arguments); if (was && Game.screen === sc) { SCR[sc][0](); attractTick(rdt); } };

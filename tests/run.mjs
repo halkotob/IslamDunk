@@ -295,12 +295,12 @@ T['defense'] = async ({ browser, base }) => {
     const me = M.players.find(q => q.human === 0); let held = 0, onBall = 0, between = 0, dist = 0, near = 0;
     M.cmdHook = q => { if (q !== me) return false; zeroCmd(q.cmd); if (ball.owner && ball.owner.team !== me.team) q.cmd.xHeld = true; else if (ball.owner === me) q.cmd.a = true; return true; };
     for (let i = 0; i < 60 * 90; i++) { updateMatch(STEP); const D = me.v8; if (!D || !D.held || !D.man) continue; held++;
-      if (D.man === ball.owner && M.phase === 'live' && !M.bc) { onBall++; const h = defendHoop(me.team); if (dxz(me, h) < dxz(D.man, h)) between++; if (dxz(D.man, h) < 450) { dist += dxz(me, D.man); near++; } } }
+      if (D.man === ball.owner && M.phase === 'live' && !M.bc && !transActive(ball.owner.team)) { onBall++; const h = defendHoop(me.team); if (dxz(me, h) < dxz(D.man, h)) between++; if (dxz(D.man, h) < 450) { dist += dxz(me, D.man); near++; } } }
     M.cmdHook = null;
     out.guard = { held, onBall, between: +(between / Math.max(1, onBall)).toFixed(2), dist: Math.round(dist / Math.max(1, near)) };
     // contested dunks: open take-offs go in, a set defender at the rim makes it a coin flip at best
     const dunks = setD => { let made = 0, n = 0;
-      for (let k = 0; k < 40; k++) {
+      for (let k = 0; k < 120; k++) {
         newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 600 } }); M.phase = 'live';
         const s = M.players[0], h = attackHoop(0); place(s, h.x - h.dir * 90, h.z); giveBall(s, 'inbound');
         M.players.forEach(q => { if (q !== s) place(q, 200, 640); });
@@ -523,6 +523,51 @@ T['phase6'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
+T['v86'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'v86');
+  const r = await p.evaluate(() => {
+    window.__seed(86); const out = {};
+    // transition: CPU teams run the lane and hit the runner ahead
+    let ahead = 0, toma = 0;
+    for (let g = 0; g < 2; g++) {
+      newMatch(TEAMS[g], TEAMS[g + 4], { humans: [], fmt: { format: 'quarters', len: 90 } });
+      for (let n = 0; n < 60 * 60 * 10 && M.phase !== 'over'; n++) { if (Game.screen === 'halftime') Game.screen = 'play'; updateMatch(STEP);
+        if (ball.pass && ball.pass.ahead && !ball.pass._c) { ball.pass._c = 1; ahead++; }
+        for (const q of M.players) if (q.state === 'dunk' && q.act && q.act.type === 'tomahawk' && !q.act._c) { q.act._c = 1; toma++; } }
+    }
+    out.ahead = ahead >= 4; out.toma = toma >= 1;
+    // a self-oop off the glass, and a teammate's lob off the glass
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'first21', target: 99, len: 600 } }); M.phase = 'live';
+    const [a, b] = M.players, h = attackHoop(a.team); M.players.slice(2).forEach(q => place(q, h.x - h.dir * 600, 100));
+    place(a, h.x + h.dir * 260, h.z); giveBall(a, 'inbound'); a.vx = -h.dir * 250; a.vz = 0;
+    out.oopOK = selfOopOK(a); selfOop(a); out.glass = !!(ball.pass && ball.pass.glass);
+    const s0 = M.teams[0].score; for (let i = 0; i < 150; i++) updateMatch(STEP); out.oopScored = M.teams[0].score > s0;
+    // ankles, swats and taunts run without errors
+    ankleFall(M.players[2], a); a.taunt = null; tauntOpen(a, 'block'); doTaunt(a, 'sujood'); out.noSujoodLive = a.taunt && a.taunt.k === 'sky';
+    for (let i = 0; i < 90; i++) updateMatch(STEP);
+    out.dri = STAT_ROWS.some(r => r[0] === 'dri') && CS_STATS.some(r => r[0] === 'dri') && driOf({ st: { spd: 10, stl: 10, pas: 10 } }) === 10;
+    out.taunts = REWARDS.filter(x => x.kind === 'taunt').length === TAUNTS.length - 1;
+    // King of the Court: no corner stalls, the winner has the ball
+    startKotc({ roster: ['saleem', 'nasser', 'khalil', 'hamid'], humans: {} });
+    const hh = hoops[1], ct = new Map(); let stuck = 0, sam = 0, firsts = [], lastG = KOTC.games;
+    for (let n = 0; n < 60 * 500 && !KOTC.done; n++) { if (KOTC.spect && KOTC.overT <= 0 && n % 3000 === 2999) kotcSkip(); updateMatch(STEP);
+      if (KOTC.games !== lastG) { lastG = KOTC.games; firsts.push(M.possTeam === 0 || (M.inb && M.inb.team === 0) || (M.check && M.check.team === 0)); }
+      if (KOTC.overT > 0) continue;
+      for (const q of M.players) { const inC = (q.x - hh.x) * hh.dir < 140 && Math.abs(q.z - hh.z) > 200, t = inC ? (ct.get(q) || 0) + STEP : 0; ct.set(q, t); sam++; if (t > 2.5) stuck++; } }
+    out.kotcCorners = stuck / sam < 0.005; out.kotcWinnerBall = firsts.length > 0 && firsts.every(Boolean); KOTC.on = false;
+    // 7 Up and every custom preset play to a winner; codes round-trip
+    out.minis = MR_PRESETS.every(set => { setupMini('custom', { set, rules: set.r, roster: ['saleem', 'nasser', 'khalil'].slice(0, set.r.players), humans: [] }); const mg = M.mini; for (let n = 0; n < 60 * 900 && !mg.done; n++) miniStep(STEP); return mg.done && mg.winner != null; });
+    out.code = !!mrImport(mrCode(MR_PRESETS[1])).ok && !!mrImport('ID1-zzz-abc').err;
+    return out;
+  });
+  await p.evaluate(() => { goTitle(); MiniMenu.kind = 'custom'; openMinis(); }); await sleep(300);
+  await p.evaluate(() => openRoom()); await sleep(300);
+  await p.evaluate(() => { Game.screen = 'profile'; }); await sleep(300);
+  await ctx.close();
+  const ok = Object.values(r).every(v => v === true) && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
 T['career-intro'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'career-intro');
   const st = () => p.evaluate(() => ({ scr: Game.screen, scene: typeof INTRO !== 'undefined' && INTRO ? INTRO.scene : null, x: INTRO && Math.round(INTRO.x || 0), talk: INTRO && INTRO.talk ? INTRO.talk.lines[INTRO.talk.i][0] : null, met: INTRO && INTRO.met ? Object.keys(INTRO.met).length : 0 }));
@@ -613,7 +658,7 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
   await ctx.close();
   return { ok: ok && !errs.length, detail: log.concat(errs) };
 }
-T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'lightning', 'horse', 'atw', 'kotc'], dropP2P: true });
+T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'lightning', 'horse', 'atw', 'kotc', 'sevenup', 'custom'], dropP2P: true });
 T['online-room'] = ({ browser, base }) => onlineFlow(browser, base, { room: true, games: ['vs', 'one'] });
 T['online-fb'] = ({ browser, base }) => onlineFlow(browser, base, { games: ['vs', 'co'] });
 T['online-custom'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=30&jit=5&room=c', games: ['vs', 'co', 'one'], custom: true });

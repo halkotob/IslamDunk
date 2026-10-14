@@ -383,7 +383,7 @@ function drawTrain(g) {
     const y = 132 + i * 38, sel = Game.idx === i, l = C.lv[k] || 4, cost = statCost(l), can = l < 10 && C.bp >= cost;
     if (sel) { g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, W / 2 - 280, y, 560, 34, 10); g.fill(); }
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(label, W / 2 - 260, y + 23);
-    if (k === 'hus' || k === 'clu') { g.fillStyle = '#57e389'; g.font = `9px ${FONT}`; g.fillText('NEW', W / 2 - 170, y + 22); }
+    if (k === 'dri') { g.fillStyle = '#57e389'; g.font = `9px ${FONT}`; g.fillText('NEW', W / 2 - 170, y + 22); }
     pips(g, W / 2 - 110, y + 13, l);
     g.textAlign = 'right'; g.fillStyle = l >= 10 ? '#9fb3c8' : can ? '#f2cf6b' : '#6d7a8c'; g.font = `14px ${FONT}`;
     g.fillText(l >= 10 ? 'Max' : 'Level up: ' + cost, W / 2 + 262, y + 23);

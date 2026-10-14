@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '8.5.0';
+const VERSION = '8.6.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -5261,7 +5261,7 @@ function drawTrain(g) {
     const y = 132 + i * 38, sel = Game.idx === i, l = C.lv[k] || 4, cost = statCost(l), can = l < 10 && C.bp >= cost;
     if (sel) { g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, W / 2 - 280, y, 560, 34, 10); g.fill(); }
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(label, W / 2 - 260, y + 23);
-    if (k === 'hus' || k === 'clu') { g.fillStyle = '#57e389'; g.font = `9px ${FONT}`; g.fillText('NEW', W / 2 - 170, y + 22); }
+    if (k === 'dri') { g.fillStyle = '#57e389'; g.font = `9px ${FONT}`; g.fillText('NEW', W / 2 - 170, y + 22); }
     pips(g, W / 2 - 110, y + 13, l);
     g.textAlign = 'right'; g.fillStyle = l >= 10 ? '#9fb3c8' : can ? '#f2cf6b' : '#6d7a8c'; g.font = `14px ${FONT}`;
     g.fillText(l >= 10 ? 'Max' : 'Level up: ' + cost, W / 2 + 262, y + 23);
@@ -17752,7 +17752,7 @@ function drawCSShare(g) {
   g.fillStyle = '#cfe6f3'; g.font = `12px monospace`; g.textAlign = 'left';
   const code = CSUI.share || '', per = 92; for (let i = 0, y = 176; i < code.length && y < 370; i += per, y += 16) g.fillText(code.slice(i, i + per), 152, y);
   uiButton(g, W / 2 - 200, 396, 190, 40, 'Copy code', () => csCopy(code), true);
-  uiButton(g, W / 2 + 10, 396, 190, 40, 'Back', () => { Game.screen = 'cslist'; }, false);
+  uiButton(g, W / 2 + 10, 396, 190, 40, 'Back', () => BACK.csshare(), false);
   W = rw; Game.ox = 0; g.restore();
 }
 function openCSImport() { CSUI.imp = { msg: '', err: false }; Game.screen = 'csimport'; }
@@ -17776,7 +17776,7 @@ function drawCSImport(g) {
 }
 // ---- screens and title entry
 {
-  const SCR = { cslist: [csListUpdate, drawCSList], csedit: [csEditUpdate, drawCSEdit], csshare: [() => { if (menuHit('back')) Game.screen = 'cslist'; else if (menuHit('ok')) csCopy(CSUI.share); }, drawCSShare],
+  const SCR = { cslist: [csListUpdate, drawCSList], csedit: [csEditUpdate, drawCSEdit], csshare: [() => { if (menuHit('back')) BACK.csshare(); else if (menuHit('ok')) csCopy(CSUI.share); }, drawCSShare],
     csimport: [() => { if (menuHit('back')) Game.screen = 'cslist'; else if (menuHit('ok')) csPasteButton(); }, drawCSImport] };
   const _gu = gameUpdate;
   gameUpdate = function (rdt) { const sc = Game.screen, was = SCR[sc]; _gu.apply(this, arguments); if (was && Game.screen === sc) { SCR[sc][0](); attractTick(rdt); } };
@@ -17950,6 +17950,831 @@ function drawReviewPanel(g) {
   render = function (g) { _r(g); if (Game.screen === 'review') { drawReview(g); drawBackButton(g); } else if (Game.review && Game.screen === 'story') drawReviewPanel(g); };
   BACK.review = () => rvExit();
   if (REVIEW_ON) { const _tm = TITLE_MENU; TITLE_MENU = function () { return [..._tm(), { label: 'Review', act: () => { Game.screen = 'review'; RV.tab = 0; RV.idx = 0; } }]; }; }
+}
+// ================================================= v8.6: PLAY: TRANSITION, MOVES, DUNKS, BLOCKS, TAUNTS
+// * Transition: after a steal or a rebound the CPU teammate leaks out and runs a lane; the handler
+//   (CPU or you) can hit him ahead. Passes ahead are quicker. Both teams do it.
+// * Skill moves: crossovers dip and reach, behind-the-back swings, spins tuck, hesitations rise and
+//   burst. A defender who bites on a good move can lose his footing, and once in a while (rare) he
+//   goes down: ankles broken.
+// * Dribbling (new stat, 1-10): faster, sharper moves, more broken ankles, safer handle vs steals.
+//   Built-in players get it from their speed, steals and passing; career players train it.
+// * Tomahawk: cocked back behind the head, knee up, thrown down (fast-break dunks lean on it).
+// * Alley-oops off the glass: hold Turbo while throwing a lob to a cutting teammate, or self-lob
+//   off the glass on an open run at the rim (Turbo + MOVE). The CPU does it now and then.
+// * Blocked and missed dunks fly: no more easy put-backs from the rim's shadow.
+// * Swats: a full arm swing on blocks, and the blocker gets a moment after.
+// * Celebrations and taunts: after a block, a big dunk or a clutch bucket you have 3 seconds:
+//   tap MOVE (H) to taunt. Taunts unlock in Options → Profile (sujood, du'a, takbir and more).
+function driOf(p) {
+  const s = (p && p.st) || {};
+  return s.dri != null ? s.dri : clamp(Math.round((s.spd || 5) * 0.5 + (s.stl || 5) * 0.2 + (s.pas != null ? s.pas : 5) * 0.3), 1, 10);
+}
+// ---------------------------------------------------------------- transition
+function transActive(team) {
+  const T = M.trans; if (!T || T.team !== team || M.time - T.t > 4.5 || M.halfCourt || M.mini || M.practice || M.phase !== 'live') return false;
+  const bo = ball.owner || (ball.pass && ball.pass.from);
+  return !bo || bo.team === team;
+}
+{
+  const _gb = giveBall;
+  giveBall = function (p, how) {
+    const prev = M.possTeam;
+    const r = _gb.apply(this, arguments);
+    if (p && how !== 'inbound' && p.team !== prev && M.phase === 'live' && !M.halfCourt && !M.mini && !M.practice && !M.attract) M.trans = { team: p.team, t: M.time, how: how || 'reb', passed: false };
+    else if (p && how === 'inbound') M.trans = null;
+    return r;
+  };
+  // off the ball: run the lane ahead of the handler
+  const _tob = Brain.prototype.thinkOffBall;
+  Brain.prototype.thinkOffBall = function () {
+    _tob.apply(this, arguments);
+    const p = this.p, bo = ball.owner;
+    if (p.human >= 0 || !bo || bo.team !== p.team || !transActive(p.team) || this.plan.type === 'receive') return;
+    const h = attackHoop(p.team), ahead = dxz(bo, h) - dxz(p, h);
+    if (dxz(p, h) < 140) return;
+    const laneZ = bo.z < h.z ? h.z + 150 : h.z - 150;
+    this.plan = { type: 'go', x: h.x + h.dir * (ahead > 200 ? 90 : 170), z: clamp(laneZ, 90, COURT.D - 90), turbo: true, leak: true };
+    this.t = Math.min(this.t, 0.25);
+  };
+  // the handler: hit the runner ahead when the lane is clear
+  const _th = Brain.prototype.thinkHandler;
+  Brain.prototype.thinkHandler = function () {
+    _th.apply(this, arguments);
+    const p = this.p, mate = p.mate;
+    if (!transActive(p.team) || !mate || mate.state !== 'free' || (M.halfCourt && M.mustClear && M.mustClear[p.team])) return;
+    const h = attackHoop(p.team), ahead = dxz(p, h) - dxz(mate, h);
+    if (ahead > 110 && passRisk(p, mate) < 0.38 && laneOpen(mate, h) > 35 && !chance(aiCfg(p.team).noise * 0.6)) { this.plan = { type: 'pass', to: mate, ahead: true }; return; }
+    // nobody to hit: push the pace; once in a while, a breakaway lob off the glass to himself
+    const d = dxz(p, h);
+    if (d < 330 && d > 150 && laneOpen(p, h) > 90 && (p.x - h.x) * h.dir > 60 && chance(0.02 + (p.fire ? 0.04 : 0))) { this.plan = { type: 'selfoop' }; return; }
+    if (this.plan.type === 'probe' || this.plan.type === 'shoot') this.plan = { type: 'drive' };
+  };
+  const _bu = Brain.prototype.update;
+  Brain.prototype.update = function (dt) {
+    const r = _bu.apply(this, arguments), p = this.p;
+    if (this.plan.type === 'selfoop' && ball.owner === p && p.state === 'free') { if (selfOopOK(p)) selfOop(p); else this.plan = { type: 'drive' }; }
+    return r;
+  };
+  // passes ahead are quicker, and they're called out
+  const _dp = doPass;
+  doPass = function (p, to, alley) {
+    const aheadPass = to && transActive(p.team) && dxz(to, attackHoop(p.team)) + 90 < dxz(p, attackHoop(p.team));
+    const old = p.st.pas; if (aheadPass) p.st.pas = (old == null ? 5 : old) + 3;
+    try { _dp.apply(this, arguments); } finally { if (aheadPass) p.st.pas = old; }
+    if (aheadPass && ball.pass && M.trans) { M.trans.passed = true; ball.pass.ahead = true; if (p.human >= 0 || to.human >= 0) FX.pop(p.x, p.y + 132, p.z, 'HIT AHEAD', '#bfffcf'); }
+  };
+  const _os = onScore;
+  onScore = function (h) {
+    const sh = ball.shot && ball.shot.hoop === h ? ball.shot : null, T = M.trans;
+    const r = _os.apply(this, arguments);
+    if (sh && T && T.passed && sh.team === T.team && M.time - T.t < 5 && !M.mini) { FX.callout('FAST BREAK!', '#bfffcf', 'OFF THE OUTLET', false); SFX.cheer(1.1, 0.1); M.trans = null; }
+    return r;
+  };
+}
+// ---------------------------------------------------------------- skill moves and broken ankles
+{
+  const _sm = startDribbleMove;
+  startDribbleMove = function (p, kind, side) {
+    const ok = _sm.apply(this, arguments);
+    if (ok && p.mv) {
+      const k = driOf(p), f = 1.12 - k * 0.024;                        // dribbling 10: 12% quicker; 3: 5% slower
+      p.mv.dur *= f; p.mv.k *= 0.88 + k * 0.024;
+      if (p.move) p.move.dur = Math.max(0.2, p.move.dur * f);
+      if (!p.fire) p.turbo = Math.min(100, p.turbo + (k - 5) * 0.6);
+    }
+    return ok;
+  };
+  const _ra = resolveAnkles;
+  resolveAnkles = function (p) {
+    const spd = p.st.spd, before = new Map(p.opps.map(o => [o, (o.shook || 0) + (o.stumble || 0)]));
+    p.st.spd = Math.round((spd + driOf(p) * 2) / 3);                   // the handle matters more than raw speed
+    try { _ra.apply(this, arguments); } finally { p.st.spd = spd; }
+    const mv = p.mv; if (!mv) return;
+    for (const o of p.opps) {
+      if ((o.shook || 0) + (o.stumble || 0) <= before.get(o) + 0.01 || o.state !== 'free') continue;   // he didn't bite
+      if ((M.ankleT || -99) > M.time - 18) continue;                    // rare: not twice in a row
+      let pf = 0.06 + (driOf(p) - (o.st.def || 5)) * 0.012 + (p.combo || 0) * 0.025 + (mv.sig ? 0.03 : 0) + (mv.kind === 'hesi' || mv.kind === 'stepback' ? 0.015 : 0);
+      if (o.human >= 0) pf *= 0.5;
+      if (chance(clamp(pf, 0.012, 0.14))) { ankleFall(o, p); break; }
+    }
+  };
+}
+function ankleFall(o, p) {
+  M.ankleT = M.time;
+  o.state = 'down'; o.st_t = 0.3; o.vx *= 0.2; o.vz *= 0.2; o.move = null; o.act = null; o.shook = 0; o.stumble = 0;
+  o.fallDir = -o.face || -sgn(p.x - o.x); o.ankle = M.time;
+  o.expr = { k: 'shock', t: 1.2 }; o.sq = -0.5;
+  FX.dust(o.x, o.z, 3); FX.slowmo(0.35, 0.55); FX.hitstop(2);
+  FX.callout('ANKLES BROKEN!', '#ffd76a', p.def.name.toUpperCase(), true); SFX.cheer(1.6, 0.1); FX.hype && FX.hype(1);
+  p.stats.ank = (p.stats.ank || 0) + 1; compAdd(p, 3);
+}
+// ---------------------------------------------------------------- dunks: tomahawk, missed and blocked dunks
+{
+  const _sd = startDunk;
+  startDunk = function (p, opts) {
+    _sd.apply(this, arguments);
+    const a = p.act; if (!a || p.state !== 'dunk' || (opts && opts.alley)) return;
+    const d = dxz(p, a.hoop), fast = Math.hypot(p.vx || 0, p.vz || 0) > 180 || (M.trans && M.trans.team === p.team);
+    if (fast && d > 110 && a.type === 'twohand' && chance(0.3)) { a.type = 'tomahawk'; a.big = a.big || d > 150; }   // fast breaks favour the tomahawk
+  };
+  const _sl = slam;
+  slam = function (p, a) {
+    const willMiss = a.miss && ball.owner === p;
+    const r = _sl.apply(this, arguments);
+    const h = a.hoop;
+    if (willMiss && ball.state === 'loose') {
+      // off the back iron hard: long, random caroms, rarely a tip-in
+      if (chance(0.22)) Object.assign(ball, { vx: -h.dir * rand(60, 150), vz: rand(220, 340) * (chance(0.5) ? 1 : -1), vy: rand(300, 420) });
+      else Object.assign(ball, { vx: h.dir * rand(210, 420), vz: rand(-280, 280), vy: rand(320, 480) });
+      ball.grabLock = 0.35;
+    } else if (a.didSlam && a.type === 'tomahawk' && a.big) FX.pop(h.x, RIM_Y + 70, h.z, 'TOMAHAWK!', '#ffd76a');
+    return r;
+  };
+  const _bb = blockBall;
+  blockBall = function (o, victim) {
+    const dunking = !!(victim && victim.state === 'dunk');
+    _bb.apply(this, arguments);
+    if (M.pin) return;
+    const h = victim ? attackHoop(victim.team) : attackHoop(1 - o.team), k = dunking ? 1.15 : 1;
+    if (chance(0.15)) Object.assign(ball, { vx: h.dir * rand(80, 180), vz: (chance(0.5) ? 1 : -1) * rand(360, 460), vy: rand(150, 260) });   // swatted toward the sideline
+    else { const far = chance(0.65), sp = (far ? rand(240, 420) : rand(110, 220)) * k; Object.assign(ball, { vx: h.dir * sp + rand(-60, 60), vz: rand(-300, 300) * (far ? 1 : 0.6), vy: rand(120, 300) * k }); }
+    ball.grabLock = 0.25;
+    o.swat = { t0: M.time }; o.celebAfter = M.time;
+    tauntOpen(o, 'block');
+  };
+}
+// ---------------------------------------------------------------- alley-oops off the glass
+function glassOf(h, z) { return { x: h.bbx + h.dir * (BALL_R + 1), y: RIM_Y + 46, z: clamp(z, h.z - 30, h.z + 30) }; }
+function glassify(T, to) {
+  const pa = ball.pass, h = attackHoop(to.team), G = glassOf(h, lerp(ball.z, h.z, 0.6)), T1 = T * 0.52;
+  ball.vx = (G.x - ball.x) / T1; ball.vz = (G.z - ball.z) / T1; ball.vy = (G.y - ball.y + 0.5 * grav() * T1 * T1) / T1;
+  pa.glass = { G, T1, hit: false, h };
+}
+{
+  const _ta = throwAlley;
+  throwAlley = function (p, to) {
+    _ta.apply(this, arguments);
+    const want = p.human >= 0 ? !!(p.cmd.turbo && p.turboOK()) : chance(0.1);
+    if (want && ball.pass && ball.pass.alley && dxz(p, attackHoop(to.team)) > 140) { glassify(ball.pass.T, to); if (p.human >= 0 || to.human >= 0) FX.pop(p.x, p.y + 132, p.z, 'OFF THE GLASS', '#ffd76a'); }
+  };
+  const _pf = updatePassFlight;
+  updatePassFlight = function (dt) {
+    const pa = ball.pass, gl = pa && pa.glass;
+    if (!gl || gl.hit) return _pf.apply(this, arguments);
+    pa.t += dt;
+    if (pa.t >= gl.T1) {
+      const to = pa.to, rest = Math.max(0.12, pa.T - gl.T1);
+      Object.assign(ball, { x: gl.G.x, y: gl.G.y, z: gl.G.z });
+      let tx = gl.h.x, ty = RIM_Y + 40, tz = gl.h.z;
+      if (to && to.state === 'dunk' && to.act) { const q = dunkPath(to.act, Math.min(1, to.act.s + rest / to.act.D)); tx = q.x + to.face * 16; ty = q.y + 100; tz = q.z; }
+      ball.vx = (tx - ball.x) / rest; ball.vz = (tz - ball.z) / rest; ball.vy = (ty - ball.y + 0.5 * grav() * rest * rest) / rest;
+      gl.hit = true; SFX.board && SFX.board(); gl.h.vy -= 25; FX.burst(gl.G.x, gl.G.y, gl.G.z, 3, 'spark', ['#ffffff', '#ffd76a']);
+    }
+  };
+}
+function selfOopOK(p) {
+  const h = attackHoop(p.team), d = dxz(p, h);
+  if (ball.owner !== p || p.state !== 'free' || d < 120 || d > 340 || (p.x - h.x) * h.dir < 40 || p.y > 1) return false;
+  const sp = Math.hypot(p.vx || 0, p.vz || 0), ap = sp > 1 ? ((p.vx || 0) * (h.x - p.x) + (p.vz || 0) * (h.z - p.z)) / (sp * d) : 0;
+  return sp > 120 && ap > 0.4;
+}
+function selfOop(p) {
+  const h = attackHoop(p.team), d = dxz(p, h), hand = handsMid(p), D = clamp(0.88 + d / 900, 0.88, 1.18);
+  releaseForPass(p, hand); p.passKind = 'alley';
+  startDunk(p, { alley: true, D });
+  const T = 0.62 * D;
+  ball.pass = { from: p, to: p, t: 0, T, alley: true, kind: 'alley', bounced: false, tried: new Set(), self: true };
+  glassify(T, p);
+  M.alleyT[p.team] = M.time;
+  FX.pop(p.x, p.y + 140, p.z, 'SELF-OOP!', '#ffd76a'); SFX.swipe();
+}
+{
+  // you: Turbo + MOVE on an open run at the rim (set in humanCmd below)
+  const _up = updatePlayer;
+  updatePlayer = function (p, dt) {
+    if (p.wantOop) { p.wantOop = false; if (selfOopOK(p)) selfOop(p); }
+    return _up.apply(this, arguments);
+  };
+  // a self-oop catch is no assist
+  const _cp = catchPass;
+  catchPass = function (to, pa) { _cp.apply(this, arguments); if (pa && pa.self) { ball.lastPasser = null; } };
+}
+// ---------------------------------------------------------------- poses: moves, tomahawk, swats, taunts
+const TAUNTS = [
+  { id: 'sky', name: 'Point to the sky', pop: 'ALHAMDULILLAH', lv: 1 },
+  { id: 'dua', name: 'Du’a, hands raised', pop: 'DU’A', lv: 3 },
+  { id: 'flex', name: 'Flex', pop: 'STRONG BELIEVER', lv: 5 },
+  { id: 'wag', name: 'Finger wag', pop: 'NOT IN HERE', lv: 7 },
+  { id: 'sujood', name: 'Sujood of thanks', pop: 'SUJOOD OF THANKS', lv: 9, dead: true },
+  { id: 'chest', name: 'Chest pound', pop: 'HEART OF A LION', lv: 12 },
+  { id: 'brush', name: 'Brush it off', pop: 'BRUSH IT OFF', lv: 15 },
+  { id: 'takbir', name: 'Takbir', pop: 'ALLAHU AKBAR', lv: 18 },
+  { id: 'small', name: 'Too small', pop: 'TOO SMALL', lv: 21 },
+  { id: 'roof', name: 'Raise the roof', pop: 'MASJID IS LIVE', lv: 24 }
+];
+for (const t of TAUNTS) if (t.lv > 1) REWARDS.push({ lv: t.lv, kind: 'taunt', id: t.id, name: 'Taunt: ' + t.name });
+KIND_TXT.taunt = 'Taunt';
+{
+  const _pt = poseTargets;
+  poseTargets = function (p, sp) {
+    const t = _pt.apply(this, arguments), s = p.state;
+    // dribble moves
+    const mv = p.mv;
+    if (mv && ball.owner === p && (s === 'free' || s === 'fake')) {
+      const u = clamp(mv.t / mv.dur, 0, 1), k = Math.sin(Math.PI * u);
+      if (mv.kind === 'cross' || mv.kind === 'btb') {
+        t.nk += 0.5 * k; t.fk += 0.5 * k; t.nh += 0.3 * k; t.fh += 0.3 * k; t.lean += 0.2 * k;
+        const to = p.move ? p.move.to : p.dh, from = p.move ? p.move.from : p.dh;
+        t[to + 's'] = lerp(t[to + 's'], 0.65, k); t[to + 'e'] = lerp(t[to + 'e'], 0.25, k);
+        if (mv.kind === 'btb' && u < 0.6) { t[from + 's'] = -0.55; t[from + 'e'] = 0.4; }
+        t.K = 1700;
+      } else if (mv.kind === 'spin') Object.assign(t, { ns: 0.9, fs: 0.9, ne: 1.7, fe: 1.7, lean: 0.25, nk: 0.9, fk: 0.7, K: 1600 });
+      else if (mv.kind === 'hesi') { if (u < 0.4) Object.assign(t, { lean: -0.06, nk: 0.25, fk: 0.25, nh: 0.05, fh: 0.0, K: 1400 }); else Object.assign(t, { lean: 0.42, nk: 1.0, fk: 0.5, nh: 0.7, fh: -0.3, K: 1700 }); }
+      else if (mv.kind === 'stepback') Object.assign(t, { lean: -0.28, nk: 0.9, fk: 0.35, nh: 0.3, fh: -0.4, K: 1500 });
+      else if (mv.kind === 'drop') Object.assign(t, { lean: 0.32, nk: 1.1, fk: 0.8, nh: 0.7, fh: 0.4, K: 1500 });
+    }
+    // tomahawk: cocked behind the head, knee up, back arched; then thrown down
+    if (s === 'dunk' && p.act && p.act.type === 'tomahawk') {
+      const u = p.act.s;
+      if (u >= 0.12 && u < 0.56) Object.assign(t, { ns: 3.75, ne: 2.35, fs: 1.3, fe: 0.7, lean: -0.2, nh: 1.45, nk: 2.0, fh: -0.1, fk: 0.5, K: 1500, D: 34 });
+      else if (u >= 0.56 && u < 0.8) Object.assign(t, { ns: 1.9, ne: 0.15, fs: 1.6, fe: 0.5, lean: 0.34, nh: 0.9, nk: 1.2, fh: 0.2, fk: 0.6, K: 2600, D: 40 });
+    }
+    // swat: the blocking arm sweeps through
+    if (p.swat && M.time - p.swat.t0 < 0.32 && p.y > 0) {
+      const u = (M.time - p.swat.t0) / 0.3;
+      Object.assign(t, { ns: lerp(3.35, 1.3, Math.min(1, u * 1.4)), ne: 0.08, fs: 2.5, fe: 0.3, lean: 0.18 + 0.2 * u, K: 2800, D: 40 });
+    }
+    // after a block, the blocker has a moment (finger wag), unless he taunts
+    if (p.celebAfter && !p.taunt && M.time - p.celebAfter < 1.3 && s === 'free' && ball.owner !== p && p.y <= 0 && M.time - p.celebAfter > 0.35)
+      Object.assign(t, { ns: 2.45, ne: 0.2 + Math.sin(M.time * 18) * 0.28 });
+    // taunts
+    const tn = p.taunt;
+    if (tn && M.time - tn.t0 < tn.dur && ball.owner !== p) {
+      const a = M.time - tn.t0, w = Math.sin(a * 16);
+      switch (tn.k) {
+        case 'sky': Object.assign(t, { ns: 3.15, ne: 0.05, fs: 0.3, fe: 0.4, lean: -0.05 }); break;
+        case 'dua': Object.assign(t, { ns: 1.25, fs: 1.25, ne: 1.5, fe: 1.5, lean: 0.06, nk: 0.25, fk: 0.25 }); break;
+        case 'flex': Object.assign(t, { ns: 1.57, fs: 1.57, ne: 2.35 + w * 0.12, fe: 2.35 + w * 0.12, lean: 0.12, nk: 0.5, fk: 0.5 }); break;
+        case 'wag': Object.assign(t, { ns: 2.5, ne: 0.2 + w * 0.3, fs: 0.3, fe: 0.4 }); break;
+        case 'sujood': Object.assign(t, { nk: 2.2, fk: 2.2, nh: 1.6, fh: 1.6, lean: 1.15, ns: 1.4, fs: 1.4, ne: 0.4, fe: 0.4 }); break;
+        case 'chest': Object.assign(t, { ns: 0.8, ne: 2.5 + Math.abs(w) * 0.35, fs: 0.3, fe: 0.5, lean: -0.08 }); break;
+        case 'brush': Object.assign(t, { fs: 0.9, fe: 2.6 + w * 0.35, ns: 0.3, ne: 0.4, lean: 0.02 }); break;
+        case 'takbir': Object.assign(t, { ns: 2.25, fs: 2.25, ne: 2.45, fe: 2.45, lean: -0.04 }); break;
+        case 'small': Object.assign(t, { ns: 0.75, ne: 0.1, fs: 0.3, fe: 0.4, lean: 0.35, nk: 0.8, fk: 0.8, nh: 0.5, fh: 0.5 }); break;
+        case 'roof': Object.assign(t, { ns: 3.0, fs: 3.0, ne: 1.3 + w * 0.5, fe: 1.3 + w * 0.5, nk: 0.4 + Math.abs(w) * 0.3, fk: 0.4 + Math.abs(w) * 0.3 }); break;
+      }
+      t.K = Math.max(t.K, 1200);
+    }
+    return t;
+  };
+  // ankle falls land on the backside, a little less flat than a knockdown
+  const _an = animate;
+  animate = function (p, dt) {
+    _an.apply(this, arguments);
+    if (p.state === 'down' && p.ankle && M.time - p.ankle < 1.6) p.rot = lerp(p.rot, p.fallDir * 0.95, Math.min(1, dt * 12));
+    else if (p.ankle && p.state !== 'down' && p.state !== 'getup') p.ankle = 0;
+  };
+  // taunting slows you down; swats leave a trail
+  const spDesc = Player.prototype.speed;
+  Player.prototype.speed = function () { const s = spDesc.apply(this, arguments); return this.taunt && M.time - this.taunt.t0 < this.taunt.dur ? s * 0.35 : s; };
+  const _up = updatePlayer;
+  updatePlayer = function (p, dt) {
+    const r = _up.apply(this, arguments);
+    if (p.swat && M.time - p.swat.t0 < 0.26 && onScreen(p.x)) { const hd = p.hands.n; FX.spark(hd.x, hd.y, hd.z, '#e8f7ff'); }
+    if (p.mv && ball.owner === p && (p.mv.kind === 'cross' || p.mv.kind === 'btb') && onScreen(p.x) && chance(0.6)) FX.spark(ball.x, ball.y, ball.z, 'rgba(255,255,255,0.7)');
+    return r;
+  };
+}
+// ---------------------------------------------------------------- the taunt window
+function tauntOpen(p, why) {
+  if (!p || M.attract || M.practice || M.mini) return;
+  M.taunt = { p, until: M.time + 3, why, used: false, deadOK: why === 'score' };
+  if (p.human < 0 && chance(why === 'block' ? 0.25 : 0.3)) setTimeout(() => { if (M.taunt && M.taunt.p === p && !M.taunt.used) doTaunt(p, pick(['sky', 'flex', 'wag', 'chest', 'takbir', 'dua'])); }, 500 + Math.random() * 500);
+}
+function myTaunt() { const t = (Profile.load().equip || {}).taunt || 'sky'; return Profile.has('taunt', t) || t === 'sky' ? t : 'sky'; }
+function doTaunt(p, id) {
+  const T = M.taunt; if (!T || T.p !== p || T.used || M.time > T.until) return;
+  let def = TAUNTS.find(x => x.id === id) || TAUNTS[0];
+  if (def.dead && M.phase === 'live' && !T.deadOK) def = TAUNTS[0];                 // sujood only after a basket, never with the ball live
+  T.used = true;
+  p.taunt = { k: def.id, t0: M.time, dur: def.id === 'sujood' ? 1.9 : 1.3 }; p.celebAfter = 0;
+  FX.pop(p.x, p.y + 150, p.z, def.pop, '#ffd76a'); SFX.cheer(0.9, 0.08); FX.hype && FX.hype(1);
+}
+{
+  const _hc = humanCmd;
+  humanCmd = function (pad, c) {
+    const r = _hc.apply(this, arguments);
+    const T = M.taunt;
+    if (T && !T.used && M.time <= T.until && T.p && T.p.human === pad && c.x && ball.owner !== T.p && !M.mini) { doTaunt(T.p, myTaunt()); c.x = false; c.xHeld = false; }
+    // Turbo + MOVE on an open run straight at the rim: lob it off the glass to yourself
+    const bo = ball.owner;
+    if (c.x && c.turbo && bo && bo.human === pad && !M.mini && selfOopOK(bo) && laneOpen(bo, attackHoop(bo.team)) > 90) { bo.wantOop = true; c.x = false; c.xHeld = false; }
+    return r;
+  };
+  // big dunks and clutch buckets open the window too, and get a celebration
+  const _os = onScore;
+  onScore = function (h) {
+    const sh = ball.shot && ball.shot.hoop === h ? ball.shot : null;
+    const r = _os.apply(this, arguments);
+    if (!sh || !sh.shooter || M.mini || M.attract || M.practice) return r;
+    const p = sh.shooter, clutch = typeof clutchTime === 'function' && clutchTime() && !M.kotc;
+    if (clutch) { react(p, 'armsUp', 1.4); if (p.mate) react(p.mate, 'fist', 1.2); FX.callout('CLUTCH!', '#ffd76a', p.def.name.toUpperCase(), true); }
+    if ((sh.dunk && (sh.big || M.lastPoster && M.lastPoster.p === p && M.time - M.lastPoster.t < 1)) || clutch || (sh.green && sh.pts === 3)) tauntOpen(p, 'score');
+    return r;
+  };
+  const _nm = newMatch; newMatch = function () { M.taunt = null; M.trans = null; return _nm.apply(this, arguments); };
+  // the prompt over your player
+  const _r = render;
+  render = function (g) {
+    _r(g);
+    const T = M.taunt;
+    if (!T || T.used || M.time > T.until || !T.p || T.p.human < 0 || T.p.human !== (Net.role === 'guest' ? 1 : 0) || (Game.screen !== 'play' && Game.screen !== 'netplay') || Game.paused) return;
+    const p = T.p, [x, y] = P(p.x, p.y + 150, p.z), a = clamp((T.until - M.time) / 0.4, 0, 1);
+    g.globalAlpha = a; g.fillStyle = 'rgba(8,16,24,0.85)'; roundRect(g, x - 52, y - 14, 104, 24, 12); g.fill();
+    g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.textAlign = 'center'; g.fillText((Input.touchMode ? 'MOVE' : 'H') + ': TAUNT', x, y + 3);
+    g.fillStyle = 'rgba(232,195,90,0.9)'; g.fillRect(x - 40, y + 6, 80 * clamp((T.until - M.time) / 3, 0, 1), 2); g.globalAlpha = 1;
+  };
+  // online: the guest sees taunts the host ran
+  const _sn = Net.snapshot;
+  Net.snapshot = function () {
+    const s = _sn.apply(this, arguments);
+    if (s && s.mid != null && M.players) { const tn = M.players.map(p => (p.taunt && M.time - p.taunt.t0 < p.taunt.dur ? TAUNTS.findIndex(x => x.id === p.taunt.k) : -1)); if (tn.some(v => v >= 0)) s.tn = tn; }
+    return s;
+  };
+  const _gf = Net.guestFrame;
+  Net.guestFrame = function () {
+    const r = _gf.apply(this, arguments), last = this.snaps && this.snaps[this.snaps.length - 1], tn = last && last.s && last.s.tn;
+    if (M.players) M.players.forEach((p, i) => { const k = tn ? tn[i] : -1; if (k >= 0 && (!p.taunt || p.taunt.k !== TAUNTS[k].id || M.time - p.taunt.t0 > p.taunt.dur)) { if (!p.taunt || p.taunt.k !== TAUNTS[k].id) p.taunt = { k: TAUNTS[k].id, t0: M.time, dur: TAUNTS[k].id === 'sujood' ? 1.9 : 1.3 }; } });
+    return r;
+  };
+}
+// ---------------------------------------------------------------- the dribbling stat in menus and the career
+STAT_ROWS.splice(STAT_ROWS.findIndex(r => r[0] === 'pas') + 1, 0, ['dri', 'Dribbling']);
+{
+  const _pd = playerDef;
+  playerDef = function () { const d = _pd.apply(this, arguments); if (C && C.lv) d.stats.dri = C.lv.dri || 4; return d; };
+  const _lc = loadCareer;
+  loadCareer = function () { const r = _lc.apply(this, arguments); if (r && C && C.lv && C.lv.dri == null) C.lv.dri = 4; return r; };
+  const _fc = freshCareer;
+  freshCareer = function () { const c = _fc.apply(this, arguments); if (c.lv && c.lv.dri == null) c.lv.dri = 4; return c; };
+  if (typeof CS_STATS !== 'undefined') CS_STATS.splice(CS_STATS.findIndex(r => r[0] === 'pas') + 1, 0, ['dri', 'Dribbling']);
+  // the steal battle: a tight handle keeps the ball
+  const _ts = trySteal;
+  trySteal = function (p) {
+    const h = ball.owner; if (!h || h.team === p.team) return _ts.apply(this, arguments);
+    const spd = h.st.spd; h.st.spd = clamp(Math.round(spd + (driOf(h) - 5) * 0.8), 1, 12);
+    try { return _ts.apply(this, arguments); } finally { h.st.spd = spd; }
+  };
+}
+// ---------------------------------------------------------------- the taunt choice in the profile
+{
+  const _pr = profileRows;
+  profileRows = function () {
+    const R = _pr.apply(this, arguments), d = Profile.load(), E = d.equip;
+    if (!E.taunt) E.taunt = 'sky';
+    const list = TAUNTS.filter(t => t.id === 'sky' || Profile.has('taunt', t.id));
+    const at = R.findIndex(r => r.start);
+    R.splice(at < 0 ? R.length - 1 : at, 0, { label: 'Taunt', get: () => (TAUNTS.find(t => t.id === E.taunt) || TAUNTS[0]).name,
+      step: dd => { const i = list.findIndex(t => t.id === E.taunt); E.taunt = list[((i < 0 ? 0 : i) + dd + list.length) % list.length].id; Profile.save(); } });
+    for (const r of R) if (r.get) { const g0 = r.get; r.get = () => String(g0()).replace('  (earn more by levelling up)', ''); }   // the long hint overlapped the labels
+    return R;
+  };
+}
+// ---------------------------------------------------------------- recovering on defense
+// Better handles beat defenders more often now, so a defender holding DEFEND who gets beaten gets a
+// short recovery burst (stronger with a good defense rating) to get back in front.
+{
+  const _gs = guardStep;
+  guardStep = function (p, dt) {
+    const D = p.v8, m = D && D.man, h = defendHoop(p.team);
+    p.recover = !!(D && D.held && m && m === ball.owner && dxz(m, h) + 20 < dxz(p, h) && dxz(p, m) < 140);
+    return _gs.apply(this, arguments);
+  };
+  const sp = Player.prototype.speed;
+  Player.prototype.speed = function () { const s = sp.apply(this, arguments); return this.recover && this.v8 && this.v8.held ? s * (1.04 + ((this.st.def || 5) - 5) * 0.01) : s; };
+}
+// ================================================= v8.6: KING OF THE COURT FIXES, 7 UP, CUSTOM MINI GAMES
+// King of the Court
+//   * The CPU no longer gets stuck in the corners. After a change of possession the ball has to go
+//     back out past the arc; from a corner the old target was still inside the arc, so the CPU kept
+//     dribbling into the corner. It now clears out toward the wing.
+//   * The winner (the king) starts the next game with the ball.
+// 7 Up
+//   Pick any spot and shoot. Inside the arc is 1, a three is 2. Keep shooting until you miss. First
+//   to exactly 7 wins: go over and you bust back to 4.
+// Custom game (Mini games → Custom game, and online)
+//   Build your own shooting game: how you score, where you shoot from, how turns work, what it takes
+//   to win. Name it, save it, and share it with a code. 7 Up and a few classics are presets.
+// ---------------------------------------------------------------- King of the Court
+{
+  const _th = Brain.prototype.thinkHandler;
+  Brain.prototype.thinkHandler = function () {
+    _th.apply(this, arguments);
+    const p = this.p;
+    if (!(M.halfCourt && M.mustClear && M.mustClear[p.team]) || this.plan.type !== 'probe') return;
+    const h = attackHoop(p.team), dx = (p.x - h.x) * h.dir, dz = p.z - h.z;
+    const a = clamp(Math.atan2(dz, Math.max(1, dx)), -0.85, 0.85), r = THREE_R + 45;   // out toward the wing, never the corner
+    this.plan.target = { x: h.x + h.dir * Math.cos(a) * r, z: clamp(h.z + Math.sin(a) * r, 80, COURT.D - 80) };
+  };
+  kotcNext = function () {
+    const K = KOTC, winner = !!K.last; K.chal = K.queue.shift(); K.games++; K.overT = 0; K.last = null;
+    const ids = [K.king, K.chal], humans = [];
+    ids.forEach((id, t) => { if (K.humans[id] != null) humans.push({ team: t, slot: 0, pad: K.humans[id] }); });
+    if (K.online && Net.role === 'host') { Net.mid++; Net.evs = []; }
+    kotcBuild(ids, humans);
+    const first = winner ? 0 : 1;                                       // the winner (the king) has it first
+    formation(first); inbound(first);
+    K.spect = humans.length === 0;
+    FX.callout(K.games === 1 ? 'KING OF THE COURT' : 'NEXT UP', '#ffd76a', kotcName(K.chal).toUpperCase() + ' CHALLENGES ' + kotcName(K.king).toUpperCase());
+  };
+}
+// ---------------------------------------------------------------- rules for the shooting games
+const MR_OPTS = {
+  scoring: [['makes', 'Every make is 1'], ['distance', 'Inside 1, three 2'], ['streak', 'Makes in a row'], ['spots', 'Spots cleared']],
+  spots: [['pick', 'Pick your spot'], ['fixed', 'Fixed spots in order'], ['random', 'Random spot each shot']],
+  turn: [['miss', 'Until you miss'], ['1', '1 shot'], ['3', '3 shots'], ['5', '5 shots'], ['t20', '20 seconds'], ['t30', '30 seconds']],
+  target: [3, 5, 7, 10, 11, 15, 21],
+  exact: [['off', 'Off'], ['on', 'On, bust to half']],
+  shotClock: [0, 5, 8, 12],
+  matches: [1, 3, 5],
+  players: [2, 3, 4, 5],
+  minDist: [0, 120, 200]
+};
+const MR_PRESETS = [
+  { id: 'sevenup', name: '7 Up', r: { scoring: 'distance', spots: 'pick', turn: 'miss', target: 7, exact: 'on', shotClock: 8, matches: 1, players: 3, minDist: 120 } },
+  { id: 'twentyone', name: '21', r: { scoring: 'distance', spots: 'pick', turn: '3', target: 21, exact: 'on', shotClock: 8, matches: 1, players: 3, minDist: 120 } },
+  { id: 'streak', name: 'Hot Hand', r: { scoring: 'streak', spots: 'random', turn: 'miss', target: 5, exact: 'off', shotClock: 8, matches: 3, players: 2, minDist: 120 } },
+  { id: 'clock', name: 'Beat the Clock', r: { scoring: 'makes', spots: 'random', turn: 't30', target: 15, exact: 'off', shotClock: 0, matches: 1, players: 2, minDist: 120 } },
+  { id: 'spots', name: 'Spot Up', r: { scoring: 'spots', spots: 'fixed', turn: 'miss', target: 7, exact: 'off', shotClock: 8, matches: 3, players: 2, minDist: 0 } }
+];
+const MR_KEY = 'islamdunk.minirules';
+const MR = { d: null, sel: 'sevenup', edit: null, row: 0 };
+function mrLoad() { if (MR.d) return MR.d; try { MR.d = JSON.parse(localStorage.getItem(MR_KEY) || 'null'); } catch (e) {} MR.d = MR.d || { sets: [], last: 'sevenup' }; MR.sel = MR.d.last || 'sevenup'; return MR.d; }
+function mrSave() { try { localStorage.setItem(MR_KEY, JSON.stringify(mrLoad())); } catch (e) {} }
+function mrAll() { return [...MR_PRESETS, ...mrLoad().sets]; }
+function mrGet(id) { return mrAll().find(s => s.id === id) || MR_PRESETS[0]; }
+function mrClean(r) {
+  const o = Object.assign({}, MR_PRESETS[0].r, r || {});
+  for (const k of ['scoring', 'spots', 'turn', 'exact']) if (!MR_OPTS[k].some(x => x[0] === o[k])) o[k] = MR_PRESETS[0].r[k];
+  for (const k of ['target', 'shotClock', 'matches', 'players', 'minDist']) if (!MR_OPTS[k].includes(+o[k])) o[k] = MR_PRESETS[0].r[k]; else o[k] = +o[k];
+  if (o.scoring === 'spots') o.spots = 'fixed';
+  return o;
+}
+function mrDescribe(r) {
+  const t = MR_OPTS.turn.find(x => x[0] === r.turn)[1].toLowerCase(), sc = MR_OPTS.scoring.find(x => x[0] === r.scoring)[1].toLowerCase();
+  const sp = MR_OPTS.spots.find(x => x[0] === r.spots)[1].toLowerCase();
+  return [sp[0].toUpperCase() + sp.slice(1) + '. ' + sc[0].toUpperCase() + sc.slice(1) + '. Shoot ' + t + '.',
+    'First to ' + (r.exact === 'on' ? 'exactly ' : '') + r.target + (r.exact === 'on' ? ' (go over and you bust to ' + Math.floor(r.target / 2) + ')' : '') + (r.matches > 1 ? ', best of ' + r.matches : '') + '.',
+    (r.shotClock ? r.shotClock + ' seconds per shot. ' : '') + (r.minDist && r.spots === 'pick' ? 'No layups: shoot from outside the circle.' : '')];
+}
+function mrCode(set) { const js = JSON.stringify({ k: 'R', n: set.name, r: set.r }); return 'ID1-' + (hash32(js) % 46656).toString(36).padStart(3, '0') + '-' + b64enc(js); }
+function mrImport(code) {
+  const m = /ID1-([0-9a-z]{3})-([A-Za-z0-9_-]+)/.exec((code || '').replace(/\s+/g, ''));
+  if (!m) return { err: 'That doesn’t look like an Islam Dunk code.' };
+  let js, o; try { js = b64dec(m[2]); o = JSON.parse(js); } catch (e) { return { err: 'The code is cut off. Copy all of it.' }; }
+  if ((hash32(js) % 46656).toString(36).padStart(3, '0') !== m[1] || o.k !== 'R') return { err: o && o.k && o.k !== 'R' ? 'That code is a team or player: import it in Teams & Players.' : 'The code is cut off. Copy all of it.' };
+  const set = { id: csId(), name: csClean(String(o.n || '').slice(0, 18), 'Imported game'), r: mrClean(o.r) };
+  mrLoad().sets.push(set); MR.sel = set.id; mrLoad().last = set.id; mrSave();
+  return { ok: 'Imported game: ' + set.name };
+}
+// ---------------------------------------------------------------- the game itself
+const CG_WAIT = [{ x: 800, z: 640 }, { x: 760, z: 600 }, { x: 840, z: 600 }, { x: 720, z: 640 }];
+function cgFixedSpot(k, n) { const h = hoops[1], a = -1.25 + (n > 1 ? k * (2.5 / (n - 1)) : 1.25), r = 230; return { x: h.x + h.dir * Math.cos(a) * r, z: clamp(h.z + Math.sin(a) * r, 70, 630) }; }
+function cgRandomSpot(R) { const h = hoops[1], a = rand(-1.15, 1.15), r = chance(0.4) ? THREE_R + 20 : rand(Math.max(R.minDist, 130), 280); return { x: h.x + h.dir * Math.cos(a) * r, z: clamp(h.z + Math.sin(a) * r, 70, 630) }; }
+class CustomGame {
+  constructor(opts) {
+    this.kind = opts.kind || 'custom'; this.online = !!opts.online;
+    this.R = mrClean(opts.rules); this.name = opts.name || 'Custom game';
+    const n = M.players.length;
+    this.score = Array(n).fill(0); this.streak = Array(n).fill(0); this.best = Array(n).fill(0); this.wins = Array(n).fill(0); this.spotK = Array(n).fill(0);
+    this.turn = 0; this.shotsLeft = 0; this.turnT = 0; this.clock = 0; this.t = 0; this.gap = 0.6; this.live = null; this.done = false; this.winner = null; this.msg = ''; this.said = null; this.match = 1;
+    M.players.forEach((p, i) => { const w = CG_WAIT[i % CG_WAIT.length]; place(p, w.x, w.z); });
+    this.beginTurn();
+  }
+  shotsPerTurn() { return /^\d+$/.test(this.R.turn) ? +this.R.turn : 0; }
+  turnTime() { return this.R.turn[0] === 't' ? +this.R.turn.slice(1) : 0; }
+  spotFor(i) {
+    const R = this.R;
+    if (R.spots === 'fixed') return cgFixedSpot(Math.min(this.spotK[i], (R.scoring === 'spots' ? R.target : 7) - 1), R.scoring === 'spots' ? R.target : 7);
+    if (R.spots === 'random') return this.rspot || (this.rspot = cgRandomSpot(R));
+    return null;
+  }
+  beginTurn() {
+    const i = this.turn, p = M.players[i];
+    this.shotsLeft = this.shotsPerTurn(); this.turnT = this.turnTime(); this.rspot = null;
+    this.give(i, true);
+    this.msg = miniName(i) + (this.R.spots === 'pick' ? ': pick your spot and shoot' : ': shoot from the glowing spot');
+  }
+  give(i, start) {                                                       // the ball to the shooter, at his spot
+    const p = M.players[i], st = M.balls[0], sp = this.spotFor(i);
+    if (sp) { place(p, sp.x, sp.z); M.hot = { x: sp.x, z: sp.z, t: 9 }; }
+    else { M.hot = null; if (start) place(p, 900, 350); }
+    p.face = sgn(hoops[1].x - p.x) || 1; p.mRel = false;
+    Object.assign(st, { owner: p, state: 'held', shot: null, pass: null, kShooter: p, vx: 0, vy: 0, vz: 0, grabLock: 0 });
+    this.live = null; this.clock = this.R.shotClock; this.wait = rand(0.45, 0.9); this.cpuSpot = null;
+  }
+  tooClose(p) { return this.R.spots === 'pick' && this.R.minDist && dxz(p, hoops[1]) < this.R.minDist; }
+  lock(p, c) {
+    const i = M.players.indexOf(p); c.a = false;
+    if (i !== this.turn || this.gap > 0 || this.done) { const w = CG_WAIT[i % CG_WAIT.length]; mvTo(p, c, w.x, w.z, false, 0.7); c.b = false; c.bHeld = false; p.buf = null; return; }
+    if (this.R.spots !== 'pick') { c.mx = 0; c.mz = 0; c.turbo = false; c.face = sgn(hoops[1].x - p.x) || 1; }
+    else if (this.tooClose(p) && c.b) { c.b = false; c.bHeld = false; p.buf = null; this.blocked = 1.2; }
+    if (canDunk(p) && c.b) { c.b = false; c.bHeld = false; this.blocked = 1.2; }                     // shooting games: no dunks
+  }
+  ai(p, c) {
+    const i = M.players.indexOf(p), h = hoops[1]; miniRelease(p, M.balls[0]); zeroCmd(c);
+    if (i !== this.turn || this.gap > 0 || this.done) { const w = CG_WAIT[i % CG_WAIT.length]; mvTo(p, c, w.x, w.z, false, 0.7); return; }
+    if (M.balls[0].owner !== p) return;
+    if (this.R.spots === 'pick') {
+      if (!this.cpuSpot) {                                              // pick a spot from the score and his shooting
+        const need = this.R.exact === 'on' ? this.R.target - this.score[i] : 99, sht = (p.def.stats || {}).sht || 5;
+        const three = this.R.scoring === 'distance' && need >= 2 && (sht >= 7 ? chance(0.6) : chance(0.25));
+        const a = rand(-1.1, 1.1), r = three ? THREE_R + 22 : rand(Math.max(this.R.minDist + 20, 130), THREE_R - 40);
+        this.cpuSpot = { x: h.x + h.dir * Math.cos(a) * r, z: clamp(h.z + Math.sin(a) * r, 70, 630) };
+      }
+      const d = mvTo(p, c, this.cpuSpot.x, this.cpuSpot.z, false, 0.9);
+      if (d > 10) return;
+      zeroCmd(c);
+    }
+    c.face = sgn(h.x - p.x) || 1;
+    if (p.state === 'free' && (this.wait -= STEP) <= 0) c.b = true;
+  }
+  grab() {}
+  onScore(h) {
+    h.kick(ball.shot && ball.shot.touched ? 'rimin' : 'swish', 1.1, ball.x - h.x, ball.z - h.z, ball.shot && ball.shot.green ? 1 : 0);
+    ball.state = 'scored'; ball.shot = null;
+    if (this.live) this.live.made = true;
+  }
+  addPoints(i, pts) {
+    const R = this.R;
+    if (R.scoring === 'streak') { this.streak[i]++; this.best[i] = Math.max(this.best[i], this.streak[i]); this.score[i] = this.streak[i]; }
+    else if (R.scoring === 'spots') { this.spotK[i]++; this.score[i] = this.spotK[i]; }
+    else this.score[i] += pts;
+    if (R.exact === 'on' && this.score[i] > R.target) { this.score[i] = Math.floor(R.target / 2); if (R.scoring === 'streak') this.streak[i] = this.score[i]; FX.callout('BUST!', '#ff9a8a', miniName(i).toUpperCase() + ' BACK TO ' + this.score[i]); return false; }
+    return this.score[i] >= R.target;
+  }
+  endTurn() { this.turn = (this.turn + 1) % M.players.length; this.gap = 0.9; }
+  update(dt) {
+    this.t += dt; if (this.said) { this.said.t -= dt; if (this.said.t <= 0) this.said = null; }
+    if (this.blocked > 0) { this.blocked -= dt; this.msg = canDunk(M.players[this.turn]) || this.tooClose(M.players[this.turn]) ? 'No layups or dunks: step back outside the circle' : this.msg; }
+    if (this.done) { this.doneT += dt; return; }
+    if (this.gap > 0) { this.gap -= dt; if (this.gap <= 0) this.beginTurn(); return; }
+    const i = this.turn, p = M.players[i], st = M.balls[0], R = this.R;
+    if (this.turnT > 0) { this.turnT -= dt; if (this.turnT <= 0 && !this.live) { FX.callout('TIME!', '#ff9a8a', miniName(i).toUpperCase()); this.endTurn(); return; } }
+    if (!this.live) {
+      if (st.state === 'shot' && st.shot && st.shot.shooter === p) this.live = { t: 0, made: false, pts: isThree(p.x, p.z, hoops[1]) ? 2 : 1 };
+      else if (R.shotClock && st.owner === p) { this.clock -= dt; if (this.clock <= 0) { this.live = { t: 9, made: false, pts: 0, timeout: true }; FX.callout('SHOT CLOCK!', '#ff9a8a'); } }
+      return;
+    }
+    const L = this.live; L.t += dt;
+    if (!(L.timeout || (L.made && L.t > 0.45) || (!L.made && st.state === 'loose' && (st.y < 30 || L.t > 2.4)) || L.t > 3.4)) return;
+    let keep;
+    if (L.made) {
+      const pts = R.scoring === 'distance' ? L.pts : 1, won = this.addPoints(i, pts);
+      FX.pop(p.x, p.y + 130, p.z, R.scoring === 'distance' ? '+' + pts : R.scoring === 'streak' ? this.streak[i] + ' IN A ROW' : R.scoring === 'spots' ? 'NEXT SPOT' : '+1', '#9dffb0');
+      if (won) return this.winMatch(i);
+      keep = R.turn === 'miss';
+    } else {
+      if (R.scoring === 'streak') { if (this.streak[i] >= 2) FX.pop(p.x, p.y + 130, p.z, 'STREAK OVER', '#ff9a8a'); this.streak[i] = 0; this.score[i] = 0; }
+      keep = false;
+    }
+    if (this.shotsPerTurn()) { this.shotsLeft--; keep = this.shotsLeft > 0; }
+    if (this.turnTime()) keep = this.turnT > 0;
+    if (keep) { this.rspot = null; this.gap = 0; this.give(i, false); this.msg = miniName(i) + (this.shotsPerTurn() ? ': ' + this.shotsLeft + ' shot' + (this.shotsLeft === 1 ? '' : 's') + ' left' : ': keep shooting'); }
+    else this.endTurn();
+  }
+  winMatch(i) {
+    this.wins[i]++;
+    const need = Math.ceil(this.R.matches / 2);
+    if (this.wins[i] >= need) {
+      this.done = true; this.doneT = 0; this.winner = i; M.hot = null;
+      FX.callout(miniDoes(i, 'win').toUpperCase() + '!', '#ffd76a', this.name.toUpperCase(), true); SFX.buzzer(); return;
+    }
+    FX.callout(miniDoes(i, 'take').toUpperCase() + ' GAME ' + this.match, '#ffd76a', 'FIRST TO ' + need);
+    this.match++; this.score.fill(0); this.streak.fill(0); this.spotK.fill(0);
+    this.turn = (i + 1) % M.players.length; this.gap = 1.6;
+  }
+  result() { const me = Math.max(0, M.players.findIndex(q => q.human >= 0)); return { won: this.winner === me, mine: this.score[me], place: this.winner === me ? 1 : 2 }; }
+  snap() { return { k: 'C', n: this.name, r: this.R, sc: this.score, st: this.streak, w: this.wins, sk: this.spotK, tu: this.turn, sl: this.shotsLeft, tt: r1(this.turnT), cl: r1(this.clock), m: this.msg, mt: this.match, d: this.done ? 1 : 0, wn: this.winner == null ? -1 : this.winner }; }
+  applySnap(s) { this.name = s.n; this.R = mrClean(s.r); this.score = s.sc; this.streak = s.st; this.wins = s.w; this.spotK = s.sk; this.turn = s.tu; this.shotsLeft = s.sl; this.turnT = s.tt; this.clock = s.cl; this.msg = s.m; this.match = s.mt; this.done = !!s.d; this.winner = s.wn < 0 ? null : s.wn; }
+}
+function setupCustomMini(kind, opts) {
+  const set = opts.set || mrGet(kind === 'sevenup' ? 'sevenup' : MR.sel), R = mrClean(opts.rules || set.r);
+  const n = clamp(R.players, 2, 5), roster = opts.roster ? opts.roster.slice(0, Math.max(2, opts.roster.length)) : ['you', ...shuffle(MINI_OPPS.map(o => o[0])).slice(0, n - 1)];
+  M.miniIds = roster;
+  const tA = Object.assign({}, MINI_TEAM, { players: roster.map(castPlayer) }), tB = Object.assign({}, MINI_TEAM, { players: [] });
+  newMatch(tA, tB, { humans: opts.humans || [{ team: 0, slot: 0, pad: 0 }], practice: kind, aiCfg: [DIFF.medium, DIFF.medium] });
+  M.miniIds = roster; M.drawExtras = null; M.phase = 'live';
+  M.balls = [newBallState()];
+  M.mini = new CustomGame({ kind, online: opts.online, rules: R, name: set.name });
+  cam.x = 1380 - W;
+}
+{
+  const _sm = setupMini;
+  setupMini = function (kind, opts) { if (kind === 'sevenup' || kind === 'custom') return setupCustomMini(kind, opts || {}); return _sm.apply(this, arguments); };
+  // HUD: everyone's score, whose turn it is, and the clocks
+  const _hud = drawMiniHUD;
+  drawMiniHUD = function (g) {
+    const mg = M.mini; if (!mg || !(mg instanceof CustomGame)) return _hud.apply(this, arguments);
+    const oy = Game.screen === 'gym' ? 16 : 0; g.save(); g.translate(0, oy);
+    const n = M.players.length, w = 150, x0 = W / 2 - (n * (w + 8) - 8) / 2, R = mg.R;
+    g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText(mg.name.toUpperCase() + '  •  ' + (R.exact === 'on' ? 'EXACTLY ' : 'FIRST TO ') + R.target + (R.matches > 1 ? '  •  GAME ' + mg.match : ''), W / 2, 46);
+    M.players.forEach((p, i) => {
+      const x = x0 + i * (w + 8), y = 52, up = mg.turn === i && !mg.done;
+      g.fillStyle = up ? 'rgba(232,195,90,0.92)' : 'rgba(8,14,22,0.86)'; roundRect(g, x, y, w, 40, 10); g.fill();
+      if (p.human >= 0) { g.strokeStyle = p.human === 0 ? '#ff7a7a' : '#6ab8ff'; g.lineWidth = 2; g.stroke(); }
+      g.textAlign = 'left'; g.fillStyle = up ? NIGHT : '#fff'; g.font = `12px ${FONT}`; g.fillText(miniName(i), x + 10, y + 16);
+      g.font = `18px ${FONT}`; g.textAlign = 'right'; g.fillText(String(mg.score[i]), x + w - 10, y + 30);
+      g.textAlign = 'left'; g.font = `10px ${FONT}`; g.fillStyle = up ? 'rgba(11,19,48,0.8)' : '#9fb3c8';
+      g.fillText(R.matches > 1 ? '●'.repeat(mg.wins[i]) + '○'.repeat(Math.max(0, Math.ceil(R.matches / 2) - mg.wins[i])) : R.scoring === 'streak' ? 'BEST ' + mg.best[i] : '', x + 10, y + 32);
+    });
+    let bar = null;
+    if (mg.turnTime() && !mg.done && mg.gap <= 0) bar = [mg.turnT / mg.turnTime(), '#ffcf6a'];
+    else if (R.shotClock && !mg.live && !mg.done && mg.gap <= 0) bar = [mg.clock / R.shotClock, mg.clock < 3 ? '#e05a5a' : '#8fe3ff'];
+    if (bar) { g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, W / 2 - 150, 98, 300, 7, 3.5); g.fill(); g.fillStyle = bar[1]; roundRect(g, W / 2 - 150, 98, 300 * clamp(bar[0], 0, 1), 7, 3.5); g.fill(); }
+    if (mg.msg && !mg.done) { g.textAlign = 'center'; g.font = `13px ${BODY}`; const tw = g.measureText(mg.msg).width + 30; g.fillStyle = 'rgba(8,14,22,0.78)'; roundRect(g, W / 2 - tw / 2, 112, tw, 24, 12); g.fill(); g.fillStyle = IVORY; g.fillText(mg.msg, W / 2, 129); }
+    g.restore();
+  };
+  const _res = drawMiniResult;
+  drawMiniResult = function (g) {
+    const mg = M.mini; if (!mg || !(mg instanceof CustomGame)) return _res.apply(this, arguments);
+    if (!mg.done || (mg.doneT || 0) < 1.2) return;
+    dim(g, 0.6);
+    g.fillStyle = 'rgba(12,40,44,0.96)'; roundRect(g, W / 2 - 230, 130, 460, 260, 16); g.fill(); g.strokeStyle = GOLD; g.lineWidth = 2; g.stroke();
+    g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText(mg.name.toUpperCase(), W / 2, 174);
+    g.fillStyle = '#fff'; g.font = `15px ${BODY}`;
+    const order = M.players.map((p, i) => i).sort((a, b) => (mg.wins[b] - mg.wins[a]) || (mg.score[b] - mg.score[a]));
+    order.slice(0, 5).forEach((i, k) => g.fillText((k === 0 ? '♛ ' : ordinal(k + 1) + '  ') + miniName(i) + (mg.R.matches > 1 ? '   ' + mg.wins[i] + ' won' : '   ' + mg.score[i]), W / 2, 212 + k * 26));
+    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
+    g.fillText(Net.role === 'guest' ? 'Waiting for your friend' : 'Press Enter or tap to continue', W / 2, 368);
+    if (Net.role !== 'guest') addRect(0, 0, W, H, miniResultContinue);
+  };
+}
+// ---------------------------------------------------------------- Mini games menu: 7 Up and Custom game
+MINI_GAMES.push(['sevenup', '7 Up'], ['custom', 'Custom game']);
+{
+  MiniMenu.others = 2;
+  const _rows = minisRows;
+  minisRows = function () {
+    const m = MiniMenu;
+    if (m.kind !== 'sevenup' && m.kind !== 'custom') return _rows.apply(this, arguments);
+    const cyc = (arr, v, d) => arr[(arr.indexOf(v) + d + arr.length) % arr.length], games = MINI_GAMES.map(x => x[0]), R = [];
+    R.push({ label: 'Game', get: () => MINI_GAMES.find(x => x[0] === m.kind)[1], step: d => { m.kind = cyc(games, m.kind, d); } });
+    if (m.kind === 'custom') {
+      const ids = mrAll().map(s => s.id);
+      R.push({ label: 'Rules', get: () => mrGet(MR.sel).name, step: d => { MR.sel = cyc(ids, ids.includes(MR.sel) ? MR.sel : ids[0], d); mrLoad().last = MR.sel; mrSave(); } });
+      R.push({ label: 'Make or edit rules', open: true, get: () => '', step: () => openRoom() });
+    } else R.push({ label: 'Players', get: () => (m.others + 1) + ' (you and ' + m.others + ')', step: d => { m.others = clamp(m.others + d, 1, 4); } });
+    R.push({ label: 'CPU difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); } });
+    R.push({ label: 'Start', start: true, step: () => startQuickMini() });
+    R.push({ label: 'Back', back: true, step: () => goTitle() });
+    return R;
+  };
+  const _help = minisHelp;
+  minisHelp = function () {
+    if (MiniMenu.kind === 'sevenup') return ['Pick any spot and shoot. Inside the arc is 1, a three is 2.', 'Keep shooting until you miss. 8 seconds a shot, no layups.', 'First to exactly 7 wins. Go over and you bust back to 4.'];
+    if (MiniMenu.kind === 'custom') return mrDescribe(mrClean(mrGet(MR.sel).r));
+    return _help.apply(this, arguments);
+  };
+  const _sq = startQuickMini;
+  startQuickMini = function () {
+    const m = MiniMenu;
+    if (m.kind !== 'sevenup' && m.kind !== 'custom') return _sq.apply(this, arguments);
+    Game.paused = false; Game.trivia = null; Game.fromMinis = true;
+    const set = m.kind === 'sevenup' ? MR_PRESETS[0] : mrGet(MR.sel), R = mrClean(set.r), n = m.kind === 'sevenup' ? m.others + 1 : R.players;
+    setupMini(m.kind, { set, rules: Object.assign({}, R, { players: n }), roster: ['you', ...shuffle(MINI_OPPS.map(o => o[0])).slice(0, n - 1)], humans: [{ team: 0, slot: 0, pad: 0 }] });
+    Game.screen = 'play';
+  };
+  // the "Make or edit rules" row opens the room instead of stepping
+  const _mu = minisUpdate;
+  minisUpdate = function () { mrLoad(); return _mu.apply(this, arguments); };
+}
+// ---------------------------------------------------------------- the custom game room (rule editor)
+function openRoom() {
+  const cur = mrGet(MR.sel), preset = MR_PRESETS.some(p => p.id === cur.id);
+  MR.edit = { id: preset ? null : cur.id, name: preset ? cur.name + ' (mine)' : cur.name, r: mrClean(cur.r) }; MR.row = 0; MR.msg = '';
+  Game.screen = 'miniroom';
+}
+function roomRows() {
+  const E = MR.edit, r = E.r, cyc = (arr, v, d) => arr[(arr.indexOf(v) + d + arr.length) % arr.length];
+  const pick = (k, label) => ({ label, get: () => (MR_OPTS[k].find(x => x[0] === r[k]) || [0, ''])[1], step: d => { r[k] = cyc(MR_OPTS[k].map(x => x[0]), r[k], d); if (r.scoring === 'spots') r.spots = 'fixed'; } });
+  const num = (k, label, fmt) => ({ label, get: () => fmt(r[k]), step: d => { r[k] = cyc(MR_OPTS[k], r[k], d); } });
+  return [
+    { label: 'Name', get: () => E.name + '  ✎', step: () => csAskName('Game name', E.name, 18, v => { E.name = csClean(v, E.name); }) },
+    pick('scoring', 'Scoring'), pick('spots', 'Where you shoot'), pick('turn', 'A turn lasts'),
+    num('target', 'To win', v => (r.exact === 'on' ? 'exactly ' : 'first to ') + v), pick('exact', 'Exact finish'),
+    num('shotClock', 'Time per shot', v => (v ? v + ' seconds' : 'No limit')), num('matches', 'Games', v => (v === 1 ? 'One game' : 'Best of ' + v)),
+    num('players', 'Players', v => v + ' (you and ' + (v - 1) + ' CPU)'), num('minDist', 'No layups circle', v => (v ? (v === 120 ? 'Small' : 'Big') : 'Off'))
+  ];
+}
+function roomSave() {
+  const E = MR.edit, d = mrLoad();
+  let set = E.id && d.sets.find(s => s.id === E.id);
+  if (!set) { set = { id: csId(), name: E.name, r: E.r }; d.sets.push(set); E.id = set.id; } else { set.name = E.name; set.r = Object.assign({}, E.r); }
+  MR.sel = set.id; d.last = set.id; mrSave(); toast('Saved: ' + set.name, 2);
+}
+function roomAct(k) {
+  if (k === 'save') roomSave();
+  else if (k === 'play') { roomSave(); MiniMenu.kind = 'custom'; Game.screen = 'minis'; startQuickMini(); }
+  else if (k === 'share') { roomSave(); CSUI.share = mrCode(mrGet(MR.sel)); Game.csBack = 'miniroom'; Game.screen = 'csshare'; }
+  else if (k === 'import') { Game.screen = 'mrimport'; MR.msg = ''; }
+  else if (k === 'delete' && MR.edit.id) {
+    if (MR.confirm !== MR.edit.id) { MR.confirm = MR.edit.id; toast('Press Delete again to remove ' + MR.edit.name, 2.5); return; }
+    const d = mrLoad(); d.sets = d.sets.filter(s => s.id !== MR.edit.id); MR.sel = 'sevenup'; d.last = MR.sel; mrSave(); MR.confirm = null; Game.screen = 'minis'; toast('Removed', 1.5);
+  }
+}
+function roomUpdate() {
+  const R = roomRows(), n = R.length;
+  if (menuHit('up')) { MR.row = (MR.row + n - 1) % n; SFX.blip(); }
+  if (menuHit('down')) { MR.row = (MR.row + 1) % n; SFX.blip(); }
+  const r = R[MR.row];
+  if (menuHit('left')) { r.step(-1); SFX.blip(); } else if (menuHit('right')) { r.step(1); SFX.blip(); }
+  else if (menuHit('ok')) { r.step(1); SFX.blip(); }
+  if (Input.pressed.KeyP) roomAct('play'); else if (Input.pressed.KeyC) roomAct('share');
+  if (menuHit('back')) { Game.screen = 'minis'; }
+}
+function drawRoom(g) {
+  dim(g, 0.84);
+  const o = Math.round((W - 960) / 2), rw = W; g.save(); g.translate(o, 0); W = 960; Game.ox = o;
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('Custom game room', W / 2, 46);
+  const R = roomRows();
+  panel(g, 30, 64, 520, 440, true);
+  R.forEach((r, i) => {
+    const y = 76 + i * 41, on = i === MR.row, cy = y + 26;
+    if (on) { g.fillStyle = 'rgba(232,195,90,0.18)'; roundRect(g, 40, y + 2, 500, 37, 8); g.fill(); }
+    g.textAlign = 'left'; g.fillStyle = on ? '#fff' : IVORY; g.font = `14px ${BODY}`; g.fillText(r.label, 56, cy);
+    g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `13px ${i === 0 ? FONT : BODY}`; g.fillText(r.get(), 400, cy);
+    if (i) { g.fillStyle = GOLD; g.font = `16px ${FONT}`; g.fillText('◂', 268, cy + 1); g.fillText('▸', 532, cy + 1); addRect(250, y, 40, 40, () => { MR.row = i; r.step(-1); }); addRect(510, y, 40, 40, () => { MR.row = i; r.step(1); }); }
+    addRect(40, y, 210, 40, () => { MR.row = i; r.step(1); });
+  });
+  panel(g, 570, 64, 360, 300, false);
+  g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('HOW IT PLAYS', 590, 92);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; let y = 118; for (const t of mrDescribe(MR.edit.r)) if (t) y = wrapLeft(g, t, 590, y, 320, 20) + 30;
+  const acts = [['Play', 'play'], ['Save', 'save'], ['Share code', 'share'], ['Import a code', 'import']].concat(MR.edit.id ? [['Delete', 'delete']] : []);
+  acts.forEach(([l, k], i) => uiButton(g, 570 + (i % 2) * 184, 376 + Math.floor(i / 2) * 44, 176, 36, l, () => roomAct(k), i === 0));
+  g.textAlign = 'right'; g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText('↑ ↓ choose   ← → change   P play   C share   Esc back', 930, 520);
+  W = rw; Game.ox = 0; g.restore();
+}
+function drawRoomImport(g) {
+  dim(g, 0.86);
+  const o = Math.round((W - 960) / 2), rw = W; g.save(); g.translate(o, 0); W = 960; Game.ox = o;
+  panel(g, 160, 110, 640, 300, true);
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `24px ${FONT}`; g.fillText('Import a game', W / 2, 152);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('Copy a custom game code from a friend, then paste it here.', W / 2, 182);
+  uiButton(g, W / 2 - 110, 210, 220, 44, 'Paste', mrPaste, true);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('or press Ctrl+V (⌘V on a Mac)', W / 2, 280);
+  if (MR.msg) { g.fillStyle = MR.err ? '#ff9a8a' : '#9dffb0'; g.font = `15px ${BODY}`; g.fillText(MR.msg, W / 2, 322); }
+  uiButton(g, W / 2 - 80, 346, 160, 38, 'Back', () => { Game.screen = 'minis'; }, false);
+  W = rw; Game.ox = 0; g.restore();
+}
+function mrTry(t) { const r = mrImport(t); MR.msg = r.ok || r.err; MR.err = !r.ok; if (r.ok) { toast(r.ok, 2.5); SFX.good && SFX.good(); } }
+function mrPaste() { try { if (navigator.clipboard && navigator.clipboard.readText) { navigator.clipboard.readText().then(mrTry, () => { MR.msg = 'Press Ctrl+V (or ⌘V) to paste the code here.'; MR.err = true; }); return; } } catch (e) {} MR.msg = 'Press Ctrl+V (or ⌘V) to paste the code here.'; MR.err = true; }
+addEventListener('paste', e => { if (Game.screen !== 'mrimport') return; const t = e.clipboardData && e.clipboardData.getData('text'); if (t) { e.preventDefault(); mrTry(t); } });
+{
+  const SCR = { miniroom: [roomUpdate, drawRoom], mrimport: [() => { if (menuHit('back')) Game.screen = 'minis'; else if (menuHit('ok')) mrPaste(); }, drawRoomImport] };
+  const _gu = gameUpdate;
+  gameUpdate = function (rdt) { const sc = Game.screen, was = SCR[sc]; _gu.apply(this, arguments); if (was && Game.screen === sc) { SCR[sc][0](); attractTick(rdt); } };
+  const _r = render;
+  render = function (g) { _r(g); const s = SCR[Game.screen]; if (!s) return; s[1](g); drawBackButton(g); };
+  BACK.miniroom = () => { Game.screen = 'minis'; }; BACK.mrimport = () => { Game.screen = 'minis'; };
+  // the share screen comes back to the room when it was opened from there
+  const _bs = BACK.csshare; BACK.csshare = () => { if (Game.csBack === 'miniroom') { Game.csBack = null; Game.screen = 'miniroom'; } else _bs(); };
+}
+// ---------------------------------------------------------------- online: 7 Up and custom games with a friend
+{
+  LOBBY_GAMES.splice(LOBBY_GAMES.findIndex(g => g.id === 'brun'), 0, { id: 'sevenup', name: '7 Up' }, { id: 'custom', name: 'Custom game' });
+  const _isM = Net.isMini;
+  Net.isMini = function (m = this.mode) { return m === 'sevenup' || m === 'custom' || _isM.call(this, m); };
+  // the roster travels in the snapshot so the guest builds the same players
+  Object.defineProperty(MINI_ONLINE, 'custom', { configurable: true, get() { const s = (Net.snaps || []).map(x => x.s).reverse().find(x => x && x.mr); return s ? s.mr : ['khalil', 'nasser']; } });
+  Object.defineProperty(MINI_ONLINE, 'sevenup', { configurable: true, get() { return MINI_ONLINE.custom; } });
+  const _sn = Net.snapshot;
+  Net.snapshot = function () { const s = _sn.apply(this, arguments); if (s && M.mini instanceof CustomGame) s.mr = M.miniIds; return s; };
+  const _hs = Net.hostStart;
+  Net.hostStart = function () {
+    if (this.mode !== 'sevenup' && this.mode !== 'custom') return _hs.call(this);
+    if (!this.guestPeer) return;
+    const o = Lobby.opts(), set = this.mode === 'sevenup' ? MR_PRESETS[0] : mrGet(o.rules || MR.sel), R = mrClean(set.r), n = this.mode === 'sevenup' ? clamp(o.players || 3, 2, 5) : R.players;
+    this.mid++; this.evs = []; Game.lastMatch = null;
+    setupMini(this.mode, { online: true, set, rules: Object.assign({}, R, { players: n }), roster: ['khalil', 'nasser', ...shuffle(['saleem', 'mahmoud', 'hamid', 'rafiq']).slice(0, n - 2)], humans: [{ team: 0, slot: 0, pad: 0 }, { team: 0, slot: 1, pad: 1 }] });
+    M.online = true; Game.screen = 'play'; Game.paused = false; this.syncCounters();
+  };
+  const _rows = Lobby.rows;
+  Lobby.rows = function () {
+    const R = _rows.apply(this, arguments), o = this.opts(), cyc = (arr, v, d) => arr[(arr.indexOf(v) + d + arr.length) % arr.length];
+    const at = Math.max(1, R.findIndex(r => /difficulty/i.test(r.label)));
+    if (o.game === 'sevenup') R.splice(at, 0, { label: 'Players', get: () => String(o.players || 3), step: d => { o.players = clamp((o.players || 3) + d, 2, 5); } });
+    if (o.game === 'custom') { const ids = mrAll().map(s => s.id); R.splice(at, 0, { label: 'Rules', get: () => (Net.role === 'guest' && o.rulesName) || mrGet(o.rules || MR.sel).name, step: d => { o.rules = cyc(ids, ids.includes(o.rules) ? o.rules : ids[0], d); } }); }
+    return R;
+  };
+  const _pub = Lobby.publish;
+  Lobby.publish = function () { if (Net.role === 'host' && this.o && this.o.game === 'custom') this.o.rulesName = mrGet(this.o.rules || MR.sel).name; return _pub.apply(this, arguments); };
+}
+function wrapLeft(g, text, x, y, maxW, lh) {
+  g.textAlign = 'left'; let line = '';
+  for (const w of text.split(' ')) { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { g.fillText(line, x, y); line = w; y += lh; } else line = t; }
+  g.fillText(line, x, y); return y;
 }
 // ================================================= v8.5: SHORTER, GROUPED MENUS
 // Lists had grown past the bottom of the screen (Quick Play had 7 entries, Settings 16). Every list
