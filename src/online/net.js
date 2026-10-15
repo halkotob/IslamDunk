@@ -225,7 +225,7 @@ const Net = {
     s.e = this.evs.slice(-14);
     if (this.guestQ) s.ak = this.guestQ;
     if (Run.duo === 'online' && (Run.active || Game.screen === 'runend')) s.br = runDuoState();   // optional: duo run state for the guest                   // optional: ack of the guest's input stamp (older guests ignore it)
-    if (s.sc !== 'play') s.st = M.players.map(p => { const t = p.stats; return [t.pts, t.reb, t.ast, t.stl, t.blk, t.dnk, t.fgm, t.fga, t.pf || 0, t.ftm || 0, t.fta || 0]; });
+    if (s.sc !== 'play') s.st = M.players.map(p => { const t = p.stats; return [t.pts, t.reb, t.ast, t.stl, t.blk, t.dnk, t.fgm, t.fga, t.pf || 0, t.ftm || 0, t.fta || 0, t.tov || 0]; });
     const tv = Game.trivia;
     if (tv && tv.remote) s.tv = [tv.qi, tv.order, r1(tv.t), tv.done ? 1 : 0, tv.choice, tv.correct ? 1 : 0, M.players.indexOf(tv.p)];
     let js = JSON.stringify(s);
@@ -353,7 +353,7 @@ const Net = {
       p.act = b[13] >= 0 ? { type: ND[b[13]] || 'tomahawk', s: b[14] } : (p.state === 'dunk' || p.state === 'hang') ? { type: 'tomahawk', s: b[14] || 0 } : null;   // never leave a dunking player without an act (crashed the guest's frame)
       p.fire = !!(b[15] & 1); p.cmd.turbo = !!(b[15] & 4); p.celebrate = b[15] & 8 ? 0.5 : 0;
       p.turbo = b[16]; p.hifz = b[17]; p.boost = b[18]; p.human = b[19];
-      if (SB.st) { const t = SB.st[i]; Object.assign(p.stats, { pts: t[0], reb: t[1], ast: t[2], stl: t[3], blk: t[4], dnk: t[5], fgm: t[6], fga: t[7], pf: t[8] || 0, ftm: t[9] || 0, fta: t[10] || 0 }); }
+      if (SB.st) { const t = SB.st[i]; Object.assign(p.stats, { pts: t[0], reb: t[1], ast: t[2], stl: t[3], blk: t[4], dnk: t[5], fgm: t[6], fga: t[7], pf: t[8] || 0, ftm: t[9] || 0, fta: t[10] || 0, tov: t[11] || 0 }); }
     });
     const setB = (o, bb, ba) => {
       o.owner = bb[3] >= 0 ? M.players[bb[3]] : null; o.state = NB[bb[4]] || 'loose'; o.fire = !!bb[6];

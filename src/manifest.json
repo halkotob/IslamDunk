@@ -89,6 +89,8 @@
     "sim/v86-play.js",
     "sim/v86-minis.js",
     "screens/menus-v85.js",
+    "sim/turnovers.js",
+    "sim/noor-powers.js",
     "boot.js"
   ]
 }

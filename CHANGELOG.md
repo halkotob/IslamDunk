@@ -1,5 +1,58 @@
 # Changelog
 
+## 8.6.1: Noor power-ups and defense measurement
+- **Noor power-ups.** A correct Noor answer now opens a choice of three effects, each named for a
+  virtue. Nothing is left to chance: the three shown are always the three you used least recently,
+  and each card says exactly what it does. A wrong answer or a timeout still gives nothing.
+  - **Noor** (Light): the original glow, unchanged (12 s, +15% shot, +20 dunk range).
+  - **Sabr** (Patience): the next 3 shots get a 25% wider green window. Ends after 3 shots or 30 s.
+  - **Himmah** (Determination): 15 s of further reach for loose balls and rebounds.
+  - **Quwwah** (Strength): turbo refills now, then refills twice as fast for 10 s.
+  - **Yaqazah** (Alertness): the next steal attempt within reach succeeds cleanly, with no foul. 20 s.
+  - **Ukhuwwah** (Brotherhood): your teammate gets the Noor glow for 12 s. Offered only when you have
+    a teammate without an active effect.
+  - One effect per player at a time; the Noor meter waits while one is active. Short games keep the
+    once-per-game limit.
+  - The active effect shows next to the player (icon + name + seconds or shots left) and on the
+    player card.
+  - CPU players pick by situation: Quwwah when low on turbo, Sabr as a shooter in the half court,
+    Yaqazah when the ball handler is close, otherwise Noor.
+  - Online: the host decides. The guest's pick travels with its trivia answer, effects ride in the
+    snapshot, and replays draw the right effect (packed into the player flag bits).
+  - Barakah Run powers are unchanged. With 'green', Sabr's total green window is capped at +40%;
+    Quwwah doubles whatever 'recharge' gives; Noor and 'fire' run side by side; 'shield' is untouched.
+  - Help text and the two Noor achievements now say "power-up".
+  - **Review:** `docs/review/game-text.csv` has a new **Review flag** column and a "Noor power-ups"
+    section at the top. The 37 flagged rows are the six names, meanings and descriptions, the HUD
+    text and the choice screen: please check the Islamic wording.
+- **Turnovers.** New TOV stat: a steal against you (from your hands or your pass picked off), a
+  shot-clock violation, a double dribble (the game has no separate travelling call) and an
+  out-of-bounds the offense caused. Shown in the in-game box score, the career box scores and the
+  career totals table (per game).
+- **Blocks: about half as many.** In seeded CPU games 18.1% of shots were blocked (9.5 a game).
+  The base and cap of both block rolls (jump shots and dunks) are lower now; every stat-vs-stat slope
+  is unchanged. Now 9.7% (5.4 a game). Steals and fouls are untouched.
+
+  | 8 seeded CPU games | FGA/game | Blocks/game | Blocked % | Steals/game | TOV/game | Fouls/game |
+  |---|---|---|---|---|---|---|
+  | 8.6.0 | 52.4 | 9.5 | 18.1% | 3.8 | – | 3.3 |
+  | 8.6.1 | 55.5 | 5.4 | 9.7% | 3.4 | 3.4 | 3.4 |
+
+  These are CPU-vs-CPU numbers only, so they're a starting point for the hand playtest, not a final
+  tune. Full tables in `docs/reports/defense-8.6.1.md`.
+- **cpu-parity re-baselined on purpose.** Seeded CPU games no longer match 8.6.0, because of the
+  situational CPU Noor picks and the block change (with CPU picks forced back to plain Noor, all 11
+  seeded games matched 8.6.0 exactly before the block change). New reference outcomes are in
+  `docs/reports/defense-8.6.1.md`.
+- **Tools:** `npm run defense:report` (`scripts/defense-report.mjs`): N seeded CPU games with FGA,
+  blocks, block %, steals, turnovers and fouls, per game and in total; `--page` compares any build.
+- **Tests:** new `noor` test (the choice, all six effects applying and expiring, a wrong answer,
+  replays, Barakah Run stacking, every turnover cause, the TOV column). `online-loop` now makes a Noor
+  pick on the host and on the guest. `mobile` checks the choice screen fits and that a tap picks.
+  The `defense` test's guard check now averages 5 seeded games instead of one: the block change
+  rerouted its single seeded game (86% → 64% between the handler and the rim), while over 10 seeds the
+  average was unchanged (88% before, 87% after).
+
 ## 8.6.0: transition, flair, and new mini games
 - **Fast breaks.** After a steal or a rebound, the CPU teammate leaks out and runs a lane, and the
   handler can hit him ahead. Passes ahead are quicker ("HIT AHEAD"), and a bucket off one is a

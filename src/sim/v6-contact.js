@@ -126,6 +126,9 @@ function chaseGeom(o, sh, h) {                                       // defender
   return ov > 120 && ((o.vx || 0) * ax + (o.vz || 0) * az) / (ov * A) > 0.3;
 }
 function humanIn(...ps) { return ps.some(q => q && q.human >= 0); }
+// v8.6.1: the base and cap of both block rolls are named so they can be tuned without touching the
+// stat-vs-stat slopes (defense, lane, height, swipe, chase-down; dunk skill for dunks). v8.6.0 values in comments.
+const BLOCK_TUNE = { jumpBase: -0.08, jumpCap: 0.30, dunkBase: -0.04, dunkCap: 0.30 };   // 8.6.0: 0.08 / 0.58 / 0.12 / 0.55 (blocks were ~18% of attempts)
 checkBlockJump = function (o) {
   if (ball.state !== 'shot' || !ball.shot || ball.shot.dunk || ball.shot.team === o.team || ball.shot.t > 0.45 || ball.shot.tried.has(o)) return;
   const R = o.swipe ? 42 : 30;
@@ -135,17 +138,17 @@ checkBlockJump = function (o) {
   const lane = sh ? clamp((dxz(sh, h) - dxz(o, h) + 20) / 100, 0, 1) : 0;
   const height = sh ? clamp((o.y - sh.y) / 140, -0.08, 0.12) : 0;
   const chase = o.swipe && (o.chaseOK || chaseGeom(o, sh, h));
-  let pr = 0.08 + o.st.def * 0.027 + lane * 0.16 + height + (o.swipe ? 0.05 : 0) + (chase ? 0.18 : 0);
+  let pr = BLOCK_TUNE.jumpBase + o.st.def * 0.027 + lane * 0.16 + height + (o.swipe ? 0.05 : 0) + (chase ? 0.18 : 0);
   if (o.swipe && sh && dxz(o, sh) < 22 && !chase && foulsOn() && chance(0.3)) {     // swiped through the body: shooting foul
     if (!ball.shot.foul) { ball.shot.foul = { by: o, pts: ball.shot.pts }; if (humanIn(o, sh)) popOnce(sh, 'contact', 'CONTACT', '#ffd76a'); }
     return;
   }
-  if (chance(clamp(pr, 0.05, 0.58))) { if (chase) pinBlock(o, sh, h); else blockBall(o, sh); }
+  if (chance(clamp(pr, 0.05, BLOCK_TUNE.jumpCap))) { if (chase) pinBlock(o, sh, h); else blockBall(o, sh); }
 };
 function dunkContest(o, p) {                                         // called from dunkUpdate for each airborne defender at the ball
   const h = p.act.hoop, chase = o.swipe && (o.chaseOK || chaseGeom(o, p, h));
-  let pr = 0.12 + o.st.def * 0.03 - p.st.dnk * 0.02 + (o.swipe ? 0.05 : 0) + (chase ? 0.2 : 0);
-  if (chance(clamp(pr, 0.03, 0.55))) { if (chase) pinBlock(o, p, h); else blockBall(o, p); return true; }
+  let pr = BLOCK_TUNE.dunkBase + o.st.def * 0.03 - p.st.dnk * 0.02 + (o.swipe ? 0.05 : 0) + (chase ? 0.2 : 0);
+  if (chance(clamp(pr, 0.03, BLOCK_TUNE.dunkCap))) { if (chase) pinBlock(o, p, h); else blockBall(o, p); return true; }
   if (foulsOn() && dxz(o, p) < 30 && chance(o.swipe ? 0.25 : 0.04)) p.act.foulBy = o;          // contact on the way up
   return false;
 }

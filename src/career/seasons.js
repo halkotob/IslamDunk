@@ -164,7 +164,7 @@ function drawBanners(g, X, Y) {
 }
 
 // ------------------------------------------------------------- box scores + stats book
-function boxRow(p) { const s = p.stats; return { n: p.def.name, pts: s.pts || 0, reb: s.reb || 0, ast: s.ast || 0, stl: s.stl || 0, blk: s.blk || 0, fgm: s.fgm || 0, fga: s.fga || 0, tpm: s.tpm || 0, tpa: s.tpa || 0, ftm: s.ftm || 0, fta: s.fta || 0, pf: s.pf || 0, tov: p.tov || 0 }; }
+function boxRow(p) { const s = p.stats; return { n: p.def.name, pts: s.pts || 0, reb: s.reb || 0, ast: s.ast || 0, stl: s.stl || 0, blk: s.blk || 0, fgm: s.fgm || 0, fga: s.fga || 0, tpm: s.tpm || 0, tpa: s.tpa || 0, ftm: s.ftm || 0, fta: s.fta || 0, pf: s.pf || 0, tov: s.tov || 0 }; }
 function captureBox() {
   const b = C.bracket;
   return { s: C.season || 1, st: M.careerStage, r: roundLabel(b), opp: M.teamDefs[1].name, us: M.teams[0].score, them: M.teams[1].score, w: M.winner === 0,
@@ -200,7 +200,7 @@ function careerBeatsOnly(lines) { const n = Game.lastBeatN || 0; return lines.sl
   const pb = BEATS.find(b => b.id === 'perfect_stage'); if (pb) pb.lines = [['tariq', 'Undefeated tournament. Every game, a win. A perfect sheet, masha’Allah.']];
 }
 function statLine(rows) {
-  const t = { gp: rows.length, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0 };
+  const t = { gp: rows.length, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0 };
   for (const r of rows) for (const k in t) if (k !== 'gp') t[k] += r[k] || 0;
   return t;
 }
@@ -264,11 +264,11 @@ function drawStats(g) {
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('← → season  •  ↑ ↓ game  •  Tab: career totals  •  Esc: back', W / 2, 504);
 }
 function drawCareerTable(g) {
-  const seasons = statSeasons(), cols = ['SEASON', 'GP', 'W–L', 'PPG', 'RPG', 'APG', 'SPG', 'BPG', 'FG%', '3P%', 'FT%', 'TITLES'];
-  const xs = [56, 150, 200, 270, 330, 390, 450, 510, 570, 640, 710, 780];
+  const seasons = statSeasons(), cols = ['SEASON', 'GP', 'W–L', 'PPG', 'RPG', 'APG', 'SPG', 'BPG', 'TOV', 'FG%', '3P%', 'FT%', 'TITLES'];
+  const xs = [56, 150, 200, 266, 322, 378, 434, 490, 546, 602, 668, 734, 800];
   g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; cols.forEach((c, i) => g.fillText(c, xs[i], 104));
   const rowOf = (label, games, titles) => { const r = games.map(x => x.a[0]), t = statLine(r), w = games.filter(x => x.w).length;
-    return [label, t.gp, w + '–' + (t.gp - w), avg(t.pts, t.gp), avg(t.reb, t.gp), avg(t.ast, t.gp), avg(t.stl, t.gp), avg(t.blk, t.gp), pct(t.fgm, t.fga), pct(t.tpm, t.tpa), pct(t.ftm, t.fta), titles]; };
+    return [label, t.gp, w + '–' + (t.gp - w), avg(t.pts, t.gp), avg(t.reb, t.gp), avg(t.ast, t.gp), avg(t.stl, t.gp), avg(t.blk, t.gp), avg(t.tov, t.gp), pct(t.fgm, t.fga), pct(t.tpm, t.tpa), pct(t.ftm, t.fta), titles]; };
   const rows = seasons.map(s => rowOf('Season ' + s, (C.games || []).filter(x => x.s === s), ((C.titles || []).filter(t => t.s === s).map(t => STAGES[t.st].name[0]).join(' ')) || '–'));
   rows.push(rowOf('Career', C.games || [], String((C.titles || []).length)));
   rows.forEach((r, k) => {
@@ -284,7 +284,7 @@ function drawBoxBook(g, x) {
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('BOX SCORE  •  SEASON ' + x.s + '  •  ' + STAGES[x.st].title.toUpperCase() + '  •  ' + x.r.toUpperCase(), W / 2, 50);
   g.fillStyle = x.w ? GOLD : '#ffb0b0'; g.font = `26px ${FONT}`; g.fillText('Al-Amanah ' + x.us + '  –  ' + x.them + ' ' + x.opp.replace('Masjid ', ''), W / 2, 86);
   if (x.venue) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(x.venue, W / 2, 106); }
-  const cols = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'FG', '3P', 'FT', 'TO', 'PF'], xs = [330, 390, 450, 510, 570, 630, 700, 770, 830, 880];
+  const cols = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'FG', '3P', 'FT', 'TOV', 'PF'], xs = [330, 390, 450, 510, 570, 630, 700, 770, 830, 880];
   const table = (y, title, rows) => {
     g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(title, 56, y);
     g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; cols.forEach((c, i) => { g.textAlign = 'center'; g.fillText(c, xs[i], y); });
@@ -367,7 +367,7 @@ function scoutCore(oppId) {
   const tot = opp.players.reduce((a, q) => { for (const k of ['sht', 'dnk', 'spd', 'def', 'stl']) a[k] = (a[k] || 0) + q.stats[k]; return a; }, {});
   const top = ['sht', 'dnk', 'spd', 'def', 'stl'].sort((a, c) => tot[c] - tot[a])[0];
   let tip = SCOUT_TIPS[top][Math.floor(R() * 2)];
-  const note = (ARCH_NOTE[arch] || '') + (star.huffath ? ' He\u2019s a hafiz, so expect a Noor boost at some point.' : '');
+  const note = (ARCH_NOTE[arch] || '') + (star.huffath ? ' He\u2019s a hafiz, so expect a Noor power-up at some point.' : '');
   if (oppId === 1) tip = 'Jalal loves his first move. Hold Defend, stay in front, and don\u2019t bite on his fakes.';
   const v = Game.cv, road = !!(v && v.v.host === 1 && v.v.kind !== 'arena');
   return { oppId, opp, record: sw + '\u2013' + sl, path: [], star, label, note, tip, extra: '', where: v ? v.name : '', home: !!(v && v.v.host === 0), road };

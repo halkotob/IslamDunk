@@ -690,14 +690,14 @@ function drawHUD(g) {
     g.fillStyle = p.human === 0 ? '#ff7a7a' : '#6ab8ff'; roundRect(g, x + 8, y + 8, 4, ch - 16, 2); g.fill();
     g.font = `12px ${FONT}`; g.textAlign = 'left'; g.fillStyle = '#fff'; g.fillText(fitText(g, p.def.name.toUpperCase(), 120), x + 20, y + 17);
     if (p.fire) { g.fillStyle = '#ff8a2a'; g.textAlign = 'right'; g.font = `10px ${FONT}`; g.fillText('ON FIRE', x + 214, y + 17); }
-    else if (p.boost > 0) { g.fillStyle = '#ffe38a'; g.textAlign = 'right'; g.font = `10px ${FONT}`; g.fillText('NOOR ACTIVE', x + 214, y + 17); }
+    else if (noorActive(p)) { g.fillStyle = noorCardCol(p); g.textAlign = 'right'; g.font = `10px ${FONT}`; g.fillText(fitText(g, noorCardLabel(p), 92), x + 214, y + 17); }   // v8.6.1: the active Noor effect
     else if ((p.fat || 0) > 0.7) { g.fillStyle = '#ffb08a'; g.textAlign = 'right'; g.font = `10px ${FONT}`; g.fillText('WINDED', x + 214, y + 17); }
     else { const badge=isMine(p)&&selectedRunBadge(); if(badge){g.fillStyle=badge.color;g.textAlign='right';g.font=`8px ${FONT}`;g.fillText(fitText(g,badge.name.toUpperCase(),72),x+214,y+17);} }
     g.fillStyle = '#9fb3c8'; g.font = `9px ${FONT}`; g.textAlign = 'left'; g.fillText('TURBO', x + 20, y + 32);
     const sprinting = p.cmd.turbo && Math.hypot(p.vx || 0, p.vz || 0) > 60 && p.turboOK && p.turboOK();
     if (sprinting) { g.save(); g.shadowColor = '#8fe3ff'; g.shadowBlur = 10; g.fillStyle = 'rgba(143,227,255,0.35)'; roundRect(g, x + 61, y + 22, 156, 14, 7); g.fill(); g.restore(); }   // v7: sprint glow
     meter(g, x + 64, y + 25, 150, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : sprinting ? '#bff0ff' : '#4fc3ff');   // red: winded, refilling
-    if (noor) { g.fillStyle = '#9fb3c8'; g.fillText('NOOR', x + 20, y + 45); meter(g, x + 64, y + 39, 150, 6, p.boost > 0 ? p.boost / 12 : p.hifz / 100, p.boost > 0 ? '#ffe38a' : '#57d68d'); }
+    if (noor) { g.fillStyle = '#9fb3c8'; g.fillText('NOOR', x + 20, y + 45); meter(g, x + 64, y + 39, 150, 6, noorCardFrac(p), noorCardCol(p)); }
     drawCompRow(g, p, x, y + ch - 16, y);
     g.globalAlpha = 1;
   }

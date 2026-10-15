@@ -132,7 +132,7 @@ function buildScout() {
   const arch = star.arch || archetypeOf(star.stats), label = ARCHETYPES[arch] ? ARCHETYPES[arch].label : 'ALL-AROUND';
   const tot = opp.players.reduce((a, p) => { for (const k of ['sht', 'dnk', 'spd', 'def', 'stl']) a[k] = (a[k] || 0) + p.stats[k]; return a; }, {});
   const top = ['sht', 'dnk', 'spd', 'def', 'stl'].sort((a, c) => tot[c] - tot[a])[0];
-  let tip = SCOUT_TIPS[top][Math.floor(R() * 2)], note = (ARCH_NOTE[arch] || '') + (star.huffath ? ' He’s a hafiz, so expect a Noor boost at some point.' : '');
+  let tip = SCOUT_TIPS[top][Math.floor(R() * 2)], note = (ARCH_NOTE[arch] || '') + (star.huffath ? ' He’s a hafiz, so expect a Noor power-up at some point.' : '');
   let extra = '';
   if (oppId === 1) {
     tip = 'Jalal loves his first move. Stay between him and the rim and don’t bite.';

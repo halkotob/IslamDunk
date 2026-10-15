@@ -24,6 +24,7 @@ npm run dev                 # http://localhost:5173 — live reload on every sav
 | `npm run build:electron` | Unpacked desktop app for this OS in `release/` (e.g. `release/linux-unpacked/islam-dunk`). |
 | `npm run dist:electron` | Desktop installers (Windows NSIS, macOS DMG, Linux AppImage), built on the matching OS. |
 | `npm test` | Builds the web version and runs the regression suite (below). |
+| `npm run defense:report` | Builds, then plays seeded CPU-vs-CPU games and prints field goal attempts, blocks (and % of attempts), steals, turnovers and fouls. `node scripts/defense-report.mjs --games 16 --page <file>` compares any build. |
 | `npm run test:electron` | Desktop playthrough test (needs a display; on headless Linux use `xvfb-run -a npm run test:electron`). |
 
 The tests use Playwright's Chromium. If it isn't installed on your machine: `npx playwright install chromium`.

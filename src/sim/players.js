@@ -13,7 +13,7 @@ class Player {
     this.hands = { n: { x: 0, y: 0, z: 0 }, f: { x: 0, y: 0, z: 0 } }; this.hipH = 44;
     this.cmd = { mx: 0, mz: 0, turbo: false, a: false, b: false, bHeld: false, bRel: false, x: false, s: false, passTo: null, alley: null, face: 0 };
     this.lastDir = { x: this.face, z: 0 }; this.celebrate = 0;
-    this.stats = { pts: 0, fgm: 0, fga: 0, tpm: 0, reb: 0, ast: 0, stl: 0, blk: 0, dnk: 0, pf: 0, ftm: 0, fta: 0 };
+    this.stats = { pts: 0, fgm: 0, fga: 0, tpm: 0, reb: 0, ast: 0, stl: 0, blk: 0, dnk: 0, pf: 0, ftm: 0, fta: 0, tov: 0 };
     this.hist = [];
     this.ai = new Brain(this);
   }

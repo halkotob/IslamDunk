@@ -21,10 +21,13 @@
 //                profile XP and unlocks, Barakah Run 2.0 (vow, map, the final), 3 on 3 beta
 //   career-intro creator (Start career) -> walk to Saleem outside the masjid -> up the path -> gym -> meet
 //                all five brothers -> hub; body builds sum to zero; CPU stages have 2/3/2 strength tiers
-//   online-loop  loopback transport: lobby, 7 game types (HORSE with the HAQ word, Around the World, King of the Court), back to lobby, direct (P2P) link + fallback
+//   online-loop  loopback transport: lobby, 7 game types (HORSE with the HAQ word, Around the World, King of the Court), back to lobby, direct (P2P) link + fallback,
+//                v8.6.1: a Noor power-up pick on the host and on the guest (host authoritative, effect mirrored)
 //   online-room  claude.ai room adapter (faked locally): lobby -> game -> lobby
 //   online-fb    Firebase adapter (fake SDK): lobby -> game -> lobby
-//   mobile       iPhone landscape/portrait layout, touch controls, no errors
+//   noor         v8.6.1 Noor power-ups: choice of 3 (least recently used), each of the 6 applies and expires,
+//                a wrong answer gives nothing, Barakah Run stacking; turnovers by cause and the TOV column
+//   mobile       iPhone landscape/portrait layout, touch controls, the Noor choice screen (fits; tap picks), no errors
 // Every test fails on any uncaught page error.
 import { chromium, devices } from 'playwright';
 import http from 'node:http';
@@ -287,17 +290,22 @@ T['minis'] = async ({ browser, base }) => {
 T['defense'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'defense');
   const r = await p.evaluate(() => {
-    window.__seed(4242);                                              // deterministic: the dunk and inbound numbers are odds
     const out = {}; SETTINGS.difficulty = 'medium';
-    // hold DEFEND: you lock onto the ball, stay between him and the rim, and keep pace
-    newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 600 } });
-    for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
-    const me = M.players.find(q => q.human === 0); let held = 0, onBall = 0, between = 0, dist = 0, near = 0;
-    M.cmdHook = q => { if (q !== me) return false; zeroCmd(q.cmd); if (ball.owner && ball.owner.team !== me.team) q.cmd.xHeld = true; else if (ball.owner === me) q.cmd.a = true; return true; };
-    for (let i = 0; i < 60 * 90; i++) { updateMatch(STEP); const D = me.v8; if (!D || !D.held || !D.man) continue; held++;
-      if (D.man === ball.owner && M.phase === 'live' && !M.bc && !transActive(ball.owner.team)) { onBall++; const h = defendHoop(me.team); if (dxz(me, h) < dxz(D.man, h)) between++; if (dxz(D.man, h) < 450) { dist += dxz(me, D.man); near++; } } }
-    M.cmdHook = null;
-    out.guard = { held, onBall, between: +(between / Math.max(1, onBall)).toFixed(2), dist: Math.round(dist / Math.max(1, near)) };
+    // hold DEFEND: you lock onto the ball, stay between him and the rim, and keep pace. v8.6.1: averaged over
+    // 5 seeded 90-second games (one game is a single trajectory; any balance change reroutes it)
+    const G = { held: 0, onBall: 0, between: 0, dist: 0, near: 0 }, SEEDS = [4242, 11, 22, 33, 44];
+    for (const sd of SEEDS) {
+      window.__seed(sd);
+      newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 600 } });
+      for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
+      const me = M.players.find(q => q.human === 0);
+      M.cmdHook = q => { if (q !== me) return false; zeroCmd(q.cmd); if (ball.owner && ball.owner.team !== me.team) q.cmd.xHeld = true; else if (ball.owner === me) q.cmd.a = true; return true; };
+      for (let i = 0; i < 60 * 90; i++) { updateMatch(STEP); const D = me.v8; if (!D || !D.held || !D.man) continue; G.held++;
+        if (D.man === ball.owner && M.phase === 'live' && !M.bc && !transActive(ball.owner.team)) { G.onBall++; const h = defendHoop(me.team); if (dxz(me, h) < dxz(D.man, h)) G.between++; if (dxz(D.man, h) < 450) { G.dist += dxz(me, D.man); G.near++; } } }
+      M.cmdHook = null;
+    }
+    out.guard = { held: Math.round(G.held / SEEDS.length), onBall: Math.round(G.onBall / SEEDS.length), between: +(G.between / Math.max(1, G.onBall)).toFixed(2), dist: Math.round(G.dist / Math.max(1, G.near)), seeds: SEEDS.length };
+    window.__seed(4242);                                              // deterministic: the dunk and inbound numbers are odds
     // contested dunks: open take-offs go in, a set defender at the rim makes it a coin flip at best
     const dunks = setD => { let made = 0, n = 0;
       for (let k = 0; k < 120; k++) {
@@ -612,7 +620,104 @@ T['career-intro'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(checks), 'start: ' + JSON.stringify(s0), 'greeted by ' + greeted, 'gym: ' + JSON.stringify(s1), 'met: ' + JSON.stringify(s2), 'end: ' + JSON.stringify(end), ...errs] };
 };
 
-async function onlineFlow(browser, base, { query = '', room = false, games = ['vs'], dropP2P = false, custom = false }) {
+// v8.6.1: Noor power-ups (choice of 3, each of the 6 applies and expires, wrong answer gives nothing,
+// least-recently-used rotation, Barakah Run stacking) and turnovers (TOV column, each counted cause)
+T['noor'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'noor');
+  const r = await p.evaluate(() => {
+    const out = {};
+    const setup = () => {
+      newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 600 } }); Game.screen = 'play'; M.introT = 0;
+      for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
+      M.phase = 'live'; M.clock = 500;
+      M.cmdHook = q => { zeroCmd(q.cmd); return true; };            // nobody moves: rules only
+      const me = M.players[0], h = attackHoop(0); place(me, h.x + h.dir * 250, h.z); me.state = 'free';
+      for (const q of M.players) if (q !== me) place(q, q.team === 0 ? 120 : COURT.L - 120, q.slot ? 640 : 60);
+      return me;
+    };
+    const steps = s => { for (let i = 0; i < Math.round(s * 60); i++) { M.shotClock = 24; updateMatch(STEP); } };
+    const correct = me => { openTrivia(me); answerTrivia(Game.trivia.order.indexOf(0)); for (let i = 0; i < 130 && !(Game.trivia && Game.trivia.pick); i++) triviaUpdate(1 / 60); return Game.trivia && Game.trivia.pick; };
+    // (a) a correct answer opens a 3-effect choice; the next one shows the 3 least recently used
+    let me = setup();
+    const pk = correct(me);
+    out.choice = pk ? pk.opts.join(',') : null;
+    noorChoose(Game.trivia, 1);                                          // sabr
+    out.picked = noorFxOf(me);
+    me.nfx = null; const pk2 = correct(me); out.next = pk2 ? pk2.opts.join(',') : null; noorChoose(Game.trivia, 0); me.nfx = null; me.boost = 0;
+    // each of the 6: applies, then expires
+    const fx = {};
+    me = setup(); const w0 = shotWindow(me);
+    applyNoorFx(me, 'noor'); fx.noor = { on: me.boost > 0, glow12: me.boost === 12 }; steps(12.2); fx.noor.off = !noorActive(me);
+    me = setup(); applyNoorFx(me, 'sabr'); fx.sabr = { on: noorFxOf(me) === 'sabr', wider: +(shotWindow(me) / w0).toFixed(3) };
+    for (let k = 0; k < 3; k++) { giveBall(me, 'inbound'); me.state = 'shoot'; me.st_t = apexT(me); releaseShot(me); ball.owner = null; ball.state = 'loose'; ball.shot = null; me.state = 'free'; }
+    steps(0.05); fx.sabr.offAfter3Shots = !noorActive(me);
+    me = setup(); applyNoorFx(me, 'sabr'); steps(30.2); fx.sabr.offAfter30s = !noorActive(me);
+    const grabAt = (on) => {                                              // a loose ball just beyond normal reach
+      me = setup(); if (on) applyNoorFx(me, 'himmah');
+      const d = 26 + (st7(me, 'hus') - 5) * 1.2 + 6;
+      Object.assign(ball, { owner: null, state: 'loose', shot: null, pass: null, grabLock: 0, x: me.x + d, y: 50, z: me.z, vx: 0, vy: 0, vz: 0 });
+      checkGrab(); return ball.owner === me;
+    };
+    fx.himmah = { reachesWith: grabAt(true), reachesWithout: grabAt(false) };
+    me = setup(); applyNoorFx(me, 'himmah'); steps(15.2); fx.himmah.off = !noorActive(me);
+    const regen = on => { me = setup(); if (on) applyNoorFx(me, 'quwwah'); const full = me.turbo; me.turbo = 20; me.winded = false; me._qt = 20; steps(1); return { full, gain: me.turbo - 20 }; };
+    const q1 = regen(true), q0 = regen(false);
+    fx.quwwah = { refillsNow: q1.full === 100, regenRatio: +(q1.gain / Math.max(0.01, q0.gain)).toFixed(2) };
+    me = setup(); applyNoorFx(me, 'quwwah'); steps(10.2); fx.quwwah.off = !noorActive(me);
+    me = setup(); applyNoorFx(me, 'yaqazah'); const opp = me.opps[0]; giveBall(opp, 'inbound'); place(opp, me.x + 40, me.z); opp.state = 'free'; me.cd.steal = 0;
+    const pf0 = M.players.reduce((t, q) => t + (q.stats.pf || 0), 0);
+    trySteal(me);
+    fx.yaqazah = { clean: ball.owner === me, noFoul: M.players.reduce((t, q) => t + (q.stats.pf || 0), 0) === pf0 && M.phase === 'live', used: !noorActive(me), oppTov: opp.stats.tov };
+    me = setup(); applyNoorFx(me, 'yaqazah'); steps(20.2); fx.yaqazah.off = !noorActive(me);
+    me = setup(); applyNoorFx(me, 'ukhuwwah'); fx.ukhuwwah = { mateGlows: me.mate.boost === 12, pickerFree: !noorActive(me) }; steps(12.2); fx.ukhuwwah.off = !noorActive(me.mate);
+    // one effect at a time: the meter waits
+    me = setup(); me.def.huffath = true; applyNoorFx(me, 'himmah'); addHifz(me, 50); fx.meterWaits = me.hifz === 0;
+    out.fx = fx;
+    // replays: the effect travels in the frame's flag bits (fire/boost bits unchanged)
+    me = setup(); applyNoorFx(me, 'himmah'); me.fire = true; const fr = Replay.frame(); me.nfx = null; me.fire = false;
+    Replay.active = { frames: [fr], t: 0, dur: 1 }; const undo = Replay.apply(fr);
+    out.replay = { fx: noorFxOf(me), fire: me.fire }; undo(); Replay.active = null; out.replay.after = noorFxOf(me);
+    // (b) a wrong answer gives nothing
+    me = setup(); openTrivia(me); answerTrivia((Game.trivia.order.indexOf(0) + 1) % 4); for (let i = 0; i < 130; i++) if (Game.trivia) triviaUpdate(1 / 60);
+    out.wrong = { closed: !Game.trivia, nothing: !noorActive(me) && me.boost === 0 };
+    // Barakah Run: the effects stack sensibly with green, recharge, fire and shield
+    me = setup(); const base0 = shotWindow(me);
+    Run.active = true; M.barakah = true; Run.upgrades = { green: 3, recharge: 3, fire: 3, shield: 1 }; Run.shieldUsed = false;
+    const wGreen = shotWindow(me); applyNoorFx(me, 'sabr'); const wBoth = shotWindow(me);
+    const bq = (on) => { me.nfx = null; if (on) applyNoorFx(me, 'quwwah'); me.turbo = 20; me._qt = 20; steps(1); return me.turbo - 20; };
+    const gq = bq(true), gr = bq(false);
+    me.nfx = null; me.fire = true; me.fireT = 5; applyNoorFx(me, 'noor'); steps(1);
+    out.run = { green: +(wGreen / base0).toFixed(3), greenPlusSabr: +(wBoth / base0).toFixed(3), quwwahVsRecharge: +(gq / Math.max(0.01, gr)).toFixed(2), turboCapped: me.turbo <= 100, fireAndNoor: me.fire && me.boost > 0, shieldKept: !Run.shieldUsed };
+    Run.active = false; M.barakah = false; Run.upgrades = {};
+    // (d) turnovers: each cause counted, and the TOV column in the box scores
+    me = setup(); const o = me.opps[0], tv = {};
+    giveBall(o, 'inbound'); place(o, me.x + 40, me.z); giveBall(me, 'steal'); tv.steal = o.stats.tov;
+    giveBall(o, 'inbound'); M.possTeam = o.team; shotClockViolation(); tv.shotClock = o.stats.tov - tv.steal;
+    M.phase = 'live'; giveBall(me, 'inbound'); me.pick = { x: me.x, z: me.z, t: M.time }; doubleDribble(me); tv.doubleDribble = me.stats.tov;
+    M.phase = 'live'; M.sideOut = null; ball.owner = null; Object.assign(ball, { state: 'loose', x: -300, y: 20, z: 300, shot: null, pass: null, lastTouch: me }); M.possTeam = me.team; watchdog(0.7); tv.outOfBounds = me.stats.tov - tv.doubleDribble;
+    const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540; const g = cv.getContext('2d'), seen = []; const ft = g.fillText.bind(g); g.fillText = (t, ...a) => { seen.push(String(t)); return ft(t, ...a); };
+    drawBoxScore(g, 150); tv.boxHasTOV = seen.includes('TOV'); tv.boxRowTov = boxRow(me).tov === me.stats.tov;
+    out.tov = tv;
+    M.cmdHook = null;
+    return out;
+  });
+  await ctx.close();
+  const f = r.fx;
+  const ok = r.choice === 'noor,sabr,quwwah' && r.picked === 'sabr' && r.next === 'noor,quwwah,himmah'
+    && f.noor.on && f.noor.glow12 && f.noor.off
+    && f.sabr.on && f.sabr.wider > 1.2 && f.sabr.wider < 1.3 && f.sabr.offAfter3Shots && f.sabr.offAfter30s
+    && f.himmah.reachesWith && !f.himmah.reachesWithout && f.himmah.off
+    && f.quwwah.refillsNow && f.quwwah.regenRatio > 1.7 && f.quwwah.regenRatio < 2.3 && f.quwwah.off
+    && f.yaqazah.clean && f.yaqazah.noFoul && f.yaqazah.used && f.yaqazah.oppTov === 1 && f.yaqazah.off
+    && f.ukhuwwah.mateGlows && f.ukhuwwah.pickerFree && f.ukhuwwah.off && f.meterWaits
+    && r.wrong.closed && r.wrong.nothing && r.replay.fx === 'himmah' && r.replay.fire === true && r.replay.after === null
+    && r.run.green > 1.2 && r.run.greenPlusSabr <= 1.401 && r.run.greenPlusSabr > r.run.green && r.run.quwwahVsRecharge > 1.7 && r.run.turboCapped && r.run.fireAndNoor && r.run.shieldKept
+    && r.tov.steal === 1 && r.tov.shotClock === 1 && r.tov.doubleDribble === 1 && r.tov.outOfBounds === 1 && r.tov.boxHasTOV && r.tov.boxRowTov
+    && !errs.length;
+  return { ok, detail: [`choice ${r.choice} -> picked ${r.picked}; next choice ${r.next}`, 'effects ' + JSON.stringify(r.fx), 'wrong answer ' + JSON.stringify(r.wrong), 'replay ' + JSON.stringify(r.replay), 'Barakah Run ' + JSON.stringify(r.run), 'turnovers ' + JSON.stringify(r.tov), ...errs] };
+};
+
+async function onlineFlow(browser, base, { query = '', room = false, games = ['vs'], dropP2P = false, custom = false, noor = false }) {
   const errs = [], ctx = await newContext(browser, { room });
   const H = await open(ctx, base + '/' + query, errs, 'host'), G = await open(ctx, base + '/' + query, errs, 'guest');
   const log = [];
@@ -643,6 +748,26 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
     const cust = custom ? await G.evaluate(() => [M.teamDefs[0].name, M.players.map(q => q.def.name).join('/')]) : null;
     if (cust) log.push(`${game}: guest sees ${cust[0]} (${cust[1]})`);
     const good = st.screen === 'netplay' && st.players === hs.players && st.players >= 2 && hs.screen === 'play' && (game !== 'horse' || word === 'HAQ/6') && (!cust || (cust[0] === 'Masjid Test Host' && cust[1].includes('Zayd')));
+    if (noor && game === games[0]) {              // v8.6.1: a Noor pick on each side; the host stays authoritative
+      await H.evaluate(() => { M.introT = 0; const me = M.players.find(q => q.human === 0); openTrivia(me); answerTrivia(Game.trivia.order.indexOf(0)); Game.trivia.res = 1.7; });
+      await H.waitForFunction(() => Game.trivia && Game.trivia.pick, null, { timeout: 5000 }).catch(() => {});
+      const hostPick = await H.evaluate(() => { const tv = Game.trivia; if (!tv || !tv.pick) return null; const id = tv.pick.opts[1]; noorChoose(tv, 1); return id; });
+      await sleep(1200);
+      const hostSeen = await G.evaluate(() => { const q = M.players.find(x => x.human === 0); return q ? noorFxOf(q) : null; });
+      await H.evaluate(() => { const g = M.players.find(q => q.human === 1); openTrivia(g); });
+      await G.waitForFunction(() => Game.trivia && Game.trivia.remoteView, null, { timeout: 5000 }).catch(() => {});
+      await G.evaluate(() => Net.guestAnswer(Game.trivia.order.indexOf(0)));
+      await G.waitForFunction(() => Game.trivia && Game.trivia.pickView, null, { timeout: 8000 }).catch(() => {});
+      const guestOpts = await G.evaluate(() => Game.trivia && Game.trivia.pickView ? Game.trivia.pickView.opts.slice() : null);
+      await G.evaluate(() => Net.guestPick(2));
+      await H.waitForFunction(() => { const g = M.players.find(q => q.human === 1); return !Game.trivia && g && noorActive(g); }, null, { timeout: 8000 }).catch(() => {});
+      const onHost = await H.evaluate(() => noorFxOf(M.players.find(q => q.human === 1)));
+      await sleep(1200);
+      const onGuest = await G.evaluate(() => noorFxOf(M.players.find(q => q.human === 1)));
+      const good = hostPick === 'sabr' && hostSeen === 'sabr' && guestOpts && guestOpts.length === 3 && onHost === guestOpts[2] && onGuest === onHost;
+      log.push(`noor: host picked ${hostPick} (guest sees ${hostSeen}); guest offered ${guestOpts && guestOpts.join(',')}, picked card 3 -> host applied ${onHost}, guest sees ${onGuest}`);
+      ok = ok && good;
+    }
     if (dropP2P && game === games[0] && p2p) {
       await H.evaluate(() => P2P.close('test')); await sleep(2500);
       const after = await G.evaluate(() => ({ screen: Game.screen, gap: Math.round(nowMs() - Net.lastSnapAt) }));
@@ -658,7 +783,7 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
   await ctx.close();
   return { ok: ok && !errs.length, detail: log.concat(errs) };
 }
-T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'lightning', 'horse', 'atw', 'kotc', 'sevenup', 'custom'], dropP2P: true });
+T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'lightning', 'horse', 'atw', 'kotc', 'sevenup', 'custom'], dropP2P: true, noor: true });
 T['online-room'] = ({ browser, base }) => onlineFlow(browser, base, { room: true, games: ['vs', 'one'] });
 T['online-fb'] = ({ browser, base }) => onlineFlow(browser, base, { games: ['vs', 'co'] });
 T['online-custom'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=30&jit=5&room=c', games: ['vs', 'co', 'one'], custom: true });
@@ -670,7 +795,19 @@ T['mobile'] = async ({ browser, base }) => {
     await p.evaluate(() => { Input.touchMode = true; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; });
     await sleep(1200);
     const r = await p.evaluate(() => { const c = canvas.getBoundingClientRect(); return { fits: c.right <= innerWidth + 1 && c.bottom <= innerHeight + 1 && c.width > 100, touch: TouchUI.shown, rotateCard: getComputedStyle(document.getElementById('rotate')).display }; });
-    const good = r.fits && r.touch && !errs.length && (name.includes('portrait') ? r.rotateCard !== 'none' : r.rotateCard === 'none');
+    // v8.6.1: the Noor choice screen fits the screen; in landscape a real tap on a card picks it
+    await p.evaluate(() => { const me = M.players[0]; openTrivia(me); answerTrivia(Game.trivia.order.indexOf(0)); Game.trivia.res = 1.7; });
+    await p.waitForFunction(() => Game.trivia && Game.trivia.pick, null, { timeout: 5000 }).catch(() => {});
+    await sleep(300);
+    const cards = await p.evaluate(() => { const c = canvas.getBoundingClientRect(), sx = c.width / W, sy = c.height / H;
+      return Game.rects.filter(q => q.w === 200 && q.h === 252).map(q => ({ x: c.left + (q.x + q.w / 2) * sx, y: c.top + (q.y + q.h / 2) * sy, inside: q.x >= 0 && q.x + q.w <= W && q.y >= 0 && q.y + q.h <= H })); });
+    r.choiceCards = cards.length; r.choiceFits = cards.length === 3 && cards.every(q => q.inside);
+    if (!name.includes('portrait') && cards.length === 3) {
+      const want = await p.evaluate(() => Game.trivia.pick.opts[2]);
+      await p.touchscreen.tap(cards[2].x, cards[2].y); await sleep(300);
+      r.tapPicked = await p.evaluate(w => !Game.trivia && (noorFxOf(M.players[0]) === w || (w === 'ukhuwwah' && M.players[0].mate.boost > 0)), want);
+    }
+    const good = r.fits && r.touch && r.choiceFits && (name.includes('portrait') || r.tapPicked) && !errs.length && (name.includes('portrait') ? r.rotateCard !== 'none' : r.rotateCard === 'none');
     ok = ok && good; detail.push(`${name}: ${JSON.stringify(r)} ${errs.join('; ')}`);
     await ctx.close();
   }

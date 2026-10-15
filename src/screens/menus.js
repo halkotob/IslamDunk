@@ -208,15 +208,16 @@ function drawSelect(g) {
   uiButton(g, W / 2 - 95, 446, 190, 40, s.step === 1 && (s.mode === 'oco' || s.mode === 'ovs') ? 'Get join code' : s.step === 2 || (s.step === 1 && s.mode === '2p') ? 'Tip off' : 'Confirm', selectOK, true);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('\u2190 \u2192 to change, Enter to confirm, Esc to go back', W / 2, 510);
 }
+const BOX_COLS = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'DNK', 'FG', 'FT', 'TOV', 'PF'];
 function drawBoxScore(g, y0) {
   M.teams.forEach((T, ti) => {
     const y = y0 + ti * 112;
     g.fillStyle = 'rgba(8,16,24,0.85)'; roundRect(g, 150, y, 660, 100, 10); g.fill();
     drawCrest(g, 178, y + 24, 14, T.def);
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(T.def.name + '   ' + T.score, 200, y + 29);
-    const cols = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'DNK', 'FG', 'FT', 'PF'];
+    const cols = BOX_COLS;
     g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8';
-    cols.forEach((c, i) => { g.textAlign = 'center'; g.fillText(c, 450 + i * 43, y + 28); });
+    cols.forEach((c, i) => { g.textAlign = 'center'; g.fillText(c, 440 + i * 39, y + 28); });
     if (!M.fmt.first21) {
       const n = Math.max(M.fmt.periods, M.quarter);
       g.textAlign = 'left'; g.font = `12px ${FONT}`;
@@ -230,7 +231,7 @@ function drawBoxScore(g, y0) {
       const yy = y + 66 + k * 22; const s = p.stats;
       g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(p.def.name + (p.human >= 0 ? '  (P' + (p.human + 1) + ')' : ''), 178, yy);
       g.textAlign = 'center'; g.fillStyle = '#fff';
-      [s.pts, s.reb, s.ast, s.stl, s.blk, s.dnk, s.fgm + '/' + s.fga, (s.ftm || 0) + '/' + (s.fta || 0), s.pf || 0].forEach((v, i) => g.fillText(String(v), 450 + i * 43, yy));
+      [s.pts, s.reb, s.ast, s.stl, s.blk, s.dnk, s.fgm + '/' + s.fga, (s.ftm || 0) + '/' + (s.fta || 0), s.tov || 0, s.pf || 0].forEach((v, i) => g.fillText(String(v), 440 + i * 39, yy));
     });
   });
 }
@@ -275,7 +276,7 @@ function drawHowTo(g) {
     'Turbo + shoot near the rim to dunk. Longer dunks get bigger, slower and louder.',
     'Turbo + pass on defense is a shove. It works, but mind your adab.',
     'Without the ball: pass calls for it, shoot near the rim asks your teammate for an alley-oop.',
-    'Three baskets in a row and you catch fire. Some players fill a Noor meter; answer the question for a glowing boost.',
+    'Three baskets in a row and you catch fire. Some players fill a Noor meter. Answer its question correctly, then choose one of three Noor power-ups.',
     'Change direction while dribbling for a crossover. Hold turbo for a behind-the-back.',
     'Esc or P pauses. On a phone, use the on-screen stick and buttons.'
   ];
@@ -291,11 +292,11 @@ function wrapText(g, text, x, y, maxW, lh) {
 }
 function drawTrivia(g) {
   const tv = Game.trivia, [q, opts] = TRIVIA[tv.qi];
-  if (tv.remote && !tv.done) { dim(g, 0.5); banner(g, 'Noor challenge', 'Your friend is answering a question for a boost...'); return; }
+  if (tv.remote && !tv.done) { dim(g, 0.5); banner(g, 'Noor challenge', 'Your friend is answering a question for a Noor power-up...'); return; }
   dim(g, 0.72);
   g.fillStyle = 'rgba(12,40,44,0.97)'; roundRect(g, 150, 70, 660, 400, 16); g.fill(); g.strokeStyle = GOLD; g.lineWidth = 2; g.stroke();
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText('NOOR CHALLENGE', W / 2, 108);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(tv.p.def.name + ' can earn a 12-second boost', W / 2, 130);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(tv.p.def.name + ' can earn a Noor power-up (you pick 1 of 3)', W / 2, 130);
   g.fillStyle = '#fff'; g.font = `19px ${BODY}`; wrapText(g, q, W / 2, 170, 580, 26);
   if (C && C.learned && C.learned.includes(tv.qi)) { drawBook(g, 176, 88); g.textAlign = 'left'; g.fillStyle = '#9dffb0'; g.font = `12px ${BODY}`; g.fillText('Studied', 206, 104); g.textAlign = 'center'; }
   for (let i = 0; i < 4; i++) {
@@ -308,7 +309,7 @@ function drawTrivia(g) {
     addRect(200, y, 560, 40, () => { if (tv.remoteView) Net.guestAnswer(i); else { tv.sel = i; answerTrivia(i); } });
   }
   if (!tv.done) { g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(200, 440, 560, 6); g.fillStyle = GOLD; g.fillRect(200, 440, 560 * clamp(tv.t / 15, 0, 1), 6); }
-  else { g.textAlign = 'center'; g.fillStyle = tv.correct ? '#9dffb0' : '#ffb0b0'; g.font = `17px ${FONT}`; g.fillText(tv.correct ? 'Correct! Noor unlocked' : 'The answer: ' + opts[0], W / 2, 450); }
+  else { g.textAlign = 'center'; g.fillStyle = tv.correct ? '#9dffb0' : '#ffb0b0'; g.font = `17px ${FONT}`; g.fillText(tv.correct ? 'Correct! Choose your Noor next' : 'The answer: ' + opts[0], W / 2, 450); }
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Press 1 to 4, or move and press Enter/K', W / 2, 462 + 0);
 }
 function drawPause(g) {

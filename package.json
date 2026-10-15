@@ -1,7 +1,7 @@
 {
   "name": "islam-dunk",
   "productName": "Islam Dunk",
-  "version": "8.6.0",
+  "version": "8.6.1",
   "description": "Islam Dunk: 2v2 masjid-league arcade basketball",
   "private": true,
   "type": "module",
@@ -18,7 +18,8 @@
     "dist:electron": "vite build --mode electron && electron-builder --config electron/electron-builder.yml",
     "test": "vite build --mode web && node tests/run.mjs",
     "test:electron": "vite build --mode electron && node tests/electron.mjs",
-    "review:export": "node scripts/review-export.mjs"
+    "review:export": "node scripts/review-export.mjs",
+    "defense:report": "vite build --mode web && node scripts/defense-report.mjs"
   },
   "devDependencies": {
     "electron": "^38.0.0",
