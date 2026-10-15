@@ -181,26 +181,28 @@ function drawNoorPick(g, tv) {
   const mine = !tv.remote;                                          // host waiting on the guest sees a banner
   if (!mine) { dim(g, 0.5); banner(g, 'Noor challenge', 'Your friend answered correctly and is choosing a power-up...'); return; }
   dim(g, 0.72);
-  g.fillStyle = 'rgba(12,40,44,0.97)'; roundRect(g, 150, 70, 660, 400, 16); g.fill(); g.strokeStyle = GOLD; g.lineWidth = 2; g.stroke();
-  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText('CHOOSE YOUR NOOR', W / 2, 108);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Correct! ' + tv.p.def.name + ' picks one of these three', W / 2, 130);
+  const T = Input.touchMode, py = T ? 44 : 70, cy = T ? 116 : 150, ch = T ? 318 : 252;   // v8.6.2: taller cards on phones (text is larger there)
+  g.fillStyle = 'rgba(12,40,44,0.97)'; roundRect(g, 150, py, 660, T ? 464 : 400, 16); g.fill(); g.strokeStyle = GOLD; g.lineWidth = 2; g.stroke();
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText('CHOOSE YOUR NOOR', W / 2, py + 38);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'Correct! ' + tv.p.def.name + ' picks one of these three', 620), W / 2, py + 62);
   const sel = tv.remoteView ? (tv.psel || 0) : P.sel;
   P.opts.forEach((id, i) => {
     const F = NOOR_BY_ID[id]; if (!F) return;
-    const x = 168 + i * 212, y = 150, w = 200, h = 252, on = i === sel;
+    const x = 168 + i * 212, y = cy, w = 200, h = ch, on = i === sel, d = T ? -8 : 0;
     g.fillStyle = on ? 'rgba(232,195,90,0.18)' : 'rgba(255,255,255,0.06)'; roundRect(g, x, y, w, h, 12); g.fill();
     g.strokeStyle = on ? GOLD : 'rgba(255,255,255,0.18)'; g.lineWidth = on ? 3 : 1; g.stroke();
-    g.fillStyle = 'rgba(0,0,0,0.3)'; g.beginPath(); g.arc(x + w / 2, y + 46, 26, 0, Math.PI * 2); g.fill();
-    noorIcon(g, F.icon, x + w / 2, y + 46, 16, F.col);
-    g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `22px ${FONT}`; g.fillText(F.name, x + w / 2, y + 102);
-    g.fillStyle = F.col; g.font = `14px ${BODY}`; g.fillText(F.mean, x + w / 2, y + 122);
-    g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapText(g, F.desc, x + w / 2, y + 152, w - 24, 19);
+    g.fillStyle = 'rgba(0,0,0,0.3)'; g.beginPath(); g.arc(x + w / 2, y + 46 + d, 26, 0, Math.PI * 2); g.fill();
+    noorIcon(g, F.icon, x + w / 2, y + 46 + d, 16, F.col);
+    g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `22px ${FONT}`; g.fillText(F.name, x + w / 2, y + 102 + d);
+    g.fillStyle = F.col; g.font = `14px ${BODY}`; g.fillText(F.mean, x + w / 2, y + 124 + d);
+    g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapText(g, F.desc, x + w / 2, y + 152 + d * 1.5, w - 22, 19);
     g.fillStyle = on ? GOLD : '#9fb3c8'; g.font = `13px ${FONT}`; g.fillText(String(i + 1), x + w / 2, y + h - 12);
     addRect(x, y, w, h, () => { if (tv.remoteView) Net.guestPick(i); else { P.sel = i; noorChoose(tv, i); } });
   });
-  g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(200, 418, 560, 6); g.fillStyle = GOLD; g.fillRect(200, 418, 560 * clamp(P.t / NOOR_PICK_T, 0, 1), 6);
+  const by = cy + ch + 14;
+  g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(200, by, 560, 6); g.fillStyle = GOLD; g.fillRect(200, by, 560 * clamp(P.t / NOOR_PICK_T, 0, 1), 6);
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
-  g.fillText(tv.sent2 ? 'Sent. Waiting for the game to continue...' : 'Press 1 to 3, or ← → and Enter. Tap a card on touch.', W / 2, 450);
+  g.fillText(tv.sent2 ? 'Sent. Waiting for the game to continue...' : 'Press 1 to 3, or ← → and Enter. Tap a card on touch.', W / 2, by + (T ? 38 : 32));
 }
 {
   const _dt = drawTrivia;

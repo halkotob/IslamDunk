@@ -164,8 +164,9 @@ function nextGoal() {
     const ng = nextGoal(), x = 336, y = 210, w = 290;
     g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, x, y, w, 24, 12); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.5)'; g.lineWidth = 1; g.stroke();
     g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.fillText('NEXT', x + 10, y + 16);
-    g.fillStyle = IVORY; g.font = `11px ${BODY}`; let t = ng.txt + (ng.pay ? '  •  ' + ng.pay : ''); while (g.measureText(t).width > w - 56 && t.length > 8) t = t.slice(0, -2);
-    g.fillText(t, x + 46, y + 16);
+    const tx = x + 16 + g.measureText('NEXT').width;                      // v8.6.2: clears the raised phone font
+    g.fillStyle = IVORY; g.font = `11px ${BODY}`; let t = ng.txt + (ng.pay ? '  •  ' + ng.pay : ''); while (g.measureText(t).width > x + w - 10 - tx && t.length > 8) t = t.slice(0, -2);
+    g.fillText(t, tx, y + 16);
     addRect(x, y, w, 24, () => openGoals());
     // earned badges on your card
     const G = cg(), got = BADGES.filter(b => G.badges[b.id]);
@@ -181,20 +182,20 @@ function nextGoal() {
 // ---- goals & badges screen
 function openGoals() { Game.screen = 'cgoals'; }
 function drawGoals(g) {
-  dim(g, 0.86); const G = cg();
+  dim(g, 0.86); const G = cg(), TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone layout
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('Goals & badges', W / 2, 50);
   // rookie
   panel(g, 30, 74, 290, 210, false);
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('ROOKIE CHECKLIST', 48, 100);
-  ROOKIE.forEach(([id, t], i) => { const ok = G.rookie[id]; g.fillStyle = ok ? '#9dffb0' : IVORY; g.font = `13px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + t, 48, 128 + i * 26); });
-  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText('+40 BP each, +100 BP for all five', 48, 268);
+  ROOKIE.forEach(([id, t], i) => { const ok = G.rookie[id]; g.fillStyle = ok ? '#9dffb0' : IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, (ok ? '✓ ' : '• ') + t, 262), 48, 128 + i * 26); });
+  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(TT ? '+40 BP each, +100 for all' : '+40 BP each, +100 BP for all five', 48, 268);
   // week
   panel(g, 30, 296, 290, 220, false);
   g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('WEEK ' + G.week.n, 48, 322);
-  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText('A week is 3 career games. ' + (G.week.start + 3 - (C.gamesPlayed || 0)) + ' left this week.', 48, 340);
+  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; const left = G.week.start + 3 - (C.gamesPlayed || 0); g.fillText(TT ? left + ' game(s) left this week' : 'A week is 3 career games. ' + left + ' left this week.', 48, TT ? 344 : 340);
   G.week.goals.forEach((w, i) => {
-    const y = 366 + i * 44, d = WEEK_POOL.find(x => x.id === w.id);
-    g.fillStyle = w.done ? '#9dffb0' : IVORY; g.font = `13px ${BODY}`; g.fillText((w.done ? '✓ ' : '') + d.txt(w.need), 48, y);
+    const y = TT ? 374 + i * 42 : 366 + i * 44, d = WEEK_POOL.find(x => x.id === w.id);
+    g.fillStyle = w.done ? '#9dffb0' : IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, (w.done ? '✓ ' : '') + d.txt(w.need), 262), 48, y);
     g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, 48, y + 8, 250, 8, 4); g.fill(); g.fillStyle = w.done ? '#57e389' : GOLD; roundRect(g, 48, y + 8, 250 * w.prog / w.need, 8, 4); g.fill();
   });
   // badges
@@ -202,11 +203,14 @@ function drawGoals(g) {
   g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('BADGES  •  earned on the court and in the gym, never bought', 354, 100);
   BADGES.forEach((b, i) => {
     const y = 128 + i * 54, have = G.badges[b.id], pr = G.badgeProg[b.id] || 0;
-    g.fillStyle = have ? GOLD : 'rgba(255,255,255,0.1)'; roundRect(g, 354, y - 14, 120, 24, 12); g.fill();
-    g.fillStyle = have ? NIGHT : IVORY; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.fillText(b.name, 414, y + 2); g.textAlign = 'left';
-    g.fillStyle = IVORY; g.font = `12px ${BODY}`; g.fillText(have ? b.eff + ' (career games)' : b.how, 486, y);
-    if (!have) { g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, 486, y + 8, 300, 7, 3); g.fill(); g.fillStyle = GOLD; roundRect(g, 486, y + 8, 300 * pr / b.need, 7, 3); g.fill(); g.fillStyle = '#9fb3c8'; g.font = `10px ${BODY}`; g.fillText(pr + ' / ' + b.need, 794, y + 15); }
-    else { g.fillStyle = '#9dffb0'; g.font = `10px ${BODY}`; g.fillText('Earned', 486, y + 16); }
+    const pw = TT ? 140 : 120, tx = 354 + pw + 12;
+    g.fillStyle = have ? GOLD : 'rgba(255,255,255,0.1)'; roundRect(g, 354, y - 14, pw, 24, 12); g.fill();
+    g.fillStyle = have ? NIGHT : IVORY; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.fillText(TT ? fitText(g, b.name, pw - 10) : b.name, 354 + pw / 2, y + 2); g.textAlign = 'left';
+    g.fillStyle = IVORY; g.font = `12px ${BODY}`; const how = have ? b.eff + (TT ? '' : ' (career games)') : TT ? b.how.replace(/\s*\(.*\)\s*/, '').replace(' in career games', '') : b.how;
+    g.fillText(TT ? fitText(g, how, 912 - tx) : how, tx, TT ? y - 2 : y);
+    const by = TT ? y + 12 : y + 8;
+    if (!have) { g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, tx, by, 300 - (tx - 486), 7, 3); g.fill(); g.fillStyle = GOLD; roundRect(g, tx, by, (300 - (tx - 486)) * pr / b.need, 7, 3); g.fill(); g.fillStyle = '#9fb3c8'; g.font = `10px ${BODY}`; g.fillText(pr + ' / ' + b.need, 794, TT ? y + 22 : y + 15); }
+    else { g.fillStyle = '#9dffb0'; g.font = `10px ${BODY}`; g.fillText('Earned', tx, TT ? y + 22 : y + 16); }
   });
 }
 {

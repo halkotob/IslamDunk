@@ -212,8 +212,8 @@ function drawMusallaScreen(g) {
   }
   // header
   g.fillStyle = 'rgba(8,16,24,0.8)'; roundRect(g, 96, 8, 360, 32, 16); g.fill();
-  g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.textAlign = 'left'; g.fillText('The musalla', 112, 29);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(m.talk ? 'Esc to step away' : 'Walk over to someone to talk', 218, 29);
+  g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.textAlign = 'left'; g.fillText('The musalla', 112, 29); const hx = Math.max(218, 124 + g.measureText('The musalla').width);   // v8.6.2: clears the phone font
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; const ht = Input.touchMode ? (m.talk ? '' : 'Walk up to someone') : m.talk ? 'Esc to step away' : 'Walk over to someone to talk'; g.fillText(fitText(g, ht, 446 - hx), hx, 29);
   if (m.talk) {                                          // the existing dialogue panel
     const t = m.talk, opts = TALK[t.id].options;
     panel(g, 40, 396, 880, 136, true);

@@ -152,22 +152,22 @@ function drawScout(g) {
     const ox = Game.ox || 0, rw = W, k = (Math.sin(Game.t * 0.25) + 1) / 2;
     g.save(); g.translate(-ox, 0); W = rw + 2 * ox; composeVenue(g, Game.cv.L, lerp(-100, COURT.L + 100 - W, k), Game.t); W = rw; g.restore(); dim(g, 0.7);
   }
-  panel(g, W / 2 - 440, 22, 880, 490, true);
+  panel(g, W / 2 - 440, 22, 880, 490, true); const TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone spacing
   g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('SCOUTING REPORT  •  ' + S.title.toUpperCase() + '  •  ' + sc.round.toUpperCase(), W / 2 - 410, 58);
   drawCrest(g, W / 2 - 384, 96, 24, o);
   g.fillStyle = '#fff'; g.font = `24px ${FONT}`; g.fillText(o.name, W / 2 - 350, 94);
   g.fillStyle = '#9fb3c8'; g.font = `14px ${BODY}`; g.fillText((o.place || '') + (o.rival ? '  •  RIVAL' : '') + (sc.where ? '  •  ' + (sc.home ? 'Home: ' : sc.road ? 'Road game: ' : 'At ') + sc.where : ''), W / 2 - 350, 116);
   // record + path
   g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText('RECORD', W / 2 - 410, 158);
-  g.fillStyle = '#fff'; g.font = `26px ${FONT}`; g.fillText(sc.record, W / 2 - 410, 190);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('this season', W / 2 - 410, 208);
+  g.fillStyle = '#fff'; g.font = `26px ${FONT}`; g.fillText(sc.record, W / 2 - 410, TT ? 186 : 190);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('this season', W / 2 - 410, TT ? 212 : 208);
   sc.path.forEach((t, i) => { g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('• ' + t, W / 2 - 300, 180 + i * 22); });
   if (!sc.path.length) { g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('• First game of the tournament for both teams', W / 2 - 300, 180); }
   // notable player
   g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText('PLAYER TO WATCH', W / 2 - 410, 250);
   g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.fillText(sc.star.name + '  #' + sc.star.num, W / 2 - 410, 276);
-  g.fillStyle = '#8fe3ff'; g.font = `12px ${FONT}`; g.fillText(sc.label, W / 2 - 410, 296);
-  g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapTextLeft(g, sc.note, W / 2 - 410, 318, 470, 20);
+  g.fillStyle = '#8fe3ff'; g.font = `12px ${FONT}`; g.fillText(sc.label, W / 2 - 410, TT ? 299 : 296);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapTextLeft(g, sc.note, W / 2 - 410, TT ? 322 : 318, 470, TT ? 22 : 20);
   drawPortrait(g, W / 2 + 250, 356, sc.star, o, 1.55, null);
   // tip from Tariq
   g.fillStyle = 'rgba(255,255,255,0.06)'; roundRect(g, W / 2 - 420, 368, 840, 88, 10); g.fill();
@@ -216,7 +216,7 @@ function drawSummary(g) {
     L.top.forEach((p, i) => {
       const y = 316 + i * 46, box = [p.pts + ' pts', p.ast && p.ast + ' ast', p.reb && p.reb + ' reb', p.stl && p.stl + ' stl', p.blk && p.blk + ' blk'].filter(Boolean).join(', ');
       g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(box, x0, y);
-      g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText((p.won ? 'W ' : 'L ') + p.us + '–' + p.them + ' vs ' + p.opp + ', ' + p.round.toLowerCase(), x0, y + 18);
+      g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, (p.won ? 'W ' : 'L ') + p.us + '–' + p.them + ' vs ' + p.opp + ', ' + p.round.toLowerCase(), x1 - x0 - 16), x0, y + (Input.touchMode && g === ctx ? 22 : 18));   // v8.6.2: phone spacing
     });
   }
   // right column: achievements + moments
@@ -230,7 +230,8 @@ function drawSummary(g) {
   if (!mo.length) { g.fillStyle = '#9fb3c8'; g.font = `14px ${BODY}`; g.fillText('Still to come.', x1, 396); }
   mo.forEach((m, i) => { g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('• ' + m, x1, 396 + i * 22); });
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `14px ${FONT}`;
-  g.fillText(sm.from === 'post' && st < 3 && L.champ ? 'Enter to continue to the ' + STAGES[st + 1].name + ' stage' : 'Enter to close' + (list.length > 1 ? ', ← → other stages' : ''), W / 2, 500);
+  g.fillText(Input.touchMode && g === ctx ? (sm.from === 'post' && st < 3 && L.champ ? 'Tap to continue to the ' + STAGES[st + 1].name + ' stage' : 'Tap to close')
+    : sm.from === 'post' && st < 3 && L.champ ? 'Enter to continue to the ' + STAGES[st + 1].name + ' stage' : 'Enter to close' + (list.length > 1 ? ', ← → other stages' : ''), W / 2, 500);
   addRect(W / 2 - 300, 470, 600, 46, summaryClose);
 }
 

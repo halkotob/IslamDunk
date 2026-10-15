@@ -643,7 +643,7 @@ function meter(g, x, y, w, h, k, col) {
 // Scoreboard: team blocks (accent, crest, name, score) around a clock block,
 // shot clock pill below; turbo/hifz meters as rounded bars in compact cards.
 function drawHUD(g) {
-  if (M.mini) { drawMiniHUD(g); drawCalloutsOnly(g); if (Input.touchMode && !TouchUI.shown && !M.attract) drawTouch(g); return; }
+  if (M.mini) { drawMiniHUD(g); drawCalloutsOnly(g); if (Input.touchMode && !TouchUI.el && !M.attract) drawTouch(g); return; }   // canvas buttons only if the HTML controls never loaded
   // compact scoreboard in the top-left corner, clear of jumbotrons, scenery and wall signs (bigger on phones)
   const hk = baseZoom() > 1.6 ? 1.25 : 1; g.save(); g.scale(hk, hk);
   const [A, B] = M.teams, x0 = 10, top = 8, bw = 318, bh = 40;
@@ -681,7 +681,7 @@ function drawHUD(g) {
   let slot = 0;
   g.save(); g.translate(0, H); g.scale(hk, hk); g.translate(0, -H);
   for (const p of M.players) {
-    if (p.human < 0 || M.attract) continue;
+    if (p.human < 0 || M.attract || Input.touchMode) continue;   // v8.6.2: touch draws a compact strip instead (phone-pass.js)
     // card rows: name (+ status) / TURBO label + bar / NOOR label + bar: nothing shares a line
     const noor = p.def.huffath, ch = noor ? 66 : 54, tui = TouchUI.shown && !TouchUI.portrait;   // v6: + poise row
     const x = tui ? W / hk - 236 - 8 : 12 + slot * 236, y = tui ? H - H / hk + 50 + slot * (ch + 6) : H - ch - 8; slot++;   // touch landscape: cards top-right, clear of the stick (in the scaled HUD space)
@@ -704,7 +704,7 @@ function drawHUD(g) {
   g.restore();
   drawCalloutsOnly(g);
   if (M.phase === 'break' && (Game.screen === 'play' || Game.screen === 'netplay') && M.breakText !== 'HALFTIME') banner(g, M.breakText, '');
-  if (Input.touchMode && !TouchUI.shown && !M.attract) drawTouch(g);
+  if (Input.touchMode && !TouchUI.el && !M.attract) drawTouch(g);      // v8.6.2: only when the HTML controls never loaded (they showed as ghost buttons on overlays)
 }
 // is a player or the ball on screen behind this HUD box? (box in the scaled HUD space: y measured up from H by hk)
 function hudBehind(x, y, w, h, hk) {

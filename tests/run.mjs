@@ -28,12 +28,14 @@
 //   noor         v8.6.1 Noor power-ups: choice of 3 (least recently used), each of the 6 applies and expires,
 //                a wrong answer gives nothing, Barakah Run stacking; turnovers by cause and the TOV column
 //   mobile       iPhone landscape/portrait layout, touch controls, the Noor choice screen (fits; tap picks), no errors
+//                plus the v8.6.2 phone text audit (tests/phone-audit.mjs) at iPhone landscape and 667x300
 // Every test fails on any uncaught page error.
 import { chromium, devices } from 'playwright';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { FAKE_FIREBASE_APP, FAKE_FIREBASE_DB, FAKE_ROOM_INIT } from './fakes.js';
+import { PHONES, auditPhone, MIN_CSS_PX } from './phone-audit.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -496,7 +498,12 @@ T['phase6'] = async ({ browser, base }) => {
     out.short = depth(TM.filter(e => e.label !== 'Review')) <= 6;
     const qp = TM.find(e => e.label === 'Quick Play'); menuActivate('title', TM, TM.indexOf(qp)); menuActivate('title', TM, qp.sub.findIndex(e => e.label === 'Play a game'));
     out.nested = menuState('title').path.length === 2; closeSub('title'); closeSub('title'); out.closed = menuState('title').sub === -1;
-    out.settings = SET_GROUPS.map((g, i) => setGroupItems(i).length).every(n => n > 0 && n <= 6) && SET_GROUPS.reduce((a, g, i) => a + setGroupItems(i).length, 0) === SET_ITEMS.length - 1;
+    // v8.6.2: the three touch-button settings (Button size, Button opacity, Left-handed) show only on touch devices;
+    // on touch the Controls & camera group has 8 rows (the phone audit checks that screen fits)
+    const grp = () => SET_GROUPS.map((g, i) => setGroupItems(i).length), tm0 = Input.touchMode;
+    const desk = grp(); Input.touchMode = true; const touch = grp(); Input.touchMode = tm0;
+    out.settings = desk.every(n => n > 0 && n <= 6) && desk.reduce((a, n) => a + n, 0) === SET_ITEMS.filter(s => !s.touch).length - 1
+      && touch.every(n => n > 0 && n <= 8) && touch.reduce((a, n) => a + n, 0) === SET_ITEMS.length - 1;
     // career card: the career player shows up in Quick Play
     C = freshCareer(); C.name = 'Yusuf'; C.bracket = makeBracket(0); C.lv.spd = 7; saveCareer(); C = null;
     const you = teamPool().find(t => t.custom === 'career'); out.card = !!you && you.players[1].name === 'Yusuf' && you.players[1].stats.spd >= 7;
@@ -800,7 +807,7 @@ T['mobile'] = async ({ browser, base }) => {
     await p.waitForFunction(() => Game.trivia && Game.trivia.pick, null, { timeout: 5000 }).catch(() => {});
     await sleep(300);
     const cards = await p.evaluate(() => { const c = canvas.getBoundingClientRect(), sx = c.width / W, sy = c.height / H;
-      return Game.rects.filter(q => q.w === 200 && q.h === 252).map(q => ({ x: c.left + (q.x + q.w / 2) * sx, y: c.top + (q.y + q.h / 2) * sy, inside: q.x >= 0 && q.x + q.w <= W && q.y >= 0 && q.y + q.h <= H })); });
+      return Game.rects.filter(q => q.w === 200 && q.h >= 252).map(q => ({ x: c.left + (q.x + q.w / 2) * sx, y: c.top + (q.y + q.h / 2) * sy, inside: q.x >= 0 && q.x + q.w <= W && q.y >= 0 && q.y + q.h <= H })); });
     r.choiceCards = cards.length; r.choiceFits = cards.length === 3 && cards.every(q => q.inside);
     if (!name.includes('portrait') && cards.length === 3) {
       const want = await p.evaluate(() => Game.trivia.pick.opts[2]);
@@ -810,6 +817,18 @@ T['mobile'] = async ({ browser, base }) => {
     const good = r.fits && r.touch && r.choiceFits && (name.includes('portrait') || r.tapPicked) && !errs.length && (name.includes('portrait') ? r.rotateCard !== 'none' : r.rotateCard === 'none');
     ok = ok && good; detail.push(`${name}: ${JSON.stringify(r)} ${errs.join('; ')}`);
     await ctx.close();
+  }
+  // v8.6.2: phone text audit. Every screen (career save loaded, a match started) on iPhone landscape and 667x300:
+  // no text past the canvas edge, nothing under MIN_CSS_PX on screen, touch buttons clear of the scoreboard, no page errors.
+  // The in-match HUD is saved to docs/review/img for each size.
+  for (const [dn, dev] of PHONES) {
+    const tag = dn.startsWith('iPhone') ? 'iphone' : '667x300';
+    const { out, errs } = await auditPhone(browser, base, dev, { shots: s => s === 'match HUD' ? path.join(ROOT, 'docs/review/img', `phone-hud-${tag}.png`) : null });
+    const bad = out.flatMap(s => s.found);
+    ok = ok && !bad.length && !errs.length;
+    detail.push(`${dn}: ${out.length} screens, min text ${MIN_CSS_PX} CSS px: ${bad.length} problems, ${errs.length} page errors`);
+    for (const f of bad.slice(0, 40)) detail.push(`   ${f.screen}: ${f.kind === 'small' ? `text ${f.css}px "${f.text}"` : f.kind === 'overflow' ? `past the edge [${f.left}, ${f.right}] of ${f.width}: "${f.text}"` : f.text}`);
+    for (const e of errs) detail.push('   pageerror ' + e);
   }
   return { ok, detail };
 };

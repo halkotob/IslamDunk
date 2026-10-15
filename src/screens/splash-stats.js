@@ -17,7 +17,7 @@ function drawAbout(g) {
   g.textAlign = 'center'; g.fillStyle = IVORY; g.font = `14px ${BODY}`;
   g.fillText('Version ' + VERSION, W / 2, 300);
   g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText('Developed by ' + STUDIO.name, W / 2, 334);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Two-on-two masjid league basketball, made with care for the community.', W / 2, 364);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(Input.touchMode ? 'Masjid league basketball, made with care.' : 'Two-on-two masjid league basketball, made with care for the community.', W / 2, 364);
   g.fillText('Press Enter or Esc to go back', W / 2, 420);
   addRect(0, 0, W, H, () => { Game.screen = 'title'; });
 }

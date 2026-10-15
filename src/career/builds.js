@@ -55,6 +55,10 @@ drawCreator = function (g) {
   const m = myMods(), base = Object.assign({}, C.lv, { stl: Math.round((C.lv.def + C.lv.spd) / 2), hus: C.lv.hus || 4, clu: C.lv.clu || 4 });
   panel(g, 530, 316, 400, 150, false);
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(cr.isNew ? 'STARTING STATS' : 'YOUR STATS', 548, 338);
+  if (Input.touchMode && g === ctx) {                                 // v8.6.2: phones get the summary only (nine pip rows don't fit at a readable size)
+    g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(fitText(g, LOOK_TXT.height[lk.height] + ', ' + LOOK_TXT.build[lk.build].toLowerCase() + ', ' + PLAY_STYLE_TXT[lk.style || 0].toLowerCase(), 364), 548, 366);
+    g.fillStyle = '#cfd8e3'; wrapTextLeft(g, buildSummary(m), 548, 392, 366, 22);
+  } else {
   g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(LOOK_TXT.height[lk.height] + ', ' + LOOK_TXT.build[lk.build].toLowerCase() + ', ' + PLAY_STYLE_TXT[lk.style || 0].toLowerCase(), 668, 338);
   BUILD_ROWS.forEach(([k, label], i) => {
     const x = 548 + Math.floor(i / 5) * 196, y = 348 + (i % 5) * 16;
@@ -63,6 +67,7 @@ drawCreator = function (g) {
   });
   g.textAlign = 'left'; g.fillStyle = '#cfd8e3'; g.font = `11px ${BODY}`;
   wrapText(g, buildSummary(m), 548, 440, 366, 13);
+  }
   // the big button
   const di = CREATOR_ROWS.findIndex(r => r.key === 'done'), sel = cr.idx === di, pulse = 0.5 + 0.5 * Math.sin(Game.t * 4);
   const bx = 530, by = 474, bw = 400, bh = 56, hov = hovering(bx, by, bw, bh), pr = pressing(bx, by, bw, bh);
@@ -91,7 +96,7 @@ drawCreator = function (g) {
     const m = ourMatch(), opp = teamOf(C.stage, m.a === 0 ? m.b : m.a);
     if (opp.tier == null) return;
     const t = opp.tier; g.textAlign = 'left'; g.font = `11px ${FONT}`; g.fillStyle = t > 0 ? '#ff9a8a' : t < 0 ? '#9dffb0' : '#f2cf6b';
-    g.fillText('★'.repeat(t + 2) + '☆'.repeat(1 - t) + '  ' + TIER_TXT[t].toUpperCase(), 408, 186);
+    g.fillText('★'.repeat(t + 2) + '☆'.repeat(1 - t) + '  ' + TIER_TXT[t].toUpperCase(), 408, Input.touchMode && g === ctx ? 193 : 186);
   };
   const _tr = drawTrain;
   drawTrain = function (g) { _tr.apply(this, arguments); tagRows(g, W / 2 - 110 + 94, 132, 38, 22); };

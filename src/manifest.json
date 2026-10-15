@@ -91,6 +91,7 @@
     "screens/menus-v85.js",
     "sim/turnovers.js",
     "sim/noor-powers.js",
+    "screens/phone-pass.js",
     "boot.js"
   ]
 }

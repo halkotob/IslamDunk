@@ -165,7 +165,7 @@ function replayabilityScreen(g) {
     g.fillText('Best: '+replayabilityProgress.run.best+' wins solo · '+((Progress.load().barakahDuo||{}).best||0)+' as a duo · Team: '+TEAMS[Run.team].name,W/2,184);
     uiButton(g,W/2-215,207,80,32,'‹',()=>{Run.team=(Run.team+TEAMS.length-1)%TEAMS.length;},false);
     uiButton(g,W/2+135,207,80,32,'›',()=>{Run.team=(Run.team+1)%TEAMS.length;},false);
-    drawCrest(g,W/2,232,28,TEAMS[Run.team]);
+    drawCrest(g,W/2,226,22,TEAMS[Run.team]);   // v8.6.2: clear of the Begin run pill
     drawMenu(g,RUN_HOME,Game.idx,276,i=>runHomeSelect(i));
   } else if(screen==='runchoice') {
     g.fillStyle=IVORY;g.font='15px '+BODY;g.fillText(Run.wins+' wins · '+Run.points+' points · '+(Run.duo?(Run.turn?(Run.duo==='online'?'Your friend\u2019s pick: waiting for them':'Player 2\u2019s pick'):'Player 1\u2019s pick'):'Pick one')+'. All upgrades have a firm cap.',W/2,110);

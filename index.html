@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '8.6.1';
+const VERSION = '8.6.2';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -2764,7 +2764,7 @@ function meter(g, x, y, w, h, k, col) {
 // Scoreboard: team blocks (accent, crest, name, score) around a clock block,
 // shot clock pill below; turbo/hifz meters as rounded bars in compact cards.
 function drawHUD(g) {
-  if (M.mini) { drawMiniHUD(g); drawCalloutsOnly(g); if (Input.touchMode && !TouchUI.shown && !M.attract) drawTouch(g); return; }
+  if (M.mini) { drawMiniHUD(g); drawCalloutsOnly(g); if (Input.touchMode && !TouchUI.el && !M.attract) drawTouch(g); return; }   // canvas buttons only if the HTML controls never loaded
   // compact scoreboard in the top-left corner, clear of jumbotrons, scenery and wall signs (bigger on phones)
   const hk = baseZoom() > 1.6 ? 1.25 : 1; g.save(); g.scale(hk, hk);
   const [A, B] = M.teams, x0 = 10, top = 8, bw = 318, bh = 40;
@@ -2802,7 +2802,7 @@ function drawHUD(g) {
   let slot = 0;
   g.save(); g.translate(0, H); g.scale(hk, hk); g.translate(0, -H);
   for (const p of M.players) {
-    if (p.human < 0 || M.attract) continue;
+    if (p.human < 0 || M.attract || Input.touchMode) continue;   // v8.6.2: touch draws a compact strip instead (phone-pass.js)
     // card rows: name (+ status) / TURBO label + bar / NOOR label + bar: nothing shares a line
     const noor = p.def.huffath, ch = noor ? 66 : 54, tui = TouchUI.shown && !TouchUI.portrait;   // v6: + poise row
     const x = tui ? W / hk - 236 - 8 : 12 + slot * 236, y = tui ? H - H / hk + 50 + slot * (ch + 6) : H - ch - 8; slot++;   // touch landscape: cards top-right, clear of the stick (in the scaled HUD space)
@@ -2825,7 +2825,7 @@ function drawHUD(g) {
   g.restore();
   drawCalloutsOnly(g);
   if (M.phase === 'break' && (Game.screen === 'play' || Game.screen === 'netplay') && M.breakText !== 'HALFTIME') banner(g, M.breakText, '');
-  if (Input.touchMode && !TouchUI.shown && !M.attract) drawTouch(g);
+  if (Input.touchMode && !TouchUI.el && !M.attract) drawTouch(g);      // v8.6.2: only when the HTML controls never loaded (they showed as ghost buttons on overlays)
 }
 // is a player or the ball on screen behind this HUD box? (box in the scaled HUD space: y measured up from H by hk)
 function hudBehind(x, y, w, h, hk) {
@@ -3230,8 +3230,9 @@ function drawPortrait(g, x, y, def, T, s = 1.5, outfit = null, anim = null) {
   g.restore();
 }
 function statBar(g, x, y, label, v) {
+  const T = Input.touchMode && g === ctx, lx = T ? 52 : 34, sp = T ? 8 : 9;   // v8.6.2: room for the larger label on phones
   g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; g.textAlign = 'left'; g.fillText(label, x, y + 8);
-  for (let i = 0; i < 10; i++) { g.fillStyle = i < v ? GOLD : 'rgba(255,255,255,0.12)'; roundRect(g, x + 34 + i * 9, y, 7, 8, 2); g.fill(); }
+  for (let i = 0; i < 10; i++) { g.fillStyle = i < v ? GOLD : 'rgba(255,255,255,0.12)'; roundRect(g, x + lx + i * sp, y, sp - 2, 8, 2); g.fill(); }
 }
 // Team card: color header with crest, two player tiles with live previews
 // (captain idles, guard dribbles), stat bars and hafiz badges.
@@ -3257,9 +3258,11 @@ function drawTeamPanel(g, x, y, T, active, ctrl) {
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(d.name, px + 86, py + 24);
     g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('#' + d.num + (d.sheikh ? '  Captain' : '  Guard'), px + 86, py + 42);
     const badges = d.sheikh ? [d.huffath && ['HAFIZ', '#57d68d'], d.mufti && ['MUFTI', '#e8c35a']].filter(Boolean) : [];   // titles only for shyookh
-    badges.forEach(([t, col], k) => { const bx = px + 86 + k * 52; g.fillStyle = col; roundRect(g, bx, py + 52, 48, 18, 9); g.fill(); g.fillStyle = NIGHT; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.fillText(t, bx + 24, py + 65); });
+    const TT = Input.touchMode && g === ctx, bw = TT ? 64 : 48;              // v8.6.2: wider pills and fewer, taller stat rows on phones
+    badges.forEach(([t, col], k) => { const bx = px + 86 + k * (bw + 4); g.fillStyle = col; roundRect(g, bx, py + 50, bw, TT ? 22 : 18, 9); g.fill(); g.fillStyle = NIGHT; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.fillText(t, bx + bw / 2, py + (TT ? 67 : 65)); });
     const S = d.stats;
-    [['SPD', S.spd], ['SHT', S.sht], ['DNK', S.dnk], ['DEF', S.def], ['STL', S.stl], ['HUS', S.hus || hustleOf(S)], ['CLU', S.clu || clutchOf(S, d)]].forEach(([l, v], k) => statBar(g, px + 50, py + 146 + k * 12.6, l, v));
+    const SB = [['SPD', S.spd], ['SHT', S.sht], ['DNK', S.dnk], ['DEF', S.def], ['STL', S.stl], ['HUS', S.hus || hustleOf(S)], ['CLU', S.clu || clutchOf(S, d)]];
+    (TT ? SB.slice(0, 4) : SB).forEach(([l, v], k) => statBar(g, TT ? px + 10 : px + 50, py + 146 + k * (TT ? 22 : 12.6), l, v));
     if (d.arch && ARCHETYPES[d.arch]) { g.font = `9px ${FONT}`; const at = ARCHETYPES[d.arch].label, aw = g.measureText(at).width + 12; g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, px + 96 - aw / 2, py + 128, aw, 13, 6); g.fill(); g.fillStyle = '#f2cf6b'; g.textAlign = 'center'; g.fillText(at, px + 96, py + 138); }
   });
   g.restore();
@@ -3283,17 +3286,17 @@ function drawSelect(g) {
   uiButton(g, W / 2 - 95, 446, 190, 40, s.step === 1 && (s.mode === 'oco' || s.mode === 'ovs') ? 'Get join code' : s.step === 2 || (s.step === 1 && s.mode === '2p') ? 'Tip off' : 'Confirm', selectOK, true);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('\u2190 \u2192 to change, Enter to confirm, Esc to go back', W / 2, 510);
 }
-const BOX_COLS = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'DNK', 'FG', 'FT', 'TOV', 'PF'];
+const BOX_COLS = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'DNK', 'FG', 'FT', 'TOV', 'PF'], BOX_COLS_TOUCH = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'FG', 'TOV'];
 function drawBoxScore(g, y0) {
   M.teams.forEach((T, ti) => {
     const y = y0 + ti * 112;
     g.fillStyle = 'rgba(8,16,24,0.85)'; roundRect(g, 150, y, 660, 100, 10); g.fill();
     drawCrest(g, 178, y + 24, 14, T.def);
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(T.def.name + '   ' + T.score, 200, y + 29);
-    const cols = BOX_COLS;
+    const TT = Input.touchMode && g === ctx, cols = TT ? BOX_COLS_TOUCH : BOX_COLS, cx0 = TT ? 446 : 440, cdx = TT ? 54 : 39;   // v8.6.2: phones get 7 wider columns
     g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8';
-    cols.forEach((c, i) => { g.textAlign = 'center'; g.fillText(c, 440 + i * 39, y + 28); });
-    if (!M.fmt.first21) {
+    cols.forEach((c, i) => { g.textAlign = 'center'; g.fillText(c, cx0 + i * cdx, y + 28); });
+    if (!M.fmt.first21 && !TT) {
       const n = Math.max(M.fmt.periods, M.quarter);
       g.textAlign = 'left'; g.font = `12px ${FONT}`;
       for (let i = 0; i < n; i++) {
@@ -3303,10 +3306,10 @@ function drawBoxScore(g, y0) {
       }
     }
     T.players.forEach((p, k) => {
-      const yy = y + 66 + k * 22; const s = p.stats;
-      g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(p.def.name + (p.human >= 0 ? '  (P' + (p.human + 1) + ')' : ''), 178, yy);
+      const yy = y + (TT ? 60 : 66) + k * (TT ? 26 : 22); const s = p.stats;
+      g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(fitText(g, p.def.name + (p.human >= 0 ? '  (P' + (p.human + 1) + ')' : ''), cx0 - 200), 178, yy);
       g.textAlign = 'center'; g.fillStyle = '#fff';
-      [s.pts, s.reb, s.ast, s.stl, s.blk, s.dnk, s.fgm + '/' + s.fga, (s.ftm || 0) + '/' + (s.fta || 0), s.tov || 0, s.pf || 0].forEach((v, i) => g.fillText(String(v), 440 + i * 39, yy));
+      (TT ? [s.pts, s.reb, s.ast, s.stl, s.blk, s.fgm + '/' + s.fga, s.tov || 0] : [s.pts, s.reb, s.ast, s.stl, s.blk, s.dnk, s.fgm + '/' + s.fga, (s.ftm || 0) + '/' + (s.fta || 0), s.tov || 0, s.pf || 0]).forEach((v, i) => g.fillText(String(v), cx0 + i * cdx, yy));
     });
   });
 }
@@ -4772,7 +4775,10 @@ function drawGymHUD(g) {
   { const iy = Input.touchMode ? H - 40 : H - 88;                 // compact info pill, clear of the wall
     g.fillStyle = 'rgba(8,16,24,0.72)'; roundRect(g, 12, iy, 300, 28, 14); g.fill();
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `11px ${FONT}`; g.fillText('AL-AMANAH GYM', 24, iy + 18);
-    g.font = `11px ${BODY}`; g.fillStyle = '#f2cf6b'; g.fillText(C.bp + ' BP', 132, iy + 18); g.fillStyle = '#9dffb0'; g.fillText(C.hb + ' Halal Bucks', 196, iy + 18);
+    // v8.6.2: each item starts after the last one (the phone font is wider); phones say HB
+    let ix = Math.max(132, 36 + g.measureText('AL-AMANAH GYM').width);
+    g.font = `11px ${BODY}`; g.fillStyle = '#f2cf6b'; g.fillText(C.bp + ' BP', ix, iy + 18); ix = Math.max(196, ix + 14 + g.measureText(C.bp + ' BP').width);
+    g.fillStyle = '#9dffb0'; g.fillText(C.hb + (Input.touchMode ? ' HB' : ' Halal Bucks'), ix, iy + 18);
     if (C.prayBonus) { g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, 320, iy, 140, 28, 14); g.fill(); g.fillStyle = '#f2cf6b'; g.font = `10px ${FONT}`; g.fillText('Salah bonus ready', 334, iy + 18); } }
   const d = Gym.drill;
   if (d && d.mini) drawMiniHUD(g);
@@ -4794,7 +4800,8 @@ function drawGymHUD(g) {
   } else if (!Gym.walk && !Gym.fade) {
     // drills + musalla: bottom bar on desktop, a column at top-right on touch
     // (clear of the joystick and the action buttons)
-    const acts = [['Drills', openDrills], ['Enter the musalla (E)', enterMusalla], ['Sheikh\u2019s office (O)', enterOffice]];
+    const acts = Input.touchMode ? [['Drills', openDrills], ['Musalla', enterMusalla], ['Sheikh\u2019s office', enterOffice]]   // v8.6.2: no key hints on touch
+      : [['Drills', openDrills], ['Enter the musalla (E)', enterMusalla], ['Sheikh\u2019s office (O)', enterOffice]];
     acts.forEach(([name, fn], i) => {
       const touch = Input.touchMode, x = touch ? W - 216 : 12 + i * 224, y = touch ? 56 + i * 44 : H - 50, w = touch ? 206 : 214, h = touch ? 38 : 40;
       g.fillStyle = i === 0 ? 'rgba(44,110,143,0.95)' : 'rgba(30,90,74,0.92)'; roundRect(g, x, y, w, h, 10); g.fill();
@@ -4807,12 +4814,12 @@ function drawGymHUD(g) {
     if (dxz(me, PRAY_SPOT) < 70) {
       const [px, py] = P(me.x, 130, me.z);
       g.fillStyle = 'rgba(30,90,74,0.95)'; roundRect(g, px - 90, py - 26, 180, 26, 13); g.fill();
-      g.fillStyle = '#f2cf6b'; g.textAlign = 'center'; g.font = `12px ${FONT}`; g.fillText('Enter the musalla (E)', px, py - 8);
+      g.fillStyle = '#f2cf6b'; g.textAlign = 'center'; g.font = `12px ${FONT}`; g.fillText(Input.touchMode ? 'Enter the musalla' : 'Enter the musalla (E)', px, py - 8);
       addRect(px - 90, py - 26, 180, 26, enterMusalla);
     } else if (dxz(me, OFFICE_SPOT) < 60) {
       const [px, py] = P(me.x, 130, me.z);
       g.fillStyle = 'rgba(122,79,42,0.95)'; roundRect(g, px - 90, py - 26, 180, 26, 13); g.fill();
-      g.fillStyle = '#f2e6c8'; g.textAlign = 'center'; g.font = `12px ${FONT}`; g.fillText('Sheikh\u2019s office (O)', px, py - 8);
+      g.fillStyle = '#f2e6c8'; g.textAlign = 'center'; g.font = `12px ${FONT}`; g.fillText(Input.touchMode ? 'Sheikh\u2019s office' : 'Sheikh\u2019s office (O)', px, py - 8);
       addRect(px - 90, py - 26, 180, 26, enterOffice);
     }
   }
@@ -4820,7 +4827,7 @@ function drawGymHUD(g) {
     g.globalAlpha = clamp(Gym.toastT, 0, 1); g.fillStyle = 'rgba(8,16,24,0.85)'; roundRect(g, W / 2 - 300, 150, 600, 34, 17); g.fill();
     g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = `14px ${BODY}`; g.fillText(Gym.toast, W / 2, 172); g.globalAlpha = 1;
   }
-  if (Input.touchMode && !TouchUI.shown && !Gym.overlay && !Gym.result && !Gym.fade) drawTouch(g);
+  if (Input.touchMode && !TouchUI.el && !Gym.overlay && !Gym.result && !Gym.fade) drawTouch(g);
   if (Gym.overlay === 'adhan') drawAdhan(g);
   if (Gym.overlay === 'drills') drawDrillsMenu(g);
   if (Gym.fade) drawPrayerFade(g);
@@ -5211,15 +5218,15 @@ function wrapTextLeft(g, text, x, y, maxW, lh) {
   g.fillText(line, x, yy);
 }
 function drawHub(g) {
-  const S = STAGES[C.stage], b = C.bracket, T = amanahTeam();
+  const S = STAGES[C.stage], b = C.bracket, T = amanahTeam(), TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone layout
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Masjid Al-Amanah', 104, 36);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(S.title + ', Small division', 104, 58);
   // player card
   panel(g, 30, 84, 290, 440, false);
   drawPortrait(g, 110, 262, playerDef(), T, 1.7, 'thobe');
   g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.fillText(C.name || 'You', 170, 130);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('#' + C.look.num + '  Guard', 170, 150);
-  g.fillText('Record ' + C.wins + '\u2013' + C.losses, 170, 170);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('#' + C.look.num + '  Guard', 170, TT ? 154 : 150);
+  g.fillText('Record ' + C.wins + '\u2013' + C.losses, 170, TT ? 178 : 170);
   STAT_ROWS.forEach(([k, label], i) => { const y = 292 + i * 22; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(label, 46, y + 8); pips(g, 140, y, C.lv[k]); });
   if (C.prayBonus) { g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, 46, 432, 256, 26, 13); g.fill(); g.fillStyle = '#f2cf6b'; g.font = `12px ${FONT}`; g.fillText('Salah bonus ready for next game', 60, 450); }
   // next game
@@ -5231,33 +5238,34 @@ function drawHub(g) {
     const m = ourMatch(), opp = teamOf(C.stage, m.a === 0 ? m.b : m.a);
     g.fillText('NEXT: ' + roundLabel(b).toUpperCase(), 481, 108);
     drawCrest(g, 380, 150, 18, opp);
-    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(opp.name, 408, 148);
-    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(opp.place + (opp.rival ? '  (rival)' : ''), 408, 166);
+    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(fitText(g, opp.name, 210), 408, TT ? 140 : 148);
+    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, opp.place + (opp.rival ? '  (rival)' : ''), 210), 408, TT ? 164 : 166);
   }
   drawMenuStack(g, 'hub', HUB_MENU(), 262, 42);
   // currencies and trophies
   panel(g, 642, 84, 290, 440, false);
   g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('BARAKAH POINTS', 662, 116);
   g.fillStyle = '#f2cf6b'; g.font = `28px ${FONT}`; g.fillText(String(C.bp), 662, 148);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Spend on training. Earned in practice and games.', 662, 166);
+  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(TT ? 'Spend on training' : 'Spend on training. Earned in practice and games.', 662, TT ? 170 : 166);
   g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('HALAL BUCKS', 662, 204);
   g.fillStyle = '#9dffb0'; g.font = `28px ${FONT}`; g.fillText(String(C.hb), 662, 236);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Spend on masjid and gym projects.', 662, 254);
+  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(TT ? 'Spend on projects' : 'Spend on masjid and gym projects.', 662, TT ? 258 : 254);
   g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('TROPHIES', 662, 296);
   STAGES.forEach((st, i) => {
     const x = 690 + i * 66, won = C.trophies.includes(i);
     g.fillStyle = won ? GOLD : 'rgba(255,255,255,0.12)'; star8(g, x, 330, 18); g.fill();
-    g.textAlign = 'center'; g.fillStyle = won ? '#fff' : '#6d7a8c'; g.font = `12px ${BODY}`; g.fillText(st.name, x, 368);
+    g.textAlign = 'center'; g.fillStyle = won ? '#fff' : '#6d7a8c'; g.font = `12px ${BODY}`; g.fillText(TT && st.name.length > 6 ? st.name.slice(0, 3) + '.' : st.name, x, 368);
   });
   g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
-  g.fillText('Best free throws: ' + C.best.ft + '/10', 662, 410); g.fillText('Best three-point: ' + C.best.three + '/20', 662, 430);
-  g.fillText('Best cone run: ' + (C.best.cones ? C.best.cones + 's' : '\u2013'), 662, 450); g.fillText('1v1 wins vs Nasser: ' + C.best.v1, 662, 470);
+  const by = TT ? 24 : 20, b0 = TT ? 404 : 410;
+  g.fillText('Best free throws: ' + C.best.ft + '/10', 662, b0); g.fillText('Best three-point: ' + C.best.three + '/20', 662, b0 + by);
+  g.fillText('Best cone run: ' + (C.best.cones ? C.best.cones + 's' : '\u2013'), 662, b0 + 2 * by); g.fillText('1v1 wins vs Nasser: ' + C.best.v1, 662, b0 + 3 * by);
   drawHubCorner(g);
 }
 function drawTrain(g) {
   panel(g, W / 2 - 300, 50, 600, 440, true);
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Train', W / 2, 92);
-  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('You have ' + C.bp + ' Barakah Points. Each level costs more than the last.', W / 2, 118);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(Input.touchMode && g === ctx ? 'You have ' + C.bp + ' BP. Each level costs more.' : 'You have ' + C.bp + ' Barakah Points. Each level costs more than the last.', W / 2, 118);   // v8.6.2: phone fits the panel
   STAT_ROWS.forEach(([k, label], i) => {
     const y = 132 + i * 38, sel = Game.idx === i, l = C.lv[k] || 4, cost = statCost(l), can = l < 10 && C.bp >= cost;
     if (sel) { g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, W / 2 - 280, y, 560, 34, 10); g.fill(); }
@@ -5271,7 +5279,8 @@ function drawTrain(g) {
   const by = 132 + STAT_ROWS.length * 38 + 2, sel = Game.idx === STAT_ROWS.length;
   g.fillStyle = sel ? GOLD : 'rgba(255,255,255,0.12)'; roundRect(g, W / 2 - 80, by, 160, 36, 18); g.fill();
   g.textAlign = 'center'; g.fillStyle = sel ? NIGHT : '#fff'; g.font = `15px ${FONT}`; g.fillText('Back', W / 2, by + 24); addRect(W / 2 - 80, by, 160, 36, careerHub);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Stamina: slower turbo drain. Passing: faster, safer passes. Hustle: first to loose balls, draws charges. Clutch: steadier in the last minute of close games.', W / 2, 482);
+  // v8.6.2: below the panel (it sat on the Back button); phones drop it, it's longer than the screen
+  if (!(Input.touchMode && g === ctx)) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Stamina: slower turbo drain. Passing: faster, safer passes. Hustle: first to loose balls, draws charges. Clutch: steadier in the last minute of close games.', W / 2, 512); }
 }
 function prepCareerVenue() {
   const m = ourMatch(), oppId = m.a === 0 ? m.b : m.a, opp = teamOf(C.stage, oppId), T = amanahTeam();
@@ -5288,15 +5297,16 @@ function drawPregame(g) {
   }
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText(S.title, W / 2, 48);
   g.fillStyle = IVORY; g.font = `15px ${BODY}`; g.fillText(roundLabel(C.bracket) + ', Small division  \u2022  ' + Game.cv.name, W / 2, 72);
+  const TT = Input.touchMode && g === ctx;                              // v8.6.2: phone layout
   const side = (x, team, label) => {
     panel(g, x, 90, 380, 250, false);
     drawCrest(g, x + 36, 124, 20, team);
-    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `17px ${FONT}`; g.fillText(team.name, x + 66, 122);
-    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(label, x + 66, 140);
+    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `17px ${FONT}`; g.fillText(fitText(g, team.name, 300), x + 66, TT ? 118 : 122);
+    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, label, 300), x + 66, TT ? 144 : 140);
     team.players.forEach((d, i) => {
       const px = x + 110 + i * 160, lk = d.look, bh = lk ? lk.height : d.bh, bw = lk ? lk.build : d.bw;
-      drawPortrait(g, px, 312, d, team, 1.45, null); g.textAlign = 'center'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(d.name, px, 326);
-      if (bh != null) { g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(LOOK_TXT.height[bh] + ', ' + LOOK_TXT.build[bw == null ? 1 : bw].toLowerCase(), px, 339); }
+      drawPortrait(g, px, TT ? 302 : 312, d, team, TT ? 1.38 : 1.45, null); g.textAlign = 'center'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, d.name, 150), px, TT ? 328 : 326);
+      if (bh != null && !TT) { g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(LOOK_TXT.height[bh] + ', ' + LOOK_TXT.build[bw == null ? 1 : bw].toLowerCase(), px, 339); }
     });
   };
   side(40, T, 'Eastside');
@@ -5305,12 +5315,12 @@ function drawPregame(g) {
   panel(g, 40, 352, 880, 104, false);
   g.textAlign = 'left'; g.font = `14px ${FONT}`;
   if (C.prayBonus) { g.fillStyle = '#9dffb0'; g.fillText('Salah bonus: +10% shooting, +10% stamina this game', 62, 380); }
-  else { g.fillStyle = '#9fb3c8'; g.fillText('No salah bonus. Answer the adhan during practice to earn one.', 62, 380); }
+  else { g.fillStyle = '#9fb3c8'; g.fillText(TT ? 'No salah bonus. Answer the adhan to earn one.' : 'No salah bonus. Answer the adhan during practice to earn one.', 62, 380); }
   const lv = careerLevels(C.stage), shift = diffShift(), oT = opp.tier || 0;
   lv.opp = Math.max(SETTINGS.difficulty === 'veryeasy' ? -1 : 0, lv.opp + oT * 0.2);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
-  g.fillText('CPU difficulty: ' + diffLabel(lv.opp) + (shift ? ' (' + S.name + ' stage, one step ' + (shift < 0 ? 'easier' : 'harder') + ' because Difficulty is set to ' + diffName(SETTINGS.difficulty) + ')' : ' (' + S.name + ' stage)'), 62, 404);
-  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(castDef(Game.tipBy || 'rafiq').name + ': \u201C' + (Game.tip || STORY.tips[0]) + '\u201D', 62, 434);
+  g.fillText(TT ? 'CPU difficulty: ' + diffLabel(lv.opp) : 'CPU difficulty: ' + diffLabel(lv.opp) + (shift ? ' (' + S.name + ' stage, one step ' + (shift < 0 ? 'easier' : 'harder') + ' because Difficulty is set to ' + diffName(SETTINGS.difficulty) + ')' : ' (' + S.name + ' stage)'), 62, TT ? 408 : 404);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(fitText(g, castDef(Game.tipBy || 'rafiq').name + ': \u201C' + (Game.tip || STORY.tips[0]) + '\u201D', TT ? 620 : 9999), 62, TT ? 438 : 434);
   g.fillStyle = GOLD; roundRect(g, W / 2 - 90, 470, 180, 40, 20); g.fill();
   g.textAlign = 'center'; g.fillStyle = NIGHT; g.font = `17px ${FONT}`; g.fillText('Tip off', W / 2, 496);
   addRect(W / 2 - 90, 470, 180, 40, startCareerMatch);
@@ -5699,7 +5709,7 @@ function drawMasjidView(g) {
   g.fillStyle = 'rgba(8,16,24,0.8)'; roundRect(g, 96, 8, 380, 60, 12); g.fill();
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `20px ${FONT}`; g.fillText('Masjid Al-Amanah', 112, 34);
   const lvl = masjidLevel(), jumuah = 40 + lvl * 22;
-  g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('About ' + jumuah + ' musallis at Jumu\u2019ah, ' + (8 + lvl * 4) + ' families in the community', 112, 56);
+  g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(Input.touchMode && g === ctx ? jumuah + ' at Jumu\u2019ah, ' + (8 + lvl * 4) + ' families' : 'About ' + jumuah + ' musallis at Jumu\u2019ah, ' + (8 + lvl * 4) + ' families in the community', 112, 58);   // v8.6.2: phone fits the panel
   ['Outside', 'Musalla'].forEach((t, i) => {
     const x = W - 320 + i * 150, on = (i === 1) === inside;
     g.fillStyle = on ? GOLD : 'rgba(8,16,24,0.8)'; roundRect(g, x, 16, 140, 32, 16); g.fill();
@@ -9206,8 +9216,8 @@ function drawMusallaScreen(g) {
   }
   // header
   g.fillStyle = 'rgba(8,16,24,0.8)'; roundRect(g, 96, 8, 360, 32, 16); g.fill();
-  g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.textAlign = 'left'; g.fillText('The musalla', 112, 29);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(m.talk ? 'Esc to step away' : 'Walk over to someone to talk', 218, 29);
+  g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.textAlign = 'left'; g.fillText('The musalla', 112, 29); const hx = Math.max(218, 124 + g.measureText('The musalla').width);   // v8.6.2: clears the phone font
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; const ht = Input.touchMode ? (m.talk ? '' : 'Walk up to someone') : m.talk ? 'Esc to step away' : 'Walk over to someone to talk'; g.fillText(fitText(g, ht, 446 - hx), hx, 29);
   if (m.talk) {                                          // the existing dialogue panel
     const t = m.talk, opts = TALK[t.id].options;
     panel(g, 40, 396, 880, 136, true);
@@ -9374,12 +9384,12 @@ function achToast(a) { _achQ.push({ a, t: 0 }); SFX.best && SFX.best(); }
 function drawAchToast(g) {
   const q = _achQ[0]; if (!q) return;
   q.t += Game.rdt || 0.016; const life = 3.2; if (q.t > life) { _achQ.shift(); return; }
-  const cards = TouchUI.shown && !TouchUI.portrait && M.players ? M.players.filter(p => p.human >= 0).length : 0;   // touch landscape: player cards sit top-right
+  const cards = 0;                                     // v8.6.2: touch has no player cards up here any more
   const k = Math.min(1, q.t / 0.25, (life - q.t) / 0.35), w = 280, x = W - w - 14 + (1 - k) * 40, y = 56 + cards * 62;
   g.save(); g.globalAlpha = clamp(k, 0, 1);
   g.fillStyle = 'rgba(8,14,22,0.9)'; roundRect(g, x, y, w, 50, 12); g.fill(); g.strokeStyle = 'rgba(242,207,107,0.6)'; g.lineWidth = 1.5; g.stroke();
   drawAchIcon(g, q.a.icon, x + 26, y + 25, 15, true);
-  g.textAlign = 'left'; g.fillStyle = '#f2cf6b'; g.font = `10px ${FONT}`; g.fillText('ACHIEVEMENT UNLOCKED', x + 50, y + 20);
+  g.textAlign = 'left'; g.fillStyle = '#f2cf6b'; g.font = `10px ${FONT}`; g.fillText(fitText(g, Input.touchMode ? 'UNLOCKED' : 'ACHIEVEMENT UNLOCKED', w - 62), x + 50, y + 20);
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText(fitText(g, q.a.name, w - 62), x + 50, y + 38);
   g.restore();
 }
@@ -9404,16 +9414,17 @@ function drawAchIcon(g, icon, x, y, r, on) {
 // Achievements screen: two pages, locked/unlocked, progress for multi-step, hidden until earned
 function drawAchievements(g) {
   dim(g, 0.78);
-  const per = 16, pages = Math.ceil(ACHIEVEMENTS.length / per), pg = clamp(Game.achPage || 0, 0, pages - 1);
+  const T = Input.touchMode, per = T ? 10 : 16, pages = Math.ceil(ACHIEVEMENTS.length / per), pg = clamp(Game.achPage || 0, 0, pages - 1);   // v8.6.2: phones get taller rows
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `26px ${FONT}`; g.fillText('Achievements', W / 2, 46);
-  g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(Ach.count() + ' of ' + ACHIEVEMENTS.length + ' unlocked  \u2022  page ' + (pg + 1) + ' of ' + pages + '  (\u2190 \u2192)', W / 2, 68);
+  g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(Ach.count() + ' of ' + ACHIEVEMENTS.length + ' unlocked  \u2022  page ' + (pg + 1) + ' of ' + pages + (T ? '  \u2022  tap for more' : '  (\u2190 \u2192)'), W / 2, 68);
   ACHIEVEMENTS.slice(pg * per, pg * per + per).forEach((a, i) => {
-    const col = i % 2, row = Math.floor(i / 2), x = W / 2 - 440 + col * 450, y = 86 + row * 52, on = Ach.has(a.id), secret = a.hidden && !on;
-    g.fillStyle = on ? 'rgba(30,90,74,0.55)' : 'rgba(255,255,255,0.05)'; roundRect(g, x, y, 430, 46, 10); g.fill();
-    drawAchIcon(g, secret ? 'moon' : a.icon, x + 24, y + 23, 15, on);
-    g.textAlign = 'left'; g.fillStyle = on ? '#fff' : '#9fb3c8'; g.font = `14px ${FONT}`; g.fillText(secret ? 'Hidden achievement' : a.name, x + 48, y + 20);
-    g.fillStyle = on ? '#cfe8dc' : '#6d7a8c'; g.font = `12px ${BODY}`; g.fillText(secret ? 'Keep exploring\u2026' : a.desc, x + 48, y + 37);
-    if (a.goal && !on && !secret) {
+    const col = i % 2, row = Math.floor(i / 2), x = W / 2 - 440 + col * 450, y = 86 + row * (T ? 86 : 52), on = Ach.has(a.id), secret = a.hidden && !on;
+    g.fillStyle = on ? 'rgba(30,90,74,0.55)' : 'rgba(255,255,255,0.05)'; roundRect(g, x, y, 430, T ? 80 : 46, 10); g.fill();
+    drawAchIcon(g, secret ? 'moon' : a.icon, x + 24, y + (T ? 40 : 23), 15, on);
+    g.textAlign = 'left'; g.fillStyle = on ? '#fff' : '#9fb3c8'; g.font = `14px ${FONT}`; g.fillText(fitText(g, secret ? 'Hidden achievement' : a.name, T ? 270 : 360), x + 48, y + (T ? 30 : 20));
+    g.fillStyle = on ? '#cfe8dc' : '#6d7a8c'; g.font = `12px ${BODY}`; g.fillText(T ? fitText(g, secret ? 'Keep exploring\u2026' : a.desc, 370) : secret ? 'Keep exploring\u2026' : a.desc, x + 48, y + (T ? 62 : 37));
+    if (T) { if (on || (a.goal && !secret)) { g.textAlign = 'right'; g.fillStyle = on ? '#57e389' : '#9fb3c8'; g.font = `11px ${FONT}`; g.fillText(on ? '\u2713' : (Ach.load().prog[a.id] || 0) + ' / ' + a.goal, x + 418, y + 30); } }
+    else if (a.goal && !on && !secret) {
       const pr = Ach.load().prog[a.id] || 0; g.fillStyle = 'rgba(255,255,255,0.1)'; roundRect(g, x + 300, y + 28, 110, 6, 3); g.fill();
       g.fillStyle = '#f2cf6b'; roundRect(g, x + 300, y + 28, 110 * pr / a.goal, 6, 3); g.fill();
       g.textAlign = 'right'; g.fillStyle = '#9fb3c8'; g.font = `10px ${FONT}`; g.fillText(pr + ' / ' + a.goal, x + 410, y + 22);
@@ -9441,7 +9452,7 @@ function drawAbout(g) {
   g.textAlign = 'center'; g.fillStyle = IVORY; g.font = `14px ${BODY}`;
   g.fillText('Version ' + VERSION, W / 2, 300);
   g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText('Developed by ' + STUDIO.name, W / 2, 334);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Two-on-two masjid league basketball, made with care for the community.', W / 2, 364);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(Input.touchMode ? 'Masjid league basketball, made with care.' : 'Two-on-two masjid league basketball, made with care for the community.', W / 2, 364);
   g.fillText('Press Enter or Esc to go back', W / 2, 420);
   addRect(0, 0, W, H, () => { Game.screen = 'title'; });
 }
@@ -9884,22 +9895,22 @@ function drawScout(g) {
     const ox = Game.ox || 0, rw = W, k = (Math.sin(Game.t * 0.25) + 1) / 2;
     g.save(); g.translate(-ox, 0); W = rw + 2 * ox; composeVenue(g, Game.cv.L, lerp(-100, COURT.L + 100 - W, k), Game.t); W = rw; g.restore(); dim(g, 0.7);
   }
-  panel(g, W / 2 - 440, 22, 880, 490, true);
+  panel(g, W / 2 - 440, 22, 880, 490, true); const TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone spacing
   g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('SCOUTING REPORT  •  ' + S.title.toUpperCase() + '  •  ' + sc.round.toUpperCase(), W / 2 - 410, 58);
   drawCrest(g, W / 2 - 384, 96, 24, o);
   g.fillStyle = '#fff'; g.font = `24px ${FONT}`; g.fillText(o.name, W / 2 - 350, 94);
   g.fillStyle = '#9fb3c8'; g.font = `14px ${BODY}`; g.fillText((o.place || '') + (o.rival ? '  •  RIVAL' : '') + (sc.where ? '  •  ' + (sc.home ? 'Home: ' : sc.road ? 'Road game: ' : 'At ') + sc.where : ''), W / 2 - 350, 116);
   // record + path
   g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText('RECORD', W / 2 - 410, 158);
-  g.fillStyle = '#fff'; g.font = `26px ${FONT}`; g.fillText(sc.record, W / 2 - 410, 190);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('this season', W / 2 - 410, 208);
+  g.fillStyle = '#fff'; g.font = `26px ${FONT}`; g.fillText(sc.record, W / 2 - 410, TT ? 186 : 190);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('this season', W / 2 - 410, TT ? 212 : 208);
   sc.path.forEach((t, i) => { g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('• ' + t, W / 2 - 300, 180 + i * 22); });
   if (!sc.path.length) { g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('• First game of the tournament for both teams', W / 2 - 300, 180); }
   // notable player
   g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText('PLAYER TO WATCH', W / 2 - 410, 250);
   g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.fillText(sc.star.name + '  #' + sc.star.num, W / 2 - 410, 276);
-  g.fillStyle = '#8fe3ff'; g.font = `12px ${FONT}`; g.fillText(sc.label, W / 2 - 410, 296);
-  g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapTextLeft(g, sc.note, W / 2 - 410, 318, 470, 20);
+  g.fillStyle = '#8fe3ff'; g.font = `12px ${FONT}`; g.fillText(sc.label, W / 2 - 410, TT ? 299 : 296);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapTextLeft(g, sc.note, W / 2 - 410, TT ? 322 : 318, 470, TT ? 22 : 20);
   drawPortrait(g, W / 2 + 250, 356, sc.star, o, 1.55, null);
   // tip from Tariq
   g.fillStyle = 'rgba(255,255,255,0.06)'; roundRect(g, W / 2 - 420, 368, 840, 88, 10); g.fill();
@@ -9948,7 +9959,7 @@ function drawSummary(g) {
     L.top.forEach((p, i) => {
       const y = 316 + i * 46, box = [p.pts + ' pts', p.ast && p.ast + ' ast', p.reb && p.reb + ' reb', p.stl && p.stl + ' stl', p.blk && p.blk + ' blk'].filter(Boolean).join(', ');
       g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(box, x0, y);
-      g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText((p.won ? 'W ' : 'L ') + p.us + '–' + p.them + ' vs ' + p.opp + ', ' + p.round.toLowerCase(), x0, y + 18);
+      g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, (p.won ? 'W ' : 'L ') + p.us + '–' + p.them + ' vs ' + p.opp + ', ' + p.round.toLowerCase(), x1 - x0 - 16), x0, y + (Input.touchMode && g === ctx ? 22 : 18));   // v8.6.2: phone spacing
     });
   }
   // right column: achievements + moments
@@ -9962,7 +9973,8 @@ function drawSummary(g) {
   if (!mo.length) { g.fillStyle = '#9fb3c8'; g.font = `14px ${BODY}`; g.fillText('Still to come.', x1, 396); }
   mo.forEach((m, i) => { g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('• ' + m, x1, 396 + i * 22); });
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `14px ${FONT}`;
-  g.fillText(sm.from === 'post' && st < 3 && L.champ ? 'Enter to continue to the ' + STAGES[st + 1].name + ' stage' : 'Enter to close' + (list.length > 1 ? ', ← → other stages' : ''), W / 2, 500);
+  g.fillText(Input.touchMode && g === ctx ? (sm.from === 'post' && st < 3 && L.champ ? 'Tap to continue to the ' + STAGES[st + 1].name + ' stage' : 'Tap to close')
+    : sm.from === 'post' && st < 3 && L.champ ? 'Enter to continue to the ' + STAGES[st + 1].name + ' stage' : 'Enter to close' + (list.length > 1 ? ', ← → other stages' : ''), W / 2, 500);
   addRect(W / 2 - 300, 470, 600, 46, summaryClose);
 }
 
@@ -11248,19 +11260,26 @@ function drawNewSeason(g) {
   const so = C.seasonOver, titles = (C.titles || []).filter(t => t.s === (C.season || 1)).length;
   const why = so ? 'Season ' + so.s + ' ended: ' + so.round + ' loss to ' + so.opp + ' (' + so.us + '\u2013' + so.them + ') at the ' + STAGES[so.st].name + ' stage.'
     : C.done ? 'Season ' + (C.season || 1) + ' complete: World Ummah Cup champions, alhamdulillah.' : '';
-  if (why) { g.fillStyle = so ? '#ffb08a' : '#9dffb0'; g.font = `14px ${FONT}`; wrapText(g, why, W / 2, 136, 600, 20); }
+  let wy = 0; if (why) { g.fillStyle = so ? '#ffb08a' : '#9dffb0'; g.font = `14px ${FONT}`; wy = wrapText(g, why, W / 2, 136, 600, Input.touchMode && g === ctx ? 24 : 20); }
   const now = seasonBoost(), next = Math.min(0.6, 0.3 * (C.season || 1)), chem = chemOf(C.partner || 'saleem');
+  const TT = Input.touchMode && g === ctx;                            // v8.6.2: phones get the short version
+  if (TT) {
+    const y0 = why ? wy + 30 : 146;
+    g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Stats, upgrades, banners and chemistry carry over.', W / 2, y0);
+    g.fillStyle = '#9fb3c8'; g.fillText('Next: the Metro Masjid League' + (next > now ? ', CPU one level up.' : ' again.'), W / 2, y0 + 26);
+  } else {
   g.fillStyle = IVORY; g.font = `13px ${BODY}`;
   wrapText(g, 'Carries over: your stats (unless you renew), masjid and gym upgrades, ' + (titles ? titles + ' title banner' + (titles > 1 ? 's' : '') + ' from this season, ' : 'every title banner, ') + 'and chemistry with ' + castDef(C.partner || 'saleem').name + ' (' + chemTier(chem).split(':')[0].toLowerCase() + ').', W / 2, so || C.done ? 166 : 140, 600, 18);
   g.fillStyle = '#9fb3c8';
   wrapText(g, 'Next year: back to the Metro Masjid League with new opponents' + (next > now ? ', and every CPU opponent steps up a level' : ' (the CPU ladder is already at its toughest)') + '.', W / 2, so || C.done ? 210 : 184, 600, 18);
+  }
   const opts = [['Keep my stats', 'Carry every level into the new season.'], ['Renew my intention', 'Reset stats to 4 and refund ' + respecRefund() + ' BP to spend again.'], ['Not yet', 'Back to the hub.']];
   opts.forEach(([t, d], i) => {
-    const y = 246 + i * 70, on = Game.idx === i;
-    g.fillStyle = on ? 'rgba(232,195,90,0.92)' : 'rgba(255,255,255,0.08)'; roundRect(g, W / 2 - 260, y, 520, 60, 12); g.fill();
-    g.textAlign = 'left'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `17px ${FONT}`; g.fillText(t, W / 2 - 240, y + 26);
-    g.fillStyle = on ? '#3a2a0a' : '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(d, W / 2 - 240, y + 46);
-    addRect(W / 2 - 260, y, 520, 60, () => { Game.idx = i; if (i === 2) careerHub(); else startNewSeason(i === 1); });
+    const y = TT ? 238 + i * 76 : 246 + i * 70, bh = TT ? 68 : 60, on = Game.idx === i;
+    g.fillStyle = on ? 'rgba(232,195,90,0.92)' : 'rgba(255,255,255,0.08)'; roundRect(g, W / 2 - 260, y, 520, bh, 12); g.fill();
+    g.textAlign = 'left'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `17px ${FONT}`; g.fillText(t, W / 2 - 240, TT ? y + 28 : y + 26);
+    g.fillStyle = on ? '#3a2a0a' : '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(TT ? fitText(g, d, 480) : d, W / 2 - 240, TT ? y + 54 : y + 46);
+    addRect(W / 2 - 260, y, 520, bh, () => { Game.idx = i; if (i === 2) careerHub(); else startNewSeason(i === 1); });
   });
 }
 // banners hang from the gym ceiling for every title, by season
@@ -11340,13 +11359,13 @@ function statsUpdate() {
     if (menuHit('left') || menuHit('right')) { const i = seasons.indexOf(S.s), j = clamp(i + (menuHit('left') ? -1 : 1), 0, seasons.length - 1); if (j !== i) { S.s = seasons[j]; S.sel = 0; S.scroll = 0; SFX.blip(); } }
     if (menuHit('up')) { S.sel = Math.max(0, S.sel - 1); SFX.blip(); }
     if (menuHit('down')) { S.sel = Math.min(Math.max(0, list.length - 1), S.sel + 1); SFX.blip(); }
-    S.scroll = clamp(S.scroll, S.sel - 8, S.sel);
+    S.scroll = clamp(S.scroll, S.sel - (Input.touchMode ? 7 : 8), S.sel);
     if (menuHit('ok') && list[S.sel]) { S.view = 'box'; S.box = list[S.sel]; SFX.blip(); }
   }
   if (menuHit('back')) careerHub();
 }
 function drawStats(g) {
-  const S = Game.stats;
+  const S = Game.stats, TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone layout
   if (S.view === 'box') return drawBoxBook(g, S.box);
   panel(g, 30, 20, 900, 500, true);
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `24px ${FONT}`; g.fillText('Stats & box scores', 56, 58);
@@ -11366,30 +11385,34 @@ function drawStats(g) {
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText('SEASON HIGHS', 56, 256);
   const hi = k => mine.reduce((m, r, i) => r[k] > m.v ? { v: r[k], g: list[i] } : m, { v: 0, g: null });
   [['Points', 'pts'], ['Rebounds', 'reb'], ['Assists', 'ast'], ['Steals', 'stl'], ['Blocks', 'blk']].forEach(([l, k], i) => {
-    const h = hi(k), y = 280 + i * 22; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(l, 56, y);
-    g.fillStyle = '#fff'; g.font = `13px ${FONT}`; g.fillText(String(h.v), 150, y); if (h.g) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('vs ' + h.g.opp.replace('Masjid ', '') + ', ' + STAGES[h.g.st].name, 184, y); }
+    const h = hi(k), y = TT ? 282 + i * 25 : 280 + i * 22, vx = TT ? 172 : 150; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(l, 56, y);
+    g.fillStyle = '#fff'; g.font = `13px ${FONT}`; g.fillText(String(h.v), vx, y); if (h.g) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(fitText(g, 'vs ' + h.g.opp.replace('Masjid ', '') + ', ' + STAGES[h.g.st].name, 440 - vx - 34), vx + 34, y); }
   });
   // partners this season
   const by = {}; for (const x of list) by[x.partner] = (by[x.partner] || 0) + 1;
-  g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText('PARTNERS', 56, 410);
-  g.fillStyle = IVORY; g.font = `13px ${BODY}`; wrapTextLeft(g, Object.keys(by).length ? Object.entries(by).map(([k, n]) => castDef(k).name + ' ' + n + 'g (chem ' + chemOf(k) + ')').join('  •  ') : 'No games yet.', 56, 432, 380, 18);
+  g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText('PARTNERS', 56, TT ? 418 : 410);
+  g.fillStyle = IVORY; g.font = `13px ${BODY}`; wrapTextLeft(g, Object.keys(by).length ? Object.entries(by).map(([k, n]) => castDef(k).name + ' ' + n + 'g (chem ' + chemOf(k) + ')').join('  •  ') : 'No games yet.', 56, TT ? 442 : 432, 380, TT ? 24 : 18);
   // game log
   g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText('GAME LOG  (Enter: box score)', 470, 92);
   if (!list.length) { g.fillStyle = '#9fb3c8'; g.font = `14px ${BODY}`; g.fillText('No games this season yet.', 470, 120); }
-  list.slice(S.scroll, S.scroll + 9).forEach((x, k) => {
-    const i = S.scroll + k, y = 104 + k * 40, on = S.sel === i, r = x.a[0];
-    g.fillStyle = on ? 'rgba(232,195,90,0.9)' : 'rgba(255,255,255,0.05)'; roundRect(g, 466, y, 440, 36, 8); g.fill();
-    g.textAlign = 'left'; g.fillStyle = on ? NIGHT : (x.w ? '#9dffb0' : '#ffb0b0'); g.font = `13px ${FONT}`; g.fillText((x.w ? 'W ' : 'L ') + x.us + '–' + x.them, 478, y + 15);
-    g.fillStyle = on ? NIGHT : '#fff'; g.font = `12px ${BODY}`; g.fillText(fitText(g, 'vs ' + x.opp.replace('Masjid ', '') + '  •  ' + STAGES[x.st].name + ', ' + x.r, 280), 560, y + 15);
-    g.fillStyle = on ? '#3a2a0a' : '#9fb3c8'; g.fillText(r.pts + ' pts, ' + r.reb + ' reb, ' + r.ast + ' ast  •  ' + r.fgm + '/' + r.fga + ' FG', 478, y + 30);
-    addRect(466, y, 440, 36, () => { S.sel = i; S.view = 'box'; S.box = x; });
+  const RH = TT ? 48 : 40, BH = RH - 4;
+  list.slice(S.scroll, S.scroll + (TT ? 8 : 9)).forEach((x, k) => {
+    const i = S.scroll + k, y = 104 + k * RH, on = S.sel === i, r = x.a[0];
+    g.fillStyle = on ? 'rgba(232,195,90,0.9)' : 'rgba(255,255,255,0.05)'; roundRect(g, 466, y, 440, BH, 8); g.fill();
+    g.textAlign = 'left'; g.fillStyle = on ? NIGHT : (x.w ? '#9dffb0' : '#ffb0b0'); g.font = `13px ${FONT}`; const sc = (x.w ? 'W ' : 'L ') + x.us + '–' + x.them; g.fillText(sc, 478, TT ? y + 19 : y + 15);
+    const ox = TT ? Math.max(560, 490 + g.measureText(sc).width) : 560;
+    g.fillStyle = on ? NIGHT : '#fff'; g.font = `12px ${BODY}`; g.fillText(fitText(g, 'vs ' + x.opp.replace('Masjid ', '') + '  •  ' + STAGES[x.st].name + ', ' + x.r, 896 - ox), ox, TT ? y + 19 : y + 15);
+    g.fillStyle = on ? '#3a2a0a' : '#9fb3c8'; g.fillText(fitText(g, r.pts + ' pts, ' + r.reb + ' reb, ' + r.ast + ' ast  •  ' + r.fgm + '/' + r.fga + ' FG', 418), 478, TT ? y + 39 : y + 30);
+    addRect(466, y, 440, BH, () => { S.sel = i; S.view = 'box'; S.box = x; });
   });
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('← → season  •  ↑ ↓ game  •  Tab: career totals  •  Esc: back', W / 2, 504);
 }
 function drawCareerTable(g) {
   const seasons = statSeasons(), cols = ['SEASON', 'GP', 'W–L', 'PPG', 'RPG', 'APG', 'SPG', 'BPG', 'TOV', 'FG%', '3P%', 'FT%', 'TITLES'];
-  const xs = [56, 150, 200, 266, 322, 378, 434, 490, 546, 602, 668, 734, 800];
-  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; cols.forEach((c, i) => g.fillText(c, xs[i], 104));
+  const TT = Input.touchMode && g === ctx, keep = TT ? [0, 1, 2, 3, 4, 5, 8, 9, 11, 12] : null;   // v8.6.2: phones drop SPG, BPG, 3P%
+  const xs = TT ? [56, 176, 236, 316, 396, 476, 0, 0, 556, 636, 0, 726, 816] : [56, 150, 200, 266, 322, 378, 434, 490, 546, 602, 668, 734, 800];
+  const on = i => !keep || keep.includes(i);
+  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; cols.forEach((c, i) => on(i) && g.fillText(c, xs[i], 104));
   const rowOf = (label, games, titles) => { const r = games.map(x => x.a[0]), t = statLine(r), w = games.filter(x => x.w).length;
     return [label, t.gp, w + '–' + (t.gp - w), avg(t.pts, t.gp), avg(t.reb, t.gp), avg(t.ast, t.gp), avg(t.stl, t.gp), avg(t.blk, t.gp), avg(t.tov, t.gp), pct(t.fgm, t.fga), pct(t.tpm, t.tpa), pct(t.ftm, t.fta), titles]; };
   const rows = seasons.map(s => rowOf('Season ' + s, (C.games || []).filter(x => x.s === s), ((C.titles || []).filter(t => t.s === s).map(t => STAGES[t.st].name[0]).join(' ')) || '–'));
@@ -11397,9 +11420,9 @@ function drawCareerTable(g) {
   rows.forEach((r, k) => {
     const y = 132 + k * 30, tot = k === rows.length - 1;
     if (tot) { g.fillStyle = 'rgba(232,195,90,0.15)'; g.fillRect(48, y - 18, 860, 26); }
-    r.forEach((v, i) => { g.textAlign = 'left'; g.fillStyle = tot ? GOLD : i === 0 ? '#fff' : IVORY; g.font = `${i === 0 || tot ? 13 : 13}px ${i === 0 || tot ? FONT : BODY}`; g.fillText(String(v), xs[i], y); });
+    r.forEach((v, i) => { if (!on(i)) return; g.textAlign = 'left'; g.fillStyle = tot ? GOLD : i === 0 ? '#fff' : IVORY; g.font = `${i === 0 || tot ? 13 : 13}px ${i === 0 || tot ? FONT : BODY}`; g.fillText(String(v), xs[i], y); });
   });
-  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Titles: L Local, S State, N National, W World. Box scores are kept for your last 160 games.', 56, 470);
+  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(TT ? 'Titles: L Local, S State, N National, W World' : 'Titles: L Local, S State, N National, W World. Box scores are kept for your last 160 games.', 56, 470);
   g.textAlign = 'center'; g.fillText('Tab: season view  •  Esc: back', W / 2, 504);
 }
 function drawBoxBook(g, x) {
@@ -11427,7 +11450,17 @@ function drawBoxBook(g, x) {
 // ------------------------------------------------------------- pregame: choose your partner
 function cyclePartner(d) { const i = PARTNERS.indexOf(C.partner || 'saleem'); C.partner = PARTNERS[(i + d + PARTNERS.length) % PARTNERS.length]; SFX.blip(); saveCareer(); }
 function drawPartnerPicker(g) {                                       // top-right of the Al-Amanah card on the pre-game screen
-  const id = C.partner || 'saleem', v = chemOf(id), x = 700, y = 358, w = 210;
+  const id = C.partner || 'saleem', v = chemOf(id), x = 700, w = 210, TT = Input.touchMode && g === ctx, y = 358, h = TT ? 92 : 66;
+  if (TT) {                                                           // v8.6.2: phone layout, one item per line
+    g.fillStyle = 'rgba(8,16,24,0.9)'; roundRect(g, x, y, w, h, 10); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.55)'; g.lineWidth = 1; g.stroke();
+    g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; g.fillText('PARTNER', x + 10, y + 19);
+    g.fillStyle = '#fff'; g.font = `13px ${FONT}`; g.fillText(fitText(g, '\u25C2 ' + castDef(id).name + ' \u25B8', w - 20), x + 10, y + 41);
+    g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; g.fillText('Chem ' + v, x + 10, y + 63); const mx = x + 22 + g.measureText('Chem ' + v).width;
+    meter(g, mx, y + 56, x + w - 10 - mx, 6, v / 100, v >= 75 ? '#57e389' : v >= 25 ? '#f2cf6b' : '#9fb3c8');
+    g.fillStyle = IVORY; g.font = `11px ${BODY}`; g.fillText(fitText(g, chemTier(v), w - 20), x + 10, y + 84);
+    addRect(x, y, w / 2, h, () => cyclePartner(-1)); addRect(x + w / 2, y, w / 2, h, () => cyclePartner(1));
+    return;
+  }
   g.fillStyle = 'rgba(8,16,24,0.9)'; roundRect(g, x, y, w, 66, 10); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.55)'; g.lineWidth = 1; g.stroke();
   g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `9px ${FONT}`; g.fillText('PARTNER  \u2190 \u2192', x + 10, y + 14);
   g.fillStyle = '#fff'; g.font = `13px ${FONT}`; g.fillText(fitText(g, '\u25C2 ' + castDef(id).name + ' \u25B8', w - 20), x + 10, y + 32);
@@ -11442,9 +11475,9 @@ function drawPartnerPicker(g) {                                       // top-rig
   const _dcb = drawCareerBracket;
   drawCareerBracket = function (g) {
     const b = C.bracket; if (!b || b.fmt !== 'pool') return _dcb(g);
-    const S = STAGES[C.stage];
+    const S = STAGES[C.stage], TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone layout
     g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText(S.title, W / 2, 44);
-    g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('Two groups of four. The top two in each group go to the semifinals.', W / 2, 66);
+    g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(TT ? 'Top two in each group reach the semis' : 'Two groups of four. The top two in each group go to the semifinals.', W / 2, 66);
     ['GROUP A', 'GROUP B'].forEach((title, pi) => {
       const x = 40 + pi * 300, rows = standings(b, pi);
       panel(g, x, 84, 280, 196, false);
@@ -11457,14 +11490,14 @@ function drawPartnerPicker(g) {                                       // top-rig
         g.textAlign = 'right'; g.fillStyle = IVORY; g.fillText(r.w + '-' + r.l + '    ' + ((r.pf - r.pa) >= 0 ? '+' : '') + (r.pf - r.pa), x + 266, y);
       });
       if (pi === 0) { const our = b.pg[0].filter(q => q.a === 0 || q.b === 0); g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`;
-        our.forEach((q, i) => { const o = q.a === 0 ? q.b : q.a, sc = q.w == null ? 'Game ' + (q.md + 1) : ((q.w === 0 ? 'W ' : 'L ') + (q.a === 0 ? q.sa + '–' + q.sb : q.sb + '–' + q.sa)); g.fillText(sc + ' vs ' + teamOf(C.stage, o).name.replace('Masjid ', ''), x + 6, 300 + i * 18); }); }
+        our.forEach((q, i) => { const o = q.a === 0 ? q.b : q.a, sc = q.w == null ? 'Game ' + (q.md + 1) : ((q.w === 0 ? 'W ' : 'L ') + (q.a === 0 ? q.sa + '–' + q.sb : q.sb + '–' + q.sa)); g.fillText(sc + ' vs ' + teamOf(C.stage, o).name.replace('Masjid ', ''), x + 6, 300 + i * (TT ? 24 : 18)); }); }
     });
     // knockouts
     const kx = 660; g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('SEMIFINALS', kx, 106); g.fillText('FINAL', kx, 316);
     const box = (m, y) => {
-      panel(g, kx, y, 260, 58, m && (m.a === 0 || m.b === 0));
+      panel(g, kx, y, 260, TT ? 64 : 58, m && (m.a === 0 || m.b === 0));
       [[m && m.a, m && m.sa], [m && m.b, m && m.sb]].forEach(([id, sc], k) => {
-        const yy = y + 23 + k * 23; g.textAlign = 'left';
+        const yy = TT ? y + 25 + k * 26 : y + 23 + k * 23; g.textAlign = 'left';
         if (id == null) { g.fillStyle = '#56657a'; g.font = `13px ${BODY}`; g.fillText(y > 300 ? 'Semifinal winner' : k ? 'Group runner-up' : 'Group winner', kx + 14, yy); return; }
         const t = teamOf(C.stage, id), lost = m.w != null && m.w !== id;
         drawCrest(g, kx + 16, yy - 5, 8, t); g.fillStyle = lost ? '#6d7a8c' : id === 0 ? '#ffe38a' : '#fff'; g.font = `12px ${id === 0 ? FONT : BODY}`;
@@ -11852,7 +11885,7 @@ function replayabilityScreen(g) {
     g.fillText('Best: '+replayabilityProgress.run.best+' wins solo · '+((Progress.load().barakahDuo||{}).best||0)+' as a duo · Team: '+TEAMS[Run.team].name,W/2,184);
     uiButton(g,W/2-215,207,80,32,'‹',()=>{Run.team=(Run.team+TEAMS.length-1)%TEAMS.length;},false);
     uiButton(g,W/2+135,207,80,32,'›',()=>{Run.team=(Run.team+1)%TEAMS.length;},false);
-    drawCrest(g,W/2,232,28,TEAMS[Run.team]);
+    drawCrest(g,W/2,226,22,TEAMS[Run.team]);   // v8.6.2: clear of the Begin run pill
     drawMenu(g,RUN_HOME,Game.idx,276,i=>runHomeSelect(i));
   } else if(screen==='runchoice') {
     g.fillStyle=IVORY;g.font='15px '+BODY;g.fillText(Run.wins+' wins · '+Run.points+' points · '+(Run.duo?(Run.turn?(Run.duo==='online'?'Your friend\u2019s pick: waiting for them':'Player 2\u2019s pick'):'Player 1\u2019s pick'):'Pick one')+'. All upgrades have a firm cap.',W/2,110);
@@ -12849,7 +12882,7 @@ function drawLobby(g) {
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Online lobby', W / 2, 40);
   // code, big, with copy / share
   g.fillStyle = '#fff'; g.font = `44px ${FONT}`; g.fillText(Net.code || '----', W / 2, 92);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(host ? 'Your friend opens the game, picks Online → Join with a code, and types this' : 'You joined lobby ' + Net.code, W / 2, 112);
+  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(host ? (Input.touchMode ? 'Your friend joins with this code' : 'Your friend opens the game, picks Online → Join with a code, and types this') : 'You joined lobby ' + Net.code, W / 2, Input.touchMode ? 120 : 112);
   if (host) { uiButton(g, W / 2 + 96, 58, 96, 32, 'Copy code', () => Lobby.copyCode()); uiButton(g, W / 2 + 200, 58, 96, 32, 'Share link', () => Lobby.share()); }
   // players
   panel(g, 30, 130, 270, 300, false);
@@ -12870,27 +12903,37 @@ function drawLobby(g) {
   // game + settings
   panel(g, 316, 130, 614, 300, false);
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(host ? 'GAME  (← → to change)' : 'GAME  (the host picks)', 334, 156);
-  LOBBY_GAMES.forEach((x, i) => {
-    const cx = 334 + (i % 3) * 196, cy = 166 + Math.floor(i / 3) * 34, on = o.game === x.id;
-    g.fillStyle = on ? 'rgba(232,195,90,0.92)' : 'rgba(255,255,255,0.08)'; roundRect(g, cx, cy, 186, 28, 8); g.fill();
-    if (host && Lobby.row === 0 && on) { g.strokeStyle = '#fff'; g.lineWidth = 2; roundRect(g, cx, cy, 186, 28, 8); g.stroke(); }
-    g.textAlign = 'center'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${on ? FONT : BODY}`; g.fillText(x.name, cx + 93, cy + 19);
-    if (host) addRect(cx, cy, 186, 28, () => { o.game = x.id; Net.mode = x.id; Lobby.row = 0; Lobby.changed(); });
+  // v8.6.2: 10 games no longer fit 3 columns above the settings (they overlapped). Desktop: 4 columns, 3 rows.
+  // Touch: one Game row with arrows, so the rows can be tall enough to read and tap.
+  const T = Input.touchMode, stepGame = d => { const n = LOBBY_GAMES.length, i = LOBBY_GAMES.findIndex(x => x.id === o.game); o.game = LOBBY_GAMES[(i + d + n) % n].id; Net.mode = o.game; Lobby.row = 0; Lobby.changed(); };
+  if (T) {
+    const y = 192, gname = (LOBBY_GAMES.find(x => x.id === o.game) || LOBBY_GAMES[0]).name;
+    if (host && Lobby.row === 0) { g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, 330, y - 22, 586, 32, 8); g.fill(); }
+    g.textAlign = 'left'; g.fillStyle = '#cfd8e3'; g.font = `13px ${BODY}`; g.fillText('Game', 344, y);
+    g.textAlign = 'right'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(fitText(g, gname, 300), host ? 860 : 900, y);
+    if (host) { roundButton(g, 520, y - 6, 15, '‹', () => stepGame(-1)); roundButton(g, 890, y - 6, 15, '›', () => stepGame(1)); }
+  } else LOBBY_GAMES.forEach((x, i) => {
+    const cx = 334 + (i % 4) * 146, cy = 166 + Math.floor(i / 4) * 32, on = o.game === x.id;
+    g.fillStyle = on ? 'rgba(232,195,90,0.92)' : 'rgba(255,255,255,0.08)'; roundRect(g, cx, cy, 138, 26, 8); g.fill();
+    if (host && Lobby.row === 0 && on) { g.strokeStyle = '#fff'; g.lineWidth = 2; roundRect(g, cx, cy, 138, 26, 8); g.stroke(); }
+    g.textAlign = 'center'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${on ? FONT : BODY}`; g.fillText(fitText(g, x.name, 130), cx + 69, cy + 18);
+    if (host) addRect(cx, cy, 138, 26, () => { o.game = x.id; Net.mode = x.id; Lobby.row = 0; Lobby.changed(); });
   });
   const savedO = Lobby.o; if (!host) Lobby.o = o;                       // render the host's choices read-only
   const R = Lobby.rows(); if (!host) Lobby.o = savedO;
-  if (!R.length) { g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(o.game === 'lightning' ? 'Lightning: you, your friend and three masjid members. Last one standing wins.' : o.game === 'horse' ? 'HORSE: head to head. Match the shot or take a letter.' : '', 334, 254); }
-  const VIS = 7, top0 = host ? clamp(Lobby.row - 4, 0, Math.max(0, R.length - VIS)) : clamp(Lobby.gScroll | 0, 0, Math.max(0, R.length - VIS));   // v7.6: the list scrolls
+  const Y0 = T ? 234 : 284, DY = T ? 34 : 24, VIS = T ? 6 : 6;   // v8.6.2: the list starts below the games
+  if (!R.length) { g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapTextLeft(g, o.game === 'lightning' ? 'Lightning: you, your friend and three masjid members. Last one standing wins.' : o.game === 'horse' ? 'HORSE: head to head. Match the shot or take a letter.' : '', 334, Y0 + 6, 570, 20); }
+  const top0 = host ? clamp(Lobby.row - (VIS - 2), 0, Math.max(0, R.length - VIS)) : clamp(Lobby.gScroll | 0, 0, Math.max(0, R.length - VIS));   // v7.6: the list scrolls
   if (!host) Lobby.gScroll = top0;
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`;
-  if (top0 > 0) g.fillText('\u25B2', 916, 242);
-  if (top0 + VIS < R.length) g.fillText('\u25BC', 916, 244 + (VIS - 1) * 26 + 2);
+  if (top0 > 0) g.fillText('\u25B2', 916, Y0 - 2);
+  if (top0 + VIS < R.length) g.fillText('\u25BC', 916, Y0 + (VIS - 1) * DY + 2);
   R.slice(top0, top0 + VIS).forEach((r, i0) => {
-    const i = top0 + i0, y = 244 + i0 * 26, sel = host && Lobby.row === i + 1;
-    if (sel) { g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, 330, y - 17, 586, 24, 6); g.fill(); }
-    g.textAlign = 'left'; g.fillStyle = '#cfd8e3'; g.font = `13px ${BODY}`; g.fillText(r.label, 344, y);
-    g.textAlign = 'right'; g.fillStyle = '#fff'; g.font = `13px ${FONT}`; g.fillText(r.get(), host ? 860 : 900, y);
-    if (host) { const rr = Input.touchMode ? 13 : 11; roundButton(g, 600, y - 5, rr, '‹', () => { Lobby.row = i + 1; r.step(-1); Lobby.changed(); }); roundButton(g, 890, y - 5, rr, '›', () => { Lobby.row = i + 1; r.step(1); Lobby.changed(); }); addRect(330, y - 17, 260, 24, () => { Lobby.row = i + 1; }); }
+    const i = top0 + i0, y = Y0 + i0 * DY, sel = host && Lobby.row === i + 1, ax = T ? 520 : 600;
+    if (sel) { g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, 330, y - (T ? 22 : 17), 586, T ? 32 : 24, 6); g.fill(); }
+    g.textAlign = 'left'; g.fillStyle = '#cfd8e3'; g.font = `13px ${BODY}`; g.fillText(fitText(g, r.label, ax - 360), 344, y);
+    g.textAlign = 'right'; g.fillStyle = '#fff'; g.font = `13px ${FONT}`; g.fillText(fitText(g, String(r.get()), (host ? 860 : 900) - ax - 24), host ? 860 : 900, y);
+    if (host) { const rr = T ? 15 : 11; roundButton(g, ax, y - 5, rr, '‹', () => { Lobby.row = i + 1; r.step(-1); Lobby.changed(); }); roundButton(g, 890, y - 5, rr, '›', () => { Lobby.row = i + 1; r.step(1); Lobby.changed(); }); addRect(330, y - (T ? 22 : 17), ax - 350, T ? 32 : 24, () => { Lobby.row = i + 1; }); }
   });
   // bottom: Start / Rematch (host) or Ready (guest), Leave
   if (host) {
@@ -14758,6 +14801,10 @@ drawCreator = function (g) {
   const m = myMods(), base = Object.assign({}, C.lv, { stl: Math.round((C.lv.def + C.lv.spd) / 2), hus: C.lv.hus || 4, clu: C.lv.clu || 4 });
   panel(g, 530, 316, 400, 150, false);
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(cr.isNew ? 'STARTING STATS' : 'YOUR STATS', 548, 338);
+  if (Input.touchMode && g === ctx) {                                 // v8.6.2: phones get the summary only (nine pip rows don't fit at a readable size)
+    g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(fitText(g, LOOK_TXT.height[lk.height] + ', ' + LOOK_TXT.build[lk.build].toLowerCase() + ', ' + PLAY_STYLE_TXT[lk.style || 0].toLowerCase(), 364), 548, 366);
+    g.fillStyle = '#cfd8e3'; wrapTextLeft(g, buildSummary(m), 548, 392, 366, 22);
+  } else {
   g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(LOOK_TXT.height[lk.height] + ', ' + LOOK_TXT.build[lk.build].toLowerCase() + ', ' + PLAY_STYLE_TXT[lk.style || 0].toLowerCase(), 668, 338);
   BUILD_ROWS.forEach(([k, label], i) => {
     const x = 548 + Math.floor(i / 5) * 196, y = 348 + (i % 5) * 16;
@@ -14766,6 +14813,7 @@ drawCreator = function (g) {
   });
   g.textAlign = 'left'; g.fillStyle = '#cfd8e3'; g.font = `11px ${BODY}`;
   wrapText(g, buildSummary(m), 548, 440, 366, 13);
+  }
   // the big button
   const di = CREATOR_ROWS.findIndex(r => r.key === 'done'), sel = cr.idx === di, pulse = 0.5 + 0.5 * Math.sin(Game.t * 4);
   const bx = 530, by = 474, bw = 400, bh = 56, hov = hovering(bx, by, bw, bh), pr = pressing(bx, by, bw, bh);
@@ -14794,7 +14842,7 @@ drawCreator = function (g) {
     const m = ourMatch(), opp = teamOf(C.stage, m.a === 0 ? m.b : m.a);
     if (opp.tier == null) return;
     const t = opp.tier; g.textAlign = 'left'; g.font = `11px ${FONT}`; g.fillStyle = t > 0 ? '#ff9a8a' : t < 0 ? '#9dffb0' : '#f2cf6b';
-    g.fillText('★'.repeat(t + 2) + '☆'.repeat(1 - t) + '  ' + TIER_TXT[t].toUpperCase(), 408, 186);
+    g.fillText('★'.repeat(t + 2) + '☆'.repeat(1 - t) + '  ' + TIER_TXT[t].toUpperCase(), 408, Input.touchMode && g === ctx ? 193 : 186);
   };
   const _tr = drawTrain;
   drawTrain = function (g) { _tr.apply(this, arguments); tagRows(g, W / 2 - 110 + 94, 132, 38, 22); };
@@ -15358,15 +15406,16 @@ function drawJournal(g) {
   const J = C.journal || [];
   if (!J.length) { g.fillStyle = IVORY; g.font = `15px ${BODY}`; g.fillText('Your story starts with your first game. Scenes you see are kept here.', W / 2, 200); return; }
   g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('↑ ↓ choose a scene  •  Enter to watch it again  •  Esc back', W / 2, 76);
-  const rows = 9, start = clamp(JournalUI.idx - 4, 0, Math.max(0, J.length - rows));
+  const TT = Input.touchMode && g === ctx, rows = TT ? 8 : 9, RH = TT ? 52 : 44, BH = RH - 6;   // v8.6.2: taller rows on phones
+  const start = clamp(JournalUI.idx - 4, 0, Math.max(0, J.length - rows));
   for (let k = 0; k < Math.min(rows, J.length); k++) {
-    const i = start + k, e = J[i], y = 96 + k * 44, sel = i === JournalUI.idx;
-    g.fillStyle = sel ? 'rgba(232,195,90,0.9)' : 'rgba(255,255,255,0.06)'; roundRect(g, 120, y, 720, 38, 10); g.fill();
-    g.textAlign = 'left'; g.fillStyle = sel ? NIGHT : GOLD; g.font = `12px ${FONT}`; g.fillText(e.title || 'Scene ' + (i + 1), 136, y + 16);
+    const i = start + k, e = J[i], y = 96 + k * RH, sel = i === JournalUI.idx;
+    g.fillStyle = sel ? 'rgba(232,195,90,0.9)' : 'rgba(255,255,255,0.06)'; roundRect(g, 120, y, 720, BH, 10); g.fill();
+    g.textAlign = 'left'; g.fillStyle = sel ? NIGHT : GOLD; g.font = `12px ${FONT}`; g.fillText(e.title || 'Scene ' + (i + 1), 136, TT ? y + 19 : y + 16);
     g.fillStyle = sel ? NIGHT : IVORY; g.font = `13px ${BODY}`;
     const first = e.lines[0] ? (e.lines[0][0] === 'you' ? (C.name || 'You') : castDef(e.lines[0][0]).name) + ': “' + e.lines[0][1] + '”' : '';
-    g.fillText(first.length > 92 ? first.slice(0, 90) + '…' : first, 136, y + 32);
-    addRect(120, y, 720, 38, () => { if (JournalUI.idx === i) journalPlay(i); else JournalUI.idx = i; });
+    g.fillText(fitText(g, first.length > 92 ? first.slice(0, 90) + '…' : first, 690), 136, TT ? y + 40 : y + 32);
+    addRect(120, y, 720, BH, () => { if (JournalUI.idx === i) journalPlay(i); else JournalUI.idx = i; });
   }
 }
 function journalPlay(i) { const e = (C.journal || [])[i]; if (!e) return; Game.replaying = true; playStory(e.lines.slice(), () => { Game.replaying = false; openJournal(); }, e.title); Game.replaying = false; }
@@ -15515,7 +15564,7 @@ function minisUpdate() {
 function drawMinis(g) {
   dim(g, 0.75);
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `32px ${FONT}`; g.fillText('Mini games', W / 2, 92);
-  g.fillStyle = IVORY; g.font = `13px ${BODY}`; minisHelp().forEach((t, i) => g.fillText(t, W / 2, 124 + i * 19));
+  g.fillStyle = IVORY; g.font = `13px ${BODY}`; minisHelp().forEach((t, i) => g.fillText(t, W / 2, 124 + i * (Input.touchMode ? 25 : 19)));
   const R = minisRows();
   // one tap does it: a setting row steps to its next value, Start starts, Back goes back
   const list = R.map(r => ({ label: r.label, value: r.start || r.back ? null : r.get() }));
@@ -15955,8 +16004,10 @@ function drawProfileCard(g, x, y) {
   if (L.need) { g.fillStyle = GOLD; roundRect(g, x + 160, y + 114, 220 * L.into / L.need, 10, 5); g.fill(); }
   g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(L.need ? L.into + ' / ' + L.need + ' XP to level ' + (L.n + 1) : 'Max level', x + 160, y + 140);
   const mw = k => (s.minis[k] || { w: 0 }).w;
-  const lines = ['Games ' + s.games + '   Wins ' + s.wins, 'HORSE wins ' + mw('horse') + '   Lightning wins ' + mw('lightning'), 'Around the World wins ' + mw('atw'), 'King of the Court crowns ' + s.crowns];
-  g.fillStyle = IVORY; g.font = `13px ${BODY}`; lines.forEach((t, i) => g.fillText(t, x + 160, y + 172 + i * 20));
+  const TT = Input.touchMode && g === ctx;                             // v8.6.2: phones get fewer, larger lines (not the saved card image)
+  const lines = TT ? ['Games ' + s.games + '   Wins ' + s.wins, 'Mini-game wins ' + (mw('horse') + mw('lightning') + mw('atw')), 'Crowns ' + s.crowns]
+    : ['Games ' + s.games + '   Wins ' + s.wins, 'HORSE wins ' + mw('horse') + '   Lightning wins ' + mw('lightning'), 'Around the World wins ' + mw('atw'), 'King of the Court crowns ' + s.crowns];
+  g.fillStyle = IVORY; g.font = `13px ${BODY}`; lines.forEach((t, i) => g.fillText(fitText(g, t, 228), x + 160, y + 176 + i * (TT ? 28 : 20)));
   g.fillStyle = '#9fb3c8'; g.font = `10px ${FONT}`; g.fillText('ISLAM DUNK', x + 160, y + 282);
 }
 function saveProfileCard() {
@@ -15978,8 +16029,9 @@ function drawProfile(g) {
   const L = Profile.level(), next = REWARDS.filter(r => r.lv > L.n).slice(0, 4);
   panel(g, 450, 350, 480, 150, false);
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(next.length ? 'COMING UP' : 'TRACK COMPLETE', 468, 374);
-  next.forEach((r, i) => { g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Level ' + r.lv + ':  ' + r.name, 468, 398 + i * 22); g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(KIND_TXT[r.kind], 720, 398 + i * 22); if (r.col) { g.fillStyle = r.col; roundRect(g, 690, 387 + i * 22, 22, 12, 6); g.fill(); } });
-  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.textAlign = 'left'; g.fillText('Every mode earns XP. Rewards are cosmetic only.', 30, 392);
+  const T = Input.touchMode, dy = T ? 30 : 22;                          // v8.6.2: name and kind each fit their column
+  next.forEach((r, i) => { g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'Level ' + r.lv + ':  ' + r.name, T ? 220 : 240), 468, 398 + i * dy); g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; const kx = T && r.col ? 748 : 720; g.fillText(fitText(g, KIND_TXT[r.kind], T ? 916 - kx : 196), kx, 398 + i * dy); if (r.col) { g.fillStyle = r.col; roundRect(g, T ? 718 : 690, (T ? 384 : 387) + i * dy, 22, 12, 6); g.fill(); } });
+  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.textAlign = 'left'; g.fillText(fitText(g, 'Every mode earns XP. Rewards are cosmetic only.', 400), 30, 392);
 }
 function profileUpdate() {
   const R = profileRows(); Game.idx = clamp(Game.idx | 0, 0, R.length - 1);
@@ -16163,7 +16215,7 @@ function runV2Update() {
     _r(g);
     if (Game.screen === 'runvow' || Game.screen === 'runmap') { const rw = W, ox = Math.round((W - 960) / 2); g.save(); g.translate(ox, 0); W = 960; Game.ox = ox; runV2Screen(g); W = rw; Game.ox = 0; g.restore(); drawBackButton(g); }
     else if (Game.screen === 'runend' && Run.champion) { const rw = W, ox = Math.round((W - 960) / 2); g.save(); g.translate(ox, 0); W = 960; g.textAlign = 'center'; g.fillStyle = '#ffd76a'; g.font = `20px ${FONT}`; g.fillText('♛ You beat the Champions. Run complete, alhamdulillah.', W / 2, 220); W = rw; g.restore(); }
-    else if (Game.screen === 'runhome') { const rw = W, ox = Math.round((W - 960) / 2); g.save(); g.translate(ox, 0); W = 960; g.textAlign = 'center'; g.fillStyle = '#9dffb0'; g.font = `12px ${BODY}`; g.fillText('Solo runs: take a vow, choose your path through ' + RUN_STOPS + ' stops, and beat the Champions in the final.', W / 2, 127); W = rw; g.restore(); }
+    else if (Game.screen === 'runhome') { const rw = W, ox = Math.round((W - 960) / 2); g.save(); g.translate(ox, 0); W = 960; g.textAlign = 'center'; g.fillStyle = '#9dffb0'; g.font = `12px ${BODY}`; g.fillText('Solo runs: take a vow, choose your path through ' + RUN_STOPS + ' stops, and beat the Champions in the final.', W / 2, Input.touchMode ? 140 : 127); W = rw; g.restore(); }
   };
   BACK.runvow = () => { Run.active = false; openBarakah(); };
   BACK.runmap = () => { Run.active = false; Game.screen = 'runend'; Game.idx = 0; };
@@ -16414,8 +16466,9 @@ function nextGoal() {
     const ng = nextGoal(), x = 336, y = 210, w = 290;
     g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, x, y, w, 24, 12); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.5)'; g.lineWidth = 1; g.stroke();
     g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.fillText('NEXT', x + 10, y + 16);
-    g.fillStyle = IVORY; g.font = `11px ${BODY}`; let t = ng.txt + (ng.pay ? '  •  ' + ng.pay : ''); while (g.measureText(t).width > w - 56 && t.length > 8) t = t.slice(0, -2);
-    g.fillText(t, x + 46, y + 16);
+    const tx = x + 16 + g.measureText('NEXT').width;                      // v8.6.2: clears the raised phone font
+    g.fillStyle = IVORY; g.font = `11px ${BODY}`; let t = ng.txt + (ng.pay ? '  •  ' + ng.pay : ''); while (g.measureText(t).width > x + w - 10 - tx && t.length > 8) t = t.slice(0, -2);
+    g.fillText(t, tx, y + 16);
     addRect(x, y, w, 24, () => openGoals());
     // earned badges on your card
     const G = cg(), got = BADGES.filter(b => G.badges[b.id]);
@@ -16431,20 +16484,20 @@ function nextGoal() {
 // ---- goals & badges screen
 function openGoals() { Game.screen = 'cgoals'; }
 function drawGoals(g) {
-  dim(g, 0.86); const G = cg();
+  dim(g, 0.86); const G = cg(), TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone layout
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('Goals & badges', W / 2, 50);
   // rookie
   panel(g, 30, 74, 290, 210, false);
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('ROOKIE CHECKLIST', 48, 100);
-  ROOKIE.forEach(([id, t], i) => { const ok = G.rookie[id]; g.fillStyle = ok ? '#9dffb0' : IVORY; g.font = `13px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + t, 48, 128 + i * 26); });
-  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText('+40 BP each, +100 BP for all five', 48, 268);
+  ROOKIE.forEach(([id, t], i) => { const ok = G.rookie[id]; g.fillStyle = ok ? '#9dffb0' : IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, (ok ? '✓ ' : '• ') + t, 262), 48, 128 + i * 26); });
+  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(TT ? '+40 BP each, +100 for all' : '+40 BP each, +100 BP for all five', 48, 268);
   // week
   panel(g, 30, 296, 290, 220, false);
   g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('WEEK ' + G.week.n, 48, 322);
-  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText('A week is 3 career games. ' + (G.week.start + 3 - (C.gamesPlayed || 0)) + ' left this week.', 48, 340);
+  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; const left = G.week.start + 3 - (C.gamesPlayed || 0); g.fillText(TT ? left + ' game(s) left this week' : 'A week is 3 career games. ' + left + ' left this week.', 48, TT ? 344 : 340);
   G.week.goals.forEach((w, i) => {
-    const y = 366 + i * 44, d = WEEK_POOL.find(x => x.id === w.id);
-    g.fillStyle = w.done ? '#9dffb0' : IVORY; g.font = `13px ${BODY}`; g.fillText((w.done ? '✓ ' : '') + d.txt(w.need), 48, y);
+    const y = TT ? 374 + i * 42 : 366 + i * 44, d = WEEK_POOL.find(x => x.id === w.id);
+    g.fillStyle = w.done ? '#9dffb0' : IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, (w.done ? '✓ ' : '') + d.txt(w.need), 262), 48, y);
     g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, 48, y + 8, 250, 8, 4); g.fill(); g.fillStyle = w.done ? '#57e389' : GOLD; roundRect(g, 48, y + 8, 250 * w.prog / w.need, 8, 4); g.fill();
   });
   // badges
@@ -16452,11 +16505,14 @@ function drawGoals(g) {
   g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('BADGES  •  earned on the court and in the gym, never bought', 354, 100);
   BADGES.forEach((b, i) => {
     const y = 128 + i * 54, have = G.badges[b.id], pr = G.badgeProg[b.id] || 0;
-    g.fillStyle = have ? GOLD : 'rgba(255,255,255,0.1)'; roundRect(g, 354, y - 14, 120, 24, 12); g.fill();
-    g.fillStyle = have ? NIGHT : IVORY; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.fillText(b.name, 414, y + 2); g.textAlign = 'left';
-    g.fillStyle = IVORY; g.font = `12px ${BODY}`; g.fillText(have ? b.eff + ' (career games)' : b.how, 486, y);
-    if (!have) { g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, 486, y + 8, 300, 7, 3); g.fill(); g.fillStyle = GOLD; roundRect(g, 486, y + 8, 300 * pr / b.need, 7, 3); g.fill(); g.fillStyle = '#9fb3c8'; g.font = `10px ${BODY}`; g.fillText(pr + ' / ' + b.need, 794, y + 15); }
-    else { g.fillStyle = '#9dffb0'; g.font = `10px ${BODY}`; g.fillText('Earned', 486, y + 16); }
+    const pw = TT ? 140 : 120, tx = 354 + pw + 12;
+    g.fillStyle = have ? GOLD : 'rgba(255,255,255,0.1)'; roundRect(g, 354, y - 14, pw, 24, 12); g.fill();
+    g.fillStyle = have ? NIGHT : IVORY; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.fillText(TT ? fitText(g, b.name, pw - 10) : b.name, 354 + pw / 2, y + 2); g.textAlign = 'left';
+    g.fillStyle = IVORY; g.font = `12px ${BODY}`; const how = have ? b.eff + (TT ? '' : ' (career games)') : TT ? b.how.replace(/\s*\(.*\)\s*/, '').replace(' in career games', '') : b.how;
+    g.fillText(TT ? fitText(g, how, 912 - tx) : how, tx, TT ? y - 2 : y);
+    const by = TT ? y + 12 : y + 8;
+    if (!have) { g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, tx, by, 300 - (tx - 486), 7, 3); g.fill(); g.fillStyle = GOLD; roundRect(g, tx, by, (300 - (tx - 486)) * pr / b.need, 7, 3); g.fill(); g.fillStyle = '#9fb3c8'; g.font = `10px ${BODY}`; g.fillText(pr + ' / ' + b.need, 794, TT ? y + 22 : y + 15); }
+    else { g.fillStyle = '#9dffb0'; g.font = `10px ${BODY}`; g.fillText('Earned', tx, TT ? y + 22 : y + 16); }
   });
 }
 {
@@ -18862,7 +18918,7 @@ function setGroupItems(gi) {
     g.fillText(G.name, W / 2, 104);
     g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.fillText('‹  SETTINGS', W / 2, 134);
     addRect(W / 2 - 110, 118, 220, 24, () => { Game.idx = Game.setGroup; Game.setGroup = null; });
-    drawMenu(g, [...L.map(s => s.label), 'Back'], Game.idx, 190, i => { if (i === L.length) { Game.idx = Game.setGroup; Game.setGroup = null; } else L[i].step(1); }, [...L.map(s => s.get()), ''], 44);
+    drawMenu(g, [...L.map(s => s.label), 'Back'], Game.idx, 190, i => { if (i === L.length) { Game.idx = Game.setGroup; Game.setGroup = null; } else L[i].step(1); }, [...L.map(s => s.get()), ''], Math.min(44, Math.floor((H - 216) / (L.length + 1))));   // v8.6.2: longer lists close up to fit
   };
   // opening Settings always starts at the group list
   const _st = goTitle; goTitle = function () { Game.setGroup = null; return _st.apply(this, arguments); };
@@ -19110,26 +19166,28 @@ function drawNoorPick(g, tv) {
   const mine = !tv.remote;                                          // host waiting on the guest sees a banner
   if (!mine) { dim(g, 0.5); banner(g, 'Noor challenge', 'Your friend answered correctly and is choosing a power-up...'); return; }
   dim(g, 0.72);
-  g.fillStyle = 'rgba(12,40,44,0.97)'; roundRect(g, 150, 70, 660, 400, 16); g.fill(); g.strokeStyle = GOLD; g.lineWidth = 2; g.stroke();
-  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText('CHOOSE YOUR NOOR', W / 2, 108);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Correct! ' + tv.p.def.name + ' picks one of these three', W / 2, 130);
+  const T = Input.touchMode, py = T ? 44 : 70, cy = T ? 116 : 150, ch = T ? 318 : 252;   // v8.6.2: taller cards on phones (text is larger there)
+  g.fillStyle = 'rgba(12,40,44,0.97)'; roundRect(g, 150, py, 660, T ? 464 : 400, 16); g.fill(); g.strokeStyle = GOLD; g.lineWidth = 2; g.stroke();
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText('CHOOSE YOUR NOOR', W / 2, py + 38);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'Correct! ' + tv.p.def.name + ' picks one of these three', 620), W / 2, py + 62);
   const sel = tv.remoteView ? (tv.psel || 0) : P.sel;
   P.opts.forEach((id, i) => {
     const F = NOOR_BY_ID[id]; if (!F) return;
-    const x = 168 + i * 212, y = 150, w = 200, h = 252, on = i === sel;
+    const x = 168 + i * 212, y = cy, w = 200, h = ch, on = i === sel, d = T ? -8 : 0;
     g.fillStyle = on ? 'rgba(232,195,90,0.18)' : 'rgba(255,255,255,0.06)'; roundRect(g, x, y, w, h, 12); g.fill();
     g.strokeStyle = on ? GOLD : 'rgba(255,255,255,0.18)'; g.lineWidth = on ? 3 : 1; g.stroke();
-    g.fillStyle = 'rgba(0,0,0,0.3)'; g.beginPath(); g.arc(x + w / 2, y + 46, 26, 0, Math.PI * 2); g.fill();
-    noorIcon(g, F.icon, x + w / 2, y + 46, 16, F.col);
-    g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `22px ${FONT}`; g.fillText(F.name, x + w / 2, y + 102);
-    g.fillStyle = F.col; g.font = `14px ${BODY}`; g.fillText(F.mean, x + w / 2, y + 122);
-    g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapText(g, F.desc, x + w / 2, y + 152, w - 24, 19);
+    g.fillStyle = 'rgba(0,0,0,0.3)'; g.beginPath(); g.arc(x + w / 2, y + 46 + d, 26, 0, Math.PI * 2); g.fill();
+    noorIcon(g, F.icon, x + w / 2, y + 46 + d, 16, F.col);
+    g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `22px ${FONT}`; g.fillText(F.name, x + w / 2, y + 102 + d);
+    g.fillStyle = F.col; g.font = `14px ${BODY}`; g.fillText(F.mean, x + w / 2, y + 124 + d);
+    g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapText(g, F.desc, x + w / 2, y + 152 + d * 1.5, w - 22, 19);
     g.fillStyle = on ? GOLD : '#9fb3c8'; g.font = `13px ${FONT}`; g.fillText(String(i + 1), x + w / 2, y + h - 12);
     addRect(x, y, w, h, () => { if (tv.remoteView) Net.guestPick(i); else { P.sel = i; noorChoose(tv, i); } });
   });
-  g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(200, 418, 560, 6); g.fillStyle = GOLD; g.fillRect(200, 418, 560 * clamp(P.t / NOOR_PICK_T, 0, 1), 6);
+  const by = cy + ch + 14;
+  g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(200, by, 560, 6); g.fillStyle = GOLD; g.fillRect(200, by, 560 * clamp(P.t / NOOR_PICK_T, 0, 1), 6);
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
-  g.fillText(tv.sent2 ? 'Sent. Waiting for the game to continue...' : 'Press 1 to 3, or ← → and Enter. Tap a card on touch.', W / 2, 450);
+  g.fillText(tv.sent2 ? 'Sent. Waiting for the game to continue...' : 'Press 1 to 3, or ← → and Enter. Tap a card on touch.', W / 2, by + (T ? 38 : 32));
 }
 {
   const _dt = drawTrivia;
@@ -19232,6 +19290,261 @@ const REPLAY_FL = 7 + JOINTS.length + 5;
     }
     return r;
   };
+}
+// ================================================= v8.6.2: PHONE PASS
+// On a phone the 960x540 canvas is drawn at ~0.55-0.63x, so a 13px label lands at ~8 CSS px. On touch
+// devices (Input.touchMode):
+//   1. Minimum text size: any text that would land below PHONE_MIN_CSS CSS px is drawn at that size. It
+//      is applied per draw (fillText/strokeText) and per measure (measureText), so fitText/wrapText see
+//      the real width. The canvas itself is not scaled. Desktop is untouched.
+//   2. Keyboard-only hint lines are dropped or reworded for touch (TOUCH_TEXT, below).
+//   3. HUD: the player card becomes a compact strip under the scoreboard (turbo bar, plus Noor / pressure
+//      / fire / winded only while they apply, each as icon + text).
+//   4. Touch buttons: main word only (the second line shows during the first game after install), never
+//      "–" (the button hides), size S/M/L, opacity, left-handed layout, and a fade after 2 s untouched.
+//   5. How to play on touch: a labelled diagram of the touch controls and a link to the Tutorial.
+//   6. Venue select: lock icon + short tag on tiles; the focused tile's full name and lock reason below.
+const PHONE_MIN_CSS = 11;
+const PhonePrefs = {
+  key: 'islamdunk.touch', size: 1, alpha: 0, left: false, hintDone: false,
+  load() { try { const o = JSON.parse(localStorage.getItem(this.key) || '{}'); if (o.size >= 0 && o.size <= 2) this.size = o.size; if (o.alpha >= 0 && o.alpha <= 2) this.alpha = o.alpha; this.left = !!o.left; this.hintDone = !!o.hintDone; } catch (e) {} },
+  save() { try { localStorage.setItem(this.key, JSON.stringify({ size: this.size, alpha: this.alpha, left: this.left, hintDone: this.hintDone })); } catch (e) {} }
+};
+PhonePrefs.load();
+const BTN_SIZE = [0.85, 1, 1.15], BTN_SIZE_TXT = ['Small', 'Medium', 'Large'], BTN_ALPHA = [1, 0.8, 0.6], BTN_ALPHA_TXT = ['Solid', '80%', '60%'], BTN_FADE = 0.3;
+
+// ---- 1 + 2: minimum text size and touch wording, on the game canvas only
+const TOUCH_TEXT = {
+  // navigation hints for keys: every item on these screens can be tapped
+  '↑ ↓ choose, Enter to start, Esc to close': '', '← → choose, Enter to select': '', 'Enter: ask something else Esc: close': '',
+  '↑ ↓ choose, ← → change, Enter to select': '', '← → switch tabs, ↑ ↓ choose, Enter to build, Esc for the hub': '',
+  '← → switch view, Enter for projects, Esc for the hub': '', '← → choose · Enter confirm · Esc ends your run': '',
+  '← → choose • Enter confirm • Esc back': '', '← → choose • Enter go • Esc ends your run': '', '↑ ↓ choose ← → change Enter select': '',
+  '↑ ↓ choose ← → change Enter edit Esc done': '', '↑ ↓ choose ← → change P play C share Esc back': '', '← → to change, Enter to confirm, Esc to go back': '',
+  '← → season • ↑ ↓ game • Tab: career totals • Esc: back': '', 'Tab: season view • Esc: back': '',
+  '← → switch tabs, Enter to continue': '', 'Enter edit • C code • D duplicate • X delete': '', 'Tab: Look / Outfit / Skills': '',
+  'Arrows to choose, Enter to play, Esc to go back': '', 'Esc to go back': '', 'Esc to step away': '',
+  'Press F for fullscreen': '', '← → choose, Enter to answer': '',
+  'Enter edit • C code • D duplicate • X delete • G career • I import': '', 'Enter edit • C code • D duplicate • X delete • I import': '',
+  'Tab: Look / Outfit / Skills ↑ ↓ choose ← → change Enter edit Esc done': '',
+  // secondary lines that crowd a phone screen
+  'No entry cost, no paid rewards, no penalty for taking a break.': '', 'Pause any time. Runs last for this session; personal bests stay saved.': '',
+  // the same message, for a tap
+  'Enter to play • Esc to go back • A new scenario every day': 'A new scenario every day',
+  'R to try again • Enter to finish • A new spot pattern tomorrow': 'A new spot pattern tomorrow',
+  'R to try again • Enter to finish • A new scenario tomorrow': 'A new scenario tomorrow',
+  'Press F for fullscreen • How to play is in Options': 'How to play is in Options',
+  'Press 1 to 4, or move and press Enter/K': 'Tap your answer', 'Press 1 to 3, or ← → and Enter. Tap a card on touch.': 'Tap a card to choose',
+  'Press Enter or tap for the second half': 'Tap for the second half', 'Press Enter or tap to go to the rematch screen': 'Tap for the rematch screen',
+  'Press Enter or tap to continue': 'Tap to continue', 'Press Enter or tap to go back': 'Tap to go back', 'Press Enter or Esc to go back': 'Tap to go back',
+  'Enter or Esc to go back': 'Tap to go back', 'Enter or tap to continue': 'Tap to continue', 'Enter or tap to continue, Esc to skip': 'Tap to continue',
+  'Tap or Enter to continue • Esc to skip': 'Tap to continue', 'Enter to continue, Esc to go back': 'Tap to continue', 'Enter or tap to continue Esc: close': 'Tap to continue',
+  'Press Enter or tap to keep practicing': 'Tap to keep practicing', 'Enter to go pray, Esc to keep practicing': '', 'Back or Esc stops the drill': 'Back stops the drill',
+  'Type the letters, Enter to join, Esc to go back': 'Tap the letters, then Join', 'Type your name, Enter when done': 'Tap the letters, then Done',
+  'Type, then Enter when done': 'Tap the letters, then Done', 'Camera (C in game)': 'Camera',
+  '↑ ↓ choose a scene • Enter to watch it again • Esc back': 'Tap a scene twice to watch it again', 'Come to prayer. Praying gives a bonus for your next game.': 'Praying gives a bonus next game.',
+  'W A S D to walk • E or Enter to talk • Esc back to the gym': 'Stick to walk • TALK to talk', 'GAME LOG (Enter: box score)': 'GAME LOG (tap a game)',
+  'GAME (← → to change)': 'GAME', 'PARTNER ← →': 'PARTNER', 'Esc or P pauses. On a phone, use the on-screen stick and buttons.': 'The pause button is top right.'
+};
+const PhoneText = { on: false, cssPerDev: 1 };
+const touchText = t => { if (typeof t !== 'string' || t.length < 6) return t; const k = t.replace(/\s+/g, ' ').trim(); return k in TOUCH_TEXT ? TOUCH_TEXT[k] : t; };
+function phoneFloor(g) {                                    // raise the font to the minimum for this transform; returns the old font or null
+  const f = g.font, m = /([\d.]+)px/.exec(f); if (!m) return null;
+  const t = g.getTransform(), k = Math.hypot(t.a, t.b) * PhoneText.cssPerDev; if (!(k > 0)) return null;
+  const min = PHONE_MIN_CSS / k; if (+m[1] >= min - 0.01) return null;
+  g.font = f.replace(m[0], (Math.ceil(min * 10) / 10) + 'px'); return f;
+}
+function phoneTextInstall(g) {
+  if (!g || g.__phone) return; g.__phone = true;
+  const P = CanvasRenderingContext2D.prototype;
+  for (const name of ['fillText', 'strokeText']) g[name] = function (text, ...a) {
+    if (!PhoneText.on) return P[name].call(this, text, ...a);
+    const t = touchText(text); if (t === '') return;
+    const old = phoneFloor(this);
+    try { return P[name].call(this, t, ...a); } finally { if (old !== null) this.font = old; }
+  };
+  g.measureText = function (text) {
+    if (!PhoneText.on) return P.measureText.call(this, text);
+    const old = phoneFloor(this);
+    try { return P.measureText.call(this, touchText(text)); } finally { if (old !== null) this.font = old; }
+  };
+}
+function phoneEffPx(g) { const old = phoneFloor(g), m = /([\d.]+)px/.exec(g.font), px = m ? +m[1] : 12; if (old !== null) g.font = old; return px; }
+{
+  // wrapped lines get room for the raised font
+  const _wt = wrapText;
+  wrapText = function (g, text, x, y, maxW, lh) { return _wt.call(this, g, text, x, y, maxW, PhoneText.on ? Math.max(lh, phoneEffPx(g) * 1.18) : lh); };
+  const _wl = wrapTextLeft;
+  wrapTextLeft = function (g, text, x, y, maxW, lh) { return _wl.call(this, g, text, x, y, maxW, PhoneText.on ? Math.max(lh, phoneEffPx(g) * 1.18) : lh); };
+  const _r = render;
+  render = function (g) {
+    phoneTextInstall(g);
+    PhoneText.on = !!Input.touchMode;
+    if (PhoneText.on && canvas && canvas.width) PhoneText.cssPerDev = canvas.getBoundingClientRect().width / canvas.width;
+    return _r.apply(this, arguments);
+  };
+}
+
+// ---- 3: compact HUD strip on touch (the full cards stay on desktop)
+function hudIcon(g, kind, x, y, s, col) {
+  g.save(); g.translate(x, y); g.scale(s / 10, s / 10); g.fillStyle = col; g.strokeStyle = col; g.lineWidth = 1.8; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath();
+  if (kind === 'bolt') { g.moveTo(2, -9); g.lineTo(-5, 1); g.lineTo(0, 1); g.lineTo(-2, 9); g.lineTo(5, -1); g.lineTo(0, -1); g.closePath(); g.fill(); }
+  else if (kind === 'flame') { g.moveTo(0, -9); g.quadraticCurveTo(7, -1, 5, 4); g.quadraticCurveTo(3, 9, 0, 9); g.quadraticCurveTo(-3, 9, -5, 4); g.quadraticCurveTo(-6, -2, 0, -9); g.fill(); }
+  else if (kind === 'warn') { g.moveTo(0, -8); g.lineTo(8, 7); g.lineTo(-8, 7); g.closePath(); g.stroke(); g.beginPath(); g.moveTo(0, -2); g.lineTo(0, 2.5); g.stroke(); g.beginPath(); g.arc(0, 5, 0.8, 0, Math.PI * 2); g.fill(); }
+  else if (kind === 'tired') { g.arc(0, 0, 7, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.moveTo(-3.5, -1); g.lineTo(-1.5, -1); g.moveTo(1.5, -1); g.lineTo(3.5, -1); g.moveTo(-2.5, 3.5); g.lineTo(2.5, 3.5); g.stroke(); }
+  g.restore();
+}
+function hudChip(g, x, y, icon, text, col) {
+  g.font = `11px ${FONT}`; const w = g.measureText(text).width + 30, h = 22;
+  g.fillStyle = 'rgba(8,14,22,0.82)'; roundRect(g, x, y, w, h, h / 2); g.fill(); g.strokeStyle = col; g.lineWidth = 1; g.stroke();
+  if (typeof icon === 'function') icon(x + 13, y + h / 2); else hudIcon(g, icon, x + 13, y + h / 2, 7, col);
+  g.fillStyle = '#fff'; g.textAlign = 'left'; g.fillText(text, x + 24, y + 15);
+  return x + w + 6;
+}
+const PhoneHUD = { board: null };
+function drawTouchStrip(g) {
+  const hk = baseZoom() > 1.6 ? 1.25 : 1, x0 = 10, top = 8 + 40 + (M.teamFouls && (teamFouls(0) >= 3 || teamFouls(1) >= 3 || inBonus(0) || inBonus(1)) ? 22 : 6);
+  PhoneHUD.board = { x: 0, y: 0, w: 380 * hk, h: top * hk };          // the scoreboard's area, for the button-overlap test
+  g.save(); g.scale(hk, hk);
+  let y = top;
+  for (const p of M.players) {
+    if (p.human < 0 || M.attract) continue;
+    const sprinting = p.cmd.turbo && Math.hypot(p.vx || 0, p.vz || 0) > 60 && p.turboOK && p.turboOK();
+    g.globalAlpha = 0.95;
+    g.fillStyle = 'rgba(8,14,22,0.82)'; roundRect(g, x0, y, 150, 20, 10); g.fill();
+    g.fillStyle = p.human === 0 ? '#ff7a7a' : '#6ab8ff'; roundRect(g, x0 + 6, y + 5, 4, 10, 2); g.fill();
+    hudIcon(g, 'bolt', x0 + 20, y + 10, 6, '#bff0ff');
+    meter(g, x0 + 30, y + 6, 112, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : sprinting ? '#bff0ff' : '#4fc3ff');
+    let cx = x0 + 158;
+    if (p.fire) cx = hudChip(g, cx, y - 1, 'flame', 'ON FIRE', '#ff8a2a');
+    if (noorActive(p)) { const F = NOOR_BY_ID[noorFxOf(p)]; cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, F.icon, ix, iy, 7, F.col), noorTagText(p), F.col); }
+    else if (p.def.huffath && p.hifz >= 100) cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, 'light', ix, iy, 7, '#ffe38a'), 'NOOR READY', '#ffe38a');
+    if (!p.fire && (p.fat || 0) > 0.7) cx = hudChip(g, cx, y - 1, 'tired', 'WINDED', '#ffb08a');
+    if (typeof pressureOf === 'function' && pressureOf(p) >= 0.3 && !p.fire) cx = hudChip(g, cx, y - 1, 'warn', 'PRESSURE', '#ffb07a');
+    y += 26;
+  }
+  g.globalAlpha = 1; g.restore();
+}
+{
+  const _hud = drawHUD;
+  drawHUD = function (g) { const r = _hud.apply(this, arguments); if (Input.touchMode && !M.mini) drawTouchStrip(g); return r; };   // the cards themselves skip on touch (renderer.js)
+}
+
+// ---- 4: touch buttons
+{
+  const _lay = TouchUI.layout;
+  TouchUI.layout = function () {
+    _lay.apply(this, arguments);
+    if (!this.el || !this.btns || !this.btns.shoot) return;
+    const vw = innerWidth, vh = innerHeight, P = this.portrait, I = safeInsets(), k = this.k || 1, R = this.R();
+    const s = (P ? 1.12 : 1) * k * BTN_SIZE[PhonePrefs.size], pad = (P ? 20 : 14) + (PhonePrefs.left ? I.l : I.r), bot = (P ? 30 : 12) + I.b, L = PhonePrefs.left;
+    const place = (b, size, side, bottom) => Object.assign(b.style, { width: size * s + 'px', height: size * s + 'px', [L ? 'left' : 'right']: side * s + pad + 'px', [L ? 'right' : 'left']: '', bottom: bottom * s + bot + 'px', fontSize: (size > 80 ? 15 : 12.5) * s + 'px' });
+    place(this.btns.shoot, 92, 0, 0); place(this.btns.pass, 76, 104, 4); place(this.btns.cross, 72, 18, 104);
+    const zw = parseFloat(this.zone.style.width) || vw * 0.4;
+    if (L) { this.zone.style.left = (vw - zw - I.r) + 'px'; this.homeX = zw - (R + (P ? 22 : 18) * k); }
+    else { this.zone.style.left = I.l + 'px'; this.homeX = R + (P ? 22 : 18) * k; }
+    this.drawStick();
+  };
+  const _tu = TouchUI.update;
+  TouchUI.update = function () {
+    _tu.apply(this, arguments);
+    if (!this.el) return;
+    if (!this.css) {
+      this.css = document.createElement('style');
+      this.css.textContent = '#tui.nosub .b small{display:none}#tui .b,#tui .base,#tui .knob{transition:opacity .35s}';
+      document.head.appendChild(this.css);
+      this.el.addEventListener('pointerdown', () => { this.touchedAt = performance.now(); }, true);
+      this.touchedAt = performance.now();
+    }
+    if (!this.shown) return;
+    // the second line only during the first game after install
+    if (!PhonePrefs.hintDone && Game.screen === 'play' && M.phase === 'over' && !M.attract) { PhonePrefs.hintDone = true; PhonePrefs.save(); }
+    this.el.classList.toggle('nosub', PhonePrefs.hintDone);
+    // a button with no action hides instead of showing "–"
+    for (const k of ['shoot', 'pass', 'cross']) {
+      const b = this.btns[k], sp = b.firstChild, empty = !!sp && /^\s*[–—-]\s*$/.test(sp.textContent || '');
+      if (empty) b.style.display = 'none'; else if (b.style.display === 'none' && b.dataset.hid === '1') b.style.display = '';
+      b.dataset.hid = empty ? '1' : '';
+    }
+    // opacity setting, and a fade after 2 s without a touch
+    const idle = performance.now() - (this.touchedAt || 0) > 2000 && this.sid == null;
+    const a = BTN_ALPHA[PhonePrefs.alpha] * (idle ? BTN_FADE : 1);
+    for (const k of ['shoot', 'pass', 'cross']) this.btns[k].style.opacity = String(this.btns[k].classList.contains('cd') ? a * 0.6 : a);
+    this.stickEl.style.opacity = String(this.sid != null ? 1 : idle ? 0.25 : 0.55);
+    this.knob.style.opacity = this.stickEl.style.opacity;
+  };
+}
+// Settings: Controls & camera (shown where touch is possible)
+{
+  const touchCapable = () => Input.touchMode || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
+  const relay = () => { if (TouchUI.el) TouchUI.layout(); };
+  const items = [
+    { label: 'Button size', get: () => BTN_SIZE_TXT[PhonePrefs.size], step: d => { PhonePrefs.size = (PhonePrefs.size + d + 3) % 3; PhonePrefs.save(); relay(); }, touch: true },
+    { label: 'Button opacity', get: () => BTN_ALPHA_TXT[PhonePrefs.alpha], step: d => { PhonePrefs.alpha = (PhonePrefs.alpha + d + 3) % 3; PhonePrefs.save(); }, touch: true },
+    { label: 'Left-handed layout', get: () => PhonePrefs.left ? 'On' : 'Off', step: () => { PhonePrefs.left = !PhonePrefs.left; PhonePrefs.save(); relay(); }, touch: true }
+  ];
+  SET_ITEMS.splice(SET_ITEMS.length - 1, 0, ...items);
+  SET_GROUPS[1].labels.push(...items.map(i => i.label));
+  const _sgi = setGroupItems;
+  setGroupItems = function (gi) { return _sgi.apply(this, arguments).filter(s => !s.touch || touchCapable()); };
+}
+
+// ---- 5: How to play on touch: a diagram of the touch controls
+{
+  const _ht = drawHowTo;
+  drawHowTo = function (g) {
+    if (!Input.touchMode) return _ht.apply(this, arguments);
+    dim(g, 0.86);
+    const o = Math.round((W - 960) / 2); g.save(); g.translate(o, 0); Game.ox = o; const rw = W; W = 960;
+    g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `30px ${FONT}`; g.fillText('How to play', W / 2, 52);
+    // the stick
+    const sx = 190, sy = 300;
+    g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 3; g.beginPath(); g.arc(sx, sy, 70, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.35)'; g.beginPath(); g.arc(sx + 22, sy - 10, 30, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#fff'; g.font = `22px ${FONT}`; g.fillText('MOVE', sx, sy + 112);
+    g.fillStyle = IVORY; g.font = `18px ${BODY}`; g.fillText('Push to the edge', sx, sy + 140); g.fillText('to sprint', sx, sy + 164);
+    // the three buttons, with what each does
+    const B = [['SHOOT', 770, 360, 58, ['Hold, let go at the top', 'Defense: block']], ['PASS', 610, 330, 48, ['Tap to pass', 'Defense: steal']], ['MOVE', 700, 190, 46, ['Dribble moves', 'Defense: guard']]];
+    for (const [name, x, y, r, lines] of B) {
+      g.fillStyle = 'rgba(12,20,30,0.75)'; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); g.strokeStyle = 'rgba(255,255,255,0.6)'; g.lineWidth = 2; g.stroke();
+      g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.textAlign = 'center'; g.fillText(name, x, y + 7);
+    }
+    const note = (x, y, t1, t2, al = 'left') => { g.textAlign = al; g.fillStyle = IVORY; g.font = `17px ${BODY}`; g.fillText(t1, x, y); g.fillStyle = '#9fb3c8'; g.fillText(t2, x, y + 22); };
+    note(830, 450, B[0][4][0], B[0][4][1], 'right');
+    note(560, 410, B[1][4][0], B[1][4][1], 'right');
+    note(756, 170, B[2][4][0], B[2][4][1]);
+    // tutorial link + back
+    g.textAlign = 'center'; g.fillStyle = GOLD; roundRect(g, W / 2 - 160, 76, 320, 40, 20); g.fill();
+    g.fillStyle = NIGHT; g.font = `18px ${FONT}`; g.fillText('Play the Tutorial', W / 2, 103);
+    addRect(W / 2 - 160, 76, 320, 40, () => startTutorial());
+    g.fillStyle = '#9fb3c8'; g.font = `16px ${BODY}`; g.fillText('Tap anywhere else to go back', W / 2, 520);
+    W = rw; Game.ox = 0; g.restore();
+    addRect(0, 0, W, H, goTitle);
+  };
+}
+
+// ---- 6: venue select: short lock tags; the focused tile's full name and reason below the grid
+function lockTag(v) { return v.lock === 4 ? 'Win World Cup' : STAGES[v.lock].name + ' stage'; }
+{
+  const _lt = lockText;
+  const _dv = drawVenueSelect;
+  drawVenueSelect = function (g) {
+    lockText = lockTag;                                             // tiles: the short tag
+    const _ft = fitText;                                            // a narrow tile says "World Cup" rather than cutting the tag
+    fitText = function (g2, t, w) { return t === 'Win World Cup' && g2.measureText(t).width > w ? 'World Cup' : _ft.apply(this, arguments); };
+    try { _dv.apply(this, arguments); } finally { lockText = _lt; fitText = _ft; }
+    const opts = venueOptions(), v = opts[Game.idx]; if (!v) return;
+    const locked = v.kind !== 'random' && venueLocked(v), name = v.kind === 'random' ? 'Random venue' : v.name;
+    g.textAlign = 'center'; g.font = `14px ${FONT}`; g.fillStyle = locked ? '#ffb08a' : GOLD;
+    g.fillText(fitText(g, name + (locked ? '  •  ' + _lt(v) : ''), W - 40), W / 2, Input.touchMode ? 528 : 508);
+  };
+}
+
+// ---- the select screen can't run without a selection (never reached that way in play; fail safely)
+{
+  const _ds = drawSelect, _su = selectUpdate;
+  drawSelect = function (g) { if (!Game.sel) { dim(g, 0.55); return; } return _ds.apply(this, arguments); };
+  selectUpdate = function () { if (!Game.sel) { goTitle(); return; } return _su.apply(this, arguments); };
 }
 
 boot();

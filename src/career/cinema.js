@@ -141,15 +141,16 @@ function drawJournal(g) {
   const J = C.journal || [];
   if (!J.length) { g.fillStyle = IVORY; g.font = `15px ${BODY}`; g.fillText('Your story starts with your first game. Scenes you see are kept here.', W / 2, 200); return; }
   g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('↑ ↓ choose a scene  •  Enter to watch it again  •  Esc back', W / 2, 76);
-  const rows = 9, start = clamp(JournalUI.idx - 4, 0, Math.max(0, J.length - rows));
+  const TT = Input.touchMode && g === ctx, rows = TT ? 8 : 9, RH = TT ? 52 : 44, BH = RH - 6;   // v8.6.2: taller rows on phones
+  const start = clamp(JournalUI.idx - 4, 0, Math.max(0, J.length - rows));
   for (let k = 0; k < Math.min(rows, J.length); k++) {
-    const i = start + k, e = J[i], y = 96 + k * 44, sel = i === JournalUI.idx;
-    g.fillStyle = sel ? 'rgba(232,195,90,0.9)' : 'rgba(255,255,255,0.06)'; roundRect(g, 120, y, 720, 38, 10); g.fill();
-    g.textAlign = 'left'; g.fillStyle = sel ? NIGHT : GOLD; g.font = `12px ${FONT}`; g.fillText(e.title || 'Scene ' + (i + 1), 136, y + 16);
+    const i = start + k, e = J[i], y = 96 + k * RH, sel = i === JournalUI.idx;
+    g.fillStyle = sel ? 'rgba(232,195,90,0.9)' : 'rgba(255,255,255,0.06)'; roundRect(g, 120, y, 720, BH, 10); g.fill();
+    g.textAlign = 'left'; g.fillStyle = sel ? NIGHT : GOLD; g.font = `12px ${FONT}`; g.fillText(e.title || 'Scene ' + (i + 1), 136, TT ? y + 19 : y + 16);
     g.fillStyle = sel ? NIGHT : IVORY; g.font = `13px ${BODY}`;
     const first = e.lines[0] ? (e.lines[0][0] === 'you' ? (C.name || 'You') : castDef(e.lines[0][0]).name) + ': “' + e.lines[0][1] + '”' : '';
-    g.fillText(first.length > 92 ? first.slice(0, 90) + '…' : first, 136, y + 32);
-    addRect(120, y, 720, 38, () => { if (JournalUI.idx === i) journalPlay(i); else JournalUI.idx = i; });
+    g.fillText(fitText(g, first.length > 92 ? first.slice(0, 90) + '…' : first, 690), 136, TT ? y + 40 : y + 32);
+    addRect(120, y, 720, BH, () => { if (JournalUI.idx === i) journalPlay(i); else JournalUI.idx = i; });
   }
 }
 function journalPlay(i) { const e = (C.journal || [])[i]; if (!e) return; Game.replaying = true; playStory(e.lines.slice(), () => { Game.replaying = false; openJournal(); }, e.title); Game.replaying = false; }

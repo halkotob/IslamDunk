@@ -155,8 +155,9 @@ function drawPortrait(g, x, y, def, T, s = 1.5, outfit = null, anim = null) {
   g.restore();
 }
 function statBar(g, x, y, label, v) {
+  const T = Input.touchMode && g === ctx, lx = T ? 52 : 34, sp = T ? 8 : 9;   // v8.6.2: room for the larger label on phones
   g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; g.textAlign = 'left'; g.fillText(label, x, y + 8);
-  for (let i = 0; i < 10; i++) { g.fillStyle = i < v ? GOLD : 'rgba(255,255,255,0.12)'; roundRect(g, x + 34 + i * 9, y, 7, 8, 2); g.fill(); }
+  for (let i = 0; i < 10; i++) { g.fillStyle = i < v ? GOLD : 'rgba(255,255,255,0.12)'; roundRect(g, x + lx + i * sp, y, sp - 2, 8, 2); g.fill(); }
 }
 // Team card: color header with crest, two player tiles with live previews
 // (captain idles, guard dribbles), stat bars and hafiz badges.
@@ -182,9 +183,11 @@ function drawTeamPanel(g, x, y, T, active, ctrl) {
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(d.name, px + 86, py + 24);
     g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('#' + d.num + (d.sheikh ? '  Captain' : '  Guard'), px + 86, py + 42);
     const badges = d.sheikh ? [d.huffath && ['HAFIZ', '#57d68d'], d.mufti && ['MUFTI', '#e8c35a']].filter(Boolean) : [];   // titles only for shyookh
-    badges.forEach(([t, col], k) => { const bx = px + 86 + k * 52; g.fillStyle = col; roundRect(g, bx, py + 52, 48, 18, 9); g.fill(); g.fillStyle = NIGHT; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.fillText(t, bx + 24, py + 65); });
+    const TT = Input.touchMode && g === ctx, bw = TT ? 64 : 48;              // v8.6.2: wider pills and fewer, taller stat rows on phones
+    badges.forEach(([t, col], k) => { const bx = px + 86 + k * (bw + 4); g.fillStyle = col; roundRect(g, bx, py + 50, bw, TT ? 22 : 18, 9); g.fill(); g.fillStyle = NIGHT; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.fillText(t, bx + bw / 2, py + (TT ? 67 : 65)); });
     const S = d.stats;
-    [['SPD', S.spd], ['SHT', S.sht], ['DNK', S.dnk], ['DEF', S.def], ['STL', S.stl], ['HUS', S.hus || hustleOf(S)], ['CLU', S.clu || clutchOf(S, d)]].forEach(([l, v], k) => statBar(g, px + 50, py + 146 + k * 12.6, l, v));
+    const SB = [['SPD', S.spd], ['SHT', S.sht], ['DNK', S.dnk], ['DEF', S.def], ['STL', S.stl], ['HUS', S.hus || hustleOf(S)], ['CLU', S.clu || clutchOf(S, d)]];
+    (TT ? SB.slice(0, 4) : SB).forEach(([l, v], k) => statBar(g, TT ? px + 10 : px + 50, py + 146 + k * (TT ? 22 : 12.6), l, v));
     if (d.arch && ARCHETYPES[d.arch]) { g.font = `9px ${FONT}`; const at = ARCHETYPES[d.arch].label, aw = g.measureText(at).width + 12; g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, px + 96 - aw / 2, py + 128, aw, 13, 6); g.fill(); g.fillStyle = '#f2cf6b'; g.textAlign = 'center'; g.fillText(at, px + 96, py + 138); }
   });
   g.restore();
@@ -208,17 +211,17 @@ function drawSelect(g) {
   uiButton(g, W / 2 - 95, 446, 190, 40, s.step === 1 && (s.mode === 'oco' || s.mode === 'ovs') ? 'Get join code' : s.step === 2 || (s.step === 1 && s.mode === '2p') ? 'Tip off' : 'Confirm', selectOK, true);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('\u2190 \u2192 to change, Enter to confirm, Esc to go back', W / 2, 510);
 }
-const BOX_COLS = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'DNK', 'FG', 'FT', 'TOV', 'PF'];
+const BOX_COLS = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'DNK', 'FG', 'FT', 'TOV', 'PF'], BOX_COLS_TOUCH = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'FG', 'TOV'];
 function drawBoxScore(g, y0) {
   M.teams.forEach((T, ti) => {
     const y = y0 + ti * 112;
     g.fillStyle = 'rgba(8,16,24,0.85)'; roundRect(g, 150, y, 660, 100, 10); g.fill();
     drawCrest(g, 178, y + 24, 14, T.def);
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(T.def.name + '   ' + T.score, 200, y + 29);
-    const cols = BOX_COLS;
+    const TT = Input.touchMode && g === ctx, cols = TT ? BOX_COLS_TOUCH : BOX_COLS, cx0 = TT ? 446 : 440, cdx = TT ? 54 : 39;   // v8.6.2: phones get 7 wider columns
     g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8';
-    cols.forEach((c, i) => { g.textAlign = 'center'; g.fillText(c, 440 + i * 39, y + 28); });
-    if (!M.fmt.first21) {
+    cols.forEach((c, i) => { g.textAlign = 'center'; g.fillText(c, cx0 + i * cdx, y + 28); });
+    if (!M.fmt.first21 && !TT) {
       const n = Math.max(M.fmt.periods, M.quarter);
       g.textAlign = 'left'; g.font = `12px ${FONT}`;
       for (let i = 0; i < n; i++) {
@@ -228,10 +231,10 @@ function drawBoxScore(g, y0) {
       }
     }
     T.players.forEach((p, k) => {
-      const yy = y + 66 + k * 22; const s = p.stats;
-      g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(p.def.name + (p.human >= 0 ? '  (P' + (p.human + 1) + ')' : ''), 178, yy);
+      const yy = y + (TT ? 60 : 66) + k * (TT ? 26 : 22); const s = p.stats;
+      g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(fitText(g, p.def.name + (p.human >= 0 ? '  (P' + (p.human + 1) + ')' : ''), cx0 - 200), 178, yy);
       g.textAlign = 'center'; g.fillStyle = '#fff';
-      [s.pts, s.reb, s.ast, s.stl, s.blk, s.dnk, s.fgm + '/' + s.fga, (s.ftm || 0) + '/' + (s.fta || 0), s.tov || 0, s.pf || 0].forEach((v, i) => g.fillText(String(v), 440 + i * 39, yy));
+      (TT ? [s.pts, s.reb, s.ast, s.stl, s.blk, s.fgm + '/' + s.fga, s.tov || 0] : [s.pts, s.reb, s.ast, s.stl, s.blk, s.dnk, s.fgm + '/' + s.fga, (s.ftm || 0) + '/' + (s.fta || 0), s.tov || 0, s.pf || 0]).forEach((v, i) => g.fillText(String(v), cx0 + i * cdx, yy));
     });
   });
 }

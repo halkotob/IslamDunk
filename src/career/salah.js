@@ -75,7 +75,10 @@ function drawGymHUD(g) {
   { const iy = Input.touchMode ? H - 40 : H - 88;                 // compact info pill, clear of the wall
     g.fillStyle = 'rgba(8,16,24,0.72)'; roundRect(g, 12, iy, 300, 28, 14); g.fill();
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `11px ${FONT}`; g.fillText('AL-AMANAH GYM', 24, iy + 18);
-    g.font = `11px ${BODY}`; g.fillStyle = '#f2cf6b'; g.fillText(C.bp + ' BP', 132, iy + 18); g.fillStyle = '#9dffb0'; g.fillText(C.hb + ' Halal Bucks', 196, iy + 18);
+    // v8.6.2: each item starts after the last one (the phone font is wider); phones say HB
+    let ix = Math.max(132, 36 + g.measureText('AL-AMANAH GYM').width);
+    g.font = `11px ${BODY}`; g.fillStyle = '#f2cf6b'; g.fillText(C.bp + ' BP', ix, iy + 18); ix = Math.max(196, ix + 14 + g.measureText(C.bp + ' BP').width);
+    g.fillStyle = '#9dffb0'; g.fillText(C.hb + (Input.touchMode ? ' HB' : ' Halal Bucks'), ix, iy + 18);
     if (C.prayBonus) { g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, 320, iy, 140, 28, 14); g.fill(); g.fillStyle = '#f2cf6b'; g.font = `10px ${FONT}`; g.fillText('Salah bonus ready', 334, iy + 18); } }
   const d = Gym.drill;
   if (d && d.mini) drawMiniHUD(g);
@@ -97,7 +100,8 @@ function drawGymHUD(g) {
   } else if (!Gym.walk && !Gym.fade) {
     // drills + musalla: bottom bar on desktop, a column at top-right on touch
     // (clear of the joystick and the action buttons)
-    const acts = [['Drills', openDrills], ['Enter the musalla (E)', enterMusalla], ['Sheikh\u2019s office (O)', enterOffice]];
+    const acts = Input.touchMode ? [['Drills', openDrills], ['Musalla', enterMusalla], ['Sheikh\u2019s office', enterOffice]]   // v8.6.2: no key hints on touch
+      : [['Drills', openDrills], ['Enter the musalla (E)', enterMusalla], ['Sheikh\u2019s office (O)', enterOffice]];
     acts.forEach(([name, fn], i) => {
       const touch = Input.touchMode, x = touch ? W - 216 : 12 + i * 224, y = touch ? 56 + i * 44 : H - 50, w = touch ? 206 : 214, h = touch ? 38 : 40;
       g.fillStyle = i === 0 ? 'rgba(44,110,143,0.95)' : 'rgba(30,90,74,0.92)'; roundRect(g, x, y, w, h, 10); g.fill();
@@ -110,12 +114,12 @@ function drawGymHUD(g) {
     if (dxz(me, PRAY_SPOT) < 70) {
       const [px, py] = P(me.x, 130, me.z);
       g.fillStyle = 'rgba(30,90,74,0.95)'; roundRect(g, px - 90, py - 26, 180, 26, 13); g.fill();
-      g.fillStyle = '#f2cf6b'; g.textAlign = 'center'; g.font = `12px ${FONT}`; g.fillText('Enter the musalla (E)', px, py - 8);
+      g.fillStyle = '#f2cf6b'; g.textAlign = 'center'; g.font = `12px ${FONT}`; g.fillText(Input.touchMode ? 'Enter the musalla' : 'Enter the musalla (E)', px, py - 8);
       addRect(px - 90, py - 26, 180, 26, enterMusalla);
     } else if (dxz(me, OFFICE_SPOT) < 60) {
       const [px, py] = P(me.x, 130, me.z);
       g.fillStyle = 'rgba(122,79,42,0.95)'; roundRect(g, px - 90, py - 26, 180, 26, 13); g.fill();
-      g.fillStyle = '#f2e6c8'; g.textAlign = 'center'; g.font = `12px ${FONT}`; g.fillText('Sheikh\u2019s office (O)', px, py - 8);
+      g.fillStyle = '#f2e6c8'; g.textAlign = 'center'; g.font = `12px ${FONT}`; g.fillText(Input.touchMode ? 'Sheikh\u2019s office' : 'Sheikh\u2019s office (O)', px, py - 8);
       addRect(px - 90, py - 26, 180, 26, enterOffice);
     }
   }
@@ -123,7 +127,7 @@ function drawGymHUD(g) {
     g.globalAlpha = clamp(Gym.toastT, 0, 1); g.fillStyle = 'rgba(8,16,24,0.85)'; roundRect(g, W / 2 - 300, 150, 600, 34, 17); g.fill();
     g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = `14px ${BODY}`; g.fillText(Gym.toast, W / 2, 172); g.globalAlpha = 1;
   }
-  if (Input.touchMode && !TouchUI.shown && !Gym.overlay && !Gym.result && !Gym.fade) drawTouch(g);
+  if (Input.touchMode && !TouchUI.el && !Gym.overlay && !Gym.result && !Gym.fade) drawTouch(g);
   if (Gym.overlay === 'adhan') drawAdhan(g);
   if (Gym.overlay === 'drills') drawDrillsMenu(g);
   if (Gym.fade) drawPrayerFade(g);

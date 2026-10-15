@@ -96,12 +96,12 @@ function achToast(a) { _achQ.push({ a, t: 0 }); SFX.best && SFX.best(); }
 function drawAchToast(g) {
   const q = _achQ[0]; if (!q) return;
   q.t += Game.rdt || 0.016; const life = 3.2; if (q.t > life) { _achQ.shift(); return; }
-  const cards = TouchUI.shown && !TouchUI.portrait && M.players ? M.players.filter(p => p.human >= 0).length : 0;   // touch landscape: player cards sit top-right
+  const cards = 0;                                     // v8.6.2: touch has no player cards up here any more
   const k = Math.min(1, q.t / 0.25, (life - q.t) / 0.35), w = 280, x = W - w - 14 + (1 - k) * 40, y = 56 + cards * 62;
   g.save(); g.globalAlpha = clamp(k, 0, 1);
   g.fillStyle = 'rgba(8,14,22,0.9)'; roundRect(g, x, y, w, 50, 12); g.fill(); g.strokeStyle = 'rgba(242,207,107,0.6)'; g.lineWidth = 1.5; g.stroke();
   drawAchIcon(g, q.a.icon, x + 26, y + 25, 15, true);
-  g.textAlign = 'left'; g.fillStyle = '#f2cf6b'; g.font = `10px ${FONT}`; g.fillText('ACHIEVEMENT UNLOCKED', x + 50, y + 20);
+  g.textAlign = 'left'; g.fillStyle = '#f2cf6b'; g.font = `10px ${FONT}`; g.fillText(fitText(g, Input.touchMode ? 'UNLOCKED' : 'ACHIEVEMENT UNLOCKED', w - 62), x + 50, y + 20);
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText(fitText(g, q.a.name, w - 62), x + 50, y + 38);
   g.restore();
 }
@@ -126,16 +126,17 @@ function drawAchIcon(g, icon, x, y, r, on) {
 // Achievements screen: two pages, locked/unlocked, progress for multi-step, hidden until earned
 function drawAchievements(g) {
   dim(g, 0.78);
-  const per = 16, pages = Math.ceil(ACHIEVEMENTS.length / per), pg = clamp(Game.achPage || 0, 0, pages - 1);
+  const T = Input.touchMode, per = T ? 10 : 16, pages = Math.ceil(ACHIEVEMENTS.length / per), pg = clamp(Game.achPage || 0, 0, pages - 1);   // v8.6.2: phones get taller rows
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `26px ${FONT}`; g.fillText('Achievements', W / 2, 46);
-  g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(Ach.count() + ' of ' + ACHIEVEMENTS.length + ' unlocked  \u2022  page ' + (pg + 1) + ' of ' + pages + '  (\u2190 \u2192)', W / 2, 68);
+  g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(Ach.count() + ' of ' + ACHIEVEMENTS.length + ' unlocked  \u2022  page ' + (pg + 1) + ' of ' + pages + (T ? '  \u2022  tap for more' : '  (\u2190 \u2192)'), W / 2, 68);
   ACHIEVEMENTS.slice(pg * per, pg * per + per).forEach((a, i) => {
-    const col = i % 2, row = Math.floor(i / 2), x = W / 2 - 440 + col * 450, y = 86 + row * 52, on = Ach.has(a.id), secret = a.hidden && !on;
-    g.fillStyle = on ? 'rgba(30,90,74,0.55)' : 'rgba(255,255,255,0.05)'; roundRect(g, x, y, 430, 46, 10); g.fill();
-    drawAchIcon(g, secret ? 'moon' : a.icon, x + 24, y + 23, 15, on);
-    g.textAlign = 'left'; g.fillStyle = on ? '#fff' : '#9fb3c8'; g.font = `14px ${FONT}`; g.fillText(secret ? 'Hidden achievement' : a.name, x + 48, y + 20);
-    g.fillStyle = on ? '#cfe8dc' : '#6d7a8c'; g.font = `12px ${BODY}`; g.fillText(secret ? 'Keep exploring\u2026' : a.desc, x + 48, y + 37);
-    if (a.goal && !on && !secret) {
+    const col = i % 2, row = Math.floor(i / 2), x = W / 2 - 440 + col * 450, y = 86 + row * (T ? 86 : 52), on = Ach.has(a.id), secret = a.hidden && !on;
+    g.fillStyle = on ? 'rgba(30,90,74,0.55)' : 'rgba(255,255,255,0.05)'; roundRect(g, x, y, 430, T ? 80 : 46, 10); g.fill();
+    drawAchIcon(g, secret ? 'moon' : a.icon, x + 24, y + (T ? 40 : 23), 15, on);
+    g.textAlign = 'left'; g.fillStyle = on ? '#fff' : '#9fb3c8'; g.font = `14px ${FONT}`; g.fillText(fitText(g, secret ? 'Hidden achievement' : a.name, T ? 270 : 360), x + 48, y + (T ? 30 : 20));
+    g.fillStyle = on ? '#cfe8dc' : '#6d7a8c'; g.font = `12px ${BODY}`; g.fillText(T ? fitText(g, secret ? 'Keep exploring\u2026' : a.desc, 370) : secret ? 'Keep exploring\u2026' : a.desc, x + 48, y + (T ? 62 : 37));
+    if (T) { if (on || (a.goal && !secret)) { g.textAlign = 'right'; g.fillStyle = on ? '#57e389' : '#9fb3c8'; g.font = `11px ${FONT}`; g.fillText(on ? '\u2713' : (Ach.load().prog[a.id] || 0) + ' / ' + a.goal, x + 418, y + 30); } }
+    else if (a.goal && !on && !secret) {
       const pr = Ach.load().prog[a.id] || 0; g.fillStyle = 'rgba(255,255,255,0.1)'; roundRect(g, x + 300, y + 28, 110, 6, 3); g.fill();
       g.fillStyle = '#f2cf6b'; roundRect(g, x + 300, y + 28, 110 * pr / a.goal, 6, 3); g.fill();
       g.textAlign = 'right'; g.fillStyle = '#9fb3c8'; g.font = `10px ${FONT}`; g.fillText(pr + ' / ' + a.goal, x + 410, y + 22);

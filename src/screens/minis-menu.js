@@ -49,7 +49,7 @@ function minisUpdate() {
 function drawMinis(g) {
   dim(g, 0.75);
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `32px ${FONT}`; g.fillText('Mini games', W / 2, 92);
-  g.fillStyle = IVORY; g.font = `13px ${BODY}`; minisHelp().forEach((t, i) => g.fillText(t, W / 2, 124 + i * 19));
+  g.fillStyle = IVORY; g.font = `13px ${BODY}`; minisHelp().forEach((t, i) => g.fillText(t, W / 2, 124 + i * (Input.touchMode ? 25 : 19)));
   const R = minisRows();
   // one tap does it: a setting row steps to its next value, Start starts, Back goes back
   const list = R.map(r => ({ label: r.label, value: r.start || r.back ? null : r.get() }));

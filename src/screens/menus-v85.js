@@ -80,7 +80,7 @@ function setGroupItems(gi) {
     g.fillText(G.name, W / 2, 104);
     g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.fillText('‹  SETTINGS', W / 2, 134);
     addRect(W / 2 - 110, 118, 220, 24, () => { Game.idx = Game.setGroup; Game.setGroup = null; });
-    drawMenu(g, [...L.map(s => s.label), 'Back'], Game.idx, 190, i => { if (i === L.length) { Game.idx = Game.setGroup; Game.setGroup = null; } else L[i].step(1); }, [...L.map(s => s.get()), ''], 44);
+    drawMenu(g, [...L.map(s => s.label), 'Back'], Game.idx, 190, i => { if (i === L.length) { Game.idx = Game.setGroup; Game.setGroup = null; } else L[i].step(1); }, [...L.map(s => s.get()), ''], Math.min(44, Math.floor((H - 216) / (L.length + 1))));   // v8.6.2: longer lists close up to fit
   };
   // opening Settings always starts at the group list
   const _st = goTitle; goTitle = function () { Game.setGroup = null; return _st.apply(this, arguments); };

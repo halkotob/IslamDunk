@@ -184,8 +184,10 @@ function drawProfileCard(g, x, y) {
   if (L.need) { g.fillStyle = GOLD; roundRect(g, x + 160, y + 114, 220 * L.into / L.need, 10, 5); g.fill(); }
   g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(L.need ? L.into + ' / ' + L.need + ' XP to level ' + (L.n + 1) : 'Max level', x + 160, y + 140);
   const mw = k => (s.minis[k] || { w: 0 }).w;
-  const lines = ['Games ' + s.games + '   Wins ' + s.wins, 'HORSE wins ' + mw('horse') + '   Lightning wins ' + mw('lightning'), 'Around the World wins ' + mw('atw'), 'King of the Court crowns ' + s.crowns];
-  g.fillStyle = IVORY; g.font = `13px ${BODY}`; lines.forEach((t, i) => g.fillText(t, x + 160, y + 172 + i * 20));
+  const TT = Input.touchMode && g === ctx;                             // v8.6.2: phones get fewer, larger lines (not the saved card image)
+  const lines = TT ? ['Games ' + s.games + '   Wins ' + s.wins, 'Mini-game wins ' + (mw('horse') + mw('lightning') + mw('atw')), 'Crowns ' + s.crowns]
+    : ['Games ' + s.games + '   Wins ' + s.wins, 'HORSE wins ' + mw('horse') + '   Lightning wins ' + mw('lightning'), 'Around the World wins ' + mw('atw'), 'King of the Court crowns ' + s.crowns];
+  g.fillStyle = IVORY; g.font = `13px ${BODY}`; lines.forEach((t, i) => g.fillText(fitText(g, t, 228), x + 160, y + 176 + i * (TT ? 28 : 20)));
   g.fillStyle = '#9fb3c8'; g.font = `10px ${FONT}`; g.fillText('ISLAM DUNK', x + 160, y + 282);
 }
 function saveProfileCard() {
@@ -207,8 +209,9 @@ function drawProfile(g) {
   const L = Profile.level(), next = REWARDS.filter(r => r.lv > L.n).slice(0, 4);
   panel(g, 450, 350, 480, 150, false);
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(next.length ? 'COMING UP' : 'TRACK COMPLETE', 468, 374);
-  next.forEach((r, i) => { g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Level ' + r.lv + ':  ' + r.name, 468, 398 + i * 22); g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(KIND_TXT[r.kind], 720, 398 + i * 22); if (r.col) { g.fillStyle = r.col; roundRect(g, 690, 387 + i * 22, 22, 12, 6); g.fill(); } });
-  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.textAlign = 'left'; g.fillText('Every mode earns XP. Rewards are cosmetic only.', 30, 392);
+  const T = Input.touchMode, dy = T ? 30 : 22;                          // v8.6.2: name and kind each fit their column
+  next.forEach((r, i) => { g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'Level ' + r.lv + ':  ' + r.name, T ? 220 : 240), 468, 398 + i * dy); g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; const kx = T && r.col ? 748 : 720; g.fillText(fitText(g, KIND_TXT[r.kind], T ? 916 - kx : 196), kx, 398 + i * dy); if (r.col) { g.fillStyle = r.col; roundRect(g, T ? 718 : 690, (T ? 384 : 387) + i * dy, 22, 12, 6); g.fill(); } });
+  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.textAlign = 'left'; g.fillText(fitText(g, 'Every mode earns XP. Rewards are cosmetic only.', 400), 30, 392);
 }
 function profileUpdate() {
   const R = profileRows(); Game.idx = clamp(Game.idx | 0, 0, R.length - 1);

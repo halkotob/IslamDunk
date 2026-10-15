@@ -321,7 +321,7 @@ function drawMasjidView(g) {
   g.fillStyle = 'rgba(8,16,24,0.8)'; roundRect(g, 96, 8, 380, 60, 12); g.fill();
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `20px ${FONT}`; g.fillText('Masjid Al-Amanah', 112, 34);
   const lvl = masjidLevel(), jumuah = 40 + lvl * 22;
-  g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('About ' + jumuah + ' musallis at Jumu\u2019ah, ' + (8 + lvl * 4) + ' families in the community', 112, 56);
+  g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(Input.touchMode && g === ctx ? jumuah + ' at Jumu\u2019ah, ' + (8 + lvl * 4) + ' families' : 'About ' + jumuah + ' musallis at Jumu\u2019ah, ' + (8 + lvl * 4) + ' families in the community', 112, 58);   // v8.6.2: phone fits the panel
   ['Outside', 'Musalla'].forEach((t, i) => {
     const x = W - 320 + i * 150, on = (i === 1) === inside;
     g.fillStyle = on ? GOLD : 'rgba(8,16,24,0.8)'; roundRect(g, x, 16, 140, 32, 16); g.fill();

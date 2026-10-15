@@ -160,7 +160,7 @@ function runV2Update() {
     _r(g);
     if (Game.screen === 'runvow' || Game.screen === 'runmap') { const rw = W, ox = Math.round((W - 960) / 2); g.save(); g.translate(ox, 0); W = 960; Game.ox = ox; runV2Screen(g); W = rw; Game.ox = 0; g.restore(); drawBackButton(g); }
     else if (Game.screen === 'runend' && Run.champion) { const rw = W, ox = Math.round((W - 960) / 2); g.save(); g.translate(ox, 0); W = 960; g.textAlign = 'center'; g.fillStyle = '#ffd76a'; g.font = `20px ${FONT}`; g.fillText('♛ You beat the Champions. Run complete, alhamdulillah.', W / 2, 220); W = rw; g.restore(); }
-    else if (Game.screen === 'runhome') { const rw = W, ox = Math.round((W - 960) / 2); g.save(); g.translate(ox, 0); W = 960; g.textAlign = 'center'; g.fillStyle = '#9dffb0'; g.font = `12px ${BODY}`; g.fillText('Solo runs: take a vow, choose your path through ' + RUN_STOPS + ' stops, and beat the Champions in the final.', W / 2, 127); W = rw; g.restore(); }
+    else if (Game.screen === 'runhome') { const rw = W, ox = Math.round((W - 960) / 2); g.save(); g.translate(ox, 0); W = 960; g.textAlign = 'center'; g.fillStyle = '#9dffb0'; g.font = `12px ${BODY}`; g.fillText('Solo runs: take a vow, choose your path through ' + RUN_STOPS + ' stops, and beat the Champions in the final.', W / 2, Input.touchMode ? 140 : 127); W = rw; g.restore(); }
   };
   BACK.runvow = () => { Run.active = false; openBarakah(); };
   BACK.runmap = () => { Run.active = false; Game.screen = 'runend'; Game.idx = 0; };

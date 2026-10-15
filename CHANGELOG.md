@@ -1,5 +1,65 @@
 # Changelog
 
+## 8.6.2: phone pass
+On a phone the 960x540 canvas is drawn at 0.55-0.63x, so most labels landed at 6-9 CSS px and the HUD
+and buttons covered the court. Everything below applies on touch devices only; desktop is unchanged
+except where noted.
+
+- **Minimum text size: 11 CSS px.** Text that would land below 11 CSS px on screen is drawn at 11 px
+  (about 17 game px on an iPhone 13 in landscape, 20 on a 667x300 phone). It is applied per draw and per
+  measure, so truncation and wrapping use the real width; the canvas is not scaled. Screens laid out
+  for the bigger text: hub, bracket, stats and box scores (phones drop SPG, BPG and 3P% from the career
+  table), goals and badges, season summary, scouting report, pre-game (partner box), journal, musalla,
+  adhan, masjid, train, gym, new season, player creator (phones show the build summary instead of the
+  nine pip rows), profile, team select, Noor choice, halftime box score (PTS REB AST STL BLK FG TOV),
+  online lobby, achievements, settings, mini games.
+- **In-match HUD.** The player card (name, TURBO, NOOR, POISE) is gone on touch. A compact turbo bar
+  sits under the scoreboard, in the crowd. Chips appear next to it only while they apply, each an icon
+  plus text: ON FIRE, the active Noor power-up, NOOR READY, WINDED, PRESSURE. The full card stays on
+  desktop.
+- **Touch buttons.** Main word only; the second line ("2x: SIGNATURE", "hold: SCREEN") shows during
+  the first game after install, then never again. A button with no action is hidden instead of
+  showing "–". New in Settings > Controls & camera (touch devices only): Button size (Small, Medium,
+  Large), Button opacity (Solid, 80%, 60%) and Left-handed layout (mirrors the stick and the buttons),
+  all saved. Buttons fade to 30% after 2 s without a touch and come back on the next touch.
+- **How to play** on touch is a labelled diagram of the stick and buttons plus a Play the Tutorial
+  button. The keyboard text stays on desktop.
+- **Venue select.** Locked tiles show a lock and a short tag (State stage, National stage, World
+  stage, Win World Cup; "World Cup" where the tile is too narrow). The focused tile's full name and lock
+  reason show under the grid.
+- **Shorter lines on touch.** Keyboard hints are removed where every item can be tapped, or reworded
+  for a tap ("Tap to close", "Tap the letters, then Join", "Tap a scene twice to watch it again",
+  "Camera" for "Camera (C in game)"). Shortened:
+  - Hub: "Spend on training", "Spend on projects" (were the full sentences); trophy names Nat. for National.
+  - Bracket: "Top two in each group reach the semis".
+  - Goals: badge text without the parenthesis and "in career games"; "+40 BP each, +100 for all";
+    "N game(s) left this week".
+  - Pre-game: "No salah bonus. Answer the adhan to earn one."; CPU difficulty without the stage note;
+    the players' height and build line is dropped.
+  - Musalla header "Walk up to someone"; adhan "Praying gives a bonus next game." (the key hint line is gone).
+  - Masjid: "N at Jumu'ah, N families".
+  - Train: "You have N BP. Each level costs more."; the stat explanation line is dropped on phones.
+  - Gym: "Musalla", "Sheikh's office" (no key letters); "N HB".
+  - New season: "Stats, upgrades, banners and chemistry carry over." and "Next: the Metro Masjid
+    League, CPU one level up."
+  - Profile card: games, wins, mini-game wins and crowns on separate lines.
+  - Achievement toast "UNLOCKED"; achievements page 10 per page with "tap for more".
+  - Lobby: "Your friend joins with this code"; the game picker is one row with arrows.
+  - About: "Masjid league basketball, made with care."
+- **Fixes (all devices).** The `select` screen no longer throws "Cannot read properties of null
+  (reading 'mode')" when it is reached without a setup (no menu path does this; it now goes back to the
+  title). Online lobby: the settings rows no longer overlap the ten game chips on desktop. Train: the
+  stat explanation line no longer sits on the Back button. Barakah Run: the team crest no longer
+  overlaps Begin run. Canvas-drawn touch buttons only appear if the HTML controls never loaded (they
+  showed as ghost buttons behind overlays).
+- **Tests.** The `mobile` test now runs a phone text audit (`tests/phone-audit.mjs`, also runnable on
+  its own) on iPhone 13 landscape and 667x300: 47 screens, with a career save loaded and a match
+  started. It fails on any text past the canvas edge, any text under 11 CSS px, any touch button over
+  the scoreboard (every size, both hands) and any page error, naming the screen and the text. HUD
+  screenshots: `docs/review/img/phone-hud-iphone.png`, `docs/review/img/phone-hud-667x300.png`.
+  The `phase6` settings check now counts the three touch-button settings only on touch devices (where
+  Controls & camera has 8 rows; the audit checks that screen fits).
+
 ## 8.6.1: Noor power-ups and defense measurement
 - **Noor power-ups.** A correct Noor answer now opens a choice of three effects, each named for a
   virtue. Nothing is left to chance: the three shown are always the three you used least recently,

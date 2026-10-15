@@ -223,7 +223,7 @@ function drawLobby(g) {
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Online lobby', W / 2, 40);
   // code, big, with copy / share
   g.fillStyle = '#fff'; g.font = `44px ${FONT}`; g.fillText(Net.code || '----', W / 2, 92);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(host ? 'Your friend opens the game, picks Online → Join with a code, and types this' : 'You joined lobby ' + Net.code, W / 2, 112);
+  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(host ? (Input.touchMode ? 'Your friend joins with this code' : 'Your friend opens the game, picks Online → Join with a code, and types this') : 'You joined lobby ' + Net.code, W / 2, Input.touchMode ? 120 : 112);
   if (host) { uiButton(g, W / 2 + 96, 58, 96, 32, 'Copy code', () => Lobby.copyCode()); uiButton(g, W / 2 + 200, 58, 96, 32, 'Share link', () => Lobby.share()); }
   // players
   panel(g, 30, 130, 270, 300, false);
@@ -244,27 +244,37 @@ function drawLobby(g) {
   // game + settings
   panel(g, 316, 130, 614, 300, false);
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(host ? 'GAME  (← → to change)' : 'GAME  (the host picks)', 334, 156);
-  LOBBY_GAMES.forEach((x, i) => {
-    const cx = 334 + (i % 3) * 196, cy = 166 + Math.floor(i / 3) * 34, on = o.game === x.id;
-    g.fillStyle = on ? 'rgba(232,195,90,0.92)' : 'rgba(255,255,255,0.08)'; roundRect(g, cx, cy, 186, 28, 8); g.fill();
-    if (host && Lobby.row === 0 && on) { g.strokeStyle = '#fff'; g.lineWidth = 2; roundRect(g, cx, cy, 186, 28, 8); g.stroke(); }
-    g.textAlign = 'center'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${on ? FONT : BODY}`; g.fillText(x.name, cx + 93, cy + 19);
-    if (host) addRect(cx, cy, 186, 28, () => { o.game = x.id; Net.mode = x.id; Lobby.row = 0; Lobby.changed(); });
+  // v8.6.2: 10 games no longer fit 3 columns above the settings (they overlapped). Desktop: 4 columns, 3 rows.
+  // Touch: one Game row with arrows, so the rows can be tall enough to read and tap.
+  const T = Input.touchMode, stepGame = d => { const n = LOBBY_GAMES.length, i = LOBBY_GAMES.findIndex(x => x.id === o.game); o.game = LOBBY_GAMES[(i + d + n) % n].id; Net.mode = o.game; Lobby.row = 0; Lobby.changed(); };
+  if (T) {
+    const y = 192, gname = (LOBBY_GAMES.find(x => x.id === o.game) || LOBBY_GAMES[0]).name;
+    if (host && Lobby.row === 0) { g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, 330, y - 22, 586, 32, 8); g.fill(); }
+    g.textAlign = 'left'; g.fillStyle = '#cfd8e3'; g.font = `13px ${BODY}`; g.fillText('Game', 344, y);
+    g.textAlign = 'right'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(fitText(g, gname, 300), host ? 860 : 900, y);
+    if (host) { roundButton(g, 520, y - 6, 15, '‹', () => stepGame(-1)); roundButton(g, 890, y - 6, 15, '›', () => stepGame(1)); }
+  } else LOBBY_GAMES.forEach((x, i) => {
+    const cx = 334 + (i % 4) * 146, cy = 166 + Math.floor(i / 4) * 32, on = o.game === x.id;
+    g.fillStyle = on ? 'rgba(232,195,90,0.92)' : 'rgba(255,255,255,0.08)'; roundRect(g, cx, cy, 138, 26, 8); g.fill();
+    if (host && Lobby.row === 0 && on) { g.strokeStyle = '#fff'; g.lineWidth = 2; roundRect(g, cx, cy, 138, 26, 8); g.stroke(); }
+    g.textAlign = 'center'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${on ? FONT : BODY}`; g.fillText(fitText(g, x.name, 130), cx + 69, cy + 18);
+    if (host) addRect(cx, cy, 138, 26, () => { o.game = x.id; Net.mode = x.id; Lobby.row = 0; Lobby.changed(); });
   });
   const savedO = Lobby.o; if (!host) Lobby.o = o;                       // render the host's choices read-only
   const R = Lobby.rows(); if (!host) Lobby.o = savedO;
-  if (!R.length) { g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(o.game === 'lightning' ? 'Lightning: you, your friend and three masjid members. Last one standing wins.' : o.game === 'horse' ? 'HORSE: head to head. Match the shot or take a letter.' : '', 334, 254); }
-  const VIS = 7, top0 = host ? clamp(Lobby.row - 4, 0, Math.max(0, R.length - VIS)) : clamp(Lobby.gScroll | 0, 0, Math.max(0, R.length - VIS));   // v7.6: the list scrolls
+  const Y0 = T ? 234 : 284, DY = T ? 34 : 24, VIS = T ? 6 : 6;   // v8.6.2: the list starts below the games
+  if (!R.length) { g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapTextLeft(g, o.game === 'lightning' ? 'Lightning: you, your friend and three masjid members. Last one standing wins.' : o.game === 'horse' ? 'HORSE: head to head. Match the shot or take a letter.' : '', 334, Y0 + 6, 570, 20); }
+  const top0 = host ? clamp(Lobby.row - (VIS - 2), 0, Math.max(0, R.length - VIS)) : clamp(Lobby.gScroll | 0, 0, Math.max(0, R.length - VIS));   // v7.6: the list scrolls
   if (!host) Lobby.gScroll = top0;
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`;
-  if (top0 > 0) g.fillText('\u25B2', 916, 242);
-  if (top0 + VIS < R.length) g.fillText('\u25BC', 916, 244 + (VIS - 1) * 26 + 2);
+  if (top0 > 0) g.fillText('\u25B2', 916, Y0 - 2);
+  if (top0 + VIS < R.length) g.fillText('\u25BC', 916, Y0 + (VIS - 1) * DY + 2);
   R.slice(top0, top0 + VIS).forEach((r, i0) => {
-    const i = top0 + i0, y = 244 + i0 * 26, sel = host && Lobby.row === i + 1;
-    if (sel) { g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, 330, y - 17, 586, 24, 6); g.fill(); }
-    g.textAlign = 'left'; g.fillStyle = '#cfd8e3'; g.font = `13px ${BODY}`; g.fillText(r.label, 344, y);
-    g.textAlign = 'right'; g.fillStyle = '#fff'; g.font = `13px ${FONT}`; g.fillText(r.get(), host ? 860 : 900, y);
-    if (host) { const rr = Input.touchMode ? 13 : 11; roundButton(g, 600, y - 5, rr, '‹', () => { Lobby.row = i + 1; r.step(-1); Lobby.changed(); }); roundButton(g, 890, y - 5, rr, '›', () => { Lobby.row = i + 1; r.step(1); Lobby.changed(); }); addRect(330, y - 17, 260, 24, () => { Lobby.row = i + 1; }); }
+    const i = top0 + i0, y = Y0 + i0 * DY, sel = host && Lobby.row === i + 1, ax = T ? 520 : 600;
+    if (sel) { g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, 330, y - (T ? 22 : 17), 586, T ? 32 : 24, 6); g.fill(); }
+    g.textAlign = 'left'; g.fillStyle = '#cfd8e3'; g.font = `13px ${BODY}`; g.fillText(fitText(g, r.label, ax - 360), 344, y);
+    g.textAlign = 'right'; g.fillStyle = '#fff'; g.font = `13px ${FONT}`; g.fillText(fitText(g, String(r.get()), (host ? 860 : 900) - ax - 24), host ? 860 : 900, y);
+    if (host) { const rr = T ? 15 : 11; roundButton(g, ax, y - 5, rr, '‹', () => { Lobby.row = i + 1; r.step(-1); Lobby.changed(); }); roundButton(g, 890, y - 5, rr, '›', () => { Lobby.row = i + 1; r.step(1); Lobby.changed(); }); addRect(330, y - (T ? 22 : 17), ax - 350, T ? 32 : 24, () => { Lobby.row = i + 1; }); }
   });
   // bottom: Start / Rematch (host) or Ready (guest), Leave
   if (host) {

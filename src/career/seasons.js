@@ -125,19 +125,26 @@ function drawNewSeason(g) {
   const so = C.seasonOver, titles = (C.titles || []).filter(t => t.s === (C.season || 1)).length;
   const why = so ? 'Season ' + so.s + ' ended: ' + so.round + ' loss to ' + so.opp + ' (' + so.us + '\u2013' + so.them + ') at the ' + STAGES[so.st].name + ' stage.'
     : C.done ? 'Season ' + (C.season || 1) + ' complete: World Ummah Cup champions, alhamdulillah.' : '';
-  if (why) { g.fillStyle = so ? '#ffb08a' : '#9dffb0'; g.font = `14px ${FONT}`; wrapText(g, why, W / 2, 136, 600, 20); }
+  let wy = 0; if (why) { g.fillStyle = so ? '#ffb08a' : '#9dffb0'; g.font = `14px ${FONT}`; wy = wrapText(g, why, W / 2, 136, 600, Input.touchMode && g === ctx ? 24 : 20); }
   const now = seasonBoost(), next = Math.min(0.6, 0.3 * (C.season || 1)), chem = chemOf(C.partner || 'saleem');
+  const TT = Input.touchMode && g === ctx;                            // v8.6.2: phones get the short version
+  if (TT) {
+    const y0 = why ? wy + 30 : 146;
+    g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Stats, upgrades, banners and chemistry carry over.', W / 2, y0);
+    g.fillStyle = '#9fb3c8'; g.fillText('Next: the Metro Masjid League' + (next > now ? ', CPU one level up.' : ' again.'), W / 2, y0 + 26);
+  } else {
   g.fillStyle = IVORY; g.font = `13px ${BODY}`;
   wrapText(g, 'Carries over: your stats (unless you renew), masjid and gym upgrades, ' + (titles ? titles + ' title banner' + (titles > 1 ? 's' : '') + ' from this season, ' : 'every title banner, ') + 'and chemistry with ' + castDef(C.partner || 'saleem').name + ' (' + chemTier(chem).split(':')[0].toLowerCase() + ').', W / 2, so || C.done ? 166 : 140, 600, 18);
   g.fillStyle = '#9fb3c8';
   wrapText(g, 'Next year: back to the Metro Masjid League with new opponents' + (next > now ? ', and every CPU opponent steps up a level' : ' (the CPU ladder is already at its toughest)') + '.', W / 2, so || C.done ? 210 : 184, 600, 18);
+  }
   const opts = [['Keep my stats', 'Carry every level into the new season.'], ['Renew my intention', 'Reset stats to 4 and refund ' + respecRefund() + ' BP to spend again.'], ['Not yet', 'Back to the hub.']];
   opts.forEach(([t, d], i) => {
-    const y = 246 + i * 70, on = Game.idx === i;
-    g.fillStyle = on ? 'rgba(232,195,90,0.92)' : 'rgba(255,255,255,0.08)'; roundRect(g, W / 2 - 260, y, 520, 60, 12); g.fill();
-    g.textAlign = 'left'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `17px ${FONT}`; g.fillText(t, W / 2 - 240, y + 26);
-    g.fillStyle = on ? '#3a2a0a' : '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(d, W / 2 - 240, y + 46);
-    addRect(W / 2 - 260, y, 520, 60, () => { Game.idx = i; if (i === 2) careerHub(); else startNewSeason(i === 1); });
+    const y = TT ? 238 + i * 76 : 246 + i * 70, bh = TT ? 68 : 60, on = Game.idx === i;
+    g.fillStyle = on ? 'rgba(232,195,90,0.92)' : 'rgba(255,255,255,0.08)'; roundRect(g, W / 2 - 260, y, 520, bh, 12); g.fill();
+    g.textAlign = 'left'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `17px ${FONT}`; g.fillText(t, W / 2 - 240, TT ? y + 28 : y + 26);
+    g.fillStyle = on ? '#3a2a0a' : '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(TT ? fitText(g, d, 480) : d, W / 2 - 240, TT ? y + 54 : y + 46);
+    addRect(W / 2 - 260, y, 520, bh, () => { Game.idx = i; if (i === 2) careerHub(); else startNewSeason(i === 1); });
   });
 }
 // banners hang from the gym ceiling for every title, by season
@@ -217,13 +224,13 @@ function statsUpdate() {
     if (menuHit('left') || menuHit('right')) { const i = seasons.indexOf(S.s), j = clamp(i + (menuHit('left') ? -1 : 1), 0, seasons.length - 1); if (j !== i) { S.s = seasons[j]; S.sel = 0; S.scroll = 0; SFX.blip(); } }
     if (menuHit('up')) { S.sel = Math.max(0, S.sel - 1); SFX.blip(); }
     if (menuHit('down')) { S.sel = Math.min(Math.max(0, list.length - 1), S.sel + 1); SFX.blip(); }
-    S.scroll = clamp(S.scroll, S.sel - 8, S.sel);
+    S.scroll = clamp(S.scroll, S.sel - (Input.touchMode ? 7 : 8), S.sel);
     if (menuHit('ok') && list[S.sel]) { S.view = 'box'; S.box = list[S.sel]; SFX.blip(); }
   }
   if (menuHit('back')) careerHub();
 }
 function drawStats(g) {
-  const S = Game.stats;
+  const S = Game.stats, TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone layout
   if (S.view === 'box') return drawBoxBook(g, S.box);
   panel(g, 30, 20, 900, 500, true);
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `24px ${FONT}`; g.fillText('Stats & box scores', 56, 58);
@@ -243,30 +250,34 @@ function drawStats(g) {
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText('SEASON HIGHS', 56, 256);
   const hi = k => mine.reduce((m, r, i) => r[k] > m.v ? { v: r[k], g: list[i] } : m, { v: 0, g: null });
   [['Points', 'pts'], ['Rebounds', 'reb'], ['Assists', 'ast'], ['Steals', 'stl'], ['Blocks', 'blk']].forEach(([l, k], i) => {
-    const h = hi(k), y = 280 + i * 22; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(l, 56, y);
-    g.fillStyle = '#fff'; g.font = `13px ${FONT}`; g.fillText(String(h.v), 150, y); if (h.g) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('vs ' + h.g.opp.replace('Masjid ', '') + ', ' + STAGES[h.g.st].name, 184, y); }
+    const h = hi(k), y = TT ? 282 + i * 25 : 280 + i * 22, vx = TT ? 172 : 150; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(l, 56, y);
+    g.fillStyle = '#fff'; g.font = `13px ${FONT}`; g.fillText(String(h.v), vx, y); if (h.g) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(fitText(g, 'vs ' + h.g.opp.replace('Masjid ', '') + ', ' + STAGES[h.g.st].name, 440 - vx - 34), vx + 34, y); }
   });
   // partners this season
   const by = {}; for (const x of list) by[x.partner] = (by[x.partner] || 0) + 1;
-  g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText('PARTNERS', 56, 410);
-  g.fillStyle = IVORY; g.font = `13px ${BODY}`; wrapTextLeft(g, Object.keys(by).length ? Object.entries(by).map(([k, n]) => castDef(k).name + ' ' + n + 'g (chem ' + chemOf(k) + ')').join('  •  ') : 'No games yet.', 56, 432, 380, 18);
+  g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText('PARTNERS', 56, TT ? 418 : 410);
+  g.fillStyle = IVORY; g.font = `13px ${BODY}`; wrapTextLeft(g, Object.keys(by).length ? Object.entries(by).map(([k, n]) => castDef(k).name + ' ' + n + 'g (chem ' + chemOf(k) + ')').join('  •  ') : 'No games yet.', 56, TT ? 442 : 432, 380, TT ? 24 : 18);
   // game log
   g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText('GAME LOG  (Enter: box score)', 470, 92);
   if (!list.length) { g.fillStyle = '#9fb3c8'; g.font = `14px ${BODY}`; g.fillText('No games this season yet.', 470, 120); }
-  list.slice(S.scroll, S.scroll + 9).forEach((x, k) => {
-    const i = S.scroll + k, y = 104 + k * 40, on = S.sel === i, r = x.a[0];
-    g.fillStyle = on ? 'rgba(232,195,90,0.9)' : 'rgba(255,255,255,0.05)'; roundRect(g, 466, y, 440, 36, 8); g.fill();
-    g.textAlign = 'left'; g.fillStyle = on ? NIGHT : (x.w ? '#9dffb0' : '#ffb0b0'); g.font = `13px ${FONT}`; g.fillText((x.w ? 'W ' : 'L ') + x.us + '–' + x.them, 478, y + 15);
-    g.fillStyle = on ? NIGHT : '#fff'; g.font = `12px ${BODY}`; g.fillText(fitText(g, 'vs ' + x.opp.replace('Masjid ', '') + '  •  ' + STAGES[x.st].name + ', ' + x.r, 280), 560, y + 15);
-    g.fillStyle = on ? '#3a2a0a' : '#9fb3c8'; g.fillText(r.pts + ' pts, ' + r.reb + ' reb, ' + r.ast + ' ast  •  ' + r.fgm + '/' + r.fga + ' FG', 478, y + 30);
-    addRect(466, y, 440, 36, () => { S.sel = i; S.view = 'box'; S.box = x; });
+  const RH = TT ? 48 : 40, BH = RH - 4;
+  list.slice(S.scroll, S.scroll + (TT ? 8 : 9)).forEach((x, k) => {
+    const i = S.scroll + k, y = 104 + k * RH, on = S.sel === i, r = x.a[0];
+    g.fillStyle = on ? 'rgba(232,195,90,0.9)' : 'rgba(255,255,255,0.05)'; roundRect(g, 466, y, 440, BH, 8); g.fill();
+    g.textAlign = 'left'; g.fillStyle = on ? NIGHT : (x.w ? '#9dffb0' : '#ffb0b0'); g.font = `13px ${FONT}`; const sc = (x.w ? 'W ' : 'L ') + x.us + '–' + x.them; g.fillText(sc, 478, TT ? y + 19 : y + 15);
+    const ox = TT ? Math.max(560, 490 + g.measureText(sc).width) : 560;
+    g.fillStyle = on ? NIGHT : '#fff'; g.font = `12px ${BODY}`; g.fillText(fitText(g, 'vs ' + x.opp.replace('Masjid ', '') + '  •  ' + STAGES[x.st].name + ', ' + x.r, 896 - ox), ox, TT ? y + 19 : y + 15);
+    g.fillStyle = on ? '#3a2a0a' : '#9fb3c8'; g.fillText(fitText(g, r.pts + ' pts, ' + r.reb + ' reb, ' + r.ast + ' ast  •  ' + r.fgm + '/' + r.fga + ' FG', 418), 478, TT ? y + 39 : y + 30);
+    addRect(466, y, 440, BH, () => { S.sel = i; S.view = 'box'; S.box = x; });
   });
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('← → season  •  ↑ ↓ game  •  Tab: career totals  •  Esc: back', W / 2, 504);
 }
 function drawCareerTable(g) {
   const seasons = statSeasons(), cols = ['SEASON', 'GP', 'W–L', 'PPG', 'RPG', 'APG', 'SPG', 'BPG', 'TOV', 'FG%', '3P%', 'FT%', 'TITLES'];
-  const xs = [56, 150, 200, 266, 322, 378, 434, 490, 546, 602, 668, 734, 800];
-  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; cols.forEach((c, i) => g.fillText(c, xs[i], 104));
+  const TT = Input.touchMode && g === ctx, keep = TT ? [0, 1, 2, 3, 4, 5, 8, 9, 11, 12] : null;   // v8.6.2: phones drop SPG, BPG, 3P%
+  const xs = TT ? [56, 176, 236, 316, 396, 476, 0, 0, 556, 636, 0, 726, 816] : [56, 150, 200, 266, 322, 378, 434, 490, 546, 602, 668, 734, 800];
+  const on = i => !keep || keep.includes(i);
+  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; cols.forEach((c, i) => on(i) && g.fillText(c, xs[i], 104));
   const rowOf = (label, games, titles) => { const r = games.map(x => x.a[0]), t = statLine(r), w = games.filter(x => x.w).length;
     return [label, t.gp, w + '–' + (t.gp - w), avg(t.pts, t.gp), avg(t.reb, t.gp), avg(t.ast, t.gp), avg(t.stl, t.gp), avg(t.blk, t.gp), avg(t.tov, t.gp), pct(t.fgm, t.fga), pct(t.tpm, t.tpa), pct(t.ftm, t.fta), titles]; };
   const rows = seasons.map(s => rowOf('Season ' + s, (C.games || []).filter(x => x.s === s), ((C.titles || []).filter(t => t.s === s).map(t => STAGES[t.st].name[0]).join(' ')) || '–'));
@@ -274,9 +285,9 @@ function drawCareerTable(g) {
   rows.forEach((r, k) => {
     const y = 132 + k * 30, tot = k === rows.length - 1;
     if (tot) { g.fillStyle = 'rgba(232,195,90,0.15)'; g.fillRect(48, y - 18, 860, 26); }
-    r.forEach((v, i) => { g.textAlign = 'left'; g.fillStyle = tot ? GOLD : i === 0 ? '#fff' : IVORY; g.font = `${i === 0 || tot ? 13 : 13}px ${i === 0 || tot ? FONT : BODY}`; g.fillText(String(v), xs[i], y); });
+    r.forEach((v, i) => { if (!on(i)) return; g.textAlign = 'left'; g.fillStyle = tot ? GOLD : i === 0 ? '#fff' : IVORY; g.font = `${i === 0 || tot ? 13 : 13}px ${i === 0 || tot ? FONT : BODY}`; g.fillText(String(v), xs[i], y); });
   });
-  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Titles: L Local, S State, N National, W World. Box scores are kept for your last 160 games.', 56, 470);
+  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(TT ? 'Titles: L Local, S State, N National, W World' : 'Titles: L Local, S State, N National, W World. Box scores are kept for your last 160 games.', 56, 470);
   g.textAlign = 'center'; g.fillText('Tab: season view  •  Esc: back', W / 2, 504);
 }
 function drawBoxBook(g, x) {
@@ -304,7 +315,17 @@ function drawBoxBook(g, x) {
 // ------------------------------------------------------------- pregame: choose your partner
 function cyclePartner(d) { const i = PARTNERS.indexOf(C.partner || 'saleem'); C.partner = PARTNERS[(i + d + PARTNERS.length) % PARTNERS.length]; SFX.blip(); saveCareer(); }
 function drawPartnerPicker(g) {                                       // top-right of the Al-Amanah card on the pre-game screen
-  const id = C.partner || 'saleem', v = chemOf(id), x = 700, y = 358, w = 210;
+  const id = C.partner || 'saleem', v = chemOf(id), x = 700, w = 210, TT = Input.touchMode && g === ctx, y = 358, h = TT ? 92 : 66;
+  if (TT) {                                                           // v8.6.2: phone layout, one item per line
+    g.fillStyle = 'rgba(8,16,24,0.9)'; roundRect(g, x, y, w, h, 10); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.55)'; g.lineWidth = 1; g.stroke();
+    g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; g.fillText('PARTNER', x + 10, y + 19);
+    g.fillStyle = '#fff'; g.font = `13px ${FONT}`; g.fillText(fitText(g, '\u25C2 ' + castDef(id).name + ' \u25B8', w - 20), x + 10, y + 41);
+    g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; g.fillText('Chem ' + v, x + 10, y + 63); const mx = x + 22 + g.measureText('Chem ' + v).width;
+    meter(g, mx, y + 56, x + w - 10 - mx, 6, v / 100, v >= 75 ? '#57e389' : v >= 25 ? '#f2cf6b' : '#9fb3c8');
+    g.fillStyle = IVORY; g.font = `11px ${BODY}`; g.fillText(fitText(g, chemTier(v), w - 20), x + 10, y + 84);
+    addRect(x, y, w / 2, h, () => cyclePartner(-1)); addRect(x + w / 2, y, w / 2, h, () => cyclePartner(1));
+    return;
+  }
   g.fillStyle = 'rgba(8,16,24,0.9)'; roundRect(g, x, y, w, 66, 10); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.55)'; g.lineWidth = 1; g.stroke();
   g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `9px ${FONT}`; g.fillText('PARTNER  \u2190 \u2192', x + 10, y + 14);
   g.fillStyle = '#fff'; g.font = `13px ${FONT}`; g.fillText(fitText(g, '\u25C2 ' + castDef(id).name + ' \u25B8', w - 20), x + 10, y + 32);
@@ -319,9 +340,9 @@ function drawPartnerPicker(g) {                                       // top-rig
   const _dcb = drawCareerBracket;
   drawCareerBracket = function (g) {
     const b = C.bracket; if (!b || b.fmt !== 'pool') return _dcb(g);
-    const S = STAGES[C.stage];
+    const S = STAGES[C.stage], TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone layout
     g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText(S.title, W / 2, 44);
-    g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('Two groups of four. The top two in each group go to the semifinals.', W / 2, 66);
+    g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(TT ? 'Top two in each group reach the semis' : 'Two groups of four. The top two in each group go to the semifinals.', W / 2, 66);
     ['GROUP A', 'GROUP B'].forEach((title, pi) => {
       const x = 40 + pi * 300, rows = standings(b, pi);
       panel(g, x, 84, 280, 196, false);
@@ -334,14 +355,14 @@ function drawPartnerPicker(g) {                                       // top-rig
         g.textAlign = 'right'; g.fillStyle = IVORY; g.fillText(r.w + '-' + r.l + '    ' + ((r.pf - r.pa) >= 0 ? '+' : '') + (r.pf - r.pa), x + 266, y);
       });
       if (pi === 0) { const our = b.pg[0].filter(q => q.a === 0 || q.b === 0); g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`;
-        our.forEach((q, i) => { const o = q.a === 0 ? q.b : q.a, sc = q.w == null ? 'Game ' + (q.md + 1) : ((q.w === 0 ? 'W ' : 'L ') + (q.a === 0 ? q.sa + '–' + q.sb : q.sb + '–' + q.sa)); g.fillText(sc + ' vs ' + teamOf(C.stage, o).name.replace('Masjid ', ''), x + 6, 300 + i * 18); }); }
+        our.forEach((q, i) => { const o = q.a === 0 ? q.b : q.a, sc = q.w == null ? 'Game ' + (q.md + 1) : ((q.w === 0 ? 'W ' : 'L ') + (q.a === 0 ? q.sa + '–' + q.sb : q.sb + '–' + q.sa)); g.fillText(sc + ' vs ' + teamOf(C.stage, o).name.replace('Masjid ', ''), x + 6, 300 + i * (TT ? 24 : 18)); }); }
     });
     // knockouts
     const kx = 660; g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('SEMIFINALS', kx, 106); g.fillText('FINAL', kx, 316);
     const box = (m, y) => {
-      panel(g, kx, y, 260, 58, m && (m.a === 0 || m.b === 0));
+      panel(g, kx, y, 260, TT ? 64 : 58, m && (m.a === 0 || m.b === 0));
       [[m && m.a, m && m.sa], [m && m.b, m && m.sb]].forEach(([id, sc], k) => {
-        const yy = y + 23 + k * 23; g.textAlign = 'left';
+        const yy = TT ? y + 25 + k * 26 : y + 23 + k * 23; g.textAlign = 'left';
         if (id == null) { g.fillStyle = '#56657a'; g.font = `13px ${BODY}`; g.fillText(y > 300 ? 'Semifinal winner' : k ? 'Group runner-up' : 'Group winner', kx + 14, yy); return; }
         const t = teamOf(C.stage, id), lost = m.w != null && m.w !== id;
         drawCrest(g, kx + 16, yy - 5, 8, t); g.fillStyle = lost ? '#6d7a8c' : id === 0 ? '#ffe38a' : '#fff'; g.font = `12px ${id === 0 ? FONT : BODY}`;

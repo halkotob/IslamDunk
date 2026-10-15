@@ -332,15 +332,15 @@ function wrapTextLeft(g, text, x, y, maxW, lh) {
   g.fillText(line, x, yy);
 }
 function drawHub(g) {
-  const S = STAGES[C.stage], b = C.bracket, T = amanahTeam();
+  const S = STAGES[C.stage], b = C.bracket, T = amanahTeam(), TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone layout
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Masjid Al-Amanah', 104, 36);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(S.title + ', Small division', 104, 58);
   // player card
   panel(g, 30, 84, 290, 440, false);
   drawPortrait(g, 110, 262, playerDef(), T, 1.7, 'thobe');
   g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.fillText(C.name || 'You', 170, 130);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('#' + C.look.num + '  Guard', 170, 150);
-  g.fillText('Record ' + C.wins + '\u2013' + C.losses, 170, 170);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('#' + C.look.num + '  Guard', 170, TT ? 154 : 150);
+  g.fillText('Record ' + C.wins + '\u2013' + C.losses, 170, TT ? 178 : 170);
   STAT_ROWS.forEach(([k, label], i) => { const y = 292 + i * 22; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(label, 46, y + 8); pips(g, 140, y, C.lv[k]); });
   if (C.prayBonus) { g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, 46, 432, 256, 26, 13); g.fill(); g.fillStyle = '#f2cf6b'; g.font = `12px ${FONT}`; g.fillText('Salah bonus ready for next game', 60, 450); }
   // next game
@@ -352,33 +352,34 @@ function drawHub(g) {
     const m = ourMatch(), opp = teamOf(C.stage, m.a === 0 ? m.b : m.a);
     g.fillText('NEXT: ' + roundLabel(b).toUpperCase(), 481, 108);
     drawCrest(g, 380, 150, 18, opp);
-    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(opp.name, 408, 148);
-    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(opp.place + (opp.rival ? '  (rival)' : ''), 408, 166);
+    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(fitText(g, opp.name, 210), 408, TT ? 140 : 148);
+    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, opp.place + (opp.rival ? '  (rival)' : ''), 210), 408, TT ? 164 : 166);
   }
   drawMenuStack(g, 'hub', HUB_MENU(), 262, 42);
   // currencies and trophies
   panel(g, 642, 84, 290, 440, false);
   g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('BARAKAH POINTS', 662, 116);
   g.fillStyle = '#f2cf6b'; g.font = `28px ${FONT}`; g.fillText(String(C.bp), 662, 148);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Spend on training. Earned in practice and games.', 662, 166);
+  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(TT ? 'Spend on training' : 'Spend on training. Earned in practice and games.', 662, TT ? 170 : 166);
   g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('HALAL BUCKS', 662, 204);
   g.fillStyle = '#9dffb0'; g.font = `28px ${FONT}`; g.fillText(String(C.hb), 662, 236);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Spend on masjid and gym projects.', 662, 254);
+  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(TT ? 'Spend on projects' : 'Spend on masjid and gym projects.', 662, TT ? 258 : 254);
   g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('TROPHIES', 662, 296);
   STAGES.forEach((st, i) => {
     const x = 690 + i * 66, won = C.trophies.includes(i);
     g.fillStyle = won ? GOLD : 'rgba(255,255,255,0.12)'; star8(g, x, 330, 18); g.fill();
-    g.textAlign = 'center'; g.fillStyle = won ? '#fff' : '#6d7a8c'; g.font = `12px ${BODY}`; g.fillText(st.name, x, 368);
+    g.textAlign = 'center'; g.fillStyle = won ? '#fff' : '#6d7a8c'; g.font = `12px ${BODY}`; g.fillText(TT && st.name.length > 6 ? st.name.slice(0, 3) + '.' : st.name, x, 368);
   });
   g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
-  g.fillText('Best free throws: ' + C.best.ft + '/10', 662, 410); g.fillText('Best three-point: ' + C.best.three + '/20', 662, 430);
-  g.fillText('Best cone run: ' + (C.best.cones ? C.best.cones + 's' : '\u2013'), 662, 450); g.fillText('1v1 wins vs Nasser: ' + C.best.v1, 662, 470);
+  const by = TT ? 24 : 20, b0 = TT ? 404 : 410;
+  g.fillText('Best free throws: ' + C.best.ft + '/10', 662, b0); g.fillText('Best three-point: ' + C.best.three + '/20', 662, b0 + by);
+  g.fillText('Best cone run: ' + (C.best.cones ? C.best.cones + 's' : '\u2013'), 662, b0 + 2 * by); g.fillText('1v1 wins vs Nasser: ' + C.best.v1, 662, b0 + 3 * by);
   drawHubCorner(g);
 }
 function drawTrain(g) {
   panel(g, W / 2 - 300, 50, 600, 440, true);
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Train', W / 2, 92);
-  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('You have ' + C.bp + ' Barakah Points. Each level costs more than the last.', W / 2, 118);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(Input.touchMode && g === ctx ? 'You have ' + C.bp + ' BP. Each level costs more.' : 'You have ' + C.bp + ' Barakah Points. Each level costs more than the last.', W / 2, 118);   // v8.6.2: phone fits the panel
   STAT_ROWS.forEach(([k, label], i) => {
     const y = 132 + i * 38, sel = Game.idx === i, l = C.lv[k] || 4, cost = statCost(l), can = l < 10 && C.bp >= cost;
     if (sel) { g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, W / 2 - 280, y, 560, 34, 10); g.fill(); }
@@ -392,7 +393,8 @@ function drawTrain(g) {
   const by = 132 + STAT_ROWS.length * 38 + 2, sel = Game.idx === STAT_ROWS.length;
   g.fillStyle = sel ? GOLD : 'rgba(255,255,255,0.12)'; roundRect(g, W / 2 - 80, by, 160, 36, 18); g.fill();
   g.textAlign = 'center'; g.fillStyle = sel ? NIGHT : '#fff'; g.font = `15px ${FONT}`; g.fillText('Back', W / 2, by + 24); addRect(W / 2 - 80, by, 160, 36, careerHub);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Stamina: slower turbo drain. Passing: faster, safer passes. Hustle: first to loose balls, draws charges. Clutch: steadier in the last minute of close games.', W / 2, 482);
+  // v8.6.2: below the panel (it sat on the Back button); phones drop it, it's longer than the screen
+  if (!(Input.touchMode && g === ctx)) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Stamina: slower turbo drain. Passing: faster, safer passes. Hustle: first to loose balls, draws charges. Clutch: steadier in the last minute of close games.', W / 2, 512); }
 }
 function prepCareerVenue() {
   const m = ourMatch(), oppId = m.a === 0 ? m.b : m.a, opp = teamOf(C.stage, oppId), T = amanahTeam();
@@ -409,15 +411,16 @@ function drawPregame(g) {
   }
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText(S.title, W / 2, 48);
   g.fillStyle = IVORY; g.font = `15px ${BODY}`; g.fillText(roundLabel(C.bracket) + ', Small division  \u2022  ' + Game.cv.name, W / 2, 72);
+  const TT = Input.touchMode && g === ctx;                              // v8.6.2: phone layout
   const side = (x, team, label) => {
     panel(g, x, 90, 380, 250, false);
     drawCrest(g, x + 36, 124, 20, team);
-    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `17px ${FONT}`; g.fillText(team.name, x + 66, 122);
-    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(label, x + 66, 140);
+    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `17px ${FONT}`; g.fillText(fitText(g, team.name, 300), x + 66, TT ? 118 : 122);
+    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, label, 300), x + 66, TT ? 144 : 140);
     team.players.forEach((d, i) => {
       const px = x + 110 + i * 160, lk = d.look, bh = lk ? lk.height : d.bh, bw = lk ? lk.build : d.bw;
-      drawPortrait(g, px, 312, d, team, 1.45, null); g.textAlign = 'center'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(d.name, px, 326);
-      if (bh != null) { g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(LOOK_TXT.height[bh] + ', ' + LOOK_TXT.build[bw == null ? 1 : bw].toLowerCase(), px, 339); }
+      drawPortrait(g, px, TT ? 302 : 312, d, team, TT ? 1.38 : 1.45, null); g.textAlign = 'center'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, d.name, 150), px, TT ? 328 : 326);
+      if (bh != null && !TT) { g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(LOOK_TXT.height[bh] + ', ' + LOOK_TXT.build[bw == null ? 1 : bw].toLowerCase(), px, 339); }
     });
   };
   side(40, T, 'Eastside');
@@ -426,12 +429,12 @@ function drawPregame(g) {
   panel(g, 40, 352, 880, 104, false);
   g.textAlign = 'left'; g.font = `14px ${FONT}`;
   if (C.prayBonus) { g.fillStyle = '#9dffb0'; g.fillText('Salah bonus: +10% shooting, +10% stamina this game', 62, 380); }
-  else { g.fillStyle = '#9fb3c8'; g.fillText('No salah bonus. Answer the adhan during practice to earn one.', 62, 380); }
+  else { g.fillStyle = '#9fb3c8'; g.fillText(TT ? 'No salah bonus. Answer the adhan to earn one.' : 'No salah bonus. Answer the adhan during practice to earn one.', 62, 380); }
   const lv = careerLevels(C.stage), shift = diffShift(), oT = opp.tier || 0;
   lv.opp = Math.max(SETTINGS.difficulty === 'veryeasy' ? -1 : 0, lv.opp + oT * 0.2);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
-  g.fillText('CPU difficulty: ' + diffLabel(lv.opp) + (shift ? ' (' + S.name + ' stage, one step ' + (shift < 0 ? 'easier' : 'harder') + ' because Difficulty is set to ' + diffName(SETTINGS.difficulty) + ')' : ' (' + S.name + ' stage)'), 62, 404);
-  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(castDef(Game.tipBy || 'rafiq').name + ': \u201C' + (Game.tip || STORY.tips[0]) + '\u201D', 62, 434);
+  g.fillText(TT ? 'CPU difficulty: ' + diffLabel(lv.opp) : 'CPU difficulty: ' + diffLabel(lv.opp) + (shift ? ' (' + S.name + ' stage, one step ' + (shift < 0 ? 'easier' : 'harder') + ' because Difficulty is set to ' + diffName(SETTINGS.difficulty) + ')' : ' (' + S.name + ' stage)'), 62, TT ? 408 : 404);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(fitText(g, castDef(Game.tipBy || 'rafiq').name + ': \u201C' + (Game.tip || STORY.tips[0]) + '\u201D', TT ? 620 : 9999), 62, TT ? 438 : 434);
   g.fillStyle = GOLD; roundRect(g, W / 2 - 90, 470, 180, 40, 20); g.fill();
   g.textAlign = 'center'; g.fillStyle = NIGHT; g.font = `17px ${FONT}`; g.fillText('Tip off', W / 2, 496);
   addRect(W / 2 - 90, 470, 180, 40, startCareerMatch);
