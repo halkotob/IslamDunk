@@ -178,9 +178,10 @@ function replayabilityScreen(g) {
     drawMenu(g,['Share a highlight ('+Run.clips.length+')','New run',runEndBackLabel()],Game.idx,365,i=>{if(i===0)openClipShare(Run.clips,'runend');else if(i===1)startBarakah();else runEndBack();});
   } else if(screen==='shareclip') {
     if(ShareCard.card)g.drawImage(ShareCard.card,W/2-270,92,540,360);
-    g.fillStyle=IVORY;g.font='13px '+BODY;g.fillText(ShareCard.error||('Clip '+(ShareCard.index+1)+' / '+ShareCard.clips.length+' · PNG image · No upload'),W/2,474);
-    uiButton(g,W/2-290,490,100,32,'‹ Previous',()=>selectShareClip(-1),false);uiButton(g,W/2-170,490,100,32,'Next ›',()=>selectShareClip(1),false);
-    uiButton(g,W/2-45,490,180,32,'Download PNG (S)',downloadShareCard,true);uiButton(g,W/2+160,490,110,32,'Back',()=>Game.screen=ShareCard.back,false);
+    g.fillStyle=IVORY;g.font='13px '+BODY;g.fillText(ShareCard.error||('Clip '+(ShareCard.index+1)+' / '+ShareCard.clips.length+' · image or video · No upload'),W/2,474);
+    // v8.7.1: a video of the play (clip-video.js) next to the still image
+    uiButton(g,W/2-340,490,100,32,'‹ Previous',()=>selectShareClip(-1),false);uiButton(g,W/2-232,490,90,32,'Next ›',()=>selectShareClip(1),false);
+    uiButton(g,W/2-134,490,150,32,'Make video (V)',startClipVideo,true);uiButton(g,W/2+24,490,150,32,'Save image (S)',downloadShareCard,false);uiButton(g,W/2+182,490,96,32,'Back',()=>Game.screen=ShareCard.back,false);
   } else if(screen==='runbadges') {
     g.fillStyle=IVORY;g.font='14px '+BODY;g.fillText('Cosmetic only. Shown on your player card and exported highlight cards.',W/2,108);
     RUN_BADGES.forEach((b,i)=>{const y=160+i*70,on=b.id==='none'||replayabilityProgress.badges[b.id];uiButton(g,W/2-330,y,240,44,b.name+(replayabilityProgress.badge===b.id?' ✓':''),()=>chooseRunBadge(i),Game.idx===i);g.textAlign='left';g.fillStyle=on?b.color:'#7a8794';g.font='14px '+BODY;g.fillText(on?'Unlocked':b.desc,W/2-65,y+27);});

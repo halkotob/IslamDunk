@@ -95,6 +95,7 @@
     "sim/v863-cpu.js",
     "sim/tomahawk-styles.js",
     "core/gamepad.js",
+    "screens/clip-video.js",
     "boot.js"
   ]
 }

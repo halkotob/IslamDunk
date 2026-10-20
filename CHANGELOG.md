@@ -1,5 +1,23 @@
 # Changelog
 
+## 8.7.1: clip export
+- **Share a clip as a video.** The share screen (post-game Share, Barakah Run "Share a highlight") has
+  **Make video (V)** next to Save image. It replays the chosen play onto an offscreen 1280x720 canvas at 30 fps:
+  a beat on the first frame, real speed, the instant replay's slow motion around the peak, a short hold at the
+  end (about 5 s), with the camera following the play. It records with canvas.captureStream + MediaRecorder, in
+  the first type the browser supports of MP4 (H.264), WebM VP9, WebM VP8, WebM. No audio, no account, no network.
+- While it records (in real time) there's a progress bar and Cancel; then **Share** (the phone's share sheet,
+  where sharing a file is supported), **Save** (a download named like `islam-dunk-noor-tomahawk.webm`) and Back.
+- The overlay is small: ISLAM DUNK, both team names (custom names go through the word filter) and the score,
+  and the play's label. No player names or usernames.
+- It never runs during a live match, and each frame swaps the clip's scene in and back out exactly as the still
+  card does, so the game state is untouched. Without MediaRecorder or captureStream it says so and offers the
+  still image instead.
+- A typical clip in Chromium: WebM VP9, about 5.3 s, about 1.2 MB.
+- **Tests.** New `clip` test: a seeded CPU game's best play exported (a video Blob, 4-8 s, the match state
+  identical before and after, no page errors), refused during a live match, and with MediaRecorder removed it
+  falls back to the still image. The phone audit visits the share screen and both result screens.
+
 ## 8.7.0: gamepad support
 Play and navigate with a controller (Gamepad API, standard mapping; other pads are read the same way, best
 effort). The pad presses the same keys a keyboard player would, so every screen, the sim, online play and replays

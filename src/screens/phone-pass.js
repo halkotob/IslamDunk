@@ -48,7 +48,7 @@ const TOUCH_TEXT = {
   'Tap or Enter to continue • Esc to skip': 'Tap to continue', 'Enter to continue, Esc to go back': 'Tap to continue', 'Enter or tap to continue Esc: close': 'Tap to continue',
   'Press Enter or tap to keep practicing': 'Tap to keep practicing', 'Enter to go pray, Esc to keep practicing': '', 'Back or Esc stops the drill': 'Back stops the drill',
   'Type the letters, Enter to join, Esc to go back': 'Tap the letters, then Join', 'Type your name, Enter when done': 'Tap the letters, then Done',
-  'Type, then Enter when done': 'Tap the letters, then Done', 'Camera (C in game)': 'Camera',
+  'Type, then Enter when done': 'Tap the letters, then Done', 'Camera (C in game)': 'Camera', 'Make video (V)': 'Make video', 'Save image (S)': 'Save image',
   '↑ ↓ choose a scene • Enter to watch it again • Esc back': 'Tap a scene twice to watch it again', 'Come to prayer. Praying gives a bonus for your next game.': 'Praying gives a bonus next game.',
   'W A S D to walk • E or Enter to talk • Esc back to the gym': 'Stick to walk • TALK to talk', 'GAME LOG (Enter: box score)': 'GAME LOG (tap a game)',
   'GAME (← → to change)': 'GAME', 'PARTNER ← →': 'PARTNER', 'Esc or P pauses. On a phone, use the on-screen stick and buttons.': 'The pause button is top right.'

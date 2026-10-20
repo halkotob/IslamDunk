@@ -155,7 +155,7 @@ Pad.init();
 // ---- prompts: when the last input came from a pad, keyboard hints read as pad buttons
 const PAD_TEXT = {
   'K: dunk J: next style H: slow motion Esc: pause / quit': 'A: dunk X: next style Y: slow motion Start: pause',
-  'Enter the musalla (E)': 'Enter the musalla (LB)', 'Talk to': 'Talk to',
+  'Enter the musalla (E)': 'Enter the musalla (LB)', 'Talk to': 'Talk to', 'Make video (V)': 'Make video', 'Save image (S)': 'Save image',
   'Sheikh’s office (O)': 'Sheikh’s office (View: menu)', 'Enter to go pray, Esc to keep practicing': 'A: go pray   B: keep practicing',
   'Back or Esc stops the drill': 'B stops the drill', 'Press F for fullscreen': '', 'Press F for fullscreen • How to play is in Options': 'How to play is in Options',
   'Type the letters, Enter to join, Esc to go back': 'Pick the letters with the pad, then Join',

@@ -39,6 +39,10 @@ export const AUDIT_INIT = `(() => {
 // [name, setup] - setups run in the page. CAREER builds a save with one played game first.
 const CAREER = `if (!window.__careerReady) { window.__careerReady = 1; C = freshCareer(); C.name = 'Abdullah'; if (!C.bracket) C.bracket = makeBracket(C.stage);
   startCareerMatch(); for (let n = 0; n < 60 * 60 * 20 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; } careerAfterMatch(); saveCareer(); }`;
+const SHARE = `if (!window.__shareReady) { window.__shareReady = 1;                       // a CPU game with at least one highlight
+  for (let k = 0; k < 4 && !(window.__hl && window.__hl.length); k++) { newMatch(TEAMS[k], TEAMS[k + 1], { humans: [], fmt: { format: 'quarters', len: 30 } });
+    for (let n = 0; n < 60 * 60 * 10 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; } window.__hl = M.highlights; } }
+  M.highlights = window.__hl; Game.screen = 'final';`;
 const MATCH = `Input.touchMode = true; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; M.introT = 0;
   for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP); M.players[0].def.huffath = true;`;
 export const SCREENS = [
@@ -88,6 +92,9 @@ export const SCREENS = [
   ['gym', CAREER + ` careerHub(); enterGym();`],
   ['saves', CAREER + ` careerHub(); Game.screen = 'saves'; Game.idx = 0; Game.saveMsg = '';`],
   ['newseason', CAREER + ` careerHub(); Game.screen = 'newseason'; Game.idx = 0;`],
+  ['share clip', SHARE + ` openClipShare(M.highlights);`],
+  ['clip video: no video support', SHARE + ` openClipShare(M.highlights); ClipVid.state = 'fallback'; ClipVid.msg = 'Video isn\u2019t supported in this browser, so here is the still image.'; Game.screen = 'clipvideo';`],
+  ['clip video: done', SHARE + ` openClipShare(M.highlights); ClipVid.state = 'done'; ClipVid.blob = new Blob(['x'], { type: 'video/webm' }); ClipVid.name = 'islam-dunk-noor-big-dunk.webm'; ClipVid.poster = ShareCard.card; Game.screen = 'clipvideo';`],
   ['select (forced, no setup)', `goTitle(); Game.sel = null; Game.screen = 'select';`],   // last: on 8.6.1 this froze the game loop
   ['title after forced select', `goTitle();`]
 ];

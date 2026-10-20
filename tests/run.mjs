@@ -36,6 +36,8 @@
 //                (online-loop: the guest earns Noor on a team whose hafiz is the host's player, and on one where he is)
 //   gamepad      v8.7.0: scripted pads: title -> Quick Play -> game -> pause -> quit, stick / sprint / shoot / pass,
 //                two pads for two players, hot-plug, trivia and a Noor card, the on-screen picker, rumble, keyboard
+//   clip         v8.7.1: a seeded game's best play exported as a video (MediaRecorder): video Blob, 4-8 s, state untouched;
+//                refused during a live match; falls back to the still image without MediaRecorder
 //   formats      v8.6.5: the default game is 2 halves of 2:00 (label, halftime, end, shot clock, overtime); career and
 //                practice keep 4 quarters; explicit formats and a picked 4 quarters are unchanged
 //   tomahawk     v8.6.5: Classic matches the 8.6.4 recording (tests/fixtures/tomahawk-classic.json); smooth, power,
@@ -1239,6 +1241,42 @@ T['gamepad'] = async ({ browser, base }) => {
     && out.two.p2 > 30 && Math.abs(out.two.p1) < 10 && out.plug.order === 2 && out.trivia.asked && !!out.trivia.noor
     && out.picker.on && out.picker.typed.length === 1 && out.pickerLeave !== 'joincode' && out.rumble > 0 && out.rumbleOff === 0 && out.setting && out.keyboard && !errs.length;
   return { ok, detail: [JSON.stringify(out), ...errs] };
+};
+
+// v8.7.1: share a clip as a video. A seeded CPU game's best play, recorded with MediaRecorder: a non-empty video Blob,
+// 4-8 s long, no page errors, the match state untouched; a live match refuses; without MediaRecorder it falls back
+// to the still image
+T['clip'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'clip');
+  const state = () => p.evaluate(() => JSON.stringify({ s: M.teams.map(t => [t.score, t.qs]), p: M.players.map(q => [q.x, q.y, q.z, q.state, q.stats, JOINTS.map(k => q.j[k].a)]),
+    b: [ball.x, ball.y, ball.z, ball.state, ball.owner ? M.players.indexOf(ball.owner) : -1], c: [cam.x, cam.fy, cam.zoom], q: M.quarter, cl: M.clock, ph: M.phase, t: M.time, h: M.highlights.length, venue: !!VL, court: !!courtCv }));
+  const r = {};
+  r.live = await p.evaluate(() => { window.__seed(42); newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 30 } }); Game.screen = 'play';
+    for (let n = 0; n < 60 * 60 && !M.highlights.length; n++) updateMatch(STEP);
+    ShareCard.clips = M.highlights.slice(); ShareCard.index = 0; const refused = !startClipVideo(); Game.screen = 'title'; return refused && ClipVid.state !== 'rec'; });
+  await p.evaluate(() => { for (let n = 0; n < 60 * 60 * 10 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; } Game.screen = 'final'; openClipShare(M.highlights); });
+  const before = await state();
+  r.types = await p.evaluate(() => CLIP_TYPES.filter(t => MediaRecorder.isTypeSupported(t)));
+  r.started = await p.evaluate(() => startClipVideo());
+  await p.waitForFunction(() => ClipVid.state === 'done' || ClipVid.state === 'fallback', null, { timeout: 30000 }).catch(() => {});
+  Object.assign(r, await p.evaluate(async () => {
+    const out = { state: ClipVid.state, type: ClipVid.blob && ClipVid.blob.type, size: ClipVid.blob ? ClipVid.blob.size : 0, name: ClipVid.name };
+    if (ClipVid.url) { const v = document.createElement('video'); v.muted = true; v.src = ClipVid.url; await new Promise(r => { v.onloadedmetadata = r; setTimeout(r, 5000); });
+      let d = v.duration; if (!isFinite(d)) { v.currentTime = 1e9; await new Promise(r => { v.ontimeupdate = r; setTimeout(r, 5000); }); d = v.duration; } out.duration = +(+d).toFixed(2); }
+    return out; }));
+  r.untouched = (await state()) === before;
+  await p.evaluate(() => cancelClipVideo()); r.back = await p.evaluate(() => Game.screen);
+  await ctx.close();
+  // no MediaRecorder: the still image, no errors
+  const e2 = [], c2 = await newContext(browser, { seed: true }); await c2.addInitScript('delete window.MediaRecorder;');
+  const q = await open(c2, base + '/', e2, 'clip-fallback');
+  r.fallback = await q.evaluate(() => { window.__seed(42); newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 30 } });
+    for (let n = 0; n < 60 * 60 * 10 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; } Game.screen = 'final'; openClipShare(M.highlights);
+    const started = startClipVideo(); return { started, state: ClipVid.state, card: !!ShareCard.card, screen: Game.screen, msg: ClipVid.msg }; });
+  await sleep(300); await c2.close(); errs.push(...e2);
+  const ok = r.live && r.started && r.state === 'done' && /^video\//.test(r.type || '') && r.size > 10000 && r.duration >= 4 && r.duration <= 8 && r.untouched && r.back === 'shareclip'
+    && !r.fallback.started && r.fallback.state === 'fallback' && r.fallback.card && r.fallback.screen === 'clipvideo' && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
 T['adaptive-res'] = async ({ browser, base }) => {
