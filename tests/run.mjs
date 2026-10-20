@@ -1007,7 +1007,7 @@ T['tomahawk'] = async ({ browser, base }) => {
   const runs = {};
   for (const st of ['classic', 'smooth', 'power', 'float']) runs[st] = await p.evaluate(`${TOMAHAWK_REC}(${JSON.stringify(st)})`);
   const extra = await p.evaluate(() => {
-    const out = { replay: {}, lab: {} };
+    const out = { replay: {}, lab: {}, defaultStyle: SETTINGS.tomahawk };
     for (const st of ['smooth', 'power', 'float']) {                  // the replay buffer holds exactly the pose that was drawn
       SETTINGS.tomahawk = st; window.__seed(5); newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 60 } });
       for (let n = 0; n < 2000 && M.phase !== 'live'; n++) updateMatch(STEP);
@@ -1029,14 +1029,24 @@ T['tomahawk'] = async ({ browser, base }) => {
     goTitle(); out.lab.off = !DL.on && FX.scale === 1; SETTINGS.tomahawk = 'classic';
     return out;
   });
+  // cosmetic only: the same seeded game, box scores and all, whatever the style (a fresh page each: games carry state)
+  extra.games = [];
+  for (const st of ['classic', 'smooth', 'power', 'float']) {
+    const q = await open(ctx, base + '/', errs, 'tomahawk-' + st);
+    extra.games.push(await q.evaluate(st => { SETTINGS.tomahawk = st; window.__seed(2024); newMatch(TEAMS[1], TEAMS[4], { humans: [], fmt: { format: 'quarters', len: 30 } });
+      let dunks = 0; for (let n = 0; n < 60 * 60 * 12 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; if (M.players.some(x => x.state === 'dunk' && x.act && x.act.type === 'tomahawk' && x.act.s < 0.02)) dunks++; }
+      return M.teams[0].score + '-' + M.teams[1].score + ' ' + M.players.map(x => [x.stats.pts, x.stats.fgm, x.stats.fga, x.stats.blk, x.stats.dnk].join('/')).join(' ') + ' (tomahawk frames ' + dunks + ')'; }, st));
+    await q.close();
+  }
+  extra.sameGames = extra.games.every(x => x === extra.games[0]);
   await ctx.close();
   const c = runs.classic, same = JSON.stringify(c) === JSON.stringify(ref);
   const styles = ['smooth', 'power', 'float'].map(st => { const x = runs[st]; return { st, ok: x.finite && x.dunkFrames === c.dunkFrames && x.slamAt === c.slamAt && x.backToFree && JSON.stringify(x.rest) === JSON.stringify(c.rest), differs: JSON.stringify(x.frames) !== JSON.stringify(c.frames) }; });
   const L = extra.lab;
-  const ok = same && styles.every(s => s.ok && s.differs) && Object.values(extra.replay).every(Boolean)
+  const ok = extra.defaultStyle === 'float' && extra.sameGames && same && styles.every(s => s.ok && s.differs) && Object.values(extra.replay).every(Boolean)
     && L.inMenu && L.dunks.every(Boolean) && L.noAch && L.cycled === 'classic' && L.off && !errs.length;
   return { ok, detail: [`classic identical to the 8.6.4 recording: ${same} (dunk ${c.dunkFrames} frames, slam on frame ${c.slamAt})`,
-    'styles ' + JSON.stringify(styles), 'replay keeps the pose ' + JSON.stringify(extra.replay), 'dunk lab ' + JSON.stringify(L), ...errs] };
+    'styles ' + JSON.stringify(styles), 'replay keeps the pose ' + JSON.stringify(extra.replay), 'dunk lab ' + JSON.stringify(L), 'default style ' + extra.defaultStyle, 'same seeded game in every style: ' + extra.sameGames + ' (' + extra.games[0] + ')', ...errs] };
 };
 
 T['adaptive-res'] = async ({ browser, base }) => {

@@ -1,5 +1,15 @@
 # Changelog
 
+## 8.6.6: Float is the default tomahawk
+- The tomahawk now uses the Float style unless you pick another in Settings → Game → Tomahawk style (Classic,
+  Smooth and Power are still there). A style already saved on this device is kept.
+- Styles are now strictly cosmetic. Where the ball sits during a tomahawk counts for blocks and swipes, and
+  Float holds it somewhere else, so making Float the default would have changed seeded games. The sim now keeps
+  the ball in the hand of the Classic pose (a second, invisible rig runs alongside), and only the drawing and
+  replays put it in the hand you see. Seeded games are identical in every style and identical to 8.6.5.
+- `tomahawk` test: the default is Float, and the same seeded game (with tomahawks in it) gives the same score
+  and box score in all four styles.
+
 ## 8.6.5: tomahawk animation styles, and the default game is 2 halves of 2:00
 (The 2-halves change was briefed as 8.6.6; 8.6.5 hadn't landed, so both are in this release.)
 

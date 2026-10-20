@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '8.6.5';
+const VERSION = '8.6.6';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -19762,13 +19762,13 @@ function threeSpot(p) {
 // ================================================= v8.6.5: TOMAHAWK ANIMATION STYLES (Settings → Game → Tomahawk style)
 // Cosmetic only. The dunk's path, timing, slam moment, hitboxes and scoring are untouched; only the pose
 // targets the spring rig chases change.
-// Classic (default) is the pose from animation.js + v86-play.js, unchanged: hard targets that switch at
+// Float is the default (v8.6.6). Classic is the pose from animation.js + v86-play.js, unchanged: hard targets that switch at
 // u = 0.12, 0.56 and 0.8 (u = dunk progress, the slam is at 0.8). Those jumps are what reads as rough:
 // at each one every joint target moves at once and, at 0.56, the stiffness jumps from 1500 to 2600.
 // The other styles are a continuous function of u: keyframes, eased with smoothstep between them, with
 // the spring stiffness (K) and damping (D) eased too so a phase change never kicks the rig. Each keyframe
 // is a full pose, so nothing stale can leak through. All angles stay inside ranges used elsewhere.
-SETTINGS.tomahawk = 'classic';
+SETTINGS.tomahawk = 'float';                         // v8.6.6: Float is the default; Classic and the others stay in Settings
 const TOMAHAWK_STYLES = ['classic', 'smooth', 'power', 'float'];
 const TOMAHAWK_TXT = { classic: 'Classic', smooth: 'Smooth', power: 'Power', float: 'Float' };
 (() => { try { const v = localStorage.getItem('islamdunk.tomahawk'); if (TOMAHAWK_STYLES.includes(v)) SETTINGS.tomahawk = v; } catch (e) {} })();
@@ -19832,6 +19832,54 @@ function tomahawkPose(style, u) {                       // a full pose (all join
   const i = SET_ITEMS.findIndex(s => s.label === 'Team control');
   SET_ITEMS.splice(i + 1, 0, { label: 'Tomahawk style', get: () => TOMAHAWK_TXT[SETTINGS.tomahawk], step: d => setTomahawk(d) });
   const G = SET_GROUPS.find(g => g.name === 'Game'); if (G && G.labels && !G.labels.includes('Tomahawk style')) G.labels.push('Tomahawk style');
+}
+// ---- the styles stay cosmetic: where the ball is during a tomahawk counts for blocks and swipes, so the sim
+// keeps it in the hand of the Classic pose (a shadow rig, run alongside) and only the drawing (and replays)
+// put it in the hand you see. Seeded games come out the same whatever the style.
+function tkHands(p, J) {                                // the forward kinematics from animate(), for a given set of joints
+  const legY = (h, k) => 22 * Math.cos(h) + 22 * Math.cos(h - k);
+  const hipH = Math.max(legY(J.nh.a, J.nk.a), legY(J.fh.a, J.fk.a), 20);
+  const lean = J.lean.a, shX = Math.sin(lean) * 30, shY = hipH + Math.cos(lean) * 30, fs = p.face * (p.spin ? Math.cos(p.spin) : 1), out = {};
+  for (const side of ['n', 'f']) {
+    const s = J[side + 's'].a, e = J[side + 'e'].a, ex = shX + Math.sin(s) * 16, ey = shY - Math.cos(s) * 16;
+    out[side] = { x: p.x + (ex + Math.sin(s + e) * 15) * fs, y: p.y + ey - Math.cos(s + e) * 15, z: p.z + (side === 'n' ? 6 : -6) };
+  }
+  return out;
+}
+{
+  const _an = animate;
+  animate = function (p, dt) {
+    const tom = SETTINGS.tomahawk !== 'classic' && p.state === 'dunk' && p.act && p.act.type === 'tomahawk';
+    if (tom && p._cjAct !== p.act) { p._cjAct = p.act; p._cj = {}; for (const k of JOINTS) p._cj[k] = { a: p.j[k].a, v: p.j[k].v }; }   // starts where the real rig is
+    if (!tom) p._cjAct = p._cj = null;
+    const r = _an.apply(this, arguments);
+    if (ball.vd && ball.vdP === p && (!tom || ball.owner !== p)) ball.vd = null;
+    if (!tom || !p._cj) return r;
+    const s0 = SETTINGS.tomahawk; let T; SETTINGS.tomahawk = 'classic';
+    try { T = poseTargets(p, Math.hypot(p.vx, p.vz)); } finally { SETTINGS.tomahawk = s0; }
+    for (const k of JOINTS) { const j = p._cj[k]; j.v += ((T[k] - j.a) * T.K - j.v * T.D) * dt; j.a += j.v * dt; }
+    if (ball.owner !== p) return r;
+    const H = tkHands(p, p._cj); let bx, by, bz;                    // where attachBall() would hold it in the Classic pose
+    if (p.act.s > 0.12) { bx = H.n.x; by = H.n.y + 4; bz = H.n.z; }
+    else { bx = (H.n.x + H.f.x) / 2 + p.face * 3; by = (H.n.y + H.f.y) / 2 + 2; bz = (H.n.z + H.f.z) / 2 + 3; }
+    by = Math.max(BALL_R, by);
+    ball.vd = [ball.x - bx, ball.y - by, ball.z - bz]; ball.vdP = p;
+    ball.x = bx; ball.y = by; ball.z = bz;
+    return r;
+  };
+  const _sp = snapPrev;
+  snapPrev = function () { _sp.apply(this, arguments); ball.ivd = ball.vd ? ball.vd.slice() : null; };
+  const _rf = Replay.frame;
+  Replay.frame = function () { const f = _rf.apply(this, arguments), d = ball.vd; if (d && f && f.b) { f.b[0] += d[0]; f.b[1] += d[1]; f.b[2] += d[2]; } return f; };
+  const _r = render;
+  render = function (g) {                                // draw the ball in the hand you see
+    const d = ball.vd, id = ball.ivd || d;
+    if (!d || Replay.active) return _r.apply(this, arguments);
+    const ix = ball.ix !== undefined;
+    ball.x += d[0]; ball.y += d[1]; ball.z += d[2]; if (ix) { ball.ix += id[0]; ball.iy += id[1]; ball.iz += id[2]; }
+    try { return _r.apply(this, arguments); }
+    finally { ball.x -= d[0]; ball.y -= d[1]; ball.z -= d[2]; if (ix) { ball.ix -= id[0]; ball.iy -= id[1]; ball.iz -= id[2]; } }
+  };
 }
 function setTomahawk(d) {
   const n = TOMAHAWK_STYLES.length;
