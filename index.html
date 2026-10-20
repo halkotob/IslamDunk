@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '8.6.3';
+const VERSION = '8.6.4';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -12407,7 +12407,7 @@ drawHowTo = function (g) {
   g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; g.fillText('P1', 610, 72); g.fillText('P2', 800, 72);
   keys.forEach((r, i) => { const y = 92 + i * 21; g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(r[0], 150, y); g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.fillText(r[1], 610, y); g.fillText(r[2], 800, y); });
   const col = (x, title, lines) => { g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText(title, x, 222); g.font = `12px ${BODY}`; lines.forEach((t, i) => { g.fillStyle = t.startsWith('\u2022') ? '#9fb3c8' : IVORY; g.fillText(t, x, 242 + i * 18); }); };
-  col(60, 'OFFENSE', ['Shoot: hold and release at the top  \u2022  tap: pump fake, then pivot, shoot or pass', 'Sprint + Shoot in range: dunk', 'Pass: tap  \u2022  type is automatic (bounce, lob, alley-oop)', 'Hold Pass: call a screen  \u2022  hold Pass + tap Move: pass fake',
+  col(60, 'OFFENSE', ['Shoot: hold and release at the top  \u2022  tap: pump fake, then shoot or pass', 'Sprint + Shoot in range: dunk', 'Pass: tap  \u2022  type is automatic (bounce, lob, alley-oop)', 'Hold Pass: call a screen  \u2022  hold Pass + tap Move: pass fake',
     'Move + direction: crossover, behind the back, spin, step-back', 'Tap Move: hesitation  \u2022  double-tap: signature move', 'Hold Move near the paint: post up', '\u2022 Without the ball: Shoot calls for it (give-and-go,',
     '\u2022   or alley-oop while sprinting at the rim)', '\u2022 Without the ball: Pass sets a screen for your partner']);
   col(500, 'DEFENSE', ['Hold Defend (Move button or L): guard your man.', '\u2022   You slide with him, between him and the rim', '\u2022   Feet set in his path: he charges into you', 'Hold Defend on a shot: box out',
@@ -13378,10 +13378,11 @@ const TARGETS = [7, 11, 15, 21, 31];
 // A pump fake ends your dribble. You can turn, pivot, shoot, go up for a layup/dunk or pass. A dashed ring
 // marks the pivot.
 // v8.6.3: no double dribbles (the NBA Jam way). Dribble moves (crossover, signature, hesitation) are simply
-// ignored while the dribble is picked up, and walking off the pivot slides you to the ring's edge instead of
-// costing the ball. The pick-up ends when you shoot or pass, or lose the ball.
+// ignored while the dribble is picked up. The pick-up ends when you shoot or pass, or lose the ball.
+// v8.6.4: a picked-up player can't move at all: he stays on his pivot spot (the stick only turns him to face
+// that way). He can still shoot, pass, or jump.
 // CPU handlers stay on the pivot and shoot or pass within about a second.
-const PIVOT_R = 34;
+const PIVOT_R = 24;                                                  // the planted-foot marker (v8.6.4: no room to walk inside it)
 function pickedUp(p) { return !!(p.pick && ball.owner === p); }
 {
   const _sf = startFake;
@@ -13407,11 +13408,12 @@ function pickedUp(p) { return !!(p.pick && ball.owner === p); }
         else startShot(p);
       }
     }
+    const held = pk && ball.owner === p && (p.state === 'free' || p.state === 'fake'), mx = p.cmd.mx || 0;
+    if (held) { p.cmd.mx = p.cmd.mz = 0; p.cmd.x = false; }               // no walking, no dribble move
     _up(p, dt);
-    if (!pk || ball.owner !== p) return;
-    const d = Math.hypot(p.x - pk.x, p.z - pk.z);
-    if (d <= PIVOT_R) return;
-    if (p.state === 'free' || p.state === 'fake') { const k = PIVOT_R / d; p.x = pk.x + (p.x - pk.x) * k; p.z = pk.z + (p.z - pk.z) * k; }   // anyone, any input: held to the ring's edge
+    if (!held || ball.owner !== p || (p.state !== 'free' && p.state !== 'fake')) return;
+    p.x = pk.x; p.z = pk.z; p.vx = p.vz = 0;                              // planted on the pivot spot
+    if (Math.abs(mx) > 0.3) p.face = sgn(mx);                             // the stick only turns him
   };
   // online (v8.6.3): the host runs the rule; the guest gets the pivot so it can draw the ring
   const _sn = Net.snapshot;

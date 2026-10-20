@@ -2,10 +2,11 @@
 // A pump fake ends your dribble. You can turn, pivot, shoot, go up for a layup/dunk or pass. A dashed ring
 // marks the pivot.
 // v8.6.3: no double dribbles (the NBA Jam way). Dribble moves (crossover, signature, hesitation) are simply
-// ignored while the dribble is picked up, and walking off the pivot slides you to the ring's edge instead of
-// costing the ball. The pick-up ends when you shoot or pass, or lose the ball.
+// ignored while the dribble is picked up. The pick-up ends when you shoot or pass, or lose the ball.
+// v8.6.4: a picked-up player can't move at all: he stays on his pivot spot (the stick only turns him to face
+// that way). He can still shoot, pass, or jump.
 // CPU handlers stay on the pivot and shoot or pass within about a second.
-const PIVOT_R = 34;
+const PIVOT_R = 24;                                                  // the planted-foot marker (v8.6.4: no room to walk inside it)
 function pickedUp(p) { return !!(p.pick && ball.owner === p); }
 {
   const _sf = startFake;
@@ -31,11 +32,12 @@ function pickedUp(p) { return !!(p.pick && ball.owner === p); }
         else startShot(p);
       }
     }
+    const held = pk && ball.owner === p && (p.state === 'free' || p.state === 'fake'), mx = p.cmd.mx || 0;
+    if (held) { p.cmd.mx = p.cmd.mz = 0; p.cmd.x = false; }               // no walking, no dribble move
     _up(p, dt);
-    if (!pk || ball.owner !== p) return;
-    const d = Math.hypot(p.x - pk.x, p.z - pk.z);
-    if (d <= PIVOT_R) return;
-    if (p.state === 'free' || p.state === 'fake') { const k = PIVOT_R / d; p.x = pk.x + (p.x - pk.x) * k; p.z = pk.z + (p.z - pk.z) * k; }   // anyone, any input: held to the ring's edge
+    if (!held || ball.owner !== p || (p.state !== 'free' && p.state !== 'fake')) return;
+    p.x = pk.x; p.z = pk.z; p.vx = p.vz = 0;                              // planted on the pivot spot
+    if (Math.abs(mx) > 0.3) p.face = sgn(mx);                             // the stick only turns him
   };
   // online (v8.6.3): the host runs the rule; the guest gets the pivot so it can draw the ring
   const _sn = Net.snapshot;

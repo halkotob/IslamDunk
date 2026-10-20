@@ -6,8 +6,8 @@
 // Tests:
 //   cpu-parity   seeded CPU-vs-CPU games (2v2 timed, first-to, half court, 1 on 1). With --ref, the same
 //                seeds must give exactly the same scores and box scores in both builds.
-//   controls     scripted human input after a pump fake: a crossover is ignored (no turnover), walking is held to
-//                the pivot ring, pivot, shoot and pass still work (v8.6.3: no double dribbles)
+//   controls     scripted human input after a pump fake: a crossover is ignored (no turnover), he can't move at all
+//                (the stick only turns him), shoot and pass still work (v8.6.3: no double dribbles; v8.6.4: no walking)
 //   half-court   lobby-driven half-court / points-target games run to completion
 //   career       new career -> 3 matches -> post-game -> save written
 //   feel         v7.9 rules: holding sprint gets at least the CPU's sprint time (same stamina rule), nobody
@@ -132,7 +132,7 @@ T['controls'] = async ({ browser, base }) => {
       for (const q of M.players) if (q !== me && q !== mate) place(q, 200, 640);   // rules only: no defender can steal mid-scenario
       place(mate, 1010, 220);
       let t = 0, pivot = null, maxOff = 0, passed = false, moves = 0; calls.length = 0;
-      const fga0 = me.stats.fga;
+      const fga0 = me.stats.fga; me.face0 = me.face;
       M.cmdHook = q => { if (q !== me) { zeroCmd(q.cmd); return true; } const c = q.cmd; for (const k of ['a', 'b', 'x', 's', 'turbo', 'bHeld', 'aHeld', 'xHeld']) c[k] = false; c.mx = c.mz = 0; c.face = 0; c.passTo = null; c.alley = null;
         t += STEP; if (t < 0.05) return true; if (!me.pick && t < 0.5 && me.state === 'free') { startFake(me); return true; } if (t > 0.5) after(c, t, me); return true; };
       for (let i = 0; i < 150; i++) {
@@ -143,11 +143,11 @@ T['controls'] = async ({ browser, base }) => {
       }
       M.cmdHook = null;
       return { dd: calls.includes('DOUBLE DRIBBLE!'), owner: ball.owner ? ball.owner.team : null, tov: me.stats.tov || 0, held: !!me.pick && ball.owner === me,
-        maxOff: Math.round(maxOff), moves, shot: me.stats.fga > fga0 || ball.state === 'shot', passed };
+        maxOff: Math.round(maxOff), turned: me.face !== me.face0, moves, shot: me.stats.fga > fga0 || ball.state === 'shot', passed };
     };
     out.crossover = scenario((c, t) => { if (t < 0.55) c.x = true; c.mx = t < 0.55 ? 1 : 0; });
     out.walkOff = scenario(c => { c.mx = 1; c.turbo = true; });
-    out.pivot = scenario(c => { c.mz = 0.2; });
+    out.pivot = scenario((c, t, me) => { c.mx = -me.face0; c.mz = 0.2; });
     out.shot = scenario((c, t) => { c.bHeld = t < 0.9; c.b = t < 0.52; });
     out.pass = scenario((c, t, me) => { if (t < 0.56) { c.a = true; c.passTo = me.mate; } });
     out.noDoubleDribbleFn = typeof doubleDribble === 'undefined';
@@ -156,8 +156,8 @@ T['controls'] = async ({ browser, base }) => {
   await ctx.close();
   const clean = x => !x.dd && x.tov === 0;
   const ok = clean(r.crossover) && r.crossover.owner === 0 && r.crossover.held && r.crossover.moves === 0
-    && clean(r.walkOff) && r.walkOff.owner === 0 && r.walkOff.held && r.walkOff.maxOff <= 35
-    && clean(r.pivot) && r.pivot.owner === 0
+    && clean(r.walkOff) && r.walkOff.owner === 0 && r.walkOff.held && r.walkOff.maxOff <= 1
+    && clean(r.pivot) && r.pivot.owner === 0 && r.pivot.maxOff <= 1 && r.pivot.turned
     && clean(r.shot) && r.shot.shot && clean(r.pass) && r.pass.passed && r.noDoubleDribbleFn && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };

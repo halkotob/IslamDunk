@@ -1,5 +1,14 @@
 # Changelog
 
+## 8.6.4: a picked-up dribble means standing still
+- After a pump fake ("PICKED UP") the player can't move at all. In 8.6.3 he could still walk around inside
+  the pivot ring. Now he stays planted on the spot where he picked it up; the stick only turns him to face
+  that way. He can still shoot, pass, jump or go up for a layup or dunk from there, and the pick-up still
+  ends when the ball leaves his hands. The dashed marker under him is smaller (24 instead of 34) so it no
+  longer looks like room to move. How to play now says "tap: pump fake, then shoot or pass".
+- `controls` test: walking after a pump fake moves him 0 units (was: held within the ring), and pushing the
+  stick turns him.
+
 ## 8.6.3: hot spots, late-game CPU, no double dribble, glass pass
 - **Hot spots.** A spot now appears only while a team holds the ball live (never on a dead ball, an
   inbound or a free throw; it waits), on that team's attacking half, inside the half-court line and at
