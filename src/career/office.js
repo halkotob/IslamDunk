@@ -45,7 +45,15 @@ function enterOffice() {
   if (ball.owner === me) { ball.owner = null; ball.state = 'loose'; ball.vx = ball.vz = ball.vy = 0; ball.y = BALL_R; }
   Gym.walk = { t: 0, to: 'office', spot: OFFICE_SPOT };
 }
-function openOffice() { Game.screen = 'office'; Game.office = { sel: 0, panel: null, fadeIn: 0.5 }; }
+function openOffice() { Game.screen = 'office'; Game.office = { sel: 0, panel: null, fadeIn: 0.5, lines: 0 }; }   // lines: free lines heard this visit
+// v8.6.7: two free lines a visit (plus the situation conversation, if there is one), then he has nothing more
+const SHEIKH_FREE = 2, SHEIKH_DONE = 'Sh. Saleem has nothing more for now.';
+function sheikhNext() {
+  const of = Game.office;
+  if ((of.lines || 0) >= SHEIKH_FREE) { of.line = SHEIKH_DONE; of.done = true; return false; }
+  of.lines = (of.lines || 0) + 1; of.line = sheikhLine(); of.done = false; return true;
+}
+const sheikhMore = () => { const of = Game.office; return !!of && !of.done && (of.lines || 0) < SHEIKH_FREE; };
 function leaveOffice() { Game.office = null; Game.screen = 'gym'; const me = M.players[0]; place(me, 800, 90); me.face = 1; }
 // Short, accurate explanations for each TRIVIA entry (same order).
 const TRIVIA_WHY = [
@@ -416,7 +424,7 @@ function convoAdvance() {
   const cv = Game.office.convo;
   if (cv.li < cv.lines.length - 1) { cv.li++; SFX.blip(); return; }
   if (cv.mode === 'lines') { cv.mode = 'choose'; SFX.blip(); return; }
-  if (cv.mode === 'reply') { Game.office.panel = 'talk'; Game.office.line = sheikhLine(); }
+  if (cv.mode === 'reply') Game.office.panel = null;                  // v8.6.7: the reply ends the talk (no random line after it)
 }
 function convoChoose(i) { const cv = Game.office.convo; cv.mode = 'reply'; cv.lines = cv.choices[i][1]; cv.li = 0; cv.sel = i; SFX.blip(); }
 function officeUpdate(rdt) {
@@ -430,7 +438,7 @@ function officeUpdate(rdt) {
     return;
   }
   if (of.panel) {
-    if (of.panel === 'talk' && menuHit('ok')) { of.line = sheikhLine(); SFX.blip(); }
+    if (of.panel === 'talk' && menuHit('ok') && sheikhMore()) { sheikhNext(); SFX.blip(); }
     else if (menuHit('ok') || menuHit('back')) of.panel = null;
     return;
   }
@@ -438,7 +446,7 @@ function officeUpdate(rdt) {
   if (menuHit('ok')) officeAct(of.sel);
   else if (menuHit('back')) leaveOffice();
 }
-function officeAct(i) { const of = Game.office; of.sel = i; if (i === 0) shelfOpen(); else { const t = sheikhSituation(); if (t) startSheikhTalk(t); else { of.panel = 'talk'; of.line = sheikhLine(); } } SFX.blip(); }
+function officeAct(i) { const of = Game.office; of.sel = i; if (i === 0) shelfOpen(); else { const t = sheikhSituation(); if (t) startSheikhTalk(t); else { of.panel = 'talk'; sheikhNext(); } } SFX.blip(); }
 function drawOffice(g) {
   const of = Game.office;
   // room: warm walls, wood floor, rug, window, framed plaque
@@ -487,6 +495,7 @@ function drawOffice(g) {
   g.fillStyle = 'rgba(8,16,24,0.8)'; roundRect(g, 96, 8, 360, 32, 16); g.fill();
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.textAlign = 'left'; g.fillText('Sheikh\u2019s office', 112, 29);
   g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('\u2190 \u2192 choose, Enter to select', 250, 29);
+  if (!of.panel) uiButton(g, W - 150, H - 52, 130, 36, 'Leave office', () => leaveOffice());   // v8.6.7: visible, works by touch (Esc too)
   if (of.panel === 'shelf') {
     panel(g, 60, 150, W - 120, 240, true);
     g.textAlign = 'left';
@@ -504,8 +513,11 @@ function drawOffice(g) {
     panel(g, 40, 410, W - 80, 118, true);
     g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `15px ${FONT}`; g.fillText('Sh. Saleem', 62, 436);
     g.fillStyle = '#fff'; g.font = `16px ${BODY}`; wrapTextLeft(g, of.line, 62, 464, W - 140, 22);
-    g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'right'; g.fillText('Enter: ask something else   Esc: close', W - 60, 516);
-    addRect(0, 60, W, H - 60, () => { of.line = sheikhLine(); SFX.blip(); });
+    // v8.6.7: no full-screen "tap for another line"; Another (only while he has more) and Leave buttons
+    const more = sheikhMore();
+    g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'left'; g.fillText(more ? 'Enter: another   Esc: leave' : 'Esc: leave', 62, 516);
+    if (more) uiButton(g, W - 300, 486, 120, 32, 'Another', () => { if (sheikhMore()) { sheikhNext(); SFX.blip(); } });
+    uiButton(g, W - 168, 486, 110, 32, 'Leave', () => { of.panel = null; }, !more);
   } else if (of.panel === 'convo') drawConvo(g, of.convo);
   if (!of.panel && sheikhSituation()) {          // something to talk about: a small gold marker over the sheikh
     const mx = W / 2 + 40, my = 176 + Math.sin(Game.t * 3) * 3;

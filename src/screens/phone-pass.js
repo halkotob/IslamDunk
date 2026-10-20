@@ -23,7 +23,7 @@ const BTN_SIZE = [0.85, 1, 1.15], BTN_SIZE_TXT = ['Small', 'Medium', 'Large'], B
 // ---- 1 + 2: minimum text size and touch wording, on the game canvas only
 const TOUCH_TEXT = {
   // navigation hints for keys: every item on these screens can be tapped
-  '↑ ↓ choose, Enter to start, Esc to close': '', '← → choose, Enter to select': '', 'Enter: ask something else Esc: close': '',
+  '↑ ↓ choose, Enter to start, Esc to close': '', '← → choose, Enter to select': '', 'Enter: ask something else Esc: close': '', 'Enter: another Esc: leave': '', 'Esc: leave': '',
   '↑ ↓ choose, ← → change, Enter to select': '', '← → switch tabs, ↑ ↓ choose, Enter to build, Esc for the hub': '',
   '← → switch view, Enter for projects, Esc for the hub': '', '← → choose · Enter confirm · Esc ends your run': '',
   '← → choose • Enter confirm • Esc back': '', '← → choose • Enter go • Esc ends your run': '', '↑ ↓ choose ← → change Enter select': '',
@@ -116,16 +116,16 @@ function drawTouchStrip(g) {
   let y = top;
   for (const p of M.players) {
     if (p.human < 0 || M.attract) continue;
-    const sprinting = p.cmd.turbo && Math.hypot(p.vx || 0, p.vz || 0) > 60 && p.turboOK && p.turboOK();
+    const sv = sprintVis(p);                                               // v8.6.7: from the sim's drain flag, held and faded
     g.globalAlpha = 0.95;
     g.fillStyle = 'rgba(8,14,22,0.82)'; roundRect(g, x0, y, 150, 20, 10); g.fill();
     g.fillStyle = p.human === 0 ? '#ff7a7a' : '#6ab8ff'; roundRect(g, x0 + 6, y + 5, 4, 10, 2); g.fill();
     hudIcon(g, 'bolt', x0 + 20, y + 10, 6, '#bff0ff');
-    meter(g, x0 + 30, y + 6, 112, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : sprinting ? '#bff0ff' : '#4fc3ff');
+    meter(g, x0 + 30, y + 6, 112, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : turboCol(sv));
     let cx = x0 + 158;
     if (p.fire) cx = hudChip(g, cx, y - 1, 'flame', 'ON FIRE', '#ff8a2a');
     if (noorActive(p)) { const F = NOOR_BY_ID[noorFxOf(p)]; cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, F.icon, ix, iy, 7, F.col), noorTagText(p), F.col); }
-    else if (p.def.huffath && p.hifz >= 100) cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, 'light', ix, iy, 7, '#ffe38a'), 'NOOR READY', '#ffe38a');
+    else if (canNoor(p) && p.hifz >= 100) cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, 'light', ix, iy, 7, '#ffe38a'), 'NOOR READY', '#ffe38a');
     if (!p.fire && (p.fat || 0) > 0.7) cx = hudChip(g, cx, y - 1, 'tired', 'WINDED', '#ffb08a');
     if (typeof pressureOf === 'function' && pressureOf(p) >= 0.3 && !p.fire) cx = hudChip(g, cx, y - 1, 'warn', 'PRESSURE', '#ffb07a');
     y += 26;

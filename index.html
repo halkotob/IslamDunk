@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '8.6.6';
+const VERSION = '8.6.7';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -875,6 +875,7 @@ function updatePlayer(p, dt) {
   if (p.fire) { p.fireT -= dt; if (p.fireT <= 0) { p.fire = false; p.streak = 0; } if (chance(dt * 30)) FX.fire(p.x + rand(-10, 10), p.y + rand(5, 70), p.z); }
   const sp = Math.hypot(p.vx, p.vz);
   const sta = p.st.sta != null ? p.st.sta : 5, pray = (p.prayBonus ? 1.1 : 1) * (p.bon ? 1 + p.bon.sta : 1);
+  p.sprintOn = !!(c.turbo && sp > 40 && !p.fire); if (p.sprintOn) p.sprintAt = M.time;   // v8.6.7: the HUD reads the drain itself (see sprintVis)
   if (c.turbo && sp > 40 && !p.fire) p.turbo = Math.max(0, p.turbo - 30 * dt * (1.25 - sta * 0.05) / pray);
   else if (!c.turbo) p.turbo = Math.min(100, p.turbo + 14 * dt * (trailing(p.team) ? 1.3 : 1) * (0.75 + sta * 0.05) * pray);
 
@@ -1292,7 +1293,10 @@ function knockDown(t, nx, nz) {
   t.fallDir = sgn(nx); t.spin = 0; t.move = null; t.act = null;
   t.expr = { k: 'shock', t: 0.9 }; t.sq = -0.65; FX.hitstop(1); FX.dust(t.x, t.z, 2);
 }
-function addHifz(p, n) { if (M.practice || (M.fmt && M.fmt.shortGame && p.hifzUsed) || !p.def.huffath || p.boost > 0) return; p.hifz = Math.min(100, p.hifz + n); if (p.hifz >= 100) M.hifzQueue.push(p); }
+// v8.6.7: who can earn Noor. The team's hafiz, as always; online, every human player too (host and guest), so the
+// guest isn't locked out when his team's hafiz is the host's player. Solo and local play keep the hafiz rule.
+function canNoor(p) { return !!p && (!!p.def.huffath || (!!M.online && p.human >= 0)); }
+function addHifz(p, n) { if (M.practice || (M.fmt && M.fmt.shortGame && p.hifzUsed) || !canNoor(p) || p.boost > 0) return; p.hifz = Math.min(100, p.hifz + n); if (p.hifz >= 100) M.hifzQueue.push(p); }
 
 // ============================================================ ANIMATION
 // Joint angles are 0 = limb pointing down, positive = rotating forward.
@@ -2808,9 +2812,9 @@ function drawHUD(g) {
   for (const p of M.players) {
     if (p.human < 0 || M.attract || Input.touchMode) continue;   // v8.6.2: touch draws a compact strip instead (phone-pass.js)
     // card rows: name (+ status) / TURBO label + bar / NOOR label + bar: nothing shares a line
-    const noor = p.def.huffath, ch = noor ? 66 : 54, tui = TouchUI.shown && !TouchUI.portrait;   // v6: + poise row
+    const noor = canNoor(p), ch = noor ? 66 : 54, tui = TouchUI.shown && !TouchUI.portrait;   // v6: + poise row
     const x = tui ? W / hk - 236 - 8 : 12 + slot * 236, y = tui ? H - H / hk + 50 + slot * (ch + 6) : H - ch - 8; slot++;   // touch landscape: cards top-right, clear of the stick (in the scaled HUD space)
-    g.globalAlpha = hudBehind(x, y, 224, ch, hk) ? 0.35 : 1;      // v7.9: see-through while someone is behind it
+    g.globalAlpha = cardAlpha(p, x, y, 224, ch, hk);               // v7.9: see-through while someone is behind it (v8.6.7: eased, with hysteresis)
     g.fillStyle = 'rgba(8,14,22,0.82)'; roundRect(g, x, y, 224, ch, 11); g.fill();
     g.fillStyle = p.human === 0 ? '#ff7a7a' : '#6ab8ff'; roundRect(g, x + 8, y + 8, 4, ch - 16, 2); g.fill();
     g.font = `12px ${FONT}`; g.textAlign = 'left'; g.fillStyle = '#fff'; g.fillText(fitText(g, p.def.name.toUpperCase(), 120), x + 20, y + 17);
@@ -2819,9 +2823,9 @@ function drawHUD(g) {
     else if ((p.fat || 0) > 0.7) { g.fillStyle = '#ffb08a'; g.textAlign = 'right'; g.font = `10px ${FONT}`; g.fillText('WINDED', x + 214, y + 17); }
     else { const badge=isMine(p)&&selectedRunBadge(); if(badge){g.fillStyle=badge.color;g.textAlign='right';g.font=`8px ${FONT}`;g.fillText(fitText(g,badge.name.toUpperCase(),72),x+214,y+17);} }
     g.fillStyle = '#9fb3c8'; g.font = `9px ${FONT}`; g.textAlign = 'left'; g.fillText('TURBO', x + 20, y + 32);
-    const sprinting = p.cmd.turbo && Math.hypot(p.vx || 0, p.vz || 0) > 60 && p.turboOK && p.turboOK();
-    if (sprinting) { g.save(); g.shadowColor = '#8fe3ff'; g.shadowBlur = 10; g.fillStyle = 'rgba(143,227,255,0.35)'; roundRect(g, x + 61, y + 22, 156, 14, 7); g.fill(); g.restore(); }   // v7: sprint glow
-    meter(g, x + 64, y + 25, 150, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : sprinting ? '#bff0ff' : '#4fc3ff');   // red: winded, refilling
+    const sv = sprintVis(p);
+    if (sv > 0.01) { g.save(); g.globalAlpha *= sv; g.shadowColor = '#8fe3ff'; g.shadowBlur = 10; g.fillStyle = 'rgba(143,227,255,0.35)'; roundRect(g, x + 61, y + 22, 156, 14, 7); g.fill(); g.restore(); }   // v7: sprint glow (v8.6.7: fades)
+    meter(g, x + 64, y + 25, 150, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : turboCol(sv));   // red: winded, refilling
     if (noor) { g.fillStyle = '#9fb3c8'; g.fillText('NOOR', x + 20, y + 45); meter(g, x + 64, y + 39, 150, 6, noorCardFrac(p), noorCardCol(p)); }
     drawCompRow(g, p, x, y + ch - 16, y);
     g.globalAlpha = 1;
@@ -2832,6 +2836,26 @@ function drawHUD(g) {
   if (Input.touchMode && !TouchUI.el && !M.attract) drawTouch(g);      // v8.6.2: only when the HTML controls never loaded (they showed as ghost buttons on overlays)
 }
 // is a player or the ball on screen behind this HUD box? (box in the scaled HUD space: y measured up from H by hk)
+// v8.6.7: the sprint look comes from the sim's own drain flag (p.sprintOn / p.sprintAt), held 0.25 s so a turn
+// or a bump can't flip it for a few frames, and faded in and out over about 120 ms
+function sprintVis(p) {
+  const on = !p.fire && !p.winded && p.sprintAt != null && M.time - p.sprintAt < 0.25 && M.time >= p.sprintAt;
+  const dt = Math.min(0.05, Game.rdt || STEP);
+  p._sv = clamp((p._sv || 0) + (on ? 1 : -1) * dt / 0.12, 0, 1);
+  return p._sv;
+}
+function turboCol(v) { return lerpColor('#4fc3ff', '#bff0ff', v); }
+// the card fades when someone is behind it: eased over about 150 ms. Hysteresis: leaving the faded state needs a
+// wider margin than entering it, and either change has to hold for 0.2 s before it happens
+function cardAlpha(p, x, y, w, h, hk) {
+  const dt = Math.min(0.05, Game.rdt || STEP);
+  const raw = p._hudF ? hudBehind(x - 30, y - 30, w + 60, h + 60, hk) : hudBehind(x, y, w, h, hk);
+  if (p._hudF == null) p._hudF = raw;
+  if (raw !== p._hudF) { p._hudPT = (p._hudPT || 0) + dt; if (p._hudPT >= 0.2) { p._hudF = raw; p._hudPT = 0; } } else p._hudPT = 0;
+  const tgt = p._hudF ? 0.35 : 1, a = p._hudA == null ? tgt : p._hudA;
+  p._hudA = a + clamp(tgt - a, -0.65 * dt / 0.15, 0.65 * dt / 0.15);
+  return p._hudA;
+}
 function hudBehind(x, y, w, h, hk) {
   if (!M.players) return false;
   const bc = broadcastOn(), z = bc ? cam.zoom : 1, fy = bc ? cam.fy : H / 2;
@@ -6636,7 +6660,15 @@ function enterOffice() {
   if (ball.owner === me) { ball.owner = null; ball.state = 'loose'; ball.vx = ball.vz = ball.vy = 0; ball.y = BALL_R; }
   Gym.walk = { t: 0, to: 'office', spot: OFFICE_SPOT };
 }
-function openOffice() { Game.screen = 'office'; Game.office = { sel: 0, panel: null, fadeIn: 0.5 }; }
+function openOffice() { Game.screen = 'office'; Game.office = { sel: 0, panel: null, fadeIn: 0.5, lines: 0 }; }   // lines: free lines heard this visit
+// v8.6.7: two free lines a visit (plus the situation conversation, if there is one), then he has nothing more
+const SHEIKH_FREE = 2, SHEIKH_DONE = 'Sh. Saleem has nothing more for now.';
+function sheikhNext() {
+  const of = Game.office;
+  if ((of.lines || 0) >= SHEIKH_FREE) { of.line = SHEIKH_DONE; of.done = true; return false; }
+  of.lines = (of.lines || 0) + 1; of.line = sheikhLine(); of.done = false; return true;
+}
+const sheikhMore = () => { const of = Game.office; return !!of && !of.done && (of.lines || 0) < SHEIKH_FREE; };
 function leaveOffice() { Game.office = null; Game.screen = 'gym'; const me = M.players[0]; place(me, 800, 90); me.face = 1; }
 // Short, accurate explanations for each TRIVIA entry (same order).
 const TRIVIA_WHY = [
@@ -7007,7 +7039,7 @@ function convoAdvance() {
   const cv = Game.office.convo;
   if (cv.li < cv.lines.length - 1) { cv.li++; SFX.blip(); return; }
   if (cv.mode === 'lines') { cv.mode = 'choose'; SFX.blip(); return; }
-  if (cv.mode === 'reply') { Game.office.panel = 'talk'; Game.office.line = sheikhLine(); }
+  if (cv.mode === 'reply') Game.office.panel = null;                  // v8.6.7: the reply ends the talk (no random line after it)
 }
 function convoChoose(i) { const cv = Game.office.convo; cv.mode = 'reply'; cv.lines = cv.choices[i][1]; cv.li = 0; cv.sel = i; SFX.blip(); }
 function officeUpdate(rdt) {
@@ -7021,7 +7053,7 @@ function officeUpdate(rdt) {
     return;
   }
   if (of.panel) {
-    if (of.panel === 'talk' && menuHit('ok')) { of.line = sheikhLine(); SFX.blip(); }
+    if (of.panel === 'talk' && menuHit('ok') && sheikhMore()) { sheikhNext(); SFX.blip(); }
     else if (menuHit('ok') || menuHit('back')) of.panel = null;
     return;
   }
@@ -7029,7 +7061,7 @@ function officeUpdate(rdt) {
   if (menuHit('ok')) officeAct(of.sel);
   else if (menuHit('back')) leaveOffice();
 }
-function officeAct(i) { const of = Game.office; of.sel = i; if (i === 0) shelfOpen(); else { const t = sheikhSituation(); if (t) startSheikhTalk(t); else { of.panel = 'talk'; of.line = sheikhLine(); } } SFX.blip(); }
+function officeAct(i) { const of = Game.office; of.sel = i; if (i === 0) shelfOpen(); else { const t = sheikhSituation(); if (t) startSheikhTalk(t); else { of.panel = 'talk'; sheikhNext(); } } SFX.blip(); }
 function drawOffice(g) {
   const of = Game.office;
   // room: warm walls, wood floor, rug, window, framed plaque
@@ -7078,6 +7110,7 @@ function drawOffice(g) {
   g.fillStyle = 'rgba(8,16,24,0.8)'; roundRect(g, 96, 8, 360, 32, 16); g.fill();
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.textAlign = 'left'; g.fillText('Sheikh\u2019s office', 112, 29);
   g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('\u2190 \u2192 choose, Enter to select', 250, 29);
+  if (!of.panel) uiButton(g, W - 150, H - 52, 130, 36, 'Leave office', () => leaveOffice());   // v8.6.7: visible, works by touch (Esc too)
   if (of.panel === 'shelf') {
     panel(g, 60, 150, W - 120, 240, true);
     g.textAlign = 'left';
@@ -7095,8 +7128,11 @@ function drawOffice(g) {
     panel(g, 40, 410, W - 80, 118, true);
     g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `15px ${FONT}`; g.fillText('Sh. Saleem', 62, 436);
     g.fillStyle = '#fff'; g.font = `16px ${BODY}`; wrapTextLeft(g, of.line, 62, 464, W - 140, 22);
-    g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'right'; g.fillText('Enter: ask something else   Esc: close', W - 60, 516);
-    addRect(0, 60, W, H - 60, () => { of.line = sheikhLine(); SFX.blip(); });
+    // v8.6.7: no full-screen "tap for another line"; Another (only while he has more) and Leave buttons
+    const more = sheikhMore();
+    g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'left'; g.fillText(more ? 'Enter: another   Esc: leave' : 'Esc: leave', 62, 516);
+    if (more) uiButton(g, W - 300, 486, 120, 32, 'Another', () => { if (sheikhMore()) { sheikhNext(); SFX.blip(); } });
+    uiButton(g, W - 168, 486, 110, 32, 'Leave', () => { of.panel = null; }, !more);
   } else if (of.panel === 'convo') drawConvo(g, of.convo);
   if (!of.panel && sheikhSituation()) {          // something to talk about: a small gold marker over the sheikh
     const mx = W / 2 + 40, my = 176 + Math.sin(Game.t * 3) * 3;
@@ -12045,24 +12081,41 @@ function inbStep(dt) {
   if (I.stage === 'fetch') {
     if (Math.hypot(p.x - I.S.x, p.z - I.S.z) < 18 || I.t > 1.4) { ball.grabLock = 0; M.possTeam = -1; giveBall(p, 'inbound'); ball.grabLock = 0; I.stage = 'hold'; I.th = I.t; }
   } else if (I.stage === 'hold') {
-    if (M.deadT <= 0 && I.t - I.th > 0.15 && (Math.hypot(r.x - I.R.x, r.z - I.R.z) < 45 || I.t > 2.2) && p.state === 'free' && ball.owner === p) {
-      p.face = sgn(r.x - p.x) || p.face; doPass(p, r, false); I.stage = 'pass'; I.tp = I.t;
+    // v8.6.7: pass only to a receiver who has arrived and stopped (within 14 of his spot, under 60 speed), or
+    // at the 2.2 s limit to the spot where he stands, with no lead. Passing to a man still running at 250+
+    // led him, he braked, and the ball went loose (about 3% of inbounds).
+    const there = Math.hypot(r.x - I.R.x, r.z - I.R.z) < 14 && Math.hypot(r.vx, r.vz) < 60;
+    if (M.deadT <= 0 && I.t - I.th > 0.15 && (there || I.t > 2.2) && p.state === 'free' && ball.owner === p) {
+      p.face = sgn(r.x - p.x) || p.face; r.vx = r.vz = 0; doPass(p, r, false); I.stage = 'pass'; I.tp = I.t;
     }
   } else if (I.stage === 'pass') {
-    if (ball.owner === r || (ball.owner && ball.owner !== p) || I.t - I.tp > 1.2) return inbLive();
+    if (ball.owner === r || (ball.owner && ball.owner !== p)) return inbLive();
+    if (I.t - I.tp > 1.2 && ball.state !== 'pass') { I.stage = 'loose'; I.tl = I.t; ball.grabLock = 0; }   // missed: the receiver goes and gets it
+  } else if (I.stage === 'loose') {
+    if (ball.owner && ball.owner !== p) return inbLive();
+    if (I.t - I.tl > 1 && !ball.owner) { ball.grabLock = 0; M.possTeam = -1; giveBall(r, 'inbound'); return inbLive(); }   // never back to the inbounder
   }
-  if (I.t > 3.2) { M.inb = null; ball.grabLock = 0; M.possTeam = -1; giveBall(p, 'inbound'); M.phase = 'live'; M.shotClock = scReset(); }   // fallback: no teleport, no cut
+  if (I.t > 3.2 && I.stage !== 'pass' && I.stage !== 'loose') { M.inb = null; ball.grabLock = 0; M.possTeam = -1; giveBall(p, 'inbound'); M.phase = 'live'; M.shotClock = scReset(); }   // fallback: no teleport, no cut
 }
 function inbLive() {
   const I = M.inb; M.inb = null;
-  if (!ball.owner && ball.state !== 'pass') { ball.grabLock = 0; M.possTeam = -1; giveBall(I.p, 'inbound'); }
+  if (!ball.owner && ball.state !== 'pass') { ball.grabLock = 0; M.possTeam = -1; giveBall(I.r, 'inbound'); }   // v8.6.7: the receiver, never the inbounder
   M.phase = 'live'; M.shotClock = scReset(); ball.grabLock = 0;
+}
+{                                                    // v8.6.7: while an inbound pass is in the air or loose, the inbounder can't take it back, nor the defence
+  const _cg = checkGrab;
+  checkGrab = function () {
+    const I = M.inb; if (!I || (I.stage !== 'pass' && I.stage !== 'loose')) return _cg.apply(this, arguments);
+    const out = M.players.filter(q => q === I.p || q.team !== I.team), st = out.map(q => q.state);
+    out.forEach(q => { q.state = 'down'; });
+    try { return _cg.apply(this, arguments); } finally { out.forEach((q, i) => { q.state = st[i]; }); }
+  };
 }
 function inbCmd(p) {
   const I = M.inb, c = p.cmd; zeroCmd(c);
   if (M.phase !== 'dead') return false;
-  const tgt = p === I.p ? (I.stage === 'fetch' ? I.S : null) : p === I.r ? I.R : I.Dspots[I.D.indexOf(p)];
-  if (tgt) { const dx = tgt.x - p.x, dz = tgt.z - p.z, d = Math.hypot(dx, dz); if (d > 6) { const k = Math.min(1, d / 40); c.mx = dx / d * k; c.mz = dz / d * k; } }
+  const tgt = p === I.p ? (I.stage === 'fetch' ? I.S : null) : p === I.r ? (I.stage === 'loose' ? ball : I.stage === 'pass' ? null : I.R) : I.Dspots[I.D.indexOf(p)];
+  if (tgt) { const dx = tgt.x - p.x, dz = tgt.z - p.z, d = Math.hypot(dx, dz), stop = tgt === ball ? 0 : 8; if (d > stop) { const k = tgt === ball ? 1 : Math.min(1, d / 40); c.mx = dx / d * k; c.mz = dz / d * k; } }   // the receiver stops on his spot and waits for the pass
   if (p === I.p && I.stage !== 'fetch') c.face = sgn(I.r.x - p.x);
   return true;
 }
@@ -19349,7 +19402,7 @@ const BTN_SIZE = [0.85, 1, 1.15], BTN_SIZE_TXT = ['Small', 'Medium', 'Large'], B
 // ---- 1 + 2: minimum text size and touch wording, on the game canvas only
 const TOUCH_TEXT = {
   // navigation hints for keys: every item on these screens can be tapped
-  '↑ ↓ choose, Enter to start, Esc to close': '', '← → choose, Enter to select': '', 'Enter: ask something else Esc: close': '',
+  '↑ ↓ choose, Enter to start, Esc to close': '', '← → choose, Enter to select': '', 'Enter: ask something else Esc: close': '', 'Enter: another Esc: leave': '', 'Esc: leave': '',
   '↑ ↓ choose, ← → change, Enter to select': '', '← → switch tabs, ↑ ↓ choose, Enter to build, Esc for the hub': '',
   '← → switch view, Enter for projects, Esc for the hub': '', '← → choose · Enter confirm · Esc ends your run': '',
   '← → choose • Enter confirm • Esc back': '', '← → choose • Enter go • Esc ends your run': '', '↑ ↓ choose ← → change Enter select': '',
@@ -19442,16 +19495,16 @@ function drawTouchStrip(g) {
   let y = top;
   for (const p of M.players) {
     if (p.human < 0 || M.attract) continue;
-    const sprinting = p.cmd.turbo && Math.hypot(p.vx || 0, p.vz || 0) > 60 && p.turboOK && p.turboOK();
+    const sv = sprintVis(p);                                               // v8.6.7: from the sim's drain flag, held and faded
     g.globalAlpha = 0.95;
     g.fillStyle = 'rgba(8,14,22,0.82)'; roundRect(g, x0, y, 150, 20, 10); g.fill();
     g.fillStyle = p.human === 0 ? '#ff7a7a' : '#6ab8ff'; roundRect(g, x0 + 6, y + 5, 4, 10, 2); g.fill();
     hudIcon(g, 'bolt', x0 + 20, y + 10, 6, '#bff0ff');
-    meter(g, x0 + 30, y + 6, 112, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : sprinting ? '#bff0ff' : '#4fc3ff');
+    meter(g, x0 + 30, y + 6, 112, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : turboCol(sv));
     let cx = x0 + 158;
     if (p.fire) cx = hudChip(g, cx, y - 1, 'flame', 'ON FIRE', '#ff8a2a');
     if (noorActive(p)) { const F = NOOR_BY_ID[noorFxOf(p)]; cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, F.icon, ix, iy, 7, F.col), noorTagText(p), F.col); }
-    else if (p.def.huffath && p.hifz >= 100) cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, 'light', ix, iy, 7, '#ffe38a'), 'NOOR READY', '#ffe38a');
+    else if (canNoor(p) && p.hifz >= 100) cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, 'light', ix, iy, 7, '#ffe38a'), 'NOOR READY', '#ffe38a');
     if (!p.fire && (p.fat || 0) > 0.7) cx = hudChip(g, cx, y - 1, 'tired', 'WINDED', '#ffb08a');
     if (typeof pressureOf === 'function' && pressureOf(p) >= 0.3 && !p.fire) cx = hudChip(g, cx, y - 1, 'warn', 'PRESSURE', '#ffb07a');
     y += 26;

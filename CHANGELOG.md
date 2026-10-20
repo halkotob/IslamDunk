@@ -1,5 +1,36 @@
 # Changelog
 
+## 8.6.7: inbound pass, turbo bar, Sh. Saleem, guest Noor
+- **Inbound passes no longer go back to the inbounder.** The inbound pass used to fire while the receiver was still
+  running to his spot (250-330 speed in every failure), so it led him, he braked, the ball went loose and the
+  inbounder was handed it back. Now the pass waits until the receiver is within 14 units of his spot and under
+  60 speed, or at the 2.2 s limit goes to where he stands with no lead; the receiver stops on his spot and waits.
+  If a pass still goes loose, the inbounder and the defence can't take it; the receiver goes for it, and after 1 s
+  it's given to him. The instant-inbound fallbacks are unchanged (the 3.2 s one no longer cuts in while the pass
+  is in the air or loose).
+  Same seeded run (60 games: CPU vs CPU, and a human on each side): the inbounder got the ball back after 21 of
+  706 passes (3.0%) before, 0 of 702 after.
+- **Turbo bar doesn't flicker.** The sprint look came from the drawing code (turbo held and speed over 60) while
+  the drain runs at speed over 40, so every turn or bump flipped it. The sim now sets a sprint flag where the drain
+  happens (same condition), the HUD holds it 0.25 s and fades the bright colour and glow in and out over about
+  120 ms (card and phone strip). The card's see-through fade eases over about 150 ms, needs a wider margin to
+  leave the faded state than to enter it, and a change has to last 0.2 s. Drain, refill and the winded rule are
+  unchanged. 14 s of scripted sprinting with direction changes every 0.35 s: colour flips 2.29 a second before,
+  0.21 after; card fade flips 0.21 before, 0.07 after.
+- **Sh. Saleem talks less.** Two free lines a visit (plus the situation conversation when there is one), then
+  "Sh. Saleem has nothing more for now." No more tap-anywhere-for-another-line: an Another button (only while he
+  has more) and a Leave button on the talk panel, and a Leave office button in the office, all by touch; Esc still
+  works. A conversation's reply now closes the panel instead of starting a random line. The count resets each
+  visit.
+- **The guest earns Noor online.** Only a team's hafiz could earn Noor, and in online co-op the guest always plays
+  slot 1, where only 4 of the 8 teams have their hafiz (confirmed: on NOOR the guest's meter stayed at 0). Online,
+  every human player (host and guest) can now earn Noor; solo and local play keep the hafiz rule. The guest sees
+  the meter, the question, the three cards and the effect (the host decides, as before).
+- **Tests.** New `v867` (inbounds, flicker, Sh. Saleem, who can earn Noor). `online-loop` plays co-op twice: on
+  NOOR (the guest isn't the hafiz) and on TAQWA (he is); both times the guest's meter fills, he gets the question
+  and the 3 cards, and the host and guest show the same effect.
+  Inbound passes now wait for the receiver, so seeded games change: `cpu-parity` has a new baseline.
+
 ## 8.6.6: Float is the default tomahawk
 - The tomahawk now uses the Float style unless you pick another in Settings → Game → Tomahawk style (Classic,
   Smooth and Power are still there). A style already saved on this device is kept.

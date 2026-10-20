@@ -683,9 +683,9 @@ function drawHUD(g) {
   for (const p of M.players) {
     if (p.human < 0 || M.attract || Input.touchMode) continue;   // v8.6.2: touch draws a compact strip instead (phone-pass.js)
     // card rows: name (+ status) / TURBO label + bar / NOOR label + bar: nothing shares a line
-    const noor = p.def.huffath, ch = noor ? 66 : 54, tui = TouchUI.shown && !TouchUI.portrait;   // v6: + poise row
+    const noor = canNoor(p), ch = noor ? 66 : 54, tui = TouchUI.shown && !TouchUI.portrait;   // v6: + poise row
     const x = tui ? W / hk - 236 - 8 : 12 + slot * 236, y = tui ? H - H / hk + 50 + slot * (ch + 6) : H - ch - 8; slot++;   // touch landscape: cards top-right, clear of the stick (in the scaled HUD space)
-    g.globalAlpha = hudBehind(x, y, 224, ch, hk) ? 0.35 : 1;      // v7.9: see-through while someone is behind it
+    g.globalAlpha = cardAlpha(p, x, y, 224, ch, hk);               // v7.9: see-through while someone is behind it (v8.6.7: eased, with hysteresis)
     g.fillStyle = 'rgba(8,14,22,0.82)'; roundRect(g, x, y, 224, ch, 11); g.fill();
     g.fillStyle = p.human === 0 ? '#ff7a7a' : '#6ab8ff'; roundRect(g, x + 8, y + 8, 4, ch - 16, 2); g.fill();
     g.font = `12px ${FONT}`; g.textAlign = 'left'; g.fillStyle = '#fff'; g.fillText(fitText(g, p.def.name.toUpperCase(), 120), x + 20, y + 17);
@@ -694,9 +694,9 @@ function drawHUD(g) {
     else if ((p.fat || 0) > 0.7) { g.fillStyle = '#ffb08a'; g.textAlign = 'right'; g.font = `10px ${FONT}`; g.fillText('WINDED', x + 214, y + 17); }
     else { const badge=isMine(p)&&selectedRunBadge(); if(badge){g.fillStyle=badge.color;g.textAlign='right';g.font=`8px ${FONT}`;g.fillText(fitText(g,badge.name.toUpperCase(),72),x+214,y+17);} }
     g.fillStyle = '#9fb3c8'; g.font = `9px ${FONT}`; g.textAlign = 'left'; g.fillText('TURBO', x + 20, y + 32);
-    const sprinting = p.cmd.turbo && Math.hypot(p.vx || 0, p.vz || 0) > 60 && p.turboOK && p.turboOK();
-    if (sprinting) { g.save(); g.shadowColor = '#8fe3ff'; g.shadowBlur = 10; g.fillStyle = 'rgba(143,227,255,0.35)'; roundRect(g, x + 61, y + 22, 156, 14, 7); g.fill(); g.restore(); }   // v7: sprint glow
-    meter(g, x + 64, y + 25, 150, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : sprinting ? '#bff0ff' : '#4fc3ff');   // red: winded, refilling
+    const sv = sprintVis(p);
+    if (sv > 0.01) { g.save(); g.globalAlpha *= sv; g.shadowColor = '#8fe3ff'; g.shadowBlur = 10; g.fillStyle = 'rgba(143,227,255,0.35)'; roundRect(g, x + 61, y + 22, 156, 14, 7); g.fill(); g.restore(); }   // v7: sprint glow (v8.6.7: fades)
+    meter(g, x + 64, y + 25, 150, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : turboCol(sv));   // red: winded, refilling
     if (noor) { g.fillStyle = '#9fb3c8'; g.fillText('NOOR', x + 20, y + 45); meter(g, x + 64, y + 39, 150, 6, noorCardFrac(p), noorCardCol(p)); }
     drawCompRow(g, p, x, y + ch - 16, y);
     g.globalAlpha = 1;
@@ -707,6 +707,26 @@ function drawHUD(g) {
   if (Input.touchMode && !TouchUI.el && !M.attract) drawTouch(g);      // v8.6.2: only when the HTML controls never loaded (they showed as ghost buttons on overlays)
 }
 // is a player or the ball on screen behind this HUD box? (box in the scaled HUD space: y measured up from H by hk)
+// v8.6.7: the sprint look comes from the sim's own drain flag (p.sprintOn / p.sprintAt), held 0.25 s so a turn
+// or a bump can't flip it for a few frames, and faded in and out over about 120 ms
+function sprintVis(p) {
+  const on = !p.fire && !p.winded && p.sprintAt != null && M.time - p.sprintAt < 0.25 && M.time >= p.sprintAt;
+  const dt = Math.min(0.05, Game.rdt || STEP);
+  p._sv = clamp((p._sv || 0) + (on ? 1 : -1) * dt / 0.12, 0, 1);
+  return p._sv;
+}
+function turboCol(v) { return lerpColor('#4fc3ff', '#bff0ff', v); }
+// the card fades when someone is behind it: eased over about 150 ms. Hysteresis: leaving the faded state needs a
+// wider margin than entering it, and either change has to hold for 0.2 s before it happens
+function cardAlpha(p, x, y, w, h, hk) {
+  const dt = Math.min(0.05, Game.rdt || STEP);
+  const raw = p._hudF ? hudBehind(x - 30, y - 30, w + 60, h + 60, hk) : hudBehind(x, y, w, h, hk);
+  if (p._hudF == null) p._hudF = raw;
+  if (raw !== p._hudF) { p._hudPT = (p._hudPT || 0) + dt; if (p._hudPT >= 0.2) { p._hudF = raw; p._hudPT = 0; } } else p._hudPT = 0;
+  const tgt = p._hudF ? 0.35 : 1, a = p._hudA == null ? tgt : p._hudA;
+  p._hudA = a + clamp(tgt - a, -0.65 * dt / 0.15, 0.65 * dt / 0.15);
+  return p._hudA;
+}
 function hudBehind(x, y, w, h, hk) {
   if (!M.players) return false;
   const bc = broadcastOn(), z = bc ? cam.zoom : 1, fy = bc ? cam.fy : H / 2;

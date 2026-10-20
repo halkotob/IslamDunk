@@ -31,6 +31,9 @@
 //                a wrong answer gives nothing, Barakah Run stacking; turnovers by cause and the TOV column
 //   mobile       iPhone landscape/portrait layout, touch controls, the Noor choice screen (fits; tap picks), no errors
 //                plus the v8.6.2 phone text audit (tests/phone-audit.mjs) at iPhone landscape and 667x300
+//   v867         v8.6.7: seeded inbounds never go back to the inbounder; turbo colour and card fade flip at most once a
+//                second while sprinting; Sh. Saleem's 2-line limit and Leave buttons; who can earn Noor offline
+//                (online-loop: the guest earns Noor on a team whose hafiz is the host's player, and on one where he is)
 //   formats      v8.6.5: the default game is 2 halves of 2:00 (label, halftime, end, shot clock, overtime); career and
 //                practice keep 4 quarters; explicit formats and a picked 4 quarters are unchanged
 //   tomahawk     v8.6.5: Classic matches the 8.6.4 recording (tests/fixtures/tomahawk-classic.json); smooth, power,
@@ -768,9 +771,10 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
   if (custom) {                                   // a team only the host has (kept in memory, not in shared storage)
     await H.evaluate(() => { const d = csLoad(), p = csNewPlayer(); p.name = 'Zayd'; p.stats.spd = 10; d.players.push(p); const t = csNewTeam(); t.name = 'Masjid Test Host'; t.short = 'THOST'; t.roster = [{ k: 'p', id: p.id }, { k: 'cast', id: 'khalil' }]; d.teams.push(t); CS.rev++; });
   }
-  for (const game of games) {
+  for (const [gi, game] of games.entries()) {
     if (custom) await H.evaluate(() => { const o = Lobby.opts(); o.a = teamCount() - 1; Lobby.changed(); });
-    await H.evaluate(g => { const o = Lobby.opts(); o.game = g; if (g === 'horse') { o.word = 'HAQ'; o.timer = 6; } Net.mode = g; Lobby.changed(); }, game);
+    const coN = games.slice(0, gi + 1).filter(x => x === 'co').length;   // v8.6.7: 1st co game on NOOR (hafiz on slot 0), 2nd on TAQWA (hafiz on slot 1)
+    await H.evaluate(([g, coN, fixTeam]) => { const o = Lobby.opts(); o.game = g; if (g === 'horse') { o.word = 'HAQ'; o.timer = 6; } if (g === 'co' && fixTeam) { o.a = coN === 1 ? 0 : 1; o.b = 4; } Net.mode = g; Lobby.changed(); }, [game, coN, noor && !custom]);
     await G.evaluate(() => Lobby.setReady(1)); await sleep(800);
     await H.evaluate(() => Lobby.start());
     await G.waitForFunction(() => Game.screen === 'netplay' && M.players && M.players.length > 0, null, { timeout: 10000 }).catch(() => {});
@@ -805,6 +809,27 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
       log.push(`noor: host picked ${hostPick} (guest sees ${hostSeen}); guest offered ${guestOpts && guestOpts.join(',')}, picked card 3 -> host applied ${onHost}, guest sees ${onGuest}`);
       ok = ok && good;
     }
+    if (noor && !custom && game === 'co') {        // v8.6.7: online, the guest earns Noor too (host authoritative), whoever his team's hafiz is
+      const team = await H.evaluate(() => M.teams[0].def.short);
+      const steals = n => H.evaluate(n => { M.introT = 0; M.cmdHook = q => { zeroCmd(q.cmd); return true; }; const g = M.players.find(q => q.human === 1);
+        for (let i = 0; i < n; i++) { M.phase = 'live'; giveBall(g.opps[0], 'inbound'); giveBall(g, 'steal'); } }, n);   // each steal: +25
+      await H.evaluate(() => { const g = M.players.find(q => q.human === 1); g.hifz = 0; g.hifzUsed = false; });
+      await steals(2); await sleep(700);
+      const meter = await G.evaluate(() => { const g = M.players.find(q => q.human === 1); return g ? Math.round(g.hifz) : -1; });   // the guest sees his meter fill
+      await steals(2); await H.evaluate(() => { M.cmdHook = null; });
+      await G.waitForFunction(() => Game.trivia && Game.trivia.remoteView, null, { timeout: 8000 }).catch(() => {});
+      const asked = await G.evaluate(() => !!(Game.trivia && Game.trivia.remoteView));
+      if (asked) await G.evaluate(() => Net.guestAnswer(Game.trivia.order.indexOf(0)));
+      await G.waitForFunction(() => Game.trivia && Game.trivia.pickView, null, { timeout: 8000 }).catch(() => {});
+      const offered = await G.evaluate(() => !!(Game.trivia && Game.trivia.pickView));
+      if (offered) await G.evaluate(() => Net.guestPick(0));
+      await H.waitForFunction(() => { const g = M.players.find(q => q.human === 1); return !Game.trivia && g && noorActive(g); }, null, { timeout: 8000 }).catch(() => {});
+      const onHost = await H.evaluate(() => { const g = M.players.find(q => q.human === 1); return g && noorActive(g) ? noorFxOf(g) : null; });
+      await sleep(1200);
+      const onGuest = await G.evaluate(() => { const g = M.players.find(q => q.human === 1); return g && noorActive(g) ? noorFxOf(g) : null; });
+      log.push(`guest Noor on ${team} (guest is ${team === 'NOOR' ? 'not the hafiz' : 'the hafiz'}): guest meter ${meter}, asked ${asked}, 3 cards ${offered}, host applied ${onHost}, guest sees ${onGuest}`);
+      ok = ok && meter >= 50 && asked && offered && !!onHost && onGuest === onHost;
+    }
     if (noor && game === games[0]) {              // v8.6.3: the guest sees a hot spot's value (+2) and the pick-up pivot
       await H.evaluate(() => { M.cmdHook = q => { zeroCmd(q.cmd); return true; }; const g = M.players.find(q => q.human === 1), h = attackHoop(g.team);
         M.phase = 'live'; giveBall(g, 'steal'); M.possTeam = g.team; M.inb = null; g.pick = { x: g.x, z: g.z, t: M.time };
@@ -831,7 +856,7 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
   await ctx.close();
   return { ok: ok && !errs.length, detail: log.concat(errs) };
 }
-T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'lightning', 'horse', 'atw', 'kotc', 'sevenup', 'custom'], dropP2P: true, noor: true });
+T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'co', 'lightning', 'horse', 'atw', 'kotc', 'sevenup', 'custom'], dropP2P: true, noor: true });
 T['online-room'] = ({ browser, base }) => onlineFlow(browser, base, { room: true, games: ['vs', 'one'] });
 T['online-fb'] = ({ browser, base }) => onlineFlow(browser, base, { games: ['vs', 'co'] });
 T['online-custom'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=30&jit=5&room=c', games: ['vs', 'co', 'one'], custom: true });
@@ -1047,6 +1072,88 @@ T['tomahawk'] = async ({ browser, base }) => {
     && L.inMenu && L.dunks.every(Boolean) && L.noAch && L.cycled === 'classic' && L.off && !errs.length;
   return { ok, detail: [`classic identical to the 8.6.4 recording: ${same} (dunk ${c.dunkFrames} frames, slam on frame ${c.slamAt})`,
     'styles ' + JSON.stringify(styles), 'replay keeps the pose ' + JSON.stringify(extra.replay), 'dunk lab ' + JSON.stringify(L), 'default style ' + extra.defaultStyle, 'same seeded game in every style: ' + extra.sameGames + ' (' + extra.games[0] + ')', ...errs] };
+};
+
+// v8.6.7: inbound passes never go back to the inbounder; the turbo bar and card fade don't flicker; Sh. Saleem's
+// talk limit and Leave buttons; who can earn Noor offline
+T['v867'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'v867');
+  const r = await p.evaluate(() => {
+    const out = {};
+    // (1) seeded inbounds: CPU vs CPU, and one human on each side; who owns the ball first after the pass
+    { const res = { passes: 0, back: 0, toReceiver: 0, other: 0, unresolved: 0, loose: 0 };
+      const run = (humans, i) => {
+        window.__seed(7000 + i * 7919); newMatch(TEAMS[i % 8], TEAMS[(i + 3) % 8], { humans, fmt: { format: 'quarters', len: 45 } });
+        let w = null, seen = 0;
+        for (let n = 0; n < 60 * 60 * 6 && M.phase !== 'over' && seen < 12; n++) {
+          updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title';
+          const I = M.inb;
+          if (I && I.stage === 'loose' && w && w.I === I && !w.loose) { w.loose = true; res.loose++; }
+          if (I && I.stage === 'pass' && (!w || w.I !== I)) { if (w && !w.done) res.unresolved++; w = { I, p: I.p, r: I.r, t: 0 }; res.passes++; seen++; }
+          if (w && !w.done) { w.t += STEP;
+            if (ball.owner && ball.state !== 'pass') { w.done = true; if (ball.owner === w.p) res.back++; else if (ball.owner === w.r) res.toReceiver++; else res.other++; }
+            else if (w.t > 4) { w.done = true; res.unresolved++; } }
+        }
+      };
+      for (let i = 0; i < 14; i++) run([], i);
+      for (let i = 0; i < 6; i++) run([{ team: 0, slot: 0, pad: 0 }], 100 + i);
+      for (let i = 0; i < 6; i++) run([{ team: 1, slot: 0, pad: 0 }], 200 + i);
+      out.inbound = res; }
+    // (2) 14 s of scripted sprinting with direction changes: the turbo colour and the card's fade
+    { window.__seed(31); Input.touchMode = false;
+      newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 120 } });
+      for (let n = 0; n < 2000 && M.phase !== 'live'; n++) updateMatch(STEP);
+      Game.screen = 'play'; M.introT = 0;
+      const me = M.players[0]; place(me, 300, 600); let t = 0;
+      const legs = [[1, 0.25], [-1, -0.4], [-0.3, 1], [0.8, -0.2], [-1, 0], [0.2, -1], [1, 0.6], [-0.7, -0.5]];
+      M.cmdHook = q => { if (q !== me) return false; const c = q.cmd; zeroCmd(c); const L = legs[Math.floor(t / 0.35) % legs.length]; c.mx = L[0]; c.mz = L[1];
+        if (me.z > 660) c.mz = -0.6; if (me.z < 420) c.mz = 0.6; if (me.x < 120) c.mx = 1; if (me.x > 1100) c.mx = -1; c.turbo = true; return true; };
+      const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540; const g = cv.getContext('2d');
+      const _m = meter, _rr = roundRect; let col = null, alpha = null;
+      meter = function (gg, x, y, w, h, f, c) { if (gg === g && w === 150 && h === 8) col = c; return _m.apply(this, arguments); };
+      roundRect = function (gg, x, y, w, h) { if (gg === g && w === 224 && alpha == null) alpha = gg.globalAlpha; return _rr.apply(this, arguments); };
+      const bright = c => { let m = /^#([0-9a-f]{6})$/i.exec(c || ''); if (m) { const n = parseInt(m[1], 16); return ((n >> 16) + ((n >> 8) & 255)) / 2; } m = /rgb\((\d+),(\d+),/.exec(c || ''); return m ? (+m[1] + +m[2]) / 2 : 0; };
+      let cf = 0, af = 0, pc = null, pa = null;
+      const frame = () => { col = null; alpha = null; drawHUD(g); const c = bright(col) > 176 ? 1 : 0, a = alpha < 0.675 ? 1 : 0; if (pc != null && c !== pc) cf++; if (pa != null && a !== pa) af++; pc = c; pa = a; };
+      for (let n = 0; n < 60 * 14; n++) { t += STEP; updateMatch(STEP); Game.rdt = STEP; me.turbo = Math.max(me.turbo, 30); me.winded = false; frame(); }
+      out.turbo = { colourFlipsPerSec: +(cf / 14).toFixed(2), alphaFlipsPerSec: +(af / 14).toFixed(2) };
+      // the card still fades when someone stays behind it, eased (not in one frame), and comes back
+      const _hb = hudBehind; let behind = true; hudBehind = () => behind;
+      const al = []; for (let n = 0; n < 60; n++) { col = null; alpha = null; drawHUD(g); al.push(alpha); }
+      behind = false; for (let n = 0; n < 60; n++) { col = null; alpha = null; drawHUD(g); al.push(alpha); }
+      hudBehind = _hb; meter = _m; roundRect = _rr; M.cmdHook = null;
+      out.fade = { faded: +al[59].toFixed(2), eased: al.slice(0, 60).some(a => a > 0.4 && a < 0.95), back: +al[119].toFixed(2) }; }
+    // (3) Sh. Saleem: 2 free lines a visit, no full-screen tap target, Another / Leave buttons, a reply ends the talk
+    { C = freshCareer(); C.name = 'Abdullah'; if (!C.bracket) C.bracket = makeBracket(C.stage); C.gamesPlayed = 0;
+      Game.screen = 'office'; openOffice(); const of = () => Game.office, sh = {};
+      const draw = () => { Game.rects = []; const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540; drawOffice(cv.getContext('2d')); return Game.rects.slice(); };
+      let R = draw(); sh.leaveOffice = R.some(q => q.w >= 120 && q.h >= 30 && q.x > W / 2 && q.y > H - 80);
+      officeAct(1); sh.first = of().panel === 'talk' && of().lines === 1;
+      R = draw(); sh.noFullScreen = !R.some(q => q.w >= W * 0.9 && q.h >= H * 0.6);
+      sh.buttons = R.filter(q => q.y > 470).length;                       // Another + Leave
+      const press = () => { R = draw(); const b = R.filter(q => q.y > 470).sort((a, b) => a.x - b.x)[0]; b.fn(); };
+      press(); sh.second = of().lines === 2 && of().panel === 'talk';
+      R = draw(); sh.afterTwoButtons = R.filter(q => q.y > 470).length;    // only Leave
+      R.filter(q => q.y > 470)[0].fn(); sh.leaveClosed = of().panel === null;
+      officeAct(1); sh.done = of().line === 'Sh. Saleem has nothing more for now.' && of().lines === 2;
+      of().panel = null;
+      startSheikhTalk({ key: 'test', ep: () => 'x', open: () => ['One thing.'], choices: [['A', ['Reply.']], ['B', ['Reply.']]] });
+      convoAdvance(); convoChoose(0); convoAdvance(); sh.replyCloses = of().panel === null;
+      leaveOffice(); openOffice(); officeAct(1); sh.resetOnEnter = of().lines === 1 && of().line !== 'Sh. Saleem has nothing more for now.';
+      out.sheikh = sh; }
+    // (4) Noor: solo and local play keep the hafiz rule; online, any human player
+    { newMatch(TEAMS[0], TEAMS[4], { humans: [{ team: 0, slot: 0, pad: 0 }, { team: 0, slot: 1, pad: 1 }], fmt: { format: 'quarters', len: 120 } });
+      const [a, b] = M.teams[0].players, nz = { localHafiz: canNoor(a), localOther: canNoor(b) };
+      M.online = true; nz.onlineOther = canNoor(b); nz.onlineCpu = canNoor(M.teams[1].players.find(q => !q.def.huffath)); M.online = false;
+      out.noor = nz; }
+    return out;
+  });
+  await ctx.close();
+  const I = r.inbound, T = r.turbo, S = r.sheikh, N = r.noor;
+  const ok = I.passes >= 100 && I.back === 0 && T.colourFlipsPerSec <= 1 && T.alphaFlipsPerSec <= 1 && r.fade.faded < 0.4 && r.fade.eased && r.fade.back > 0.99
+    && S.leaveOffice && S.first && S.noFullScreen && S.buttons === 2 && S.second && S.afterTwoButtons === 1 && S.leaveClosed && S.done && S.replyCloses && S.resetOnEnter
+    && N.localHafiz && !N.localOther && N.onlineOther && !N.onlineCpu && !errs.length;
+  return { ok, detail: ['inbounds ' + JSON.stringify(I), 'turbo ' + JSON.stringify(T) + ' card fade ' + JSON.stringify(r.fade), 'Sh. Saleem ' + JSON.stringify(S), 'Noor ' + JSON.stringify(N), ...errs] };
 };
 
 T['adaptive-res'] = async ({ browser, base }) => {

@@ -46,6 +46,7 @@ function updatePlayer(p, dt) {
   if (p.fire) { p.fireT -= dt; if (p.fireT <= 0) { p.fire = false; p.streak = 0; } if (chance(dt * 30)) FX.fire(p.x + rand(-10, 10), p.y + rand(5, 70), p.z); }
   const sp = Math.hypot(p.vx, p.vz);
   const sta = p.st.sta != null ? p.st.sta : 5, pray = (p.prayBonus ? 1.1 : 1) * (p.bon ? 1 + p.bon.sta : 1);
+  p.sprintOn = !!(c.turbo && sp > 40 && !p.fire); if (p.sprintOn) p.sprintAt = M.time;   // v8.6.7: the HUD reads the drain itself (see sprintVis)
   if (c.turbo && sp > 40 && !p.fire) p.turbo = Math.max(0, p.turbo - 30 * dt * (1.25 - sta * 0.05) / pray);
   else if (!c.turbo) p.turbo = Math.min(100, p.turbo + 14 * dt * (trailing(p.team) ? 1.3 : 1) * (0.75 + sta * 0.05) * pray);
 
@@ -463,5 +464,8 @@ function knockDown(t, nx, nz) {
   t.fallDir = sgn(nx); t.spin = 0; t.move = null; t.act = null;
   t.expr = { k: 'shock', t: 0.9 }; t.sq = -0.65; FX.hitstop(1); FX.dust(t.x, t.z, 2);
 }
-function addHifz(p, n) { if (M.practice || (M.fmt && M.fmt.shortGame && p.hifzUsed) || !p.def.huffath || p.boost > 0) return; p.hifz = Math.min(100, p.hifz + n); if (p.hifz >= 100) M.hifzQueue.push(p); }
+// v8.6.7: who can earn Noor. The team's hafiz, as always; online, every human player too (host and guest), so the
+// guest isn't locked out when his team's hafiz is the host's player. Solo and local play keep the hafiz rule.
+function canNoor(p) { return !!p && (!!p.def.huffath || (!!M.online && p.human >= 0)); }
+function addHifz(p, n) { if (M.practice || (M.fmt && M.fmt.shortGame && p.hifzUsed) || !canNoor(p) || p.boost > 0) return; p.hifz = Math.min(100, p.hifz + n); if (p.hifz >= 100) M.hifzQueue.push(p); }
 

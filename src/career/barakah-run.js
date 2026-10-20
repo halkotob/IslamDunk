@@ -299,24 +299,41 @@ function inbStep(dt) {
   if (I.stage === 'fetch') {
     if (Math.hypot(p.x - I.S.x, p.z - I.S.z) < 18 || I.t > 1.4) { ball.grabLock = 0; M.possTeam = -1; giveBall(p, 'inbound'); ball.grabLock = 0; I.stage = 'hold'; I.th = I.t; }
   } else if (I.stage === 'hold') {
-    if (M.deadT <= 0 && I.t - I.th > 0.15 && (Math.hypot(r.x - I.R.x, r.z - I.R.z) < 45 || I.t > 2.2) && p.state === 'free' && ball.owner === p) {
-      p.face = sgn(r.x - p.x) || p.face; doPass(p, r, false); I.stage = 'pass'; I.tp = I.t;
+    // v8.6.7: pass only to a receiver who has arrived and stopped (within 14 of his spot, under 60 speed), or
+    // at the 2.2 s limit to the spot where he stands, with no lead. Passing to a man still running at 250+
+    // led him, he braked, and the ball went loose (about 3% of inbounds).
+    const there = Math.hypot(r.x - I.R.x, r.z - I.R.z) < 14 && Math.hypot(r.vx, r.vz) < 60;
+    if (M.deadT <= 0 && I.t - I.th > 0.15 && (there || I.t > 2.2) && p.state === 'free' && ball.owner === p) {
+      p.face = sgn(r.x - p.x) || p.face; r.vx = r.vz = 0; doPass(p, r, false); I.stage = 'pass'; I.tp = I.t;
     }
   } else if (I.stage === 'pass') {
-    if (ball.owner === r || (ball.owner && ball.owner !== p) || I.t - I.tp > 1.2) return inbLive();
+    if (ball.owner === r || (ball.owner && ball.owner !== p)) return inbLive();
+    if (I.t - I.tp > 1.2 && ball.state !== 'pass') { I.stage = 'loose'; I.tl = I.t; ball.grabLock = 0; }   // missed: the receiver goes and gets it
+  } else if (I.stage === 'loose') {
+    if (ball.owner && ball.owner !== p) return inbLive();
+    if (I.t - I.tl > 1 && !ball.owner) { ball.grabLock = 0; M.possTeam = -1; giveBall(r, 'inbound'); return inbLive(); }   // never back to the inbounder
   }
-  if (I.t > 3.2) { M.inb = null; ball.grabLock = 0; M.possTeam = -1; giveBall(p, 'inbound'); M.phase = 'live'; M.shotClock = scReset(); }   // fallback: no teleport, no cut
+  if (I.t > 3.2 && I.stage !== 'pass' && I.stage !== 'loose') { M.inb = null; ball.grabLock = 0; M.possTeam = -1; giveBall(p, 'inbound'); M.phase = 'live'; M.shotClock = scReset(); }   // fallback: no teleport, no cut
 }
 function inbLive() {
   const I = M.inb; M.inb = null;
-  if (!ball.owner && ball.state !== 'pass') { ball.grabLock = 0; M.possTeam = -1; giveBall(I.p, 'inbound'); }
+  if (!ball.owner && ball.state !== 'pass') { ball.grabLock = 0; M.possTeam = -1; giveBall(I.r, 'inbound'); }   // v8.6.7: the receiver, never the inbounder
   M.phase = 'live'; M.shotClock = scReset(); ball.grabLock = 0;
+}
+{                                                    // v8.6.7: while an inbound pass is in the air or loose, the inbounder can't take it back, nor the defence
+  const _cg = checkGrab;
+  checkGrab = function () {
+    const I = M.inb; if (!I || (I.stage !== 'pass' && I.stage !== 'loose')) return _cg.apply(this, arguments);
+    const out = M.players.filter(q => q === I.p || q.team !== I.team), st = out.map(q => q.state);
+    out.forEach(q => { q.state = 'down'; });
+    try { return _cg.apply(this, arguments); } finally { out.forEach((q, i) => { q.state = st[i]; }); }
+  };
 }
 function inbCmd(p) {
   const I = M.inb, c = p.cmd; zeroCmd(c);
   if (M.phase !== 'dead') return false;
-  const tgt = p === I.p ? (I.stage === 'fetch' ? I.S : null) : p === I.r ? I.R : I.Dspots[I.D.indexOf(p)];
-  if (tgt) { const dx = tgt.x - p.x, dz = tgt.z - p.z, d = Math.hypot(dx, dz); if (d > 6) { const k = Math.min(1, d / 40); c.mx = dx / d * k; c.mz = dz / d * k; } }
+  const tgt = p === I.p ? (I.stage === 'fetch' ? I.S : null) : p === I.r ? (I.stage === 'loose' ? ball : I.stage === 'pass' ? null : I.R) : I.Dspots[I.D.indexOf(p)];
+  if (tgt) { const dx = tgt.x - p.x, dz = tgt.z - p.z, d = Math.hypot(dx, dz), stop = tgt === ball ? 0 : 8; if (d > stop) { const k = tgt === ball ? 1 : Math.min(1, d / 40); c.mx = dx / d * k; c.mz = dz / d * k; } }   // the receiver stops on his spot and waits for the pass
   if (p === I.p && I.stage !== 'fetch') c.face = sgn(I.r.x - p.x);
   return true;
 }
