@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '8.6.2';
+const VERSION = '8.6.3';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -1080,7 +1080,7 @@ function releaseShot(p) {
   }
   const relD = dxz(p, h);
   launchShot(p, h, make, pts);
-  ball.shot.green = tier === 'green'; ball.shot.sig = p.sigShot || null; ball.shot.hot = hotHit(p); ball.shot.rd = relD;
+  ball.shot.green = tier === 'green'; ball.shot.sig = p.sigShot || null; ball.shot.hot = hotValue(p); ball.shot.rd = relD;
   p.sigShot = null;
   p.state = 'post'; p.st_t = 0;
 }
@@ -1994,8 +1994,8 @@ function onScore(h) {
     ball.state = 'scored'; ball.shot = null; M.phase = 'dead'; M.deadT = 0.9; M.nextInbound = 1 - team; return;
   }
   let pts = sh ? sh.pts : 2; if (M.double) pts *= 2;
-  const hot = sh && sh.hot && !sh.dunk;
-  if (hot) pts += 1;                              // hot spot bonus
+  const hot = sh && sh.hot && !sh.dunk ? +sh.hot : 0;
+  if (hot) pts += hot;                            // hot spot bonus: +1, or +2 from the shooter's back half (v8.6.3)
   M.teams[team].score += pts; const qi = M.quarter - 1; M.teams[team].qs[qi] = (M.teams[team].qs[qi] || 0) + pts;
   const shooter = sh && sh.shooter.team === team ? sh.shooter : null;
   const x = h.x, z = h.z;
@@ -2019,7 +2019,7 @@ function onScore(h) {
     else if (sh && sh.touched) h.kick('rimin', 1, ball.x - h.x, ball.z - h.z, g);
     else h.kick('swish', 1.1, 0, 0, g);
   }
-  const base = pts - (hot ? 1 : 0), three = base / (M.double ? 2 : 1) === 3;
+  const base = pts - hot, three = base / (M.double ? 2 : 1) === 3;
   const lead = M.teams[team].score - M.teams[1 - team].score;
   const buzzer = M.pendingEnd && !M.fmt.first21, clutchBuzzer = buzzer && M.quarter >= M.fmt.periods && lead >= 0;
   const kind = makeFeel(h, sh, shooter, pts, hot, buzzer, clutchBuzzer);         // shake, pitch, callout tier, crowd timing by make type
@@ -2029,7 +2029,7 @@ function onScore(h) {
     FX.hype(1); FX.replay(1.4);
   } else if (buzzer) { FX.cue('buzzer', h.x, RIM_Y, h.z, true); FX.callout('BUZZER BEATER!', '#ffd76a', 'MASHA\'ALLAH!'); }
   else if (sh && sh.sig) { const c = sigCall(sh.sig); FX.callout(c[0], '#ffd76a', c[1] || (shooter ? shooter.def.name.toUpperCase() : ''), true); }
-  else if (hot) FX.callout('HOT SPOT!', '#ffb347', '+1 BONUS');
+  else if (hot) FX.callout('HOT SPOT!', '#ffb347', '+' + hot + ' BONUS');
   if (M.fun && M.fun.uncle && chance(0.35)) uncleTalk();
   // highlight clip for the post-game screen
   if (shooter) FX.highlight(M.players.indexOf(shooter), (big ? (kind === 'poster' ? 4.5 : 3) : three ? 2.5 : 1) + (sh.sig ? 3 : 0) + (clutchBuzzer ? 6 : buzzer ? 3 : 0) + (hot ? 1 : 0),
@@ -3719,7 +3719,7 @@ const Net = {
       p.act && (p.state === 'dunk' || p.state === 'hang') ? ND.indexOf(p.act.type) : -1, p.act ? r2(p.act.s) : 0,
       (p.fire ? 1 : 0) | (p.boost > 0 ? 2 : 0) | (p.cmd.turbo ? 4 : 0) | (p.celebrate > 0 ? 8 : 0), Math.round(p.turbo), Math.round(p.hifz), r1(Math.max(0, p.boost)), p.human]);
     // optional fields (older guests ignore them): format, green-window difficulty, fun modes, hot spot
-    s.fx = { mg: View.magnet, t: M.fmt.target, hc: M.halfCourt ? 1 : 0, f: M.fmt.format, l: M.fmt.len, sc: M.fmt.sc, dm: r2(humanDiffMult()), fun: M.fun || 0, hs: M.hot ? [r1(M.hot.x), r1(M.hot.z), r1(M.hot.t)] : 0 };
+    s.fx = { mg: View.magnet, t: M.fmt.target, hc: M.halfCourt ? 1 : 0, f: M.fmt.format, l: M.fmt.len, sc: M.fmt.sc, dm: r2(humanDiffMult()), fun: M.fun || 0, hs: M.hot ? [r1(M.hot.x), r1(M.hot.z), r1(M.hot.t), M.hot.m ? M.hot.v || 1 : 0] : 0 };
     s.b = ballArr(M.balls ? M.balls[0] : ball);
     if (M.balls && M.balls[1]) s.b2 = ballArr(M.balls[1]);                 // optional: second ball (Lightning)
     if (M.mini) { s.mini = M.mini.kind; s.mg = M.mini.snap(); }
@@ -3847,7 +3847,7 @@ const Net = {
     if (SB.fx) {
       const x = SB.fx; if (!M.fmt || M.fmt.format !== x.f || M.fmt.len !== x.l || M.fmt.sc !== x.sc || (x.t && M.fmt.target !== x.t)) M.fmt = makeFmt({ fmt: { format: x.f, len: x.l, sc: x.sc, target: x.t } });
       if (x.hc != null) M.halfCourt = !!x.hc;
-      M.dmOverride = x.dm; M.fun = x.fun || null; M.magnetLvl = x.mg != null ? x.mg : M.magnetLvl; M.hot = x.hs ? { x: x.hs[0], z: x.hs[1], t: x.hs[2] } : null;
+      M.dmOverride = x.dm; M.fun = x.fun || null; M.magnetLvl = x.mg != null ? x.mg : M.magnetLvl; M.hot = x.hs ? { x: x.hs[0], z: x.hs[1], t: x.hs[2], m: x.hs[3] ? 1 : 0, v: x.hs[3] || 1 } : null;
       if (M.fun && M.fun.uncle) for (const p of M.players) p.outfit = 'thobe';
     }
     M.players.forEach((p, i) => {
@@ -5983,17 +5983,33 @@ function playerOfGame() {
 // ============================================================ HOT SPOTS
 // Every so often a spot glows in the attacking half; a made jumper from it
 // is worth +1. It lasts 10 seconds, then moves.
+// v8.6.3: a spot only appears while a team has the ball live (never on a dead ball, inbound or free throw),
+// on that team's attacking half. It survives a change of possession, and its value follows the shooter:
+// +1 on his attacking half, +2 from his own back half. M.hot.m marks a match spot; spots placed by mini games
+// and challenges have no .m and keep their old rules (+1, labelled "+1").
 const HOT_R = 46;
+const hotHalf = x => x < COURT.L / 2 ? 0 : 1;
+function hotSpotValue(team) {                       // what a make from the live match spot is worth to this team
+  const s = M.hot; if (!s || !s.m) return 1;
+  return M.halfCourt || hotHalf(s.x) === hotHalf(attackHoop(team).x) ? 1 : 2;
+}
 function updateHot(dt) {
   if (M.practice || M.phase !== 'live') return;
-  if (M.hot) { M.hot.t -= dt; if (M.hot.t <= 0) { M.hot = null; M.hotCd = rand(3, 7); } return; }
+  if (M.hot) {
+    M.hot.t -= dt; if (M.hot.t <= 0) { M.hot = null; M.hotCd = rand(3, 7); return; }
+    if (M.hot.m) { const o = ball.owner || (ball.pass && ball.pass.from); if (o) M.hot.v = hotSpotValue(o.team); }
+    return;
+  }
   M.hotCd = (M.hotCd == null ? rand(10, 16) : M.hotCd) - dt;
-  if (M.hotCd <= 0) {
-    const team = M.possTeam >= 0 ? M.possTeam : rint(2), h = attackHoop(team), a = rand(-1.1, 1.1), r = rand(150, 330);
-    M.hot = { x: h.x + h.dir * Math.cos(a) * r, z: clamp(h.z + Math.sin(a) * r, 60, 640), t: 10 };
+  const o = ball.owner, live = o && M.possTeam === o.team && !M.inb && !M.check && !M.ft;
+  if (M.hotCd <= 0 && live) {                       // otherwise wait until someone has the ball live
+    const h = attackHoop(o.team), a = rand(-1.1, 1.1), r = rand(150, 330), mid = COURT.L / 2;
+    const x = h.x + h.dir * Math.cos(a) * r;
+    M.hot = { x: h.dir > 0 ? Math.min(x, mid - 20) : Math.max(x, mid + 20), z: clamp(h.z + Math.sin(a) * r, 60, COURT.D - 60), t: 10, m: 1, v: 1 };
   }
 }
 function hotHit(p) { return !!(M.hot && M.hot.t > 0 && Math.hypot(p.x - M.hot.x, p.z - M.hot.z) < HOT_R); }
+function hotValue(p) { return hotHit(p) ? hotSpotValue(p.team) : 0; }   // the bonus a make from here earns (0 off the spot)
 const hotGlow = () => radialSprite('hot', '255,190,70', 0.7);
 function drawHot(g) {
   const s = M.hot; if (!s) return;
@@ -6001,7 +6017,13 @@ function drawHot(g) {
   g.globalAlpha = fade * pulse; g.drawImage(hotGlow(), x - HOT_R * 1.6, y - HOT_R * ZS * 1.6, HOT_R * 3.2, HOT_R * ZS * 3.2);
   g.globalAlpha = fade; g.strokeStyle = '#ffcf6a'; g.lineWidth = 2.5; g.beginPath(); g.ellipse(x, y, HOT_R, HOT_R * ZS, 0, 0, Math.PI * 2); g.stroke();
   g.strokeStyle = 'rgba(255,207,106,0.5)'; g.lineWidth = 1.5; g.beginPath(); g.ellipse(x, y, HOT_R * (0.6 + 0.4 * ((Game.t * 0.8) % 1)), HOT_R * ZS * (0.6 + 0.4 * ((Game.t * 0.8) % 1)), 0, 0, Math.PI * 2); g.stroke();
-  g.fillStyle = '#ffcf6a'; g.font = `12px ${FONT}`; g.textAlign = 'center'; g.fillText('+1', x, y - HOT_R * ZS - 4);
+  g.textAlign = 'center';
+  if (s.m && s.v === 2) {                           // +2: dark text on a solid gold tag, bigger, so it reads from across the court
+    g.font = `16px ${FONT}`; const w = g.measureText('+2').width + 14, ty = y - HOT_R * ZS - 6;
+    g.fillStyle = '#ffd24d'; roundRect(g, x - w / 2, ty - 17, w, 22, 11); g.fill();
+    g.strokeStyle = '#7a4a00'; g.lineWidth = 1.5; g.stroke();
+    g.fillStyle = '#2a1600'; g.fillText('+2', x, ty);
+  } else { g.fillStyle = '#ffcf6a'; g.font = `12px ${FONT}`; g.fillText('+1', x, y - HOT_R * ZS - 4); }
   g.globalAlpha = 1;
 }
 
@@ -6863,7 +6885,7 @@ const SHEIKH_LINES = {
     'Rest, eat well, and sleep. Your body is an amanah, a trust.',
     // v5.0: basketball
     'A crossover works best when the defender is leaning. Read his hips, not his hands.',
-    'Pump fake once. If he flies by, take one dribble and shoot. Twice is showing off.',
+    'Pump fake once. If he flies by, step through and shoot. Twice is showing off.',
     'Close out with short, choppy steps. Run at a shooter and he’ll drive right past you.',
     'The best shot is the one your teammate is open for.',
     'When you’re tired, your shot gets short. Legs first, then arms.',
@@ -12385,7 +12407,7 @@ drawHowTo = function (g) {
   g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; g.fillText('P1', 610, 72); g.fillText('P2', 800, 72);
   keys.forEach((r, i) => { const y = 92 + i * 21; g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(r[0], 150, y); g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.fillText(r[1], 610, y); g.fillText(r[2], 800, y); });
   const col = (x, title, lines) => { g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText(title, x, 222); g.font = `12px ${BODY}`; lines.forEach((t, i) => { g.fillStyle = t.startsWith('\u2022') ? '#9fb3c8' : IVORY; g.fillText(t, x, 242 + i * 18); }); };
-  col(60, 'OFFENSE', ['Shoot: hold and release at the top  \u2022  tap: pump fake', 'Sprint + Shoot in range: dunk', 'Pass: tap  \u2022  type is automatic (bounce, lob, alley-oop)', 'Hold Pass: call a screen  \u2022  hold Pass + tap Move: pass fake',
+  col(60, 'OFFENSE', ['Shoot: hold and release at the top  \u2022  tap: pump fake, then pivot, shoot or pass', 'Sprint + Shoot in range: dunk', 'Pass: tap  \u2022  type is automatic (bounce, lob, alley-oop)', 'Hold Pass: call a screen  \u2022  hold Pass + tap Move: pass fake',
     'Move + direction: crossover, behind the back, spin, step-back', 'Tap Move: hesitation  \u2022  double-tap: signature move', 'Hold Move near the paint: post up', '\u2022 Without the ball: Shoot calls for it (give-and-go,',
     '\u2022   or alley-oop while sprinting at the rim)', '\u2022 Without the ball: Pass sets a screen for your partner']);
   col(500, 'DEFENSE', ['Hold Defend (Move button or L): guard your man.', '\u2022   You slide with him, between him and the rim', '\u2022   Feet set in his path: he charges into you', 'Hold Defend on a shot: box out',
@@ -13353,18 +13375,14 @@ const TARGETS = [7, 11, 15, 21, 31];
 }
 
 // ================================================= v7.6: PUMP FAKE PICKS UP THE DRIBBLE
-// A pump fake ends your dribble. You can pivot, shoot, go up for a layup/dunk or pass; walking off
-// your pivot spot or any dribble move is a DOUBLE DRIBBLE (turnover). A dashed ring marks the pivot.
-// CPU handlers never walk into it: they stay on the pivot and shoot or pass within about a second.
+// A pump fake ends your dribble. You can turn, pivot, shoot, go up for a layup/dunk or pass. A dashed ring
+// marks the pivot.
+// v8.6.3: no double dribbles (the NBA Jam way). Dribble moves (crossover, signature, hesitation) are simply
+// ignored while the dribble is picked up, and walking off the pivot slides you to the ring's edge instead of
+// costing the ball. The pick-up ends when you shoot or pass, or lose the ball.
+// CPU handlers stay on the pivot and shoot or pass within about a second.
 const PIVOT_R = 34;
 function pickedUp(p) { return !!(p.pick && ball.owner === p); }
-function doubleDribble(p) {
-  if (!p.pick || M.phase !== 'live') return;
-  p.pick = null; SFX.whistle(); FX.callout('DOUBLE DRIBBLE!', '#ff7070', 'TURNOVER');
-  FX.pop(p.x, p.y + 132, p.z, 'DOUBLE DRIBBLE', '#ff9a8a');
-  p.streak = 0; fumble(p); ball.vx = ball.vz = 0; ball.grabLock = 5;
-  M.phase = 'dead'; M.deadT = 0.9; M.nextInbound = 1 - p.team;
-}
 {
   const _sf = startFake;
   startFake = function (p) {
@@ -13373,11 +13391,11 @@ function doubleDribble(p) {
     if (!p.pick) { p.pick = { x: p.x, z: p.z, t: M.time }; FX.pop(p.x, p.y + 150, p.z, 'PICKED UP', '#ffd76a'); }
   };
   const _sdm = startDribbleMove;
-  startDribbleMove = function (p) { if (pickedUp(p)) { if (p.human >= 0) doubleDribble(p); return true; } return _sdm.apply(this, arguments); };
+  startDribbleMove = function (p) { if (pickedUp(p)) { return true; } return _sdm.apply(this, arguments); };
   const _sc = startCross;
-  startCross = function (p) { if (pickedUp(p)) { if (p.human >= 0) doubleDribble(p); return true; } return _sc.apply(this, arguments); };
+  startCross = function (p) { if (pickedUp(p)) { return true; } return _sc.apply(this, arguments); };
   const _ts = trySignature;
-  trySignature = function (p) { if (pickedUp(p)) { if (p.human >= 0) doubleDribble(p); return true; } return _ts.apply(this, arguments); };
+  trySignature = function (p) { if (pickedUp(p)) { return true; } return _ts.apply(this, arguments); };
   const _up = updatePlayer;
   updatePlayer = function (p, dt) {
     if (p.pick && ball.owner !== p) p.pick = null;                        // shot, pass, steal, turnover: the pick-up is over
@@ -13393,8 +13411,20 @@ function doubleDribble(p) {
     if (!pk || ball.owner !== p) return;
     const d = Math.hypot(p.x - pk.x, p.z - pk.z);
     if (d <= PIVOT_R) return;
-    if (p.human >= 0 && p.state === 'free' && Math.hypot(p.cmd.mx || 0, p.cmd.mz || 0) > 0.3) doubleDribble(p);
-    else if (p.state === 'free' || p.state === 'fake') { const k = PIVOT_R / d; p.x = pk.x + (p.x - pk.x) * k; p.z = pk.z + (p.z - pk.z) * k; }   // momentum: slide to the edge, not off it
+    if (p.state === 'free' || p.state === 'fake') { const k = PIVOT_R / d; p.x = pk.x + (p.x - pk.x) * k; p.z = pk.z + (p.z - pk.z) * k; }   // anyone, any input: held to the ring's edge
+  };
+  // online (v8.6.3): the host runs the rule; the guest gets the pivot so it can draw the ring
+  const _sn = Net.snapshot;
+  Net.snapshot = function () {
+    const s = _sn.apply(this, arguments), o = ball.owner;
+    if (s && s.mid != null && M.players && o && o.pick) s.pk = [M.players.indexOf(o), Math.round(o.pick.x), Math.round(o.pick.z)];
+    return s;
+  };
+  const _gf = Net.guestFrame;
+  Net.guestFrame = function () {
+    const r = _gf.apply(this, arguments), last = this.snaps && this.snaps[this.snaps.length - 1], pk = last && last.s ? last.s.pk : null;
+    if (M.players) M.players.forEach((p, i) => { p.pick = pk && pk[0] === i ? (p.pick && p.pick.x === pk[1] && p.pick.z === pk[2] ? p.pick : { x: pk[1], z: pk[2], t: M.time }) : null; });
+    return r;
   };
   // the pivot ring (any depth-aid setting, including Off: it's a rule, not an aid)
   const _drf = drawReflections;
@@ -15721,7 +15751,7 @@ function tutMe() { return M.players.find(q => q.human === 0); }
 function tutPlace(o) {
   const me = tutMe(), mate = me.mate, opp = me.opps[0], opp2 = me.opps[1];
   M.phase = 'live'; M.inb = null; M.check = null; M.bc = null; M.nextInbound = null; M.sideOut = null; M.ft = null; M.pendingEnd = false;
-  for (const q of M.players) { q.v7 = {}; q.v8 = {}; q.buf = null; q.turbo = 100; q.winded = false; }
+  for (const q of M.players) { q.v7 = {}; q.v8 = {}; q.buf = null; q.turbo = 100; q.winded = false; q.pick = null; }   // v8.6.3: each step starts with a live dribble
   place(me, o.me[0], o.me[1]); place(mate, ...(o.mate || [260, 620])); place(opp, ...(o.opp || [240, 120])); if (opp2) place(opp2, 200, 640);
   Object.assign(ball, { shot: null, pass: null, vx: 0, vy: 0, vz: 0, grabLock: 0 });
   if (o.ball) giveBall(me, 'inbound'); else if (o.oppBall) giveBall(opp, 'inbound'); else giveBall(mate, 'inbound');   // your partner holds it out of the way
@@ -18165,6 +18195,7 @@ function ankleFall(o, p) {
   };
 }
 // ---------------------------------------------------------------- alley-oops off the glass
+const GLASS_DEAD = 25;
 function glassOf(h, z) { return { x: h.bbx + h.dir * (BALL_R + 1), y: RIM_Y + 46, z: clamp(z, h.z - 30, h.z + 30) }; }
 function glassify(T, to) {
   const pa = ball.pass, h = attackHoop(to.team), G = glassOf(h, lerp(ball.z, h.z, 0.6)), T1 = T * 0.52;
@@ -18174,8 +18205,11 @@ function glassify(T, to) {
 {
   const _ta = throwAlley;
   throwAlley = function (p, to) {
+    // v8.6.3: off the glass only to a teammate trailing the play (farther from this hoop than the passer, by
+    // more than GLASS_DEAD so it doesn't flicker); a teammate ahead gets the normal lob, Turbo or not
+    const h0 = attackHoop(to.team), behind = dxz(to, h0) > dxz(p, h0) + GLASS_DEAD;
     _ta.apply(this, arguments);
-    const want = p.human >= 0 ? !!(p.cmd.turbo && p.turboOK()) : chance(0.1);
+    const want = behind && (p.human >= 0 ? !!(p.cmd.turbo && p.turboOK()) : chance(0.1));
     if (want && ball.pass && ball.pass.alley && dxz(p, attackHoop(to.team)) > 140) { glassify(ball.pass.T, to); if (p.human >= 0 || to.human >= 0) FX.pop(p.x, p.y + 132, p.z, 'OFF THE GLASS', '#ffd76a'); }
   };
   const _pf = updatePassFlight;
@@ -18941,8 +18975,8 @@ function setGroupItems(gi) {
 // A turnover is charged to the player who lost the ball:
 //   - a steal against you (from your hands, or your pass picked off)
 //   - a shot-clock violation (the holder, or the last offensive player to touch it)
-//   - a double dribble (the game has no separate travelling call)
 //   - an out-of-bounds the offense caused (last touch was the team in possession)
+// (v8.6.3: double dribbles are gone from the game, so they no longer appear here.)
 // Charges are not counted here (offensive fouls), matching the v8.6.1 brief; the older composure
 // counter p.tov is left as it was.
 function addTov(p) { if (p && p.stats) p.stats.tov = (p.stats.tov || 0) + 1; }
@@ -18967,13 +19001,6 @@ function addTov(p) { if (p && p.stats) p.stats.tov = (p.stats.tov || 0) + 1; }
     const lt = ball.lastTouch, o = ball.owner || (lt && lt.team === M.possTeam ? lt : null);
     addTov(o);
     return _scv.apply(this, arguments);
-  };
-  const _dd = doubleDribble;
-  doubleDribble = function (p) {
-    const was = !!(p && p.pick && M.phase === 'live');
-    const r = _dd.apply(this, arguments);
-    if (was && !p.pick) addTov(p);
-    return r;
   };
   const _wd = watchdog;
   watchdog = function () {
@@ -19545,6 +19572,186 @@ function lockTag(v) { return v.lock === 4 ? 'Win World Cup' : STAGES[v.lock].nam
   const _ds = drawSelect, _su = selectUpdate;
   drawSelect = function (g) { if (!Game.sel) { dim(g, 0.55); return; } return _ds.apply(this, arguments); };
   selectUpdate = function () { if (!Game.sel) { goTitle(); return; } return _su.apply(this, arguments); };
+}
+// ================================================= v8.6.3: CPU HOT SPOTS + GAME CLOCK
+// Two additions to the CPU brain. Both only ever add options or sharpen choices; neither applies to a
+// human player or changes anything outside its own window.
+//
+// HOT SPOTS (only while a match spot is live; with no spot, nothing here runs and no random number is drawn)
+//   - Offence: a CPU handler standing on the spot, not tightly guarded, adds the bonus (+1 or +2) times
+//     his make chance to that shot's expected points. Within 1.5x the radius he steps onto it first.
+//     A better look (open dunk, open three, the pass) still wins the utility contest.
+//   - A free CPU teammate may drift to a front-half spot instead of a plain spacing spot, only when the
+//     spot is worth at least as much to him, never next to the handler, and never camps (1.5 s, then on).
+//   - Defence: the defender on a man standing on a live spot closes out tighter, with turbo.
+//   - Not every time: the CPU uses a spot on at most about one possession in two (never two in a row,
+//     and a 70% roll otherwise), so it stays unpredictable.
+//
+// GAME CLOCK (CPU-only teams; the last period, or the last 30 s of any period; nowhere else)
+//   - urgent: trailing in the last 24 s: no set play, push the pace, take the first good shot (less dribbling
+//     around; the bar for a shot is unchanged); trailing by 3+ with under 20 s, look for a three. Trailing with
+//     25-48 s left: less dribbling around.
+//   - tied in the last 24 s: the same as urgent. Holding for a last shot at 4-6 s was measured and lost games
+//     (tied with the ball and 12 s left: 74% wins before, 57% holding; 150 seeded games each), because more
+//     possessions favour the team with the ball here. So the CPU doesn't hold; it plays for the first good shot.
+//   - Measured head to head against the 8.6.2 CPU (1,400 seeded games starting -3..+3 with 8-45 s left in the
+//     last period): 62% wins before, 66% after. Lowering the bar for a shot late was tried and dropped: it lost
+//     games (trailing by 1 with 8 s left: 50% before, 30% with it).
+//   - 2-for-1: the last 30 s of an earlier period: push the pace and attack sooner, to get one more possession.
+//   - protect: leading in the last 48 s: use the shot clock (shoot when it is under ~6 s), no lobs, no
+//     risky passes; if the game clock runs out first, simply keep the ball.
+//   - horn: from 2.4 s the best shot available now (no dribbling around); under 1.2 s, whoever has the ball
+//     shoots from where he is (unless the team is leading in the last period).
+// Existing late-game behaviour (intentional fouls, CPU timeouts) is untouched.
+
+// ---- possession counter (shared by both parts)
+{
+  const _gb = giveBall;
+  giveBall = function (p, how) {
+    const r = _gb.apply(this, arguments);
+    if (p && p.team !== M.possLast) { M.possLast = p.team; M.possN = (M.possN || 0) + 1; }
+    return r;
+  };
+  const _nm = newMatch;
+  newMatch = function () { M.possN = 0; M.possLast = -1; M.hotAI = null; return _nm.apply(this, arguments); };
+}
+const CPU863 = { hot: true, late: true, only: -1, push: true, noPlay: true };   // switches for tests and measurements (only: one team uses them)
+const cpuTeam = t => !!(M.teams && M.teams[t] && M.teams[t].players.every(q => q.human < 0)) && (CPU863.only < 0 || CPU863.only === t);
+
+// ---------------------------------------------------------------- hot spots
+function hotLive() { return !!(CPU863.hot && M.hot && M.hot.m && M.hot.t > 0.6 && M.phase === 'live' && !M.mini && !M.practice); }
+function hotUse(team) {                     // decided once per possession, and only while a spot is live
+  const A = M.hotAI || (M.hotAI = { n: -1, on: false, last: [false, false] });
+  if (A.n !== M.possN) { A.n = M.possN; A.on = !A.last[team] && chance(0.7); A.last[team] = A.on; }
+  return A.on;
+}
+{
+  const BP = Brain.prototype;
+  const _ch = BP.choose;
+  BP.choose = function (opts) {
+    const k = this._adj;
+    if (k) for (const o of opts) if (k[o.type]) o.u += typeof k[o.type] === 'function' ? k[o.type](o) : k[o.type];
+    return _ch.call(this, opts);
+  };
+  const _th = BP.thinkHandler;
+  BP.thinkHandler = function () {
+    const p = this.p, late = lateMode(p.team), adj = {};
+    let hot = 0, step = null;
+    if (p.human < 0 && hotLive() && !(late && late.mode !== 'two4one')) {
+      const s = M.hot, d = Math.hypot(p.x - s.x, p.z - s.z), open = nearestOppDist(p.x, p.z, p.team) > 55;
+      if (open && d < HOT_R * 1.5 && hotUse(p.team)) {
+        if (hotHit(p)) { hot = hotValue(p); const pr = shotProbability(p, p.x, p.z); adj.shoot = pr * hot; }
+        else if (hotSpotValue(p.team) === 1 && chance(0.6)) step = { x: s.x, z: s.z };
+      }
+    }
+    if (late) lateAdjust(this, late, adj);
+    this._adj = Object.keys(adj).length ? adj : null;
+    try { _th.apply(this, arguments); } finally { this._adj = null; }
+    if (step && this.plan.type === 'probe') { this.plan = { type: 'probe', target: step, hot: true }; this.t = Math.min(this.t, 0.25); }
+    if (late) lateOverride(this, late);
+  };
+  const _tob = BP.thinkOffBall;
+  BP.thinkOffBall = function () {
+    _tob.apply(this, arguments);
+    const p = this.p, bo = ball.owner;
+    if (p.human >= 0 || this.plan.type !== 'spot' || !bo || bo.team !== p.team || bo === p || !hotLive() || hotSpotValue(p.team) !== 1) return;
+    const s = M.hot, h = attackHoop(p.team);
+    if (Math.hypot(s.x - bo.x, s.z - bo.z) < 140) return;                       // spacing: never next to the handler
+    const v = p._hotV || (p._hotV = {});
+    if (v.spot === s && v.done) return;                                          // already had his look from there
+    if (v.spot !== s) { v.spot = s; v.at = null; v.done = false; }
+    if (Math.hypot(p.x - s.x, p.z - s.z) < 20) { if (v.at == null) v.at = M.time; if (M.time - v.at > 1.5) { v.done = true; return; } }
+    const ev = (x, z, b) => shotProbability(p, x, z, nearestOppDist(x, z, p.team)) * ((isThree(x, z, h) ? 3 : 2) + b);
+    if (ev(s.x, s.z, 1) < ev(this.plan.x, this.plan.z, 0) || !hotUse(p.team)) return;   // the plain spot is better
+    this.plan = { type: 'spot', x: s.x, z: s.z, u: this.plan.u, hot: true };
+  };
+  const _ex = BP.exec;
+  BP.exec = function (dt) {
+    const p = this.p, pl = this.plan, late = ball.owner === p && p.human < 0 ? lateMode(p.team) : null;
+    if (late && late.mode === 'protect' && late.keep) { p._noPost = true; if (p.postUp) p.postUp = null; } else p._noPost = false;
+    const r = _ex.apply(this, arguments), c = p.cmd;
+    if (late && CPU863.push && (late.mode === 'urgent' || late.mode === 'two4one') && p.state === 'free' && dxz(p, attackHoop(p.team)) > COURT.L / 2 && p.turbo > 12) c.turbo = true;   // push the pace
+    // defence: close out hard on a man standing on a live spot
+    if (p.human < 0 && (pl.type === 'guardBall' || pl.type === 'deny') && pl.man && hotLive() && p.state === 'free') {
+      const m = pl.man, s = M.hot;
+      if (Math.hypot(m.x - s.x, m.z - s.z) < HOT_R * 1.2 && m.team !== p.team && (ball.owner === m || (ball.owner && ball.owner.team === m.team))) {
+        const h = defendHoop(p.team), ux = h.x - m.x, uz = h.z - m.z, L = Math.hypot(ux, uz) || 1;
+        const steal = c.a;
+        this.moveTo(m.x + ux / L * 24, m.z + uz / L * 24, dxz(p, m) > 60);
+        c.face = sgn(m.x - p.x); c.a = steal;
+      }
+    }
+    return r;
+  };
+  const _pe = postEligible;
+  postEligible = function (p) { return !p._noPost && _pe.apply(this, arguments); };
+}
+
+// ---------------------------------------------------------------- game clock
+function lateMode(team, anyPhase) {
+  if (!CPU863.late || !M.fmt || M.fmt.first21 || !isFinite(M.clock) || (M.phase !== 'live' && !anyPhase) || M.mini || M.practice || M.attract || !cpuTeam(team)) return null;
+  const last = M.quarter >= M.fmt.periods, T = M.clock;
+  if (!last && T > 30) return null;
+  const diff = M.teams[team].score - M.teams[1 - team].score, sc = M.fmt.sc > 0 ? M.shotClock : 99;
+  if (T <= 2.4) return last && diff > 0 ? { mode: 'protect', keep: true } : T <= 1.2 ? { mode: 'horn' } : { mode: 'urgent', now: true };
+  if (last && diff > 0) return T <= 48 ? { mode: 'protect', keep: T < sc || sc > 6.5 } : null;
+  if (last && diff < 0) return T <= 24 ? { mode: 'urgent', three: -diff >= 3 && T < 20 } : T <= 48 ? { mode: 'hurry' } : null;
+  if (last && T <= 24) return { mode: 'urgent' };                    // tied: play to win now (no holding; see the note at the top)
+  if (!last && T <= 30) return { mode: 'two4one' };
+  return null;
+}
+// utility nudges, applied inside choose() (before the difficulty noise)
+function lateAdjust(brain, L, adj) {
+  const p = brain.p, h = attackHoop(p.team), three = isThree(p.x, p.z, h);
+  const add = (k, v) => { const o = adj[k]; adj[k] = o == null ? v : typeof o === 'function' ? (x => o(x) + v) : o + v; };
+  if (L.mode === 'urgent') {                                        // the first good look: less dribbling around, the same bar for a shot
+    // (lowering the bar for a shot was measured and lost games: trailing by 1 with 8 s left it won 30% against 50% before)
+    const T = M.clock;
+    add('probe', L.now ? -1 : T <= 8 ? -0.25 : -0.1);               // under 2.4 s: no more dribbling around
+    if (L.three) { if (three) add('shoot', 0.6); else { add('shoot', -0.3); add('dunk', -0.3); add('probe', 0.6); } }
+  } else if (L.mode === 'hurry' || L.mode === 'two4one') add('probe', -0.15);   // don't dawdle; the shot bar is unchanged
+  else if (L.mode === 'protect' && !L.keep) { add('alley', -0.6); add('pass', o => -1.2 * passRisk(p, o.to)); add('shoot', three ? -0.15 : 0); }
+}
+// plan overrides after the normal choice
+function lateOverride(brain, L) {
+  const p = brain.p, h = attackHoop(p.team);
+  if (L.mode === 'horn') {                                          // get it up before the horn
+    if (p.state !== 'free') return;
+    brain.plan = dxz(p, h) < 140 && canDunk(p) ? { type: 'dunk' } : { type: 'shoot' };
+    brain.t = Math.min(brain.t, 0.05); return;
+  }
+  if (L.mode === 'protect' && L.keep) {                              // keep the ball: dribble to the open side of the arc
+    if (brain.plan.type === 'pass' && passRisk(p, brain.plan.to) < 0.15 && dxz(brain.plan.to, h) > 200) return;   // a safe swing pass is fine
+    brain.plan = { type: 'probe', target: safeSpot(p), hold: true };
+    brain.t = Math.min(brain.t, 0.3); return;
+  }
+  if (L.mode === 'urgent' && L.three && brain.plan.type === 'probe' && !isThree(p.x, p.z, h)) brain.plan = { type: 'probe', target: threeSpot(p) };
+}
+function safeSpot(p) {
+  const h = attackHoop(p.team); let best = null, bu = -1e9;
+  for (const s of offSpots(h)) {
+    if (Math.hypot(s.x - h.x, s.z - h.z) < 250) continue;          // outside, away from help
+    const u = Math.min(nearestOppDist(s.x, s.z, p.team), 220) - Math.hypot(s.x - p.x, s.z - p.z) * 0.25;
+    if (u > bu) { bu = u; best = s; }
+  }
+  return best || { x: p.x, z: p.z };
+}
+function threeSpot(p) {
+  const h = attackHoop(p.team); let best = null, bu = -1e9;
+  for (const s of offSpots(h)) {
+    if (!isThree(s.x, s.z, h)) continue;
+    const u = Math.min(nearestOppDist(s.x, s.z, p.team), 160) - Math.hypot(s.x - p.x, s.z - p.z) * 0.4;
+    if (u > bu) { bu = u; best = s; }
+  }
+  return best || { x: p.x, z: p.z };
+}
+{
+  // a CPU timeout late with the game on the line: no set play, just get the ball in and attack
+  const _et = endTimeout;
+  endTimeout = function (play) {
+    const L = !M.toHuman && M.toTeam != null ? lateMode(M.toTeam, true) : null;
+    return _et.call(this, CPU863.noPlay && L && (L.mode === 'urgent' || L.mode === 'horn') ? 'run' : play);
+  };
 }
 
 boot();

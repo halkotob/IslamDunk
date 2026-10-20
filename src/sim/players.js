@@ -252,7 +252,7 @@ function releaseShot(p) {
   }
   const relD = dxz(p, h);
   launchShot(p, h, make, pts);
-  ball.shot.green = tier === 'green'; ball.shot.sig = p.sigShot || null; ball.shot.hot = hotHit(p); ball.shot.rd = relD;
+  ball.shot.green = tier === 'green'; ball.shot.sig = p.sigShot || null; ball.shot.hot = hotValue(p); ball.shot.rd = relD;
   p.sigShot = null;
   p.state = 'post'; p.st_t = 0;
 }

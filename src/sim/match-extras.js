@@ -87,17 +87,33 @@ function playerOfGame() {
 // ============================================================ HOT SPOTS
 // Every so often a spot glows in the attacking half; a made jumper from it
 // is worth +1. It lasts 10 seconds, then moves.
+// v8.6.3: a spot only appears while a team has the ball live (never on a dead ball, inbound or free throw),
+// on that team's attacking half. It survives a change of possession, and its value follows the shooter:
+// +1 on his attacking half, +2 from his own back half. M.hot.m marks a match spot; spots placed by mini games
+// and challenges have no .m and keep their old rules (+1, labelled "+1").
 const HOT_R = 46;
+const hotHalf = x => x < COURT.L / 2 ? 0 : 1;
+function hotSpotValue(team) {                       // what a make from the live match spot is worth to this team
+  const s = M.hot; if (!s || !s.m) return 1;
+  return M.halfCourt || hotHalf(s.x) === hotHalf(attackHoop(team).x) ? 1 : 2;
+}
 function updateHot(dt) {
   if (M.practice || M.phase !== 'live') return;
-  if (M.hot) { M.hot.t -= dt; if (M.hot.t <= 0) { M.hot = null; M.hotCd = rand(3, 7); } return; }
+  if (M.hot) {
+    M.hot.t -= dt; if (M.hot.t <= 0) { M.hot = null; M.hotCd = rand(3, 7); return; }
+    if (M.hot.m) { const o = ball.owner || (ball.pass && ball.pass.from); if (o) M.hot.v = hotSpotValue(o.team); }
+    return;
+  }
   M.hotCd = (M.hotCd == null ? rand(10, 16) : M.hotCd) - dt;
-  if (M.hotCd <= 0) {
-    const team = M.possTeam >= 0 ? M.possTeam : rint(2), h = attackHoop(team), a = rand(-1.1, 1.1), r = rand(150, 330);
-    M.hot = { x: h.x + h.dir * Math.cos(a) * r, z: clamp(h.z + Math.sin(a) * r, 60, 640), t: 10 };
+  const o = ball.owner, live = o && M.possTeam === o.team && !M.inb && !M.check && !M.ft;
+  if (M.hotCd <= 0 && live) {                       // otherwise wait until someone has the ball live
+    const h = attackHoop(o.team), a = rand(-1.1, 1.1), r = rand(150, 330), mid = COURT.L / 2;
+    const x = h.x + h.dir * Math.cos(a) * r;
+    M.hot = { x: h.dir > 0 ? Math.min(x, mid - 20) : Math.max(x, mid + 20), z: clamp(h.z + Math.sin(a) * r, 60, COURT.D - 60), t: 10, m: 1, v: 1 };
   }
 }
 function hotHit(p) { return !!(M.hot && M.hot.t > 0 && Math.hypot(p.x - M.hot.x, p.z - M.hot.z) < HOT_R); }
+function hotValue(p) { return hotHit(p) ? hotSpotValue(p.team) : 0; }   // the bonus a make from here earns (0 off the spot)
 const hotGlow = () => radialSprite('hot', '255,190,70', 0.7);
 function drawHot(g) {
   const s = M.hot; if (!s) return;
@@ -105,7 +121,13 @@ function drawHot(g) {
   g.globalAlpha = fade * pulse; g.drawImage(hotGlow(), x - HOT_R * 1.6, y - HOT_R * ZS * 1.6, HOT_R * 3.2, HOT_R * ZS * 3.2);
   g.globalAlpha = fade; g.strokeStyle = '#ffcf6a'; g.lineWidth = 2.5; g.beginPath(); g.ellipse(x, y, HOT_R, HOT_R * ZS, 0, 0, Math.PI * 2); g.stroke();
   g.strokeStyle = 'rgba(255,207,106,0.5)'; g.lineWidth = 1.5; g.beginPath(); g.ellipse(x, y, HOT_R * (0.6 + 0.4 * ((Game.t * 0.8) % 1)), HOT_R * ZS * (0.6 + 0.4 * ((Game.t * 0.8) % 1)), 0, 0, Math.PI * 2); g.stroke();
-  g.fillStyle = '#ffcf6a'; g.font = `12px ${FONT}`; g.textAlign = 'center'; g.fillText('+1', x, y - HOT_R * ZS - 4);
+  g.textAlign = 'center';
+  if (s.m && s.v === 2) {                           // +2: dark text on a solid gold tag, bigger, so it reads from across the court
+    g.font = `16px ${FONT}`; const w = g.measureText('+2').width + 14, ty = y - HOT_R * ZS - 6;
+    g.fillStyle = '#ffd24d'; roundRect(g, x - w / 2, ty - 17, w, 22, 11); g.fill();
+    g.strokeStyle = '#7a4a00'; g.lineWidth = 1.5; g.stroke();
+    g.fillStyle = '#2a1600'; g.fillText('+2', x, ty);
+  } else { g.fillStyle = '#ffcf6a'; g.font = `12px ${FONT}`; g.fillText('+1', x, y - HOT_R * ZS - 4); }
   g.globalAlpha = 1;
 }
 

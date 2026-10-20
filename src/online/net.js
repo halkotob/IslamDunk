@@ -214,7 +214,7 @@ const Net = {
       p.act && (p.state === 'dunk' || p.state === 'hang') ? ND.indexOf(p.act.type) : -1, p.act ? r2(p.act.s) : 0,
       (p.fire ? 1 : 0) | (p.boost > 0 ? 2 : 0) | (p.cmd.turbo ? 4 : 0) | (p.celebrate > 0 ? 8 : 0), Math.round(p.turbo), Math.round(p.hifz), r1(Math.max(0, p.boost)), p.human]);
     // optional fields (older guests ignore them): format, green-window difficulty, fun modes, hot spot
-    s.fx = { mg: View.magnet, t: M.fmt.target, hc: M.halfCourt ? 1 : 0, f: M.fmt.format, l: M.fmt.len, sc: M.fmt.sc, dm: r2(humanDiffMult()), fun: M.fun || 0, hs: M.hot ? [r1(M.hot.x), r1(M.hot.z), r1(M.hot.t)] : 0 };
+    s.fx = { mg: View.magnet, t: M.fmt.target, hc: M.halfCourt ? 1 : 0, f: M.fmt.format, l: M.fmt.len, sc: M.fmt.sc, dm: r2(humanDiffMult()), fun: M.fun || 0, hs: M.hot ? [r1(M.hot.x), r1(M.hot.z), r1(M.hot.t), M.hot.m ? M.hot.v || 1 : 0] : 0 };
     s.b = ballArr(M.balls ? M.balls[0] : ball);
     if (M.balls && M.balls[1]) s.b2 = ballArr(M.balls[1]);                 // optional: second ball (Lightning)
     if (M.mini) { s.mini = M.mini.kind; s.mg = M.mini.snap(); }
@@ -342,7 +342,7 @@ const Net = {
     if (SB.fx) {
       const x = SB.fx; if (!M.fmt || M.fmt.format !== x.f || M.fmt.len !== x.l || M.fmt.sc !== x.sc || (x.t && M.fmt.target !== x.t)) M.fmt = makeFmt({ fmt: { format: x.f, len: x.l, sc: x.sc, target: x.t } });
       if (x.hc != null) M.halfCourt = !!x.hc;
-      M.dmOverride = x.dm; M.fun = x.fun || null; M.magnetLvl = x.mg != null ? x.mg : M.magnetLvl; M.hot = x.hs ? { x: x.hs[0], z: x.hs[1], t: x.hs[2] } : null;
+      M.dmOverride = x.dm; M.fun = x.fun || null; M.magnetLvl = x.mg != null ? x.mg : M.magnetLvl; M.hot = x.hs ? { x: x.hs[0], z: x.hs[1], t: x.hs[2], m: x.hs[3] ? 1 : 0, v: x.hs[3] || 1 } : null;
       if (M.fun && M.fun.uncle) for (const p of M.players) p.outfit = 'thobe';
     }
     M.players.forEach((p, i) => {

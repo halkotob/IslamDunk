@@ -170,8 +170,8 @@ function onScore(h) {
     ball.state = 'scored'; ball.shot = null; M.phase = 'dead'; M.deadT = 0.9; M.nextInbound = 1 - team; return;
   }
   let pts = sh ? sh.pts : 2; if (M.double) pts *= 2;
-  const hot = sh && sh.hot && !sh.dunk;
-  if (hot) pts += 1;                              // hot spot bonus
+  const hot = sh && sh.hot && !sh.dunk ? +sh.hot : 0;
+  if (hot) pts += hot;                            // hot spot bonus: +1, or +2 from the shooter's back half (v8.6.3)
   M.teams[team].score += pts; const qi = M.quarter - 1; M.teams[team].qs[qi] = (M.teams[team].qs[qi] || 0) + pts;
   const shooter = sh && sh.shooter.team === team ? sh.shooter : null;
   const x = h.x, z = h.z;
@@ -195,7 +195,7 @@ function onScore(h) {
     else if (sh && sh.touched) h.kick('rimin', 1, ball.x - h.x, ball.z - h.z, g);
     else h.kick('swish', 1.1, 0, 0, g);
   }
-  const base = pts - (hot ? 1 : 0), three = base / (M.double ? 2 : 1) === 3;
+  const base = pts - hot, three = base / (M.double ? 2 : 1) === 3;
   const lead = M.teams[team].score - M.teams[1 - team].score;
   const buzzer = M.pendingEnd && !M.fmt.first21, clutchBuzzer = buzzer && M.quarter >= M.fmt.periods && lead >= 0;
   const kind = makeFeel(h, sh, shooter, pts, hot, buzzer, clutchBuzzer);         // shake, pitch, callout tier, crowd timing by make type
@@ -205,7 +205,7 @@ function onScore(h) {
     FX.hype(1); FX.replay(1.4);
   } else if (buzzer) { FX.cue('buzzer', h.x, RIM_Y, h.z, true); FX.callout('BUZZER BEATER!', '#ffd76a', 'MASHA\'ALLAH!'); }
   else if (sh && sh.sig) { const c = sigCall(sh.sig); FX.callout(c[0], '#ffd76a', c[1] || (shooter ? shooter.def.name.toUpperCase() : ''), true); }
-  else if (hot) FX.callout('HOT SPOT!', '#ffb347', '+1 BONUS');
+  else if (hot) FX.callout('HOT SPOT!', '#ffb347', '+' + hot + ' BONUS');
   if (M.fun && M.fun.uncle && chance(0.35)) uncleTalk();
   // highlight clip for the post-game screen
   if (shooter) FX.highlight(M.players.indexOf(shooter), (big ? (kind === 'poster' ? 4.5 : 3) : three ? 2.5 : 1) + (sh.sig ? 3 : 0) + (clutchBuzzer ? 6 : buzzer ? 3 : 0) + (hot ? 1 : 0),

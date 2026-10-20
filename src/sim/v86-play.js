@@ -152,6 +152,7 @@ function ankleFall(o, p) {
   };
 }
 // ---------------------------------------------------------------- alley-oops off the glass
+const GLASS_DEAD = 25;
 function glassOf(h, z) { return { x: h.bbx + h.dir * (BALL_R + 1), y: RIM_Y + 46, z: clamp(z, h.z - 30, h.z + 30) }; }
 function glassify(T, to) {
   const pa = ball.pass, h = attackHoop(to.team), G = glassOf(h, lerp(ball.z, h.z, 0.6)), T1 = T * 0.52;
@@ -161,8 +162,11 @@ function glassify(T, to) {
 {
   const _ta = throwAlley;
   throwAlley = function (p, to) {
+    // v8.6.3: off the glass only to a teammate trailing the play (farther from this hoop than the passer, by
+    // more than GLASS_DEAD so it doesn't flicker); a teammate ahead gets the normal lob, Turbo or not
+    const h0 = attackHoop(to.team), behind = dxz(to, h0) > dxz(p, h0) + GLASS_DEAD;
     _ta.apply(this, arguments);
-    const want = p.human >= 0 ? !!(p.cmd.turbo && p.turboOK()) : chance(0.1);
+    const want = behind && (p.human >= 0 ? !!(p.cmd.turbo && p.turboOK()) : chance(0.1));
     if (want && ball.pass && ball.pass.alley && dxz(p, attackHoop(to.team)) > 140) { glassify(ball.pass.T, to); if (p.human >= 0 || to.human >= 0) FX.pop(p.x, p.y + 132, p.z, 'OFF THE GLASS', '#ffd76a'); }
   };
   const _pf = updatePassFlight;

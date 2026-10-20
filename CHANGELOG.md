@@ -1,5 +1,69 @@
 # Changelog
 
+## 8.6.3: hot spots, late-game CPU, no double dribble, glass pass
+- **Hot spots.** A spot now appears only while a team holds the ball live (never on a dead ball, an
+  inbound or a free throw; it waits), on that team's attacking half, inside the half-court line and at
+  least 60 units off the sidelines. It still survives a change of possession, and its value follows the
+  shooter: +1 on his attacking half, **+2** from his own back half. A +2 spot is labelled with dark "+2"
+  text on a solid gold tag (larger than the "+1"), and the callout says "+2 BONUS". Dunks still get no
+  bonus. Mini-game, Around the World and challenge spots are unchanged (+1). Online guests get the value.
+
+  Measured over 8 seeded CPU games (90 s quarters), counting where each spot appeared:
+
+  | | Spawned, team holding the ball, its attacking half | Spawned in that team's backcourt | Spawned on a dead ball | Possession changes during a spot | Live time the spot sat in the ball-holder's backcourt |
+  |---|---|---|---|---|---|
+  | 8.6.2 | 164 | 0 | 24 (1 for a random team) | 316 | 48% |
+  | 8.6.3 | 189 | 0 | 0 | 358 | 44% (now worth +2 there) |
+
+  So the far-backcourt spots came almost entirely from spots outliving the possession they were made for,
+  not from the random-team case (1 spawn in 188).
+- **The CPU knows about hot spots.** A CPU shooter on a live spot, not tightly guarded, counts the bonus in
+  that shot's expected points; within 1.5x the radius he may step onto it. A better look (open dunk, open
+  three, a pass) still wins. A free CPU teammate may drift to a front-half spot when it's worth at least
+  as much as his normal spacing spot, never next to the ball and never camping (1.5 s, then on). A CPU
+  defender closes out harder on a man standing on a live spot. The CPU uses a spot on at most every other
+  possession (never two in a row, 70% otherwise). With no spot live, shot selection is unchanged and no
+  extra random numbers are drawn. Seeded test: on a spot, 53 of 60 CPU handlers shoot, against 28 of 60
+  with the spot logic off; the defender ends 28 units from a man on a spot, against 86.
+- **Late-game CPU** (CPU-only teams, the last period or the last 30 s of any period; nowhere else).
+  Trailing or tied in the last 24 s: no set play after a timeout, push the pace, less dribbling around, and
+  a three when trailing by 3+ with under 20 s. In the last 2.4 s it takes the best shot now, and in the last
+  1.2 s whoever has the ball shoots. The last 30 s of an earlier period: push the pace for the 2-for-1.
+  Leading in the last 48 s: use the shot clock, no lobs, no risky passes, keep the ball if the game clock
+  will run out first. Intentional fouls and CPU timeouts are unchanged.
+  - Not done, on measurement: holding for a last shot at 4-6 s when tied, and lowering the bar for a shot
+    late. Both lost games against the 8.6.2 CPU (tied with the ball and 12 s left: 74% wins, 57% holding;
+    trailing by 1 with 8 s left: 50% wins, 30% with the lower bar). The 8.6.2 CPU already shoots within
+    about 2 s of getting the ball, so the 2-for-1 happened anyway (first shot at 31.4 s from a 34 s start,
+    31.6 s before).
+  - Head to head against the 8.6.2 CPU, 1,400 seeded games starting -3 to +3 with 8 to 45 s left in the last
+    period: 62% wins before, 66% after (trailing or tied: 40% to 46%; leading: 91% to 92.5%).
+  - Trailing by 2 with 10 s left, 50 seeded games: a shot went up before the buzzer 50 of 50 times before
+    and after; the trailing team scored in 41 before, 48 after. Leading by 4 with 40 s left now uses 9.2 s
+    of the 15 s shot clock (2.0 before).
+  - Whole games, outside the late window (40 seeded games): 7.21 to 7.23 points per team-minute, FG 69.5% to
+    70.2%, turnovers 0.26 to 0.32 per team-minute. The turnover change is seed divergence, not the new
+    logic: the same build with the new CPU logic switched off also gives 0.32. Over 8 games: 7.14 to 7.03
+    points, FG 68.9% to 68.2%, turnovers 0.19 to 0.42.
+  - Seeded outcomes change, so `cpu-parity` has a new baseline (see the test log of this release).
+- **No double dribbles** (the NBA Jam way). The DOUBLE DRIBBLE call, whistle, turnover and dead ball are
+  gone, and so is its TOV charge. After a pump fake ("PICKED UP") a crossover, signature move or hesitation
+  is ignored, silently. The player can still turn, pivot inside the dashed ring, jump, shoot, pass or go up
+  for a layup or dunk; walking off the ring holds him at its edge (as the CPU already was). The pick-up ends
+  when he shoots, passes or loses the ball. CPU pick-ups are unchanged. Online, the guest gets the pivot.
+  How to play now says "tap: pump fake, then pivot, shoot or pass"; Sheikh Saleem's pump-fake tip no longer
+  says "take one dribble"; each tutorial step starts with a live dribble.
+- **Off-the-glass pass** only to a teammate trailing the play: farther from the hoop than the passer by more
+  than 25 units. A teammate ahead of the passer gets the normal alley-oop or pass, even with Turbo held (no
+  "OFF THE GLASS"). The CPU's 10% chance follows the same rule. The self-lob is unchanged.
+- **Tests.** New `v863` test (spot placement and dead-ball wait, +1/+2 and dunks, CPU spot use and
+  closeouts, no change with no spot, late game, glass rule). `controls` now checks that after a pump fake a
+  crossover is ignored with no turnover, walking is held to the ring, and shooting and passing work.
+  `noor` checks a picked-up crossover costs no turnover. `online-loop` checks the guest sees a +2 spot and
+  the pivot. `phase4` gives its unseeded 3-on-3 game 300 s of steps instead of 200 (8.6.2 already ran past
+  200 s in about 1 game in 12; late-game fouls and free throws add dead time). `docs/review/game-text.csv`
+  regenerated.
+
 ## 8.6.2: phone pass
 On a phone the 960x540 canvas is drawn at 0.55-0.63x, so most labels landed at 6-9 CSS px and the HUD
 and buttons covered the court. Everything below applies on touch devices only; desktop is unchanged

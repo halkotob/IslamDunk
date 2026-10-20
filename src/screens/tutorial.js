@@ -30,7 +30,7 @@ function tutMe() { return M.players.find(q => q.human === 0); }
 function tutPlace(o) {
   const me = tutMe(), mate = me.mate, opp = me.opps[0], opp2 = me.opps[1];
   M.phase = 'live'; M.inb = null; M.check = null; M.bc = null; M.nextInbound = null; M.sideOut = null; M.ft = null; M.pendingEnd = false;
-  for (const q of M.players) { q.v7 = {}; q.v8 = {}; q.buf = null; q.turbo = 100; q.winded = false; }
+  for (const q of M.players) { q.v7 = {}; q.v8 = {}; q.buf = null; q.turbo = 100; q.winded = false; q.pick = null; }   // v8.6.3: each step starts with a live dribble
   place(me, o.me[0], o.me[1]); place(mate, ...(o.mate || [260, 620])); place(opp, ...(o.opp || [240, 120])); if (opp2) place(opp2, 200, 640);
   Object.assign(ball, { shot: null, pass: null, vx: 0, vy: 0, vz: 0, grabLock: 0 });
   if (o.ball) giveBall(me, 'inbound'); else if (o.oppBall) giveBall(opp, 'inbound'); else giveBall(mate, 'inbound');   // your partner holds it out of the way

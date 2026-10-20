@@ -298,7 +298,7 @@ const SHEIKH_LINES = {
     'Rest, eat well, and sleep. Your body is an amanah, a trust.',
     // v5.0: basketball
     'A crossover works best when the defender is leaning. Read his hips, not his hands.',
-    'Pump fake once. If he flies by, take one dribble and shoot. Twice is showing off.',
+    'Pump fake once. If he flies by, step through and shoot. Twice is showing off.',
     'Close out with short, choppy steps. Run at a shooter and he’ll drive right past you.',
     'The best shot is the one your teammate is open for.',
     'When you’re tired, your shot gets short. Legs first, then arms.',

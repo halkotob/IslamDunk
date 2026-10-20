@@ -6,7 +6,8 @@
 // Tests:
 //   cpu-parity   seeded CPU-vs-CPU games (2v2 timed, first-to, half court, 1 on 1). With --ref, the same
 //                seeds must give exactly the same scores and box scores in both builds.
-//   controls     scripted human input: pump fake -> double dribble rules, legal pivot and shot
+//   controls     scripted human input after a pump fake: a crossover is ignored (no turnover), walking is held to
+//                the pivot ring, pivot, shoot and pass still work (v8.6.3: no double dribbles)
 //   half-court   lobby-driven half-court / points-target games run to completion
 //   career       new career -> 3 matches -> post-game -> save written
 //   feel         v7.9 rules: holding sprint gets at least the CPU's sprint time (same stamina rule), nobody
@@ -23,12 +24,17 @@
 //                all five brothers -> hub; body builds sum to zero; CPU stages have 2/3/2 strength tiers
 //   online-loop  loopback transport: lobby, 7 game types (HORSE with the HAQ word, Around the World, King of the Court), back to lobby, direct (P2P) link + fallback,
 //                v8.6.1: a Noor power-up pick on the host and on the guest (host authoritative, effect mirrored)
+//                v8.6.3: the guest sees a hot spot's +2 value and the pick-up pivot
 //   online-room  claude.ai room adapter (faked locally): lobby -> game -> lobby
 //   online-fb    Firebase adapter (fake SDK): lobby -> game -> lobby
 //   noor         v8.6.1 Noor power-ups: choice of 3 (least recently used), each of the 6 applies and expires,
 //                a wrong answer gives nothing, Barakah Run stacking; turnovers by cause and the TOV column
 //   mobile       iPhone landscape/portrait layout, touch controls, the Noor choice screen (fits; tap picks), no errors
 //                plus the v8.6.2 phone text audit (tests/phone-audit.mjs) at iPhone landscape and 667x300
+//   v863         hot spots spawn only on the attacking half of a team holding the ball live, +1/+2 follows the
+//                shooter (dunks and mini-game spots unchanged); CPU uses a live spot (at most every other
+//                possession), closes out on it, and is unchanged with no spot; late game (trailing gets a shot
+//                up, leading uses the shot clock); off the glass only to a trailing teammate
 // Every test fails on any uncaught page error.
 import { chromium, devices } from 'playwright';
 import http from 'node:http';
@@ -118,27 +124,41 @@ T['controls'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'controls');
   const r = await p.evaluate(() => {
     const out = {}, calls = []; const _c = FX.callout.bind(FX); FX.callout = (t, ...a) => { calls.push(t); return _c(t, ...a); };
+    // v8.6.3: after a pump fake (picked up), nothing costs the ball: no double dribble
     const scenario = after => {
       newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] });
       for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
-      const me = M.players[0]; M.phase = 'live'; ball.shot = null; giveBall(me, 'inbound'); place(me, 900, 350); me.state = 'free';
-      for (const q of M.players) if (q !== me) place(q, 200, 640);       // rules only: no defender can steal mid-scenario
-      let t = 0; calls.length = 0;
+      const me = M.players[0], mate = me.mate; M.phase = 'live'; ball.shot = null; giveBall(me, 'inbound'); place(me, 900, 350); me.state = 'free';
+      for (const q of M.players) if (q !== me && q !== mate) place(q, 200, 640);   // rules only: no defender can steal mid-scenario
+      place(mate, 1010, 220);
+      let t = 0, pivot = null, maxOff = 0, passed = false, moves = 0; calls.length = 0;
+      const fga0 = me.stats.fga;
       M.cmdHook = q => { if (q !== me) { zeroCmd(q.cmd); return true; } const c = q.cmd; for (const k of ['a', 'b', 'x', 's', 'turbo', 'bHeld', 'aHeld', 'xHeld']) c[k] = false; c.mx = c.mz = 0; c.face = 0; c.passTo = null; c.alley = null;
-        t += STEP; if (t < 0.05) return true; if (!me.pick && t < 0.5 && me.state === 'free') { startFake(me); return true; } if (t > 0.5) after(c, t); return true; };
-      for (let i = 0; i < 150; i++) updateMatch(STEP);
+        t += STEP; if (t < 0.05) return true; if (!me.pick && t < 0.5 && me.state === 'free') { startFake(me); return true; } if (t > 0.5) after(c, t, me); return true; };
+      for (let i = 0; i < 150; i++) {
+        updateMatch(STEP);
+        if (me.pick) { pivot = pivot || { x: me.pick.x, z: me.pick.z }; maxOff = Math.max(maxOff, Math.hypot(me.x - pivot.x, me.z - pivot.z)); }
+        if (me.mv) moves++;
+        if (ball.state === 'pass' && ball.pass && ball.pass.from === me) passed = true;
+      }
       M.cmdHook = null;
-      for (let i = 0; i < 300 && !ball.owner && (M.inb || M.phase === 'dead'); i++) updateMatch(STEP);   // let a turnover inbound finish
-      return { dd: calls.includes('DOUBLE DRIBBLE!'), owner: ball.owner ? ball.owner.team : null };
+      return { dd: calls.includes('DOUBLE DRIBBLE!'), owner: ball.owner ? ball.owner.team : null, tov: me.stats.tov || 0, held: !!me.pick && ball.owner === me,
+        maxOff: Math.round(maxOff), moves, shot: me.stats.fga > fga0 || ball.state === 'shot', passed };
     };
-    out.walkOff = scenario(c => { c.mx = 1; });
-    out.crossover = scenario((c, t) => { if (t < 0.55) c.x = true; });
+    out.crossover = scenario((c, t) => { if (t < 0.55) c.x = true; c.mx = t < 0.55 ? 1 : 0; });
+    out.walkOff = scenario(c => { c.mx = 1; c.turbo = true; });
     out.pivot = scenario(c => { c.mz = 0.2; });
     out.shot = scenario((c, t) => { c.bHeld = t < 0.9; c.b = t < 0.52; });
+    out.pass = scenario((c, t, me) => { if (t < 0.56) { c.a = true; c.passTo = me.mate; } });
+    out.noDoubleDribbleFn = typeof doubleDribble === 'undefined';
     return out;
   });
   await ctx.close();
-  const ok = r.walkOff.dd && r.walkOff.owner === 1 && r.crossover.dd && !r.pivot.dd && r.pivot.owner === 0 && !r.shot.dd && !errs.length;
+  const clean = x => !x.dd && x.tov === 0;
+  const ok = clean(r.crossover) && r.crossover.owner === 0 && r.crossover.held && r.crossover.moves === 0
+    && clean(r.walkOff) && r.walkOff.owner === 0 && r.walkOff.held && r.walkOff.maxOff <= 35
+    && clean(r.pivot) && r.pivot.owner === 0
+    && clean(r.shot) && r.shot.shot && clean(r.pass) && r.pass.passed && r.noDoubleDribbleFn && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
@@ -422,7 +442,8 @@ T['phase4'] = async ({ browser, base }) => {
     out.runChamp = Run.champion && Game.screen === 'runend';
     // 3 on 3 beta
     Game.threeNext = true; newMatch(TEAMS[2], TEAMS[5], { humans: [], fmt: { format: 'quarters', len: 30 } });
-    for (let i = 0; i < 60 * 200 && M.phase !== 'over'; i++) { if (Game.screen === 'halftime') Game.screen = 'play'; updateMatch(STEP); }
+    // 300 s of steps for 120 s of game clock: free throws, timeouts and late-game fouls add dead time (8.6.2 already went past 200 s now and then)
+    for (let i = 0; i < 60 * 300 && M.phase !== 'over'; i++) { if (Game.screen === 'halftime') Game.screen = 'play'; updateMatch(STEP); }
     out.three = M.three && M.players.length === 6 && M.assign[0].length === 3 && M.phase === 'over';
     Game.threeNext = false; newMatch(TEAMS[2], TEAMS[5], { humans: [] }); out.twoAfter = !M.three && M.players.length === 4;
     return out;
@@ -700,8 +721,8 @@ T['noor'] = async ({ browser, base }) => {
     me = setup(); const o = me.opps[0], tv = {};
     giveBall(o, 'inbound'); place(o, me.x + 40, me.z); giveBall(me, 'steal'); tv.steal = o.stats.tov;
     giveBall(o, 'inbound'); M.possTeam = o.team; shotClockViolation(); tv.shotClock = o.stats.tov - tv.steal;
-    M.phase = 'live'; giveBall(me, 'inbound'); me.pick = { x: me.x, z: me.z, t: M.time }; doubleDribble(me); tv.doubleDribble = me.stats.tov;
-    M.phase = 'live'; M.sideOut = null; ball.owner = null; Object.assign(ball, { state: 'loose', x: -300, y: 20, z: 300, shot: null, pass: null, lastTouch: me }); M.possTeam = me.team; watchdog(0.7); tv.outOfBounds = me.stats.tov - tv.doubleDribble;
+    M.phase = 'live'; giveBall(me, 'inbound'); me.pick = { x: me.x, z: me.z, t: M.time }; startCross(me); tv.pickedUpCross = me.stats.tov;   // v8.6.3: no double dribble, no turnover
+    M.phase = 'live'; M.sideOut = null; ball.owner = null; Object.assign(ball, { state: 'loose', x: -300, y: 20, z: 300, shot: null, pass: null, lastTouch: me }); M.possTeam = me.team; watchdog(0.7); tv.outOfBounds = me.stats.tov - tv.pickedUpCross;
     const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540; const g = cv.getContext('2d'), seen = []; const ft = g.fillText.bind(g); g.fillText = (t, ...a) => { seen.push(String(t)); return ft(t, ...a); };
     drawBoxScore(g, 150); tv.boxHasTOV = seen.includes('TOV'); tv.boxRowTov = boxRow(me).tov === me.stats.tov;
     out.tov = tv;
@@ -719,7 +740,7 @@ T['noor'] = async ({ browser, base }) => {
     && f.ukhuwwah.mateGlows && f.ukhuwwah.pickerFree && f.ukhuwwah.off && f.meterWaits
     && r.wrong.closed && r.wrong.nothing && r.replay.fx === 'himmah' && r.replay.fire === true && r.replay.after === null
     && r.run.green > 1.2 && r.run.greenPlusSabr <= 1.401 && r.run.greenPlusSabr > r.run.green && r.run.quwwahVsRecharge > 1.7 && r.run.turboCapped && r.run.fireAndNoor && r.run.shieldKept
-    && r.tov.steal === 1 && r.tov.shotClock === 1 && r.tov.doubleDribble === 1 && r.tov.outOfBounds === 1 && r.tov.boxHasTOV && r.tov.boxRowTov
+    && r.tov.steal === 1 && r.tov.shotClock === 1 && r.tov.pickedUpCross === 0 && r.tov.outOfBounds === 1 && r.tov.boxHasTOV && r.tov.boxRowTov
     && !errs.length;
   return { ok, detail: [`choice ${r.choice} -> picked ${r.picked}; next choice ${r.next}`, 'effects ' + JSON.stringify(r.fx), 'wrong answer ' + JSON.stringify(r.wrong), 'replay ' + JSON.stringify(r.replay), 'Barakah Run ' + JSON.stringify(r.run), 'turnovers ' + JSON.stringify(r.tov), ...errs] };
 };
@@ -774,6 +795,17 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
       const good = hostPick === 'sabr' && hostSeen === 'sabr' && guestOpts && guestOpts.length === 3 && onHost === guestOpts[2] && onGuest === onHost;
       log.push(`noor: host picked ${hostPick} (guest sees ${hostSeen}); guest offered ${guestOpts && guestOpts.join(',')}, picked card 3 -> host applied ${onHost}, guest sees ${onGuest}`);
       ok = ok && good;
+    }
+    if (noor && game === games[0]) {              // v8.6.3: the guest sees a hot spot's value (+2) and the pick-up pivot
+      await H.evaluate(() => { M.cmdHook = q => { zeroCmd(q.cmd); return true; }; const g = M.players.find(q => q.human === 1), h = attackHoop(g.team);
+        M.phase = 'live'; giveBall(g, 'steal'); M.possTeam = g.team; M.inb = null; g.pick = { x: g.x, z: g.z, t: M.time };
+        M.hot = { x: COURT.L - (h.x + h.dir * 260), z: 350, t: 9, m: 1, v: 1 }; });
+      await sleep(900);
+      const host = await H.evaluate(() => ({ v: M.hot && M.hot.v, pick: !!M.players.find(q => q.human === 1).pick }));
+      const guest = await G.evaluate(() => { const g = M.players.find(q => q.human === 1); return { v: M.hot && M.hot.v, m: M.hot && M.hot.m, pick: !!(g && g.pick) }; });
+      await H.evaluate(() => { M.cmdHook = null; M.hot = null; for (const q of M.players) q.pick = null; });
+      log.push(`hot spot +2 and pick-up: host ${JSON.stringify(host)}, guest ${JSON.stringify(guest)}`);
+      ok = ok && host.v === 2 && guest.v === 2 && guest.m === 1 && host.pick && guest.pick;
     }
     if (dropP2P && game === games[0] && p2p) {
       await H.evaluate(() => P2P.close('test')); await sleep(2500);
@@ -831,6 +863,90 @@ T['mobile'] = async ({ browser, base }) => {
     for (const e of errs) detail.push('   pageerror ' + e);
   }
   return { ok, detail };
+};
+
+// v8.6.3: hot spots (where they appear, +1/+2, the guest sees the value), CPU spot awareness, the CPU's
+// game clock, and the off-the-glass rule
+T['v863'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'v863');
+  const r = await p.evaluate(() => {
+    const out = {}, half = x => x < COURT.L / 2 ? 0 : 1;
+    const cpuGame = (i, len = 60) => { newMatch(TEAMS[i % 8], TEAMS[(i + 3) % 8], { humans: [], fmt: { format: 'quarters', len } }); for (let n = 0; n < 2000 && M.phase !== 'live'; n++) updateMatch(STEP); };
+    // (1) where spots appear: only with a team holding the ball live, on its attacking half, off the sidelines
+    { let n = 0, bad = 0, prev = null; const why = [];
+      for (let g = 0; g < 3; g++) { window.__seed(300 + g); cpuGame(g, 90);
+        for (let k = 0; k < 60 * 60 * 8 && M.phase !== 'over'; k++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title';
+          if (M.hot && M.hot !== prev && M.hot.m) { n++; const o = ball.owner, s = M.hot;
+            const okk = o && M.possTeam === o.team && half(s.x) === half(attackHoop(o.team).x) && s.z >= 60 && s.z <= COURT.D - 60 && Math.abs(s.x - COURT.L / 2) >= 20;
+            if (!okk) { bad++; why.push([o ? o.team : -1, M.possTeam, Math.round(s.x), Math.round(s.z)]); } }
+          prev = M.hot; } }
+      out.spawn = { n, bad, why: why.slice(0, 3) }; }
+    // a dead ball: no spawn until someone has it live
+    { cpuGame(1); M.hot = null; M.hotCd = 0; M.phase = 'live'; ball.owner = null; ball.state = 'loose'; M.possTeam = -1; updateHot(STEP); out.deadNoSpawn = M.hot === null;
+      giveBall(M.players[0], 'steal'); M.possTeam = M.players[0].team; M.inb = null; updateHot(STEP); out.liveSpawns = !!(M.hot && M.hot.m); }
+    // (2) value follows the shooter: +1 on his attacking half, +2 from his own back half; mini-game spots stay +1; dunks get nothing
+    { cpuGame(2); const a = M.players[0], h = attackHoop(a.team);
+      M.hot = { x: h.x + h.dir * 260, z: 350, t: 9, m: 1, v: 1 }; place(a, M.hot.x, M.hot.z); const front = hotValue(a);
+      M.hot = { x: COURT.L - (h.x + h.dir * 260), z: 350, t: 9, m: 1, v: 1 }; place(a, M.hot.x, M.hot.z); const backV = hotValue(a);
+      M.hot = { x: COURT.L - (h.x + h.dir * 260), z: 350, t: 9 }; const mini = hotValue(a);
+      const score = (hot, dunk) => { const t = a.team, s0 = M.teams[t].score; M.phase = 'live'; ball.shot = { hoop: h, team: t, pts: 2, hot, dunk, shooter: a }; onScore(h); return M.teams[t].score - s0; };
+      out.value = { front, back: backV, mini, made2plus2: score(2, false), dunkNoBonus: score(2, true) };
+      M.hot = { x: COURT.L - (h.x + h.dir * 260), z: 350, t: 9, m: 1, v: 1 }; giveBall(a, 'steal'); M.phase = 'live'; updateHot(STEP); out.value.label = M.hot && M.hot.v; }
+    // (3) CPU on a live spot: shoots from it more often; with no spot, its choices don't change at all
+    { const trial = (hot, spot) => { let shoots = 0; const plans = [];
+        for (let i = 0; i < 60; i++) { window.__seed(900 + i); cpuGame(i); const a = M.players[0], h = attackHoop(a.team);
+          for (const q of M.players) if (q !== a) place(q, h.x - h.dir * 300, 640);
+          place(a.opps[0], h.x + h.dir * 110, 300); place(a.opps[1], h.x + h.dir * 90, 420); place(a.mate, h.x + h.dir * 300, 560);
+          giveBall(a, 'steal'); M.trans = null; M.possTeam = a.team; M.inb = null; place(a, h.x + h.dir * 250, 230); a.state = 'free'; M.shotClock = 18; a.holdT = 0.6;
+          M.hot = spot ? { x: a.x, z: a.z, t: 9, m: 1, v: 1 } : null; M.hotAI = null; CPU863.hot = hot;
+          a.ai.thinkHandler(); plans.push(a.ai.plan.type); if (a.ai.plan.type === 'shoot') shoots++; }
+        CPU863.hot = true; return { shoots, plans: plans.join(',') }; };
+      const on = trial(true, true), off = trial(false, true), noSpotOn = trial(true, false), noSpotOff = trial(false, false);
+      out.cpuHot = { shootsWithSpot: on.shoots, shootsIgnoringSpot: off.shoots, noSpotSame: noSpotOn.plans === noSpotOff.plans };
+      // never two possessions in a row
+      M.hotAI = null; let prevOn = false, twice = 0, used = 0; for (let k = 0; k < 200; k++) { M.possN = k; const u = hotUse(0); if (u && prevOn) twice++; if (u) used++; prevOn = u; }
+      out.cpuHot.twiceInARow = twice; out.cpuHot.useShare = used / 200; }
+    // (4) defence closes out harder on a man standing on a live spot
+    { const run = hot => { window.__seed(77); cpuGame(3); const a = M.players[0], h = attackHoop(a.team), d = a.opps[0];
+        giveBall(a, 'steal'); M.possTeam = a.team; M.inb = null; place(a, h.x + h.dir * 250, 250); a.state = 'free'; place(d, h.x + h.dir * 380, 250); place(a.mate, h.x + h.dir * 200, 600); place(a.opps[1], h.x + h.dir * 160, 560);
+        M.hot = { x: a.x, z: a.z, t: 9, m: 1, v: 1 }; CPU863.hot = hot; M.cmdHook = q => { if (q === a) { zeroCmd(q.cmd); return true; } return false; };
+        for (let k = 0; k < 30; k++) updateMatch(STEP); M.cmdHook = null; CPU863.hot = true; return Math.round(Math.min(...a.opps.map(o => dxz(o, a)))); };
+      out.closeout = { withSpot: run(true), without: run(false) }; }
+    // (5) game clock: trailing by 2 with 10 s left gets a shot up; tied still gets one up; leading uses the clock
+    { const scen = (N, clock, diff) => { let up = 0; const at = [], used = [];
+        for (let i = 0; i < N; i++) { window.__seed(4000 + i * 31); cpuGame(i);
+          const t = i % 2, h = attackHoop(t), dir = h.x > COURT.L / 2 ? 1 : -1, O = M.teams[t].players, D = M.teams[1 - t].players;
+          M.quarter = M.fmt.periods; M.clock = clock; M.teams[t].score = 20 + diff; M.teams[1 - t].score = 20;
+          place(O[0], COURT.L / 2 - dir * 40, 300); place(O[1], COURT.L / 2 + dir * 120, 520); place(D[0], COURT.L / 2 + dir * 90, 310); place(D[1], COURT.L / 2 + dir * 220, 470);
+          for (const q of M.players) { q.state = 'free'; q.pick = null; } ball.shot = null; ball.pass = null; giveBall(O[0], 'inbound'); M.phase = 'live'; M.shotClock = scReset();
+          const f0 = O.reduce((a, q) => a + q.stats.fga, 0);
+          for (let n = 0; n < 60 * 60 && M.phase !== 'over' && M.quarter === M.fmt.periods; n++) { const c0 = M.clock, s0 = M.shotClock; updateMatch(STEP);
+            if (O.reduce((a, q) => a + q.stats.fga, 0) > f0) { if (c0 > 0) { up++; at.push(c0); used.push(scReset() - s0); } break; }
+            if (M.clock <= 0 && !M.pendingEnd) break; } }
+        const avg = a => a.length ? +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(1) : null;
+        return { N, up, clockAtShot: avg(at), shotClockUsed: avg(used) }; };
+      out.late = { trail2: scen(20, 10, -2), tied: scen(12, 10, 0), lead4: scen(12, 40, 4) }; }
+    // (6) off the glass only to a teammate trailing the passer
+    { const glass = (ahead, human, N) => { let n = 0;
+        for (let i = 0; i < N; i++) { cpuGame(4); const a = M.players[0], m = a.mate, h = attackHoop(a.team);
+          a.human = human ? 0 : -1; a.cmd.turbo = true; a.turbo = 80; giveBall(a, 'steal'); M.possTeam = a.team;
+          place(a, h.x + h.dir * 250, 330); place(m, h.x + h.dir * (ahead ? 120 : 330), 380);
+          throwAlley(a, m); if (ball.pass && ball.pass.glass) n++; a.human = -1; }
+        return n; };
+      out.glass = { humanAhead: glass(true, true, 5), humanBehind: glass(false, true, 5), cpuAhead: glass(true, false, 300), cpuBehind: glass(false, false, 300) }; }
+    return out;
+  });
+  await ctx.close();
+  const v = r.value, L = r.late, G = r.glass, c = r.cpuHot;
+  const ok = r.spawn.n > 10 && r.spawn.bad === 0 && r.deadNoSpawn && r.liveSpawns
+    && v.front === 1 && v.back === 2 && v.mini === 1 && v.made2plus2 === 4 && v.dunkNoBonus === 2 && v.label === 2
+    && c.shootsWithSpot > c.shootsIgnoringSpot && c.noSpotSame && c.twiceInARow === 0 && c.useShare > 0.2 && c.useShare <= 0.5
+    && r.closeout.withSpot < r.closeout.without
+    && L.trail2.up >= 19 && L.tied.up >= 11 && L.lead4.shotClockUsed >= 6   // leading late: at least 6 of the 15-second shot clock (about 2 before 8.6.3)
+    && G.humanAhead === 0 && G.humanBehind === 5 && G.cpuAhead === 0 && G.cpuBehind > 10 && G.cpuBehind < 60
+    && !errs.length;
+  return { ok, detail: ['spots ' + JSON.stringify(r.spawn) + ` dead ball: ${r.deadNoSpawn ? 'waits' : 'SPAWNED'}, then ${r.liveSpawns ? 'spawns' : 'none'}`, 'value ' + JSON.stringify(v),
+    'CPU spot awareness ' + JSON.stringify(c), 'closeout distance ' + JSON.stringify(r.closeout), 'late game ' + JSON.stringify(L), 'off the glass ' + JSON.stringify(G), ...errs] };
 };
 
 T['adaptive-res'] = async ({ browser, base }) => {

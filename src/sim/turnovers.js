@@ -2,8 +2,8 @@
 // A turnover is charged to the player who lost the ball:
 //   - a steal against you (from your hands, or your pass picked off)
 //   - a shot-clock violation (the holder, or the last offensive player to touch it)
-//   - a double dribble (the game has no separate travelling call)
 //   - an out-of-bounds the offense caused (last touch was the team in possession)
+// (v8.6.3: double dribbles are gone from the game, so they no longer appear here.)
 // Charges are not counted here (offensive fouls), matching the v8.6.1 brief; the older composure
 // counter p.tov is left as it was.
 function addTov(p) { if (p && p.stats) p.stats.tov = (p.stats.tov || 0) + 1; }
@@ -28,13 +28,6 @@ function addTov(p) { if (p && p.stats) p.stats.tov = (p.stats.tov || 0) + 1; }
     const lt = ball.lastTouch, o = ball.owner || (lt && lt.team === M.possTeam ? lt : null);
     addTov(o);
     return _scv.apply(this, arguments);
-  };
-  const _dd = doubleDribble;
-  doubleDribble = function (p) {
-    const was = !!(p && p.pick && M.phase === 'live');
-    const r = _dd.apply(this, arguments);
-    if (was && !p.pick) addTov(p);
-    return r;
   };
   const _wd = watchdog;
   watchdog = function () {
