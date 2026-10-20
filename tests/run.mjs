@@ -24,13 +24,17 @@
 //                all five brothers -> hub; body builds sum to zero; CPU stages have 2/3/2 strength tiers
 //   online-loop  loopback transport: lobby, 7 game types (HORSE with the HAQ word, Around the World, King of the Court), back to lobby, direct (P2P) link + fallback,
 //                v8.6.1: a Noor power-up pick on the host and on the guest (host authoritative, effect mirrored)
-//                v8.6.3: the guest sees a hot spot's +2 value and the pick-up pivot
+//                v8.6.3: the guest sees a hot spot's +2 value and the pick-up pivot; v8.6.5: a default game is 2 halves on both
 //   online-room  claude.ai room adapter (faked locally): lobby -> game -> lobby
 //   online-fb    Firebase adapter (fake SDK): lobby -> game -> lobby
 //   noor         v8.6.1 Noor power-ups: choice of 3 (least recently used), each of the 6 applies and expires,
 //                a wrong answer gives nothing, Barakah Run stacking; turnovers by cause and the TOV column
 //   mobile       iPhone landscape/portrait layout, touch controls, the Noor choice screen (fits; tap picks), no errors
 //                plus the v8.6.2 phone text audit (tests/phone-audit.mjs) at iPhone landscape and 667x300
+//   formats      v8.6.5: the default game is 2 halves of 2:00 (label, halftime, end, shot clock, overtime); career and
+//                practice keep 4 quarters; explicit formats and a picked 4 quarters are unchanged
+//   tomahawk     v8.6.5: Classic matches the 8.6.4 recording (tests/fixtures/tomahawk-classic.json); smooth, power,
+//                float: same dunk length and slam frame, finite, back to the normal pose; replays; the Dunk lab
 //   v863         hot spots spawn only on the attacking half of a team holding the ball live, +1/+2 follows the
 //                shooter (dunks and mini-game spots unchanged); CPU uses a live spot (at most every other
 //                possession), closes out on it, and is unchanged with no spot; late game (trailing gets a shot
@@ -42,6 +46,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { FAKE_FIREBASE_APP, FAKE_FIREBASE_DB, FAKE_ROOM_INIT } from './fakes.js';
 import { PHONES, auditPhone, MIN_CSS_PX } from './phone-audit.mjs';
+import { TOMAHAWK_REC } from './tomahawk-rec.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -776,6 +781,10 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
     const cust = custom ? await G.evaluate(() => [M.teamDefs[0].name, M.players.map(q => q.def.name).join('/')]) : null;
     if (cust) log.push(`${game}: guest sees ${cust[0]} (${cust[1]})`);
     const good = st.screen === 'netplay' && st.players === hs.players && st.players >= 2 && hs.screen === 'play' && (game !== 'horse' || word === 'HAQ/6') && (!cust || (cust[0] === 'Masjid Test Host' && cust[1].includes('Zayd')));
+    if (game === 'vs' && !custom && !query.includes('room=c')) {   // v8.6.5: a default hosted game is 2 halves, and the guest sees the same
+      const hf = await H.evaluate(() => [M.fmt.format, M.fmt.periods, M.fmt.len, periodLabel(1)].join('/')), gf = await G.evaluate(() => [M.fmt.format, M.fmt.periods, M.fmt.len, periodLabel(1)].join('/'));
+      log.push(`format: host ${hf}, guest ${gf}`); ok = ok && hf === 'halves/2/120/1ST HALF' && gf === hf;
+    }
     if (noor && game === games[0]) {              // v8.6.1: a Noor pick on each side; the host stays authoritative
       await H.evaluate(() => { M.introT = 0; const me = M.players.find(q => q.human === 0); openTrivia(me); answerTrivia(Game.trivia.order.indexOf(0)); Game.trivia.res = 1.7; });
       await H.waitForFunction(() => Game.trivia && Game.trivia.pick, null, { timeout: 5000 }).catch(() => {});
@@ -947,6 +956,87 @@ T['v863'] = async ({ browser, base }) => {
     && !errs.length;
   return { ok, detail: ['spots ' + JSON.stringify(r.spawn) + ` dead ball: ${r.deadNoSpawn ? 'waits' : 'SPAWNED'}, then ${r.liveSpawns ? 'spawns' : 'none'}`, 'value ' + JSON.stringify(v),
     'CPU spot awareness ' + JSON.stringify(c), 'closeout distance ' + JSON.stringify(r.closeout), 'late game ' + JSON.stringify(L), 'off the glass ' + JSON.stringify(G), ...errs] };
+};
+
+// v8.6.5: the default game is 2 halves of 2:00; career and practice keep 4 quarters; explicit formats unchanged
+T['formats'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'formats');
+  const r = await p.evaluate(() => {
+    const out = {};
+    out.settings = [SETTINGS.format, SETTINGS.periodLen, SET_ITEMS.find(s => s.label === 'Format').get(), Lobby.defaults().format].join('/');
+    // a new default game: label, halftime, end, shot clock
+    window.__seed(77); newMatch(TEAMS[0], TEAMS[1], { humans: [] });
+    const F = M.fmt; out.fmt = [F.format, F.periods, F.len, F.sc, F.ot].join('/');
+    const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540; const g = cv.getContext('2d'), seen = []; const ft = g.fillText.bind(g); g.fillText = (t, ...a) => { seen.push(String(t)); return ft(t, ...a); };
+    drawHUD(g); out.label = seen.includes('1ST HALF');
+    let halftime = 0, minSc = 99, qMax = 1, n = 0, label2 = null;
+    for (; n < 60 * 60 * 12 && M.phase !== 'over'; n++) {
+      updateMatch(STEP); if (M.phase === 'live') minSc = Math.min(minSc, M.shotClock);
+      if (Game.screen === 'halftime') { halftime++; Game.screen = 'title'; }
+      if (M.breakText === 'HALFTIME' && M.phase === 'break') out.breakText = 'HALFTIME';
+      if (M.quarter === 2 && !label2) label2 = periodLabel(2);
+      qMax = Math.max(qMax, M.quarter);
+    }
+    out.game = { over: M.phase === 'over', halftime, quarters: qMax, label2, shotClockRan: minSc < 23, winner: M.teams[0].score !== M.teams[1].score };
+    // overtime: tied at the end of the second half
+    window.__seed(78); newMatch(TEAMS[2], TEAMS[3], { humans: [] }); for (let i = 0; i < 2000 && M.phase !== 'live'; i++) updateMatch(STEP);
+    M.quarter = 2; M.clock = 0.5; M.teams[0].score = M.teams[1].score = 30; ball.shot = null;
+    let k = 0; for (; k < 60 * 30 && M.quarter < 3; k++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; }
+    for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
+    out.ot = [M.quarter, periodLabel(M.quarter), Math.round(M.clock), M.fmt.sc].join('/');
+    // career and practice keep 4 quarters; explicit formats are untouched
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], career: true }); out.career = M.fmt.format + '/' + M.fmt.periods;
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], practice: 'ft' }); out.practice = M.fmt.format + '/' + M.fmt.periods;
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 60 } }); out.explicit = [M.fmt.format, M.fmt.periods, M.fmt.len, M.fmt.sc].join('/');
+    SETTINGS.format = 'quarters'; newMatch(TEAMS[0], TEAMS[1], { humans: [] }); out.picked = [M.fmt.format, M.fmt.periods, periodLabel(1)].join('/'); SETTINGS.format = 'halves';
+    return out;
+  });
+  await ctx.close();
+  const g = r.game;
+  const ok = r.settings === 'halves/120/2 Halves/halves' && r.fmt === 'halves/2/120/24/60' && r.label && r.breakText === 'HALFTIME'
+    && g.over && g.halftime === 1 && g.label2 === '2ND HALF' && g.shotClockRan && g.winner && (g.quarters === 2 || g.quarters > 2)
+    && r.ot.startsWith('3/OVERTIME/') && r.career === 'quarters/4' && r.practice === 'quarters/4' && r.explicit === 'quarters/4/60/15' && r.picked === 'quarters/4/QUARTER 1' && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
+// v8.6.5: tomahawk styles. Classic matches the recording made from 8.6.4 exactly; every style runs the same dunk
+// (same length, slam on the same frame), stays finite, and lands back in the normal pose. Replays carry the pose.
+T['tomahawk'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'tomahawk');
+  const ref = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/fixtures/tomahawk-classic.json'), 'utf8'));
+  const runs = {};
+  for (const st of ['classic', 'smooth', 'power', 'float']) runs[st] = await p.evaluate(`${TOMAHAWK_REC}(${JSON.stringify(st)})`);
+  const extra = await p.evaluate(() => {
+    const out = { replay: {}, lab: {} };
+    for (const st of ['smooth', 'power', 'float']) {                  // the replay buffer holds exactly the pose that was drawn
+      SETTINGS.tomahawk = st; window.__seed(5); newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 60 } });
+      for (let n = 0; n < 2000 && M.phase !== 'live'; n++) updateMatch(STEP);
+      const q = M.players[0]; giveBall(q, 'steal'); place(q, attackHoop(q.team).x + attackHoop(q.team).dir * 140, 350); q.state = 'free';
+      M.cmdHook = x => { zeroCmd(x.cmd); return true; }; startDunk(q, { D: 0.9 }); q.act.type = 'tomahawk';
+      let same = 0, n = 0; while (q.state === 'dunk' && n < 300) { updateMatch(STEP); n++; const f = Replay.buf[Replay.buf.length - 1].ps[0]; if (JOINTS.every((k, i) => f[7 + i] === q.j[k].a)) same++; }
+      M.cmdHook = null; out.replay[st] = same === n && n > 30;
+    }
+    SETTINGS.tomahawk = 'classic';
+    // the Dunk lab: under Options → Extras; each dunk slams and he's back on the line; nothing is earned
+    const ex = TITLE_MENU().find(e => e.label === 'Options').sub.find(e => e.label === 'Extras');
+    out.lab.inMenu = !!ex.sub.find(e => e.label === 'Dunk lab');
+    const a0 = JSON.stringify(Ach.load());
+    startDunkLab(); for (let i = 0; i < 20; i++) updateMatch(STEP);
+    const me = dlMe(), h = attackHoop(me.team), res = [];
+    for (const st of ['classic', 'smooth', 'power', 'float']) { SETTINGS.tomahawk = st; dlDunk(); let slam = false; for (let i = 0; i < 200; i++) { updateMatch(STEP); if (me.act && me.act.slammed) slam = true; } res.push(slam && Math.round(dxz(me, h)) === 170 && ball.owner === me); }
+    out.lab.dunks = res; out.lab.noAch = JSON.stringify(Ach.load()) === a0; out.lab.style = SETTINGS.tomahawk;
+    setTomahawk(1); out.lab.cycled = SETTINGS.tomahawk;
+    goTitle(); out.lab.off = !DL.on && FX.scale === 1; SETTINGS.tomahawk = 'classic';
+    return out;
+  });
+  await ctx.close();
+  const c = runs.classic, same = JSON.stringify(c) === JSON.stringify(ref);
+  const styles = ['smooth', 'power', 'float'].map(st => { const x = runs[st]; return { st, ok: x.finite && x.dunkFrames === c.dunkFrames && x.slamAt === c.slamAt && x.backToFree && JSON.stringify(x.rest) === JSON.stringify(c.rest), differs: JSON.stringify(x.frames) !== JSON.stringify(c.frames) }; });
+  const L = extra.lab;
+  const ok = same && styles.every(s => s.ok && s.differs) && Object.values(extra.replay).every(Boolean)
+    && L.inMenu && L.dunks.every(Boolean) && L.noAch && L.cycled === 'classic' && L.off && !errs.length;
+  return { ok, detail: [`classic identical to the 8.6.4 recording: ${same} (dunk ${c.dunkFrames} frames, slam on frame ${c.slamAt})`,
+    'styles ' + JSON.stringify(styles), 'replay keeps the pose ' + JSON.stringify(extra.replay), 'dunk lab ' + JSON.stringify(L), ...errs] };
 };
 
 T['adaptive-res'] = async ({ browser, base }) => {

@@ -93,6 +93,7 @@
     "sim/noor-powers.js",
     "screens/phone-pass.js",
     "sim/v863-cpu.js",
+    "sim/tomahawk-styles.js",
     "boot.js"
   ]
 }

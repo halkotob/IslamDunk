@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '8.6.4';
+const VERSION = '8.6.5';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -90,7 +90,8 @@ const RIM_Y = 140, RIM_R = 13, BALL_R = 8;
 const GRAV = 980, THREE_R = 318, APEX_T = 380 / GRAV;
 const JUMP_VY = 380;
 const HOOP_DEFS = [{ x: 72, z: 350, dir: 1 }, { x: 1248, z: 350, dir: -1 }];
-const SETTINGS = { difficulty: 'medium', rubber: true, format: 'quarters', periodLen: 120, sound: true, fun: { bigHead: false, uncle: false, lowGrav: false } };
+const SETTINGS = { difficulty: 'medium', rubber: true, format: 'halves', periodLen: 120,   // v8.6.5: the default game is 2 halves of 2:00 (shot clock 24, from SHOT_CLOCK_FOR[120])
+  sound: true, fun: { bigHead: false, uncle: false, lowGrav: false } };
 // ---- game format: periods, period length and the shot clock tied to it
 const PERIOD_OPTS = [30, 45, 60, 120];
 const SHOT_CLOCK_FOR = { 30: 0, 45: 0, 60: 15, 120: 24 };      // 0 = no shot clock
@@ -1823,7 +1824,7 @@ function notifyDunk(dk) {
 }
 
 // ========================================================= MATCH / RULES
-const M = { players: [], teams: null, hifzQueue: [], phase: 'tip', time: 0, possTeam: -1, shotClock: 24, clock: 120, quarter: 1, fmt: { format: 'quarters', len: 120, sc: 24, periods: 4, ot: 60 } };
+const M = { players: [], teams: null, hifzQueue: [], phase: 'tip', time: 0, possTeam: -1, shotClock: 24, clock: 120, quarter: 1, fmt: { format: 'halves', len: 120, sc: 24, periods: 2, ot: 60 } };
 const cam = { x: 180 };
 
 function newMatch(tA, tB, opts = {}) {
@@ -1854,7 +1855,10 @@ function newMatch(tA, tB, opts = {}) {
 }
 // Format for this match: the host's (or local) settings; attract/practice use fixed ones.
 function makeFmt(opts) {
-  const f = opts.fmt || (opts.attract ? { format: 'quarters', len: 60, sc: 24 } : { format: SETTINGS.format, len: SETTINGS.periodLen, target: SETTINGS.target });
+  // v8.6.5: career games and practice (gym drills, mini games) keep 4 quarters; they used to follow the Settings
+  // format, whose default was quarters until the default game became 2 halves. Their period length still follows Settings.
+  const f = opts.fmt || (opts.attract ? { format: 'quarters', len: 60, sc: 24 } : (opts.career || opts.practice) ? { format: 'quarters', len: SETTINGS.periodLen, target: SETTINGS.target }
+    : { format: SETTINGS.format, len: SETTINGS.periodLen, target: SETTINGS.target });
   const first21 = f.format === 'first21', len = f.len || 120;
   const sc = f.sc != null ? f.sc : first21 ? 0 : (SHOT_CLOCK_FOR[len] != null ? SHOT_CLOCK_FOR[len] : 24);
   return { format: f.format, len, first21, target: clamp(f.target | 0 || 21, 3, 99), sc, periods: first21 ? 1 : f.format === 'halves' ? 2 : 4, ot: Math.max(30, len / 2), shortGame: !first21 && len <= 45 };
@@ -19753,6 +19757,159 @@ function threeSpot(p) {
   endTimeout = function (play) {
     const L = !M.toHuman && M.toTeam != null ? lateMode(M.toTeam, true) : null;
     return _et.call(this, CPU863.noPlay && L && (L.mode === 'urgent' || L.mode === 'horn') ? 'run' : play);
+  };
+}
+// ================================================= v8.6.5: TOMAHAWK ANIMATION STYLES (Settings → Game → Tomahawk style)
+// Cosmetic only. The dunk's path, timing, slam moment, hitboxes and scoring are untouched; only the pose
+// targets the spring rig chases change.
+// Classic (default) is the pose from animation.js + v86-play.js, unchanged: hard targets that switch at
+// u = 0.12, 0.56 and 0.8 (u = dunk progress, the slam is at 0.8). Those jumps are what reads as rough:
+// at each one every joint target moves at once and, at 0.56, the stiffness jumps from 1500 to 2600.
+// The other styles are a continuous function of u: keyframes, eased with smoothstep between them, with
+// the spring stiffness (K) and damping (D) eased too so a phase change never kicks the rig. Each keyframe
+// is a full pose, so nothing stale can leak through. All angles stay inside ranges used elsewhere.
+SETTINGS.tomahawk = 'classic';
+const TOMAHAWK_STYLES = ['classic', 'smooth', 'power', 'float'];
+const TOMAHAWK_TXT = { classic: 'Classic', smooth: 'Smooth', power: 'Power', float: 'Float' };
+(() => { try { const v = localStorage.getItem('islamdunk.tomahawk'); if (TOMAHAWK_STYLES.includes(v)) SETTINGS.tomahawk = v; } catch (e) {} })();
+// the classic poses (same numbers as the classic layers)
+const TK_GATHER = { nk: 1.1, fk: 1.1, nh: 0.6, fh: 0.6, ns: 1.0, fs: 1.0, ne: 1.4, fe: 1.4, lean: 0.3, K: 1100, D: 34 };
+const TK_COCK = { ns: 3.75, ne: 2.35, fs: 1.3, fe: 0.7, lean: -0.2, nh: 1.45, nk: 2.0, fh: -0.1, fk: 0.5, K: 1500, D: 34 };
+const TK_SLAM = { ns: 1.9, ne: 0.15, fs: 1.6, fe: 0.5, lean: 0.34, nh: 0.9, nk: 1.2, fh: 0.2, fk: 0.6, K: 2600, D: 40 };
+const TK_FOLLOW = { ns: 2.2, fs: 2.0, ne: 0.15, fe: 0.15, nk: 0.8, fk: 0.8, nh: 0.3, fh: 0.2, lean: 0.1, K: 1100, D: 34 };
+const tkp = (base, o) => Object.assign({}, base, o);
+// [u, pose] keyframes; between two keyframes the pose eases with smoothstep, so two equal poses make a hold
+const TOMAHAWK_KEYS = {
+  // the same poses as classic, each change blended over about 0.08 of the dunk; damping near critical
+  smooth: [
+    [0, tkp(TK_GATHER, { D: 52 })], [0.08, tkp(TK_GATHER, { D: 52 })],
+    [0.16, tkp(TK_COCK, { D: 60 })], [0.52, tkp(TK_COCK, { D: 60 })],
+    [0.6, tkp(TK_SLAM, { K: 2200, D: 74 })], [0.76, tkp(TK_SLAM, { K: 2200, D: 74 })],
+    [0.84, tkp(TK_FOLLOW, { D: 52 })], [1, tkp(TK_FOLLOW, { D: 52 })]
+  ],
+  // a longer hold at the top (cocked further, back arched, knee up), a fast whip and a hard arm snap into
+  // the slam, a hang on the rim, then a slow release
+  power: [
+    [0, tkp(TK_GATHER, { D: 50 })], [0.06, tkp(TK_GATHER, { D: 50 })],
+    [0.16, { ns: 3.75, ne: 2.45, fs: 1.15, fe: 0.8, lean: -0.3, nh: 1.55, nk: 2.1, fh: -0.15, fk: 0.45, K: 1700, D: 62 }],
+    [0.6, { ns: 3.72, ne: 2.5, fs: 1.1, fe: 0.85, lean: -0.32, nh: 1.6, nk: 2.15, fh: -0.15, fk: 0.45, K: 1700, D: 62 }],
+    [0.68, { ns: 1.6, ne: 0.08, fs: 1.7, fe: 0.4, lean: 0.42, nh: 1.0, nk: 1.3, fh: 0.25, fk: 0.7, K: 3000, D: 80 }],
+    [0.8, { ns: 1.6, ne: 0.08, fs: 1.7, fe: 0.4, lean: 0.42, nh: 1.0, nk: 1.3, fh: 0.25, fk: 0.7, K: 3000, D: 80 }],
+    [0.86, { ns: 3.05, ne: 0.15, fs: 2.4, fe: 0.3, lean: 0.05, nh: 0.3, nk: 0.5, fh: -0.1, fk: 0.35, K: 1400, D: 60 }],   // hanging on the rim
+    [0.94, { ns: 3.05, ne: 0.15, fs: 2.4, fe: 0.3, lean: 0.05, nh: 0.3, nk: 0.5, fh: -0.1, fk: 0.35, K: 1400, D: 60 }],
+    [1, tkp(TK_FOLLOW, { K: 800, D: 50 })]
+  ],
+  // a lighter, longer glide: the arm sweeps back slowly, a softer slam, a long follow-through, legs trailing
+  float: [
+    [0, tkp(TK_GATHER, { K: 900, D: 48 })], [0.1, tkp(TK_GATHER, { K: 900, D: 48 })],
+    [0.42, { ns: 3.55, ne: 2.05, fs: 1.45, fe: 0.6, lean: -0.12, nh: 1.15, nk: 1.6, fh: -0.25, fk: 0.9, K: 1000, D: 50 }],
+    [0.56, { ns: 3.6, ne: 2.1, fs: 1.45, fe: 0.6, lean: -0.14, nh: 1.1, nk: 1.5, fh: -0.3, fk: 1.0, K: 1000, D: 50 }],
+    [0.72, { ns: 2.1, ne: 0.3, fs: 1.7, fe: 0.5, lean: 0.25, nh: 0.7, nk: 1.0, fh: -0.2, fk: 1.0, K: 1600, D: 60 }],
+    [0.8, { ns: 2.0, ne: 0.25, fs: 1.75, fe: 0.5, lean: 0.27, nh: 0.65, nk: 0.95, fh: -0.25, fk: 1.05, K: 1600, D: 60 }],
+    [1, { ns: 2.3, ne: 0.2, fs: 2.1, fe: 0.2, lean: 0.06, nh: 0.25, nk: 0.9, fh: -0.35, fk: 1.2, K: 900, D: 46 }]   // legs trailing
+  ]
+};
+const TK_JOINTS = ['nh', 'nk', 'fh', 'fk', 'ns', 'ne', 'fs', 'fe', 'lean', 'K', 'D'];
+const smoothstep01 = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
+function tomahawkPose(style, u) {                       // a full pose (all joints, K and D) for dunk progress u
+  const keys = TOMAHAWK_KEYS[style]; if (!keys) return null;
+  u = clamp(u, 0, 1);
+  let i = 0; while (i < keys.length - 2 && u > keys[i + 1][0]) i++;
+  const [u0, A] = keys[i], [u1, B] = keys[i + 1], f = smoothstep01((u - u0) / Math.max(1e-6, u1 - u0)), out = {};
+  for (const k of TK_JOINTS) out[k] = lerp(A[k], B[k], f);
+  return out;
+}
+{
+  const _pt = poseTargets;
+  poseTargets = function (p, sp) {
+    const t = _pt.apply(this, arguments);
+    if (SETTINGS.tomahawk !== 'classic' && p.state === 'dunk' && p.act && p.act.type === 'tomahawk') {
+      const q = tomahawkPose(SETTINGS.tomahawk, p.act.s);
+      if (q) { Object.assign(t, q); delete t.direct; }
+    }
+    return t;
+  };
+  const i = SET_ITEMS.findIndex(s => s.label === 'Team control');
+  SET_ITEMS.splice(i + 1, 0, { label: 'Tomahawk style', get: () => TOMAHAWK_TXT[SETTINGS.tomahawk], step: d => setTomahawk(d) });
+  const G = SET_GROUPS.find(g => g.name === 'Game'); if (G && G.labels && !G.labels.includes('Tomahawk style')) G.labels.push('Tomahawk style');
+}
+function setTomahawk(d) {
+  const n = TOMAHAWK_STYLES.length;
+  SETTINGS.tomahawk = TOMAHAWK_STYLES[(TOMAHAWK_STYLES.indexOf(SETTINGS.tomahawk) + (d || 1) + n) % n];
+  try { localStorage.setItem('islamdunk.tomahawk', SETTINGS.tomahawk); } catch (e) {}
+}
+
+// ---------------------------------------------------------------- Dunk lab (Options → Extras → Dunk lab)
+// A review tool: the player stands at the free-throw line facing the hoop. SHOOT (K) runs a tomahawk and
+// resets; PASS (J) switches the style in place; MOVE (H) toggles slow motion (0.3x). Pause → Quit leaves.
+const DL = { on: false, slow: false, n: 0, prev: {}, live: false };
+function dlMe() { return M.players && M.players.find(q => q.human === 0); }
+function dlReset() {
+  const me = dlMe(); if (!me) return;
+  const h = attackHoop(me.team);
+  M.phase = 'live'; M.inb = null; M.check = null; M.bc = null; M.nextInbound = null; M.sideOut = null; M.ft = null; M.pendingEnd = false;
+  for (const q of M.players) { q.pick = null; if (q !== me) place(q, h.x + h.dir * 760, 640); }   // the others wait at the far end
+  me.act = null;
+  place(me, h.x + h.dir * 170, h.z); me.state = 'free'; me.y = 0; me.vx = me.vz = me.vy = 0; me.face = sgn(h.x - me.x); me.turbo = 100;
+  Object.assign(ball, { shot: null, pass: null, vx: 0, vy: 0, vz: 0, grabLock: 0 }); giveBall(me, 'inbound');
+  M.shotClock = scReset(); M.teams[0].score = M.teams[1].score = 0;          // the game never ends
+}
+function dlDunk() {
+  const me = dlMe(); if (!me || me.state === 'dunk') return;
+  dlReset(); startDunk(me, {}); me.act.type = 'tomahawk'; me.act.big = true; DL.n++; DL.live = true;
+}
+function startDunkLab() {
+  goTitle(); Game.paused = false; Game.trivia = null;
+  newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'first21', target: 99, len: 120 } });
+  for (const q of M.players) q.hifzUsed = true;
+  M.introT = 0; Game.screen = 'play'; DL.on = true; DL.slow = false; DL.n = 0; DL.prev = {}; M.cmdHook = dlCmd; dlReset();
+}
+function dlCmd(q) {
+  if (!DL.on) return false;
+  const me = dlMe();
+  if (q !== me) { zeroCmd(q.cmd); return true; }
+  humanCmd(q.human, q.cmd); const c = q.cmd, edge = k => !!c[k] && !DL.prev[k];
+  if (edge('b')) dlDunk();
+  if (edge('a')) { setTomahawk(1); SFX.blip && SFX.blip(); }
+  if (edge('x')) DL.slow = !DL.slow;
+  DL.prev = { a: !!c.a, b: !!c.b, x: !!c.x };
+  zeroCmd(c); M.shotClock = scReset();
+  return true;
+}
+{
+  for (const k of ['unlock', 'add', 'addUnique']) { const f = Ach[k]; if (f) Ach[k] = function () { if (DL.on) return; return f.apply(this, arguments); }; }   // a review tool earns nothing
+  const _um = updateMatch;
+  updateMatch = function () {                                        // back on the line once he has landed (whatever the made basket set up)
+    const r = _um.apply(this, arguments), me = DL.on && dlMe();
+    if (me && DL.live && me.state !== 'dunk' && me.state !== 'hang' && me.state !== 'jump' && me.y <= 0) { DL.live = false; dlReset(); }
+    return r;
+  };
+  const _gt = goTitle; goTitle = function () { if (DL.on) { DL.on = false; M.cmdHook = null; FX.scale = 1; FX.slowT = 0; } return _gt.apply(this, arguments); };
+  const _gu = gameUpdate;
+  gameUpdate = function (rdt) {
+    if (DL.on && Game.screen === 'play' && M.players) { if (M.cmdHook !== dlCmd) M.cmdHook = dlCmd; if (DL.slow) { FX.scale = 0.3; FX.slowT = 0.2; } }
+    return _gu.apply(this, arguments);
+  };
+  const _r = render;
+  render = function (g) {
+    _r(g);
+    if (!DL.on || Game.screen !== 'play' || Game.paused) return;
+    const w = Math.min(560, W - 40), x = W / 2 - w / 2, y = 64, T = Input.touchMode;
+    g.save(); g.fillStyle = 'rgba(8,16,28,0.9)'; roundRect(g, x, y, w, 92, 14); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.6)'; g.lineWidth = 1.5; g.stroke();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `18px ${FONT}`; g.fillText('Dunk lab: ' + TOMAHAWK_TXT[SETTINGS.tomahawk] + ' tomahawk' + (DL.slow ? '  •  0.3x' : ''), x + 16, y + 28);
+    g.fillStyle = IVORY; g.font = `13px ${BODY}`;
+    g.fillText(T ? 'SHOOT: dunk   PASS: next style   MOVE: slow motion' : 'K: dunk   J: next style   H: slow motion   Esc: pause / quit', x + 16, y + 54);
+    uiButton(g, x + 16, y + 62, 110, 24, 'Dunk', () => dlDunk(), true);
+    uiButton(g, x + 136, y + 62, 130, 24, 'Next style', () => setTomahawk(1));
+    uiButton(g, x + 276, y + 62, 130, 24, DL.slow ? 'Normal speed' : 'Slow motion', () => { DL.slow = !DL.slow; });
+    uiButton(g, x + w - 96, y + 62, 80, 24, 'Quit', () => goTitle());
+    g.restore();
+  };
+  const _tm = TITLE_MENU;
+  TITLE_MENU = function () {
+    const menu = _tm(), op = menu.find(e => e.label === 'Options'), ex = op && op.sub && op.sub.find(e => e.label === 'Extras');
+    if (ex && ex.sub && !ex.sub.some(e => e.label === 'Dunk lab')) ex.sub.push({ label: 'Dunk lab', act: () => startDunkLab() });
+    return menu;
   };
 }
 

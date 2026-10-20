@@ -1,5 +1,43 @@
 # Changelog
 
+## 8.6.5: tomahawk animation styles, and the default game is 2 halves of 2:00
+(The 2-halves change was briefed as 8.6.6; 8.6.5 hadn't landed, so both are in this release.)
+
+- **Default format: 2 halves of 2:00** (was 4 quarters of 2:00). The shot clock is unchanged: it comes from the
+  period length (24 s for 2:00). Quick Play, the Settings Format item ("2 Halves") and a new online lobby all
+  start from it; the scoreboard says "1ST HALF" / "2ND HALF", the halftime screen comes after the first half,
+  the box score shows H1 / H2, and overtime is unchanged (60 s). 4 quarters and every period length are still
+  in Settings and the lobby.
+  - **Career and practice keep 4 quarters.** Career games and practice (gym drills, mini games) had no format
+    of their own and followed the Settings format, so they would have become 2 halves. They now use 4
+    quarters, with the period length still from Settings.
+  - Barakah Run, the Daily Scenario, attract mode, the tutorial and every test or mode that passes its own
+    format are unchanged.
+- **Tomahawk style** (Settings → Game): Classic (default), Smooth, Power or Float, saved on this device.
+  Cosmetic only: the dunk's path, timing, slam moment, hitboxes, scoring, effects and online data don't change.
+  - Why the classic one looks rough: its pose targets switch all at once at u = 0.12, 0.56 and 0.8 (u = dunk
+    progress, the slam is at 0.8), and the spring stiffness jumps from 1500 to 2600 at 0.56. Over a seeded
+    dunk the biggest one-frame jump in a joint target is 2.75 rad, and joints reach 95 rad/s. (The two layers
+    don't actually fight between 0.78 and 0.8: the later one sets every joint there, so the step is at 0.8.)
+  - Smooth: the same poses, each change eased over about 0.08 of the dunk, damping near critical. Biggest
+    target jump 0.95 rad, top joint speed 46 rad/s.
+  - Power: a longer, deeper cock at the top, a fast whip and hard arm snap into the slam, a hang on the rim,
+    then a slow release (0.88 rad, 46 rad/s).
+  - Float: a slow sweep back, a softer slam, a long follow-through with the legs trailing (0.31 rad, 37 rad/s).
+  - All three are keyframes eased with smoothstep (stiffness and damping too), always a full pose, and stay
+    inside joint ranges used elsewhere. Replays and highlight clips record the drawn pose, so they match.
+- **Dunk lab** (Options → Extras): the player at the free-throw line facing the hoop. SHOOT (K) runs a
+  tomahawk and puts him back, PASS (J) switches the style in place, MOVE (H) toggles 0.3x slow motion. Nothing
+  is earned there (no achievements, the game never ends).
+- **`npm run review:tomahawk`** renders a 24-frame strip of each style, take-off to landing, camera locked
+  and cropped on the dunker, to `docs/review/img/tomahawk-<style>.png`.
+- **Tests.** New `formats` (default game: "1ST HALF", one halftime, ends, shot clock runs, overtime; career
+  and practice 4 quarters; explicit and picked formats unchanged) and `tomahawk` (Classic identical to a
+  recording made from 8.6.4 at 20 points, `tests/fixtures/tomahawk-classic.json`; each style finite, same
+  length and slam frame, back to the normal pose; replays; the Dunk lab). `online-loop` checks a default hosted
+  game is 2 halves on host and guest. The phone audit visits the Dunk lab. No existing test relied on the old
+  default format; `cpu-parity` is identical to 8.6.4.
+
 ## 8.6.4: a picked-up dribble means standing still
 - After a pump fake ("PICKED UP") the player can't move at all. In 8.6.3 he could still walk around inside
   the pivot ring. Now he stays planted on the spot where he picked it up; the stick only turns him to face

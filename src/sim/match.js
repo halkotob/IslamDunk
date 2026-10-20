@@ -1,5 +1,5 @@
 // ========================================================= MATCH / RULES
-const M = { players: [], teams: null, hifzQueue: [], phase: 'tip', time: 0, possTeam: -1, shotClock: 24, clock: 120, quarter: 1, fmt: { format: 'quarters', len: 120, sc: 24, periods: 4, ot: 60 } };
+const M = { players: [], teams: null, hifzQueue: [], phase: 'tip', time: 0, possTeam: -1, shotClock: 24, clock: 120, quarter: 1, fmt: { format: 'halves', len: 120, sc: 24, periods: 2, ot: 60 } };
 const cam = { x: 180 };
 
 function newMatch(tA, tB, opts = {}) {
@@ -30,7 +30,10 @@ function newMatch(tA, tB, opts = {}) {
 }
 // Format for this match: the host's (or local) settings; attract/practice use fixed ones.
 function makeFmt(opts) {
-  const f = opts.fmt || (opts.attract ? { format: 'quarters', len: 60, sc: 24 } : { format: SETTINGS.format, len: SETTINGS.periodLen, target: SETTINGS.target });
+  // v8.6.5: career games and practice (gym drills, mini games) keep 4 quarters; they used to follow the Settings
+  // format, whose default was quarters until the default game became 2 halves. Their period length still follows Settings.
+  const f = opts.fmt || (opts.attract ? { format: 'quarters', len: 60, sc: 24 } : (opts.career || opts.practice) ? { format: 'quarters', len: SETTINGS.periodLen, target: SETTINGS.target }
+    : { format: SETTINGS.format, len: SETTINGS.periodLen, target: SETTINGS.target });
   const first21 = f.format === 'first21', len = f.len || 120;
   const sc = f.sc != null ? f.sc : first21 ? 0 : (SHOT_CLOCK_FOR[len] != null ? SHOT_CLOCK_FOR[len] : 24);
   return { format: f.format, len, first21, target: clamp(f.target | 0 || 21, 3, 99), sc, periods: first21 ? 1 : f.format === 'halves' ? 2 : 4, ot: Math.max(30, len / 2), shortGame: !first21 && len <= 45 };

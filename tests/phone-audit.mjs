@@ -60,6 +60,7 @@ export const SCREENS = [
   ['teams & players', `goTitle(); openCS(0);`],
   ['barakah run', `goTitle(); openBarakah();`],
   ['daily scenario', `goTitle(); openScenBrief();`],
+  ['dunk lab', `goTitle(); startDunkLab();`],
   ['match HUD', MATCH],
   ['match: noor question', MATCH + ` openTrivia(M.players[0]);`],
   ['match: noor choice', MATCH + ` openTrivia(M.players[0]); answerTrivia(Game.trivia.order.indexOf(0)); Game.trivia.res = 1.79; triviaUpdate(0.05);`],

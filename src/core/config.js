@@ -4,7 +4,7 @@
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '8.6.4';
+const VERSION = '8.6.5';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -22,7 +22,8 @@ const RIM_Y = 140, RIM_R = 13, BALL_R = 8;
 const GRAV = 980, THREE_R = 318, APEX_T = 380 / GRAV;
 const JUMP_VY = 380;
 const HOOP_DEFS = [{ x: 72, z: 350, dir: 1 }, { x: 1248, z: 350, dir: -1 }];
-const SETTINGS = { difficulty: 'medium', rubber: true, format: 'quarters', periodLen: 120, sound: true, fun: { bigHead: false, uncle: false, lowGrav: false } };
+const SETTINGS = { difficulty: 'medium', rubber: true, format: 'halves', periodLen: 120,   // v8.6.5: the default game is 2 halves of 2:00 (shot clock 24, from SHOT_CLOCK_FOR[120])
+  sound: true, fun: { bigHead: false, uncle: false, lowGrav: false } };
 // ---- game format: periods, period length and the shot clock tied to it
 const PERIOD_OPTS = [30, 45, 60, 120];
 const SHOT_CLOCK_FOR = { 30: 0, 45: 0, 60: 15, 120: 24 };      // 0 = no shot clock
