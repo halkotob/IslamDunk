@@ -1,5 +1,39 @@
 # Changelog
 
+## 8.7.0: gamepad support
+Play and navigate with a controller (Gamepad API, standard mapping; other pads are read the same way, best
+effort). The pad presses the same keys a keyboard player would, so every screen, the sim, online play and replays
+see exactly what the keyboard produces; the left stick is analog, like the touch stick.
+
+| Pad | In a game | In menus |
+|---|---|---|
+| Left stick, D-pad | Move (the stick is analog: tilt = speed) | Move the selection (repeats when held) |
+| A (south) | Shoot | Confirm |
+| X (west) | Pass | (as J) |
+| Y (north) | Move / Defend | (as H) |
+| B (east), RT, RB | Turbo: hold to sprint | B: back |
+| LB | Talk, use, enter the musalla (E) | Next tab where Q/E switch tabs |
+| Start / Menu | Pause | Back |
+| View / Select | On-screen picker | On-screen picker |
+
+- **Players.** The first pad is P1 and the second P2, in the order they connect, when a match has two local
+  players; otherwise every pad (and the keyboard) controls P1, including the online guest. Pads can be plugged
+  in and out at any time.
+- **Never trapped.** The View button opens an on-screen picker on any screen: a gold ring moves between the
+  buttons you could tap (stick or D-pad), A taps, B closes it. It opens by itself on the text-entry screens
+  (your name, a team name, a join code), so you can pick letters with the pad; B there leaves without typing.
+  The keyboard path is unchanged.
+- **Prompts.** After pad input, the tutorial steps, How to play (a pad column) and hints read as pad buttons
+  (A, B, X, Y, LB, Start, View); after keyboard input they read as keys again.
+- **Rumble** where the pad supports it (vibrationActuator): dunks, blocks, threes and posters, and the buzzer.
+  Settings → Sound & display → Controller vibration (On by default).
+- Keyboard and touch behave exactly as before. Casual controls, Stride dribble and the other control settings
+  work the same with a pad.
+- **Tests.** New `gamepad` test with a scripted `navigator.getGamepads()`: title -> Quick Play -> a game ->
+  pause -> quit, stick (walk), B (sprint), A (shoot), X (pass), two pads for two players, hot-plug mid-match,
+  trivia and a Noor card, the picker on the join-code screen, rumble on and off, the keyboard alongside. The
+  desktop (Electron) test now checks Chromium's Gamepad API is there and a pad moves the player.
+
 ## 8.6.7: inbound pass, turbo bar, Sh. Saleem, guest Noor
 - **Inbound passes no longer go back to the inbounder.** The inbound pass used to fire while the receiver was still
   running to his spot (250-330 speed in every failure), so it led him, he braked, the ball went loose and the

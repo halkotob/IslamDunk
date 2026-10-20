@@ -53,7 +53,7 @@ const TOUCH_TEXT = {
   'W A S D to walk • E or Enter to talk • Esc back to the gym': 'Stick to walk • TALK to talk', 'GAME LOG (Enter: box score)': 'GAME LOG (tap a game)',
   'GAME (← → to change)': 'GAME', 'PARTNER ← →': 'PARTNER', 'Esc or P pauses. On a phone, use the on-screen stick and buttons.': 'The pause button is top right.'
 };
-const PhoneText = { on: false, cssPerDev: 1 };
+const PhoneText = { on: false, pad: false, cssPerDev: 1 };
 const touchText = t => { if (typeof t !== 'string' || t.length < 6) return t; const k = t.replace(/\s+/g, ' ').trim(); return k in TOUCH_TEXT ? TOUCH_TEXT[k] : t; };
 function phoneFloor(g) {                                    // raise the font to the minimum for this transform; returns the old font or null
   const f = g.font, m = /([\d.]+)px/.exec(f); if (!m) return null;
@@ -65,15 +65,15 @@ function phoneTextInstall(g) {
   if (!g || g.__phone) return; g.__phone = true;
   const P = CanvasRenderingContext2D.prototype;
   for (const name of ['fillText', 'strokeText']) g[name] = function (text, ...a) {
-    if (!PhoneText.on) return P[name].call(this, text, ...a);
-    const t = touchText(text); if (t === '') return;
-    const old = phoneFloor(this);
+    if (!PhoneText.on && !PhoneText.pad) return P[name].call(this, text, ...a);
+    const t = PhoneText.on ? touchText(text) : padText(text); if (t === '') return;   // v8.7.0: pad prompts (gamepad.js)
+    const old = PhoneText.on ? phoneFloor(this) : null;
     try { return P[name].call(this, t, ...a); } finally { if (old !== null) this.font = old; }
   };
   g.measureText = function (text) {
-    if (!PhoneText.on) return P.measureText.call(this, text);
-    const old = phoneFloor(this);
-    try { return P.measureText.call(this, touchText(text)); } finally { if (old !== null) this.font = old; }
+    if (!PhoneText.on && !PhoneText.pad) return P.measureText.call(this, text);
+    const old = PhoneText.on ? phoneFloor(this) : null;
+    try { return P.measureText.call(this, PhoneText.on ? touchText(text) : padText(text)); } finally { if (old !== null) this.font = old; }
   };
 }
 function phoneEffPx(g) { const old = phoneFloor(g), m = /([\d.]+)px/.exec(g.font), px = m ? +m[1] : 12; if (old !== null) g.font = old; return px; }
@@ -86,7 +86,7 @@ function phoneEffPx(g) { const old = phoneFloor(g), m = /([\d.]+)px/.exec(g.font
   const _r = render;
   render = function (g) {
     phoneTextInstall(g);
-    PhoneText.on = !!Input.touchMode;
+    PhoneText.on = !!Input.touchMode; PhoneText.pad = !Input.touchMode && Input.lastDev === 'pad' && typeof padText === 'function';
     if (PhoneText.on && canvas && canvas.width) PhoneText.cssPerDev = canvas.getBoundingClientRect().width / canvas.width;
     return _r.apply(this, arguments);
   };

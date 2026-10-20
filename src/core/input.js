@@ -16,22 +16,24 @@ function layoutTouch() { for (const b of TOUCH_BTNS) b.x = W - b.dx; }
 layoutTouch();
 const Input = {
   down: {}, pressed: {}, released: {}, taps: [], touchMode: false, btnPtr: {},
+  kb: {}, lastDev: 'kb', padAxis: [{ ax: 0, az: 0 }, { ax: 0, az: 0 }],   // v8.7.0: keys held on the keyboard itself; last device used; analog sticks (gamepad.js)
   stick: { id: null, ox: 0, oy: 0, x: 0, y: 0, ax: 0, az: 0 },
   mouse: { x: -1, y: -1, on: false }, touch: null,
   init(cv) {
     addEventListener('keydown', e => {
       SFX.init(); SFX.resume();
       if (!this.down[e.code]) this.pressed[e.code] = true;
-      this.down[e.code] = true;
+      this.down[e.code] = true; this.kb[e.code] = true; this.lastDev = 'kb';
       if (BLOCK_KEYS.has(e.code)) e.preventDefault();
     });
-    addEventListener('keyup', e => { this.down[e.code] = false; this.released[e.code] = true; });
-    addEventListener('blur', () => { this.down = {}; });
+    addEventListener('keyup', e => { this.down[e.code] = false; this.released[e.code] = true; this.kb[e.code] = false; });
+    addEventListener('blur', () => { this.down = {}; this.kb = {}; });
     const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
     cv.addEventListener('pointerdown', e => {
       SFX.init(); SFX.resume(); e.preventDefault();
       const [x, y] = pos(e);
       if (e.pointerType === 'touch') { this.touchMode = true; this.touch = { id: e.pointerId, x, y }; }
+      this.lastDev = e.pointerType === 'touch' ? 'touch' : 'kb';
       if (this.touchMode && !TouchUI.shown && (Game.screen === 'play' || Game.screen === 'netplay' || Game.screen === 'gym') && !Game.paused && !Game.trivia) {
         for (const b of TOUCH_BTNS) if (Math.hypot(x - b.x, y - b.y) < b.r + 12) {
           this.btnPtr[e.pointerId] = b.key; if (!this.down[b.key]) this.pressed[b.key] = true; this.down[b.key] = true; return;
@@ -81,6 +83,7 @@ function humanCmd(pad, c) {
   const has = k => b[k].some(x => d[x]), hit = k => b[k].some(x => Input.pressed[x]), rel = k => b[k].some(x => Input.released[x]);
   let mx = (has('right') ? 1 : 0) - (has('left') ? 1 : 0), mz = (has('down') ? 1 : 0) - (has('up') ? 1 : 0);
   if (pad === 0 && (Input.stick.ax || Input.stick.az)) { mx = Input.stick.ax; mz = Input.stick.az; }
+  else if (Input.padAxis[pad] && (Input.padAxis[pad].ax || Input.padAxis[pad].az)) { mx = Input.padAxis[pad].ax; mz = Input.padAxis[pad].az; }   // v8.7.0: a gamepad's left stick
   const L = Math.hypot(mx, mz); if (L > 1) { mx /= L; mz /= L; }
   c.mx = mx; c.mz = mz; c.turbo = has('t'); c.a = hit('a'); c.b = hit('b'); c.bHeld = has('b'); c.bRel = rel('b'); c.x = hit('x'); c.s = hit('s');
   c.passTo = null; c.alley = null; c.face = 0;

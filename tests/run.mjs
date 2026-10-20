@@ -34,6 +34,8 @@
 //   v867         v8.6.7: seeded inbounds never go back to the inbounder; turbo colour and card fade flip at most once a
 //                second while sprinting; Sh. Saleem's 2-line limit and Leave buttons; who can earn Noor offline
 //                (online-loop: the guest earns Noor on a team whose hafiz is the host's player, and on one where he is)
+//   gamepad      v8.7.0: scripted pads: title -> Quick Play -> game -> pause -> quit, stick / sprint / shoot / pass,
+//                two pads for two players, hot-plug, trivia and a Noor card, the on-screen picker, rumble, keyboard
 //   formats      v8.6.5: the default game is 2 halves of 2:00 (label, halftime, end, shot clock, overtime); career and
 //                practice keep 4 quarters; explicit formats and a picked 4 quarters are unchanged
 //   tomahawk     v8.6.5: Classic matches the 8.6.4 recording (tests/fixtures/tomahawk-classic.json); smooth, power,
@@ -50,6 +52,7 @@ import path from 'node:path';
 import { FAKE_FIREBASE_APP, FAKE_FIREBASE_DB, FAKE_ROOM_INIT } from './fakes.js';
 import { PHONES, auditPhone, MIN_CSS_PX } from './phone-audit.mjs';
 import { TOMAHAWK_REC } from './tomahawk-rec.mjs';
+import { FAKE_PAD_INIT } from './fake-pad.js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -83,6 +86,7 @@ async function newContext(browser, opts = {}) {
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-database\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE_FIREBASE_DB }));
   if (opts.seed) await ctx.addInitScript(SEED_INIT);
   if (opts.room) await ctx.addInitScript(FAKE_ROOM_INIT);
+  if (opts.pad) await ctx.addInitScript(FAKE_PAD_INIT);
   return ctx;
 }
 async function open(ctx, url, errs, tag) {
@@ -1154,6 +1158,87 @@ T['v867'] = async ({ browser, base }) => {
     && S.leaveOffice && S.first && S.noFullScreen && S.buttons === 2 && S.second && S.afterTwoButtons === 1 && S.leaveClosed && S.done && S.replyCloses && S.resetOnEnter
     && N.localHafiz && !N.localOther && N.onlineOther && !N.onlineCpu && !errs.length;
   return { ok, detail: ['inbounds ' + JSON.stringify(I), 'turbo ' + JSON.stringify(T) + ' card fade ' + JSON.stringify(r.fade), 'Sh. Saleem ' + JSON.stringify(S), 'Noor ' + JSON.stringify(N), ...errs] };
+};
+
+// v8.7.0: gamepads, through a scripted navigator.getGamepads(): menus (title -> Quick Play -> a game -> pause ->
+// quit), moving, sprinting, shooting and passing, two pads for two players, hot-plug, trivia and a Noor card,
+// the on-screen picker, rumble and its setting
+T['gamepad'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { pad: true }), p = await open(ctx, base + '/', errs, 'pad');
+  const out = {}, ev = f => p.evaluate(f), set = (i, s) => p.evaluate(([i, s]) => window.__padSet(i, s), [i, s]);
+  const press = async (b, i = 0, ms = 90) => { await set(i, { [b]: true }); await sleep(ms); await set(i, {}); await sleep(110); };
+  await ev(() => { window.__padPlug(0, true); goTitle(); Game.screen = 'title'; });
+  await sleep(300);
+  // menus: title -> Quick Play -> Play a game -> 1 player -> confirm until the game starts
+  const path = [];
+  await press('DOWN'); path.push(await ev(() => TITLE_MENU()[menuState('title').idx].label));
+  for (let k = 0; k < 14 && (await ev(() => Game.screen)) !== 'play'; k++) { await press('A'); path.push(await ev(() => Game.screen)); }
+  out.menu = { path: path.join(' > '), inGame: (await ev(() => Game.screen)) === 'play', dev: await ev(() => Input.lastDev) };
+  await ev(() => { M.introT = 0; });
+  await sleep(400);
+  await press('START'); out.paused = await ev(() => Game.paused);
+  for (let k = 0; k < 6 && !(await ev(() => /Quit|Leave/.test(pauseItems()[Game.idx % pauseItems().length][0]))); k++) await press('DOWN');
+  await press('A'); out.quit = await ev(() => Game.screen === 'title' && !Game.paused);
+  // gameplay: one human; the stick moves him (analog), B sprints, A shoots, X passes
+  await ev(() => { newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 120 } }); Game.screen = 'play'; Game.paused = false; M.introT = 0; });
+  await p.waitForFunction(() => M.phase === 'live', null, { timeout: 15000 }).catch(() => {});
+  await ev(() => { const me = M.players.find(q => q.human === 0); for (const q of M.players) if (q !== me) place(q, 200, 640); M.phase = 'live'; ball.shot = null; giveBall(me, 'inbound'); place(me, 500, 350); me.state = 'free'; window.__x0 = me.x; me.turbo = 100; });
+  await set(0, { axes: [0.5, 0] }); await sleep(500);
+  out.walk = await ev(() => { const me = M.players.find(q => q.human === 0); return { moved: Math.round(me.x - window.__x0), speed: Math.round(Math.hypot(me.vx, me.vz)), turbo: me.cmd.turbo }; });
+  await set(0, { axes: [1, 0], B: true }); await sleep(500);
+  out.sprint = await ev(() => { const me = M.players.find(q => q.human === 0); return { turbo: me.cmd.turbo, speed: Math.round(Math.hypot(me.vx, me.vz)), drained: me.turbo < 100 }; });
+  await set(0, {}); await sleep(300);
+  await ev(() => { const me = M.players.find(q => q.human === 0); place(me, attackHoop(me.team).x + attackHoop(me.team).dir * 260, 350); me.state = 'free'; giveBall(me, 'inbound'); window.__fga = me.stats.fga; });
+  await set(0, { A: true }); await sleep(380); await set(0, {}); await sleep(700);
+  out.shot = await ev(() => { const me = M.players.find(q => q.human === 0); return me.stats.fga > window.__fga; });
+  await ev(() => { const me = M.players.find(q => q.human === 0); ball.shot = null; M.phase = 'live'; place(me, 600, 350); place(me.mate, 760, 420); me.state = 'free'; giveBall(me, 'inbound'); window.__passed = false; });
+  await press('X');
+  await sleep(150); out.pass = await ev(() => { const me = M.players.find(q => q.human === 0); return ball.owner === me.mate || (ball.state === 'pass' && ball.pass && ball.pass.from === me); });
+  // two pads, two players (co-op)
+  await ev(() => { window.__padPlug(1, true); newMatch(TEAMS[2], TEAMS[3], { humans: [{ team: 0, slot: 0, pad: 0 }, { team: 0, slot: 1, pad: 1 }], fmt: { format: 'quarters', len: 120 } }); Game.screen = 'play'; Game.paused = false; M.introT = 0; });
+  await p.waitForFunction(() => M.phase === 'live', null, { timeout: 15000 }).catch(() => {});
+  await ev(() => { const [a, b] = M.teams[0].players; for (const q of M.players) { q.state = 'free'; } place(a, 400, 250); place(b, 400, 500); window.__ab = [a.x, b.x]; });
+  await set(1, { axes: [1, 0] }); await sleep(450);
+  out.two = await ev(() => { const [a, b] = M.teams[0].players; return { p1: Math.round(a.x - window.__ab[0]), p2: Math.round(b.x - window.__ab[1]) }; });
+  await set(1, {});
+  // hot-plug mid-match: pull pad 2 out and back in, pull pad 1 out and back in
+  await ev(() => window.__padPlug(1, false)); await sleep(250); await ev(() => window.__padPlug(1, true)); await sleep(250);
+  await ev(() => window.__padPlug(0, false)); await sleep(250); await ev(() => window.__padPlug(0, true)); await sleep(250);
+  out.plug = await ev(() => ({ order: Pad.order.length, screen: Game.screen }));
+  await ev(() => window.__padPlug(1, false));
+  // trivia and a Noor card, with the pad
+  await ev(() => { newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 120 } }); Game.screen = 'play'; Game.paused = false; M.introT = 0; });
+  await p.waitForFunction(() => M.phase === 'live', null, { timeout: 15000 }).catch(() => {});
+  await ev(() => { const me = M.players.find(q => q.human === 0); openTrivia(me); Game.trivia.sel = Game.trivia.order.indexOf(0); });
+  await sleep(200);
+  const tv0 = await ev(() => ({ open: !!Game.trivia, sel: Game.trivia && Game.trivia.sel, right: Game.trivia && Game.trivia.order.indexOf(0) }));
+  await press('A');
+  await p.waitForFunction(() => Game.trivia && Game.trivia.pick, null, { timeout: 6000 }).catch(() => {});
+  await press('RIGHT'); await press('A');
+  await p.waitForFunction(() => !Game.trivia, null, { timeout: 6000 }).catch(() => {});
+  out.trivia = { asked: tv0.open, noor: await ev(() => { const me = M.players.find(q => q.human === 0); return noorActive(me) ? noorFxOf(me) : null; }) };
+  // the on-screen picker on a text-entry screen: it opens by itself, moves, taps, B leaves
+  await ev(() => { Net.typed = ''; Game.screen = 'joincode'; });
+  await sleep(250); await press('RIGHT'); await press('A');
+  out.picker = await ev(() => ({ on: Pad.cursor.on, typed: Net.typed }));
+  await press('B'); out.pickerLeave = await ev(() => Game.screen);
+  // rumble on a dunk, and not with the setting off
+  const dunk = () => ev(() => { goTitle(); newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 120 } }); for (let n = 0; n < 2000 && M.phase !== 'live'; n++) updateMatch(STEP);
+    const me = M.players.find(q => q.human === 0), h = attackHoop(me.team); giveBall(me, 'steal'); place(me, h.x + h.dir * 120, h.z); startDunk(me, {}); M.cmdHook = q => { zeroCmd(q.cmd); return true; };
+    window.__rumble.length = 0; for (let n = 0; n < 120; n++) updateMatch(STEP); M.cmdHook = null; return window.__rumble.length; });
+  out.rumble = await dunk();
+  await ev(() => { SETTINGS.vibration = false; }); out.rumbleOff = await dunk(); await ev(() => { SETTINGS.vibration = true; });
+  out.setting = await ev(() => setGroupItems(SET_GROUPS.findIndex(g => g.name === 'Sound & display')).some(s => s.label === 'Controller vibration'));
+  // keyboard still works with a pad connected
+  await ev(() => { goTitle(); Game.screen = 'title'; const m = menuState('title'); m.sub = -1; m.path = []; m.idx = 0; });
+  await p.keyboard.press('ArrowDown'); await sleep(150);
+  out.keyboard = await ev(() => menuState('title').idx === 1 && Input.lastDev === 'kb');
+  await ctx.close();
+  const ok = out.menu.inGame && out.menu.dev === 'pad' && out.paused && out.quit
+    && out.walk.moved > 30 && !out.walk.turbo && out.sprint.turbo && out.sprint.drained && out.sprint.speed > out.walk.speed && out.shot && out.pass
+    && out.two.p2 > 30 && Math.abs(out.two.p1) < 10 && out.plug.order === 2 && out.trivia.asked && !!out.trivia.noor
+    && out.picker.on && out.picker.typed.length === 1 && out.pickerLeave !== 'joincode' && out.rumble > 0 && out.rumbleOff === 0 && out.setting && out.keyboard && !errs.length;
+  return { ok, detail: [JSON.stringify(out), ...errs] };
 };
 
 T['adaptive-res'] = async ({ browser, base }) => {

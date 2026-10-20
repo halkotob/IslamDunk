@@ -59,6 +59,20 @@ try {
   const t0 = await win.evaluate(() => M.time); await sleep(2500); const t1 = await win.evaluate(() => M.time);
   check('real-time play (render loop running)', t1 - t0 > 1.5, `${(t1 - t0).toFixed(2)} s of game time in 2.5 s`);
 
+  // v8.7.0: Chromium's Gamepad API is there, and a pad reported by it moves the player (a scripted pad: no real one here)
+  const pad = await win.evaluate(async () => {
+    const api = typeof navigator.getGamepads === 'function';
+    const g = { index: 0, id: 'Electron test pad', mapping: 'standard', connected: true, axes: [1, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
+    const real = navigator.getGamepads.bind(navigator);
+    Object.defineProperty(navigator, 'getGamepads', { value: () => [g, null, null, null], configurable: true });
+    const me = M.players.find(q => q.human === 0); M.introT = 0; M.phase = 'live'; for (const q of M.players) q.state = 'free'; place(me, 500, 350); const x0 = me.x;
+    await new Promise(r => setTimeout(r, 700));
+    const moved = me.x - x0;
+    Object.defineProperty(navigator, 'getGamepads', { value: real, configurable: true });
+    return { api, moved: Math.round(moved), seen: Pad.seen, dev: Input.lastDev };
+  });
+  check('gamepad: Gamepad API present and a pad moves the player', pad.api && pad.moved > 40 && pad.seen, JSON.stringify(pad));
+
   const career = await win.evaluate(() => {
     C = freshCareer(); if (!C.bracket) C.bracket = makeBracket(C.stage); saveCareer();
     const out = [];

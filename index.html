@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '8.6.7';
+const VERSION = '8.7.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -438,22 +438,24 @@ function layoutTouch() { for (const b of TOUCH_BTNS) b.x = W - b.dx; }
 layoutTouch();
 const Input = {
   down: {}, pressed: {}, released: {}, taps: [], touchMode: false, btnPtr: {},
+  kb: {}, lastDev: 'kb', padAxis: [{ ax: 0, az: 0 }, { ax: 0, az: 0 }],   // v8.7.0: keys held on the keyboard itself; last device used; analog sticks (gamepad.js)
   stick: { id: null, ox: 0, oy: 0, x: 0, y: 0, ax: 0, az: 0 },
   mouse: { x: -1, y: -1, on: false }, touch: null,
   init(cv) {
     addEventListener('keydown', e => {
       SFX.init(); SFX.resume();
       if (!this.down[e.code]) this.pressed[e.code] = true;
-      this.down[e.code] = true;
+      this.down[e.code] = true; this.kb[e.code] = true; this.lastDev = 'kb';
       if (BLOCK_KEYS.has(e.code)) e.preventDefault();
     });
-    addEventListener('keyup', e => { this.down[e.code] = false; this.released[e.code] = true; });
-    addEventListener('blur', () => { this.down = {}; });
+    addEventListener('keyup', e => { this.down[e.code] = false; this.released[e.code] = true; this.kb[e.code] = false; });
+    addEventListener('blur', () => { this.down = {}; this.kb = {}; });
     const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
     cv.addEventListener('pointerdown', e => {
       SFX.init(); SFX.resume(); e.preventDefault();
       const [x, y] = pos(e);
       if (e.pointerType === 'touch') { this.touchMode = true; this.touch = { id: e.pointerId, x, y }; }
+      this.lastDev = e.pointerType === 'touch' ? 'touch' : 'kb';
       if (this.touchMode && !TouchUI.shown && (Game.screen === 'play' || Game.screen === 'netplay' || Game.screen === 'gym') && !Game.paused && !Game.trivia) {
         for (const b of TOUCH_BTNS) if (Math.hypot(x - b.x, y - b.y) < b.r + 12) {
           this.btnPtr[e.pointerId] = b.key; if (!this.down[b.key]) this.pressed[b.key] = true; this.down[b.key] = true; return;
@@ -503,6 +505,7 @@ function humanCmd(pad, c) {
   const has = k => b[k].some(x => d[x]), hit = k => b[k].some(x => Input.pressed[x]), rel = k => b[k].some(x => Input.released[x]);
   let mx = (has('right') ? 1 : 0) - (has('left') ? 1 : 0), mz = (has('down') ? 1 : 0) - (has('up') ? 1 : 0);
   if (pad === 0 && (Input.stick.ax || Input.stick.az)) { mx = Input.stick.ax; mz = Input.stick.az; }
+  else if (Input.padAxis[pad] && (Input.padAxis[pad].ax || Input.padAxis[pad].az)) { mx = Input.padAxis[pad].ax; mz = Input.padAxis[pad].az; }   // v8.7.0: a gamepad's left stick
   const L = Math.hypot(mx, mz); if (L > 1) { mx /= L; mz /= L; }
   c.mx = mx; c.mz = mz; c.turbo = has('t'); c.a = hit('a'); c.b = hit('b'); c.bHeld = has('b'); c.bRel = rel('b'); c.x = hit('x'); c.s = hit('s');
   c.passTo = null; c.alley = null; c.face = 0;
@@ -12460,8 +12463,10 @@ drawHowTo = function (g) {
   dim(g, 0.86);
   const o = Math.round((W - 960) / 2); g.save(); g.translate(o, 0); const rw = W; W = 960;
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('How to play', W / 2, 44);
-  const keys = [['Move', 'W A S D', 'Arrows'], ['Sprint', 'hold Left Shift while moving', 'Right Shift'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move  \u2022  Defend', 'H (or L to defend)', 'Num0 / M (Num3 / /)']];
-  g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; g.fillText('P1', 610, 72); g.fillText('P2', 800, 72);
+  const pad = Input.lastDev === 'pad';                   // v8.7.0: gamepad buttons when the pad was used last
+  const keys = pad ? [['Move', 'Left stick / D-pad', 'Left stick / D-pad'], ['Sprint', 'hold B (or RT / RB)', 'hold B (or RT / RB)'], ['Shoot', 'A', 'A'], ['Pass', 'X', 'X'], ['Move  \u2022  Defend', 'Y', 'Y']]
+    : [['Move', 'W A S D', 'Arrows'], ['Sprint', 'hold Left Shift while moving', 'Right Shift'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move  \u2022  Defend', 'H (or L to defend)', 'Num0 / M (Num3 / /)']];
+  g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; g.fillText(pad ? 'PAD 1' : 'P1', 610, 72); g.fillText(pad ? 'PAD 2' : 'P2', 800, 72);
   keys.forEach((r, i) => { const y = 92 + i * 21; g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(r[0], 150, y); g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.fillText(r[1], 610, y); g.fillText(r[2], 800, y); });
   const col = (x, title, lines) => { g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText(title, x, 222); g.font = `12px ${BODY}`; lines.forEach((t, i) => { g.fillStyle = t.startsWith('\u2022') ? '#9fb3c8' : IVORY; g.fillText(t, x, 242 + i * 18); }); };
   col(60, 'OFFENSE', ['Shoot: hold and release at the top  \u2022  tap: pump fake, then shoot or pass', 'Sprint + Shoot in range: dunk', 'Pass: tap  \u2022  type is automatic (bounce, lob, alley-oop)', 'Hold Pass: call a screen  \u2022  hold Pass + tap Move: pass fake',
@@ -12470,7 +12475,7 @@ drawHowTo = function (g) {
   col(500, 'DEFENSE', ['Hold Defend (Move button or L): guard your man.', '\u2022   You slide with him, between him and the rim', '\u2022   Feet set in his path: he charges into you', 'Hold Defend on a shot: box out',
     'Pass: tap to steal  \u2022  hold: partner doubles the ball', 'Sprint + Pass: shove (hard foul)', 'Shoot: jump, block, contest  \u2022  sprint + Shoot: swipe', '\u2022 Reach across his body and it\u2019s a foul',
     '\u2022 Final minute: sprint + Pass dives for loose balls', '\u2022 Pause for timeouts and set plays']);
-  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Touch: push the stick past the dashed ring to sprint. Buttons: SHOOT, PASS, MOVE (labels change with the play).', W / 2, 438);
+  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(pad ? 'Pad: LB talks and uses things, Start pauses, View opens an on-screen picker for any button.' : 'Touch: push the stick past the dashed ring to sprint. Buttons: SHOOT, PASS, MOVE (labels change with the play).', W / 2, 438);
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText('Press Enter or tap to go back', W / 2, 520);
   W = rw; g.restore();
   addRect(0, 0, W, H, goTitle);
@@ -15784,25 +15789,25 @@ if (DEV.on) {
 // dribble moves, defend (the Defense button), steal and block. Each step waits until you've done
 // it once (or you skip it), then sets up the next. Nobody else moves unless the step needs them.
 const TUT = { on: false, i: 0, t: 0, s: {} };
-const tk = (kb, touch) => Input.touchMode ? touch : kb;
+const tk = (kb, touch, pad) => Input.touchMode ? touch : (pad && Input.lastDev === 'pad') ? pad : kb;   // v8.7.0: pad wording when the pad was used last
 const TUT_STEPS = [
-  { title: 'Move', text: () => tk('Move with W A S D (or the arrow keys).', 'Move with the stick on the left.'),
+  { title: 'Move', text: () => tk('Move with W A S D (or the arrow keys).', 'Move with the stick on the left.', 'Move with the left stick or the D-pad.'),
     setup() { tutPlace({ me: [380, 350] }); }, done: s => s.dist > 260 },
-  { title: 'Sprint', text: () => tk('Hold Shift while you move to sprint. It uses stamina.', 'Push the stick past the dashed ring to sprint. It uses stamina.'),
+  { title: 'Sprint', text: () => tk('Hold Shift while you move to sprint. It uses stamina.', 'Push the stick past the dashed ring to sprint. It uses stamina.', 'Hold B (or RT) while you move to sprint. It uses stamina.'),
     setup() { tutPlace({ me: [300, 350] }); }, done: s => s.sprint > 0.7 },
-  { title: 'Shoot', text: () => tk('Hold K to jump, let go at the top of your jump. A green flash means a perfect release.', 'Hold SHOOT to jump, let go at the top. A green flash means a perfect release.'),
+  { title: 'Shoot', text: () => tk('Hold K to jump, let go at the top of your jump. A green flash means a perfect release.', 'Hold SHOOT to jump, let go at the top. A green flash means a perfect release.', 'Hold A to jump, let go at the top. A green flash means a perfect release.'),
     setup() { tutPlace({ me: [1000, 300], ball: true }); }, done: s => s.shotDone },
-  { title: 'Dunk', text: () => tk('Sprint at the rim with the ball and press K.', 'Sprint at the rim with the ball and press SHOOT.'),
+  { title: 'Dunk', text: () => tk('Sprint at the rim with the ball and press K.', 'Sprint at the rim with the ball and press SHOOT.', 'Sprint at the rim with the ball (hold B) and press A.'),
     setup() { tutPlace({ me: [830, 420], ball: true }); }, done: s => s.dunk },
-  { title: 'Pass', text: () => tk('Tap J to pass to your partner. The pass type picks itself.', 'Tap PASS to throw it to your partner.'),
+  { title: 'Pass', text: () => tk('Tap J to pass to your partner. The pass type picks itself.', 'Tap PASS to throw it to your partner.', 'Tap X to pass to your partner. The pass type picks itself.'),
     setup() { tutPlace({ me: [760, 300], mate: [1000, 520], ball: true }); }, done: s => s.passed },
-  { title: 'Dribble moves', text: () => tk('Press H while pushing a direction: crossover, spin or step-back. Double-tap H for your signature move.', 'Tap MOVE while pushing the stick: crossover, spin or step-back.'),
+  { title: 'Dribble moves', text: () => tk('Press H while pushing a direction: crossover, spin or step-back. Double-tap H for your signature move.', 'Tap MOVE while pushing the stick: crossover, spin or step-back.', 'Press Y while pushing the stick: crossover, spin or step-back. Double-tap Y for your signature move.'),
     setup() { tutPlace({ me: [700, 350], opp: [790, 350], ball: true }); }, done: s => s.moved },
-  { title: 'Defend', text: () => tk('Hold H (or L) on defense: you guard your man, staying between him and the rim. Stay with him.', 'Hold DEFEND on defense: you guard your man, between him and the rim. Stay with him.'),
+  { title: 'Defend', text: () => tk('Hold H (or L) on defense: you guard your man, staying between him and the rim. Stay with him.', 'Hold DEFEND on defense: you guard your man, between him and the rim. Stay with him.', 'Hold Y on defense: you guard your man, staying between him and the rim. Stay with him.'),
     setup() { tutPlace({ me: [980, 350], opp: [760, 330], oppBall: true }); }, done: s => s.guard > 2, drive: true },
-  { title: 'Steal', text: () => tk('Get close to the ball and tap J to swipe at it. Reach across his body and it’s a foul.', 'Get close and tap STEAL to swipe at the ball.'),
+  { title: 'Steal', text: () => tk('Get close to the ball and tap J to swipe at it. Reach across his body and it’s a foul.', 'Get close and tap STEAL to swipe at the ball.', 'Get close to the ball and tap X to swipe at it. Reach across his body and it’s a foul.'),
     setup() { tutPlace({ me: [900, 350], opp: [860, 350], oppBall: true }); }, done: s => s.swiped },
-  { title: 'Block', text: () => tk('He’s going to shoot. Press K to jump and contest when he goes up.', 'He’s going to shoot. Press BLOCK to jump when he goes up.'),
+  { title: 'Block', text: () => tk('He’s going to shoot. Press K to jump and contest when he goes up.', 'He’s going to shoot. Press BLOCK to jump when he goes up.', 'He’s going to shoot. Press A to jump and contest when he goes up.'),
     setup() { tutPlace({ me: [1010, 350], opp: [960, 350], oppBall: true }); TUT.s.shootAt = 1.4; }, done: s => s.contested },
   { title: 'You’re ready', text: () => 'That’s the whole game. Try a Quick Play match, and if you want it simpler, set Controls to Casual in Settings.', final: true }
 ];
@@ -19432,7 +19437,7 @@ const TOUCH_TEXT = {
   'W A S D to walk • E or Enter to talk • Esc back to the gym': 'Stick to walk • TALK to talk', 'GAME LOG (Enter: box score)': 'GAME LOG (tap a game)',
   'GAME (← → to change)': 'GAME', 'PARTNER ← →': 'PARTNER', 'Esc or P pauses. On a phone, use the on-screen stick and buttons.': 'The pause button is top right.'
 };
-const PhoneText = { on: false, cssPerDev: 1 };
+const PhoneText = { on: false, pad: false, cssPerDev: 1 };
 const touchText = t => { if (typeof t !== 'string' || t.length < 6) return t; const k = t.replace(/\s+/g, ' ').trim(); return k in TOUCH_TEXT ? TOUCH_TEXT[k] : t; };
 function phoneFloor(g) {                                    // raise the font to the minimum for this transform; returns the old font or null
   const f = g.font, m = /([\d.]+)px/.exec(f); if (!m) return null;
@@ -19444,15 +19449,15 @@ function phoneTextInstall(g) {
   if (!g || g.__phone) return; g.__phone = true;
   const P = CanvasRenderingContext2D.prototype;
   for (const name of ['fillText', 'strokeText']) g[name] = function (text, ...a) {
-    if (!PhoneText.on) return P[name].call(this, text, ...a);
-    const t = touchText(text); if (t === '') return;
-    const old = phoneFloor(this);
+    if (!PhoneText.on && !PhoneText.pad) return P[name].call(this, text, ...a);
+    const t = PhoneText.on ? touchText(text) : padText(text); if (t === '') return;   // v8.7.0: pad prompts (gamepad.js)
+    const old = PhoneText.on ? phoneFloor(this) : null;
     try { return P[name].call(this, t, ...a); } finally { if (old !== null) this.font = old; }
   };
   g.measureText = function (text) {
-    if (!PhoneText.on) return P.measureText.call(this, text);
-    const old = phoneFloor(this);
-    try { return P.measureText.call(this, touchText(text)); } finally { if (old !== null) this.font = old; }
+    if (!PhoneText.on && !PhoneText.pad) return P.measureText.call(this, text);
+    const old = PhoneText.on ? phoneFloor(this) : null;
+    try { return P.measureText.call(this, PhoneText.on ? touchText(text) : padText(text)); } finally { if (old !== null) this.font = old; }
   };
 }
 function phoneEffPx(g) { const old = phoneFloor(g), m = /([\d.]+)px/.exec(g.font), px = m ? +m[1] : 12; if (old !== null) g.font = old; return px; }
@@ -19465,7 +19470,7 @@ function phoneEffPx(g) { const old = phoneFloor(g), m = /([\d.]+)px/.exec(g.font
   const _r = render;
   render = function (g) {
     phoneTextInstall(g);
-    PhoneText.on = !!Input.touchMode;
+    PhoneText.on = !!Input.touchMode; PhoneText.pad = !Input.touchMode && Input.lastDev === 'pad' && typeof padText === 'function';
     if (PhoneText.on && canvas && canvas.width) PhoneText.cssPerDev = canvas.getBoundingClientRect().width / canvas.width;
     return _r.apply(this, arguments);
   };
@@ -20012,6 +20017,178 @@ function dlCmd(q) {
     if (ex && ex.sub && !ex.sub.some(e => e.label === 'Dunk lab')) ex.sub.push({ label: 'Dunk lab', act: () => startDunkLab() });
     return menu;
   };
+}
+// ================================================= v8.7.0: GAMEPADS
+// Polls navigator.getGamepads() every frame (standard mapping; other pads are read the same way, best effort).
+// A pad drives the game by pressing the same keys a keyboard player would: Input.down / pressed / released get
+// the P1 keys (or P2's) and every screen, the sim, online and replays see exactly what the keyboard produces.
+// The left stick is analog: Input.padAxis feeds humanCmd like the touch stick does.
+//
+//   Left stick, D-pad   move (and menu selection)      A (south)        Shoot  (K)    menus: confirm
+//   X (west)            Pass   (J)                     Y (north)        Move / Defend (H)
+//   B (east), RT, RB    Turbo: hold to sprint (Shift)  menus: B backs out (Esc)
+//   LB                  Interact: talk, use, enter the musalla (E)
+//   Start / Menu        Pause (Esc)                    View / Select    on-screen picker (any tap target)
+//
+// First pad = P1, second = P2, in connection order, when a match has two local players; otherwise every pad
+// controls P1 (one human, the online guest, menus). The keyboard keeps working at the same time.
+SETTINGS.vibration = true;
+(() => { try { if (localStorage.getItem('islamdunk.vibration') === '0') SETTINGS.vibration = false; } catch (e) {} })();
+const PB = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, LT: 6, RT: 7, VIEW: 8, START: 9, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 };
+const PAD_DZ = 0.2;                                      // radial deadzone
+const PAD_KEYS = [
+  { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', A: 'KeyK', X: 'KeyJ', Y: 'KeyH', turbo: 'ShiftLeft', LB: 'KeyE' },
+  { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', A: 'Numpad2', X: 'Numpad1', Y: 'Numpad0', turbo: 'ShiftRight', LB: 'KeyE' }
+];
+const PAD_PICKER_SCREENS = ['namekeys', 'joincode'];     // text entry: the on-screen letters, picked with the pad
+const Pad = {
+  order: [], prevKeys: {}, prevBtn: {}, rep: {}, seen: false, cursor: { on: false, i: -1, auto: false },
+  init() {
+    addEventListener('gamepadconnected', e => this.connect(e.gamepad));
+    addEventListener('gamepaddisconnected', e => { const g = e.gamepad; if (g) this.order = this.order.filter(i => i !== g.index); });
+  },
+  connect(g) { if (g && !this.order.includes(g.index)) { this.order.push(g.index); this.seen = true; } },
+  pads() {                                               // connected pads, in the order they connected
+    let all = [];
+    try { all = navigator.getGamepads ? Array.from(navigator.getGamepads() || []) : []; } catch (e) { all = []; }
+    const live = all.filter(g => g && g.connected !== false);
+    for (const g of live) this.connect(g);              // some browsers only report a pad after a button press
+    this.order = this.order.filter(i => live.some(g => g.index === i));
+    return this.order.map(i => live.find(g => g.index === i)).filter(Boolean);
+  },
+  btn(g, i) { const b = g.buttons && g.buttons[i]; return !!b && (b.pressed === true || (typeof b === 'object' ? b.value > 0.5 : b > 0.5)); },
+  stick(g) {                                             // left stick: radial deadzone, then a smooth curve; D-pad wins if held
+    const ax = +(g.axes && g.axes[0]) || 0, ay = +(g.axes && g.axes[1]) || 0, m = Math.hypot(ax, ay);
+    if (!(m > PAD_DZ)) return { x: 0, z: 0, m: 0 };
+    const k = Math.min(1, (m - PAD_DZ) / (1 - PAD_DZ)), c = k * k * (3 - 2 * k) * 0.35 + k * 0.65;   // gentle at the edge of the deadzone
+    return { x: ax / m * c, z: ay / m * c, m: c };
+  },
+  playing() { return ['play', 'netplay', 'gym'].includes(Game.screen) && !Game.paused && !Game.trivia; },
+  twoLocal() { return !Net.role && !!(M.players && M.players.some(p => p.human === 1) && M.players.some(p => p.human === 0)) && this.playing(); },
+  poll(rdt) {
+    const pads = this.pads(), want = {}, axes = [{ ax: 0, az: 0, m: 0 }, { ax: 0, az: 0, m: 0 }], two = this.twoLocal(), playing = this.playing();
+    const edges = [];                                    // menu-direction presses from sticks (with repeat)
+    let active = false, anyEdge = {};
+    pads.forEach((g, n) => {
+      const slot = two ? Math.min(n, 1) : 0, K = PAD_KEYS[slot], prev = this.prevBtn[g.index] || [];
+      const b = i => this.btn(g, i), edge = i => b(i) && !prev[i];
+      const st = this.stick(g);
+      const nowBtn = []; for (let i = 0; i < 17; i++) nowBtn[i] = b(i);
+      if (nowBtn.some(Boolean) || st.m > 0) active = true;
+      for (const k of ['A', 'B', 'X', 'Y', 'START', 'VIEW', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'LB']) if (edge(PB[k])) anyEdge[k] = true;
+      this.prevBtn[g.index] = nowBtn;
+      if (this.cursor.on) return;                        // the picker owns the pad
+      if (b(PB.UP)) want[K.up] = true; if (b(PB.DOWN)) want[K.down] = true; if (b(PB.LEFT)) want[K.left] = true; if (b(PB.RIGHT)) want[K.right] = true;
+      if (b(PB.A)) want[K.A] = true; if (b(PB.X)) want[K.X] = true; if (b(PB.Y)) want[K.Y] = true; if (b(PB.LB)) want[K.LB] = true;
+      if (b(PB.START)) want.Escape = true;
+      if (playing) { if (b(PB.B) || b(PB.RB) || b(PB.RT)) want[K.turbo] = true; }
+      else if (b(PB.B)) want.Escape = true;
+      if (st.m > axes[slot].m) axes[slot] = { ax: st.x, az: st.z, m: st.m };
+      if (!playing) edges.push([g.index, st, slot]);
+    });
+    if (active) { Input.lastDev = 'pad'; this.seen = true; }
+    Input.padAxis[0] = { ax: axes[0].ax, az: axes[0].az }; Input.padAxis[1] = { ax: axes[1].ax, az: axes[1].az };
+    // the picker (View, or text entry screens): move between tap targets, A taps, B closes
+    const auto = PAD_PICKER_SCREENS.includes(Game.screen) && Input.lastDev === 'pad';
+    if (!this.cursor.on && (anyEdge.VIEW || (auto && !this.cursor.auto && pads.length))) { this.cursor = { on: true, i: -1, auto }; anyEdge = {}; }
+    if (this.cursor.on) {
+      if (!pads.length || (this.cursor.auto && !PAD_PICKER_SCREENS.includes(Game.screen))) this.cursor = { on: false, i: -1, auto: false };
+      else this.pick(anyEdge, pads);
+    } else if (!auto && this.cursor.auto) this.cursor.auto = false;
+    // stick as menu directions: a press on the way out, then repeats while held
+    for (const [id, st, slot] of edges) {
+      const K = PAD_KEYS[slot], R = this.rep[id] || (this.rep[id] = { dir: null, t: 0 });
+      const dir = st.m < 0.5 ? null : Math.abs(st.x) > Math.abs(st.z) ? (st.x > 0 ? K.right : K.left) : (st.z > 0 ? K.down : K.up);
+      if (dir !== R.dir) { R.dir = dir; R.t = 0.4; if (dir && !this.cursor.on) Input.pressed[dir] = true; }
+      else if (dir) { R.t -= rdt; if (R.t <= 0) { R.t = 0.12; if (!this.cursor.on) Input.pressed[dir] = true; } }
+    }
+    // press and release the emulated keys; never release a key the keyboard itself is holding
+    for (const k of new Set([...Object.keys(want), ...Object.keys(this.prevKeys)])) {
+      const now = !!want[k], was = !!this.prevKeys[k];
+      if (now && !was) { if (!Input.down[k]) Input.pressed[k] = true; Input.down[k] = true; }
+      else if (!now && was && !Input.kb[k]) { Input.down[k] = false; Input.released[k] = true; }
+    }
+    this.prevKeys = want;
+  },
+  pickRects() { return (Game.rects || []).filter(r => r.w > 4 && r.h > 4 && r.w * r.h < W * H * 0.4); },
+  pick(e, pads) {
+    const R = this.pickRects(), C = this.cursor;
+    if (!R.length) { if (e.B || e.START || e.VIEW) this.close(); return; }
+    if (C.i < 0 || C.i >= R.length) C.i = 0;
+    const st = pads.map(g => this.stick(g)).sort((a, b) => b.m - a.m)[0] || { x: 0, z: 0, m: 0 };
+    const RR = this.rep.cursor || (this.rep.cursor = { dir: null, t: 0 });
+    const sd = st.m < 0.5 ? null : Math.abs(st.x) > Math.abs(st.z) ? (st.x > 0 ? 'RIGHT' : 'LEFT') : (st.z > 0 ? 'DOWN' : 'UP');
+    let move = ['UP', 'DOWN', 'LEFT', 'RIGHT'].find(k => e[k]) || null;
+    if (sd !== RR.dir) { RR.dir = sd; RR.t = 0.4; if (sd) move = sd; } else if (sd) { RR.t -= Game.rdt || STEP; if (RR.t <= 0) { RR.t = 0.12; move = sd; } }
+    if (move) {
+      const a = R[C.i], ax = a.x + a.w / 2, ay = a.y + a.h / 2, dx = move === 'LEFT' ? -1 : move === 'RIGHT' ? 1 : 0, dy = move === 'UP' ? -1 : move === 'DOWN' ? 1 : 0;
+      let best = -1, bs = 1e9;
+      R.forEach((r, i) => { if (i === C.i) return; const vx = r.x + r.w / 2 - ax, vy = r.y + r.h / 2 - ay, along = vx * dx + vy * dy; if (along <= 2) return; const s = along + Math.abs(vx * dy - vy * dx) * 2.2; if (s < bs) { bs = s; best = i; } });
+      if (best >= 0) { C.i = best; SFX.blip && SFX.blip(); }
+    }
+    if (e.A) { const r = R[C.i]; Input.taps.push({ x: r.x + r.w / 2, y: r.y + r.h / 2 }); }
+    else if (e.B || e.START) { if (C.auto) { Input.pressed.Escape = true; } this.close(); }
+    else if (e.VIEW && !C.auto) this.close();
+  },
+  close() { this.cursor = { on: false, i: -1, auto: this.cursor.auto }; },
+  rumble(strong, weak, ms) {
+    if (!SETTINGS.vibration || !M.players || M.attract || !M.players.some(p => p.human >= 0)) return;
+    for (const g of this.pads()) {
+      const a = g.vibrationActuator;
+      try { if (a && a.playEffect) { const r = a.playEffect(a.type || 'dual-rumble', { startDelay: 0, duration: ms, strongMagnitude: strong, weakMagnitude: weak }); if (r && r.catch) r.catch(() => {}); } } catch (err) {}
+    }
+  }
+};
+Pad.init();
+{
+  const _gu = gameUpdate;
+  gameUpdate = function (rdt) { try { Pad.poll(rdt); } catch (e) {} return _gu.apply(this, arguments); };
+  // the left stick sprints with Turbo held, as Shift does with the keys
+  const _ss = sprintStep;
+  sprintStep = function (pad, c) {
+    _ss.apply(this, arguments);
+    const A = Input.padAxis[pad], K = PAD_KEYS[pad];
+    if (!c.turbo && A && (A.ax || A.az) && K && Input.down[K.turbo] && Math.hypot(A.ax, A.az) > 0.2) c.turbo = true;
+  };
+  // rumble: dunks, blocks, big makes (threes, posters), the buzzer
+  const _sl = SFX.slam; SFX.slam = function () { Pad.rumble(1, 0.6, 260); return _sl.apply(this, arguments); };
+  const _bz = SFX.buzzer; SFX.buzzer = function () { Pad.rumble(0.5, 0.8, 420); return _bz.apply(this, arguments); };
+  const _bb = blockBall; blockBall = function () { Pad.rumble(0.8, 0.4, 180); return _bb.apply(this, arguments); };
+  const _mf = makeFeel; makeFeel = function (h, sh, shooter, pts) { const k = _mf.apply(this, arguments); if (!(sh && sh.dunk) && (pts >= 3 || k === 'poster')) Pad.rumble(0.4, 0.6, 200); return k; };
+  // Settings → Sound & display → Controller vibration (with the other feedback settings)
+  const i = SET_ITEMS.findIndex(s => s.label === 'Sound');
+  SET_ITEMS.splice(i + 1, 0, { label: 'Controller vibration', get: () => SETTINGS.vibration ? 'On' : 'Off',
+    step: () => { SETTINGS.vibration = !SETTINGS.vibration; try { localStorage.setItem('islamdunk.vibration', SETTINGS.vibration ? '1' : '0'); } catch (e) {} if (SETTINGS.vibration) Pad.rumble(0.5, 0.5, 150); } });
+  // the picker's focus ring
+  const _r = render;
+  render = function (g) {
+    _r.apply(this, arguments);
+    const C = Pad.cursor; if (!C.on) return;
+    const R = Pad.pickRects(), r = R[C.i]; if (!r) return;
+    g.save(); g.strokeStyle = '#ffd24d'; g.lineWidth = 3; g.shadowColor = 'rgba(255,210,77,0.8)'; g.shadowBlur = 10;
+    roundRect(g, r.x - 4, r.y - 4, r.w + 8, r.h + 8, 10); g.stroke(); g.restore();
+    g.save(); g.textAlign = 'center'; g.font = `12px ${FONT}`; const t = 'A: select   B: close';
+    const w = g.measureText(t).width + 24; g.fillStyle = 'rgba(8,16,24,0.85)'; roundRect(g, W / 2 - w / 2, H - 34, w, 24, 12); g.fill();
+    g.fillStyle = '#fff'; g.fillText(t, W / 2, H - 17); g.restore();
+  };
+}
+// ---- prompts: when the last input came from a pad, keyboard hints read as pad buttons
+const PAD_TEXT = {
+  'K: dunk J: next style H: slow motion Esc: pause / quit': 'A: dunk X: next style Y: slow motion Start: pause',
+  'Enter the musalla (E)': 'Enter the musalla (LB)', 'Talk to': 'Talk to',
+  'Sheikh’s office (O)': 'Sheikh’s office (View: menu)', 'Enter to go pray, Esc to keep practicing': 'A: go pray   B: keep practicing',
+  'Back or Esc stops the drill': 'B stops the drill', 'Press F for fullscreen': '', 'Press F for fullscreen • How to play is in Options': 'How to play is in Options',
+  'Type the letters, Enter to join, Esc to go back': 'Pick the letters with the pad, then Join',
+  'Type your name, Enter when done': 'Pick the letters with the pad, then Done', 'Type, then Enter when done': 'Pick the letters with the pad, then Done',
+  'Press 1 to 4, or move and press Enter/K': 'Move to pick, A to answer', 'Press 1 to 3, or ← → and Enter. Tap a card on touch.': '← → to choose, A to pick',
+  'W A S D to walk • E or Enter to talk • Esc back to the gym': 'Stick to walk • LB to talk • B back to the gym'
+};
+function padText(t) {
+  if (typeof t !== 'string' || t.length < 3) return t;
+  const k = t.replace(/\s+/g, ' ').trim();
+  if (k in PAD_TEXT) return PAD_TEXT[k];
+  if (!/\b(Enter|Esc|Escape)\b/.test(t)) return t;
+  return t.replace(/Press Enter or tap/g, 'Press A').replace(/Enter or tap/g, 'A').replace(/Tap or Enter/g, 'A').replace(/\bEnter\b/g, 'A').replace(/\bEscape\b|\bEsc\b/g, 'B');
 }
 
 boot();

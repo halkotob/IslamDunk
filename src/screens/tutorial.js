@@ -4,25 +4,25 @@
 // dribble moves, defend (the Defense button), steal and block. Each step waits until you've done
 // it once (or you skip it), then sets up the next. Nobody else moves unless the step needs them.
 const TUT = { on: false, i: 0, t: 0, s: {} };
-const tk = (kb, touch) => Input.touchMode ? touch : kb;
+const tk = (kb, touch, pad) => Input.touchMode ? touch : (pad && Input.lastDev === 'pad') ? pad : kb;   // v8.7.0: pad wording when the pad was used last
 const TUT_STEPS = [
-  { title: 'Move', text: () => tk('Move with W A S D (or the arrow keys).', 'Move with the stick on the left.'),
+  { title: 'Move', text: () => tk('Move with W A S D (or the arrow keys).', 'Move with the stick on the left.', 'Move with the left stick or the D-pad.'),
     setup() { tutPlace({ me: [380, 350] }); }, done: s => s.dist > 260 },
-  { title: 'Sprint', text: () => tk('Hold Shift while you move to sprint. It uses stamina.', 'Push the stick past the dashed ring to sprint. It uses stamina.'),
+  { title: 'Sprint', text: () => tk('Hold Shift while you move to sprint. It uses stamina.', 'Push the stick past the dashed ring to sprint. It uses stamina.', 'Hold B (or RT) while you move to sprint. It uses stamina.'),
     setup() { tutPlace({ me: [300, 350] }); }, done: s => s.sprint > 0.7 },
-  { title: 'Shoot', text: () => tk('Hold K to jump, let go at the top of your jump. A green flash means a perfect release.', 'Hold SHOOT to jump, let go at the top. A green flash means a perfect release.'),
+  { title: 'Shoot', text: () => tk('Hold K to jump, let go at the top of your jump. A green flash means a perfect release.', 'Hold SHOOT to jump, let go at the top. A green flash means a perfect release.', 'Hold A to jump, let go at the top. A green flash means a perfect release.'),
     setup() { tutPlace({ me: [1000, 300], ball: true }); }, done: s => s.shotDone },
-  { title: 'Dunk', text: () => tk('Sprint at the rim with the ball and press K.', 'Sprint at the rim with the ball and press SHOOT.'),
+  { title: 'Dunk', text: () => tk('Sprint at the rim with the ball and press K.', 'Sprint at the rim with the ball and press SHOOT.', 'Sprint at the rim with the ball (hold B) and press A.'),
     setup() { tutPlace({ me: [830, 420], ball: true }); }, done: s => s.dunk },
-  { title: 'Pass', text: () => tk('Tap J to pass to your partner. The pass type picks itself.', 'Tap PASS to throw it to your partner.'),
+  { title: 'Pass', text: () => tk('Tap J to pass to your partner. The pass type picks itself.', 'Tap PASS to throw it to your partner.', 'Tap X to pass to your partner. The pass type picks itself.'),
     setup() { tutPlace({ me: [760, 300], mate: [1000, 520], ball: true }); }, done: s => s.passed },
-  { title: 'Dribble moves', text: () => tk('Press H while pushing a direction: crossover, spin or step-back. Double-tap H for your signature move.', 'Tap MOVE while pushing the stick: crossover, spin or step-back.'),
+  { title: 'Dribble moves', text: () => tk('Press H while pushing a direction: crossover, spin or step-back. Double-tap H for your signature move.', 'Tap MOVE while pushing the stick: crossover, spin or step-back.', 'Press Y while pushing the stick: crossover, spin or step-back. Double-tap Y for your signature move.'),
     setup() { tutPlace({ me: [700, 350], opp: [790, 350], ball: true }); }, done: s => s.moved },
-  { title: 'Defend', text: () => tk('Hold H (or L) on defense: you guard your man, staying between him and the rim. Stay with him.', 'Hold DEFEND on defense: you guard your man, between him and the rim. Stay with him.'),
+  { title: 'Defend', text: () => tk('Hold H (or L) on defense: you guard your man, staying between him and the rim. Stay with him.', 'Hold DEFEND on defense: you guard your man, between him and the rim. Stay with him.', 'Hold Y on defense: you guard your man, staying between him and the rim. Stay with him.'),
     setup() { tutPlace({ me: [980, 350], opp: [760, 330], oppBall: true }); }, done: s => s.guard > 2, drive: true },
-  { title: 'Steal', text: () => tk('Get close to the ball and tap J to swipe at it. Reach across his body and it’s a foul.', 'Get close and tap STEAL to swipe at the ball.'),
+  { title: 'Steal', text: () => tk('Get close to the ball and tap J to swipe at it. Reach across his body and it’s a foul.', 'Get close and tap STEAL to swipe at the ball.', 'Get close to the ball and tap X to swipe at it. Reach across his body and it’s a foul.'),
     setup() { tutPlace({ me: [900, 350], opp: [860, 350], oppBall: true }); }, done: s => s.swiped },
-  { title: 'Block', text: () => tk('He’s going to shoot. Press K to jump and contest when he goes up.', 'He’s going to shoot. Press BLOCK to jump when he goes up.'),
+  { title: 'Block', text: () => tk('He’s going to shoot. Press K to jump and contest when he goes up.', 'He’s going to shoot. Press BLOCK to jump when he goes up.', 'He’s going to shoot. Press A to jump and contest when he goes up.'),
     setup() { tutPlace({ me: [1010, 350], opp: [960, 350], oppBall: true }); TUT.s.shootAt = 1.4; }, done: s => s.contested },
   { title: 'You’re ready', text: () => 'That’s the whole game. Try a Quick Play match, and if you want it simpler, set Controls to Casual in Settings.', final: true }
 ];
