@@ -360,6 +360,6 @@ const STORY = {
     'Hold shoot and let go at the top of your jump. Green on the meter is money.', 'A contested shot is a gift to the other team. Find the open brother.', "Change direction while dribbling. The defender's ankles will need a break.",
     'Sprint at the rim and shoot: that is a dunk. Use it wisely.', 'Pray before the game, not just after it.', 'Defense is patience. Stay between your man and the rim.',
     'Help the man who falls, even if he wears the other jersey.', 'Talk on defense. A quiet team gets screened.', 'Stay low on defense. Tall legs, short temper, both are trouble.',
-    'Shake hands before tip-off. Adab first, then basketball.', 'Drink water. Your legs will thank you in the fourth.', 'A good pass makes two people happy.']
+    'Shake hands before tip-off. Adab first, then basketball.', 'Drink water. Your legs will thank you in the last minute.', 'A good pass makes two people happy.']
 };
 

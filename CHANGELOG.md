@@ -1,5 +1,20 @@
 # Changelog
 
+## 9.0.1: career uses the game format
+- **Career games follow Settings → Format and Period length**, like Quick Play: by default 2 halves of 2:00 (24 s
+  shot clock); pick 4 Quarters (or First to 21) and career uses that. Practice (gym drills, mini games, the hub gym)
+  keeps 4 quarters, since it has no real periods; Barakah Run and the daily scenario keep their own fixed formats.
+- Everything in a career game already read the format: the scoreboard label (1ST HALF / 2ND HALF), halftime (once,
+  after the first half), the box score's period columns (H1 / H2), the final period for clutch, rubber-band,
+  late-game CPU, timeouts, the Sabr badge and buzzer-beaters. Rewards, goals and achievements never counted periods,
+  so the same result pays the same.
+- One line changed: an elder's tip "Your legs will thank you in the fourth" now ends "in the last minute".
+- Career saves are unchanged (the format isn't stored in a career).
+- **Tests.** New `career-format` test: a career game with the default settings shows 1ST HALF, has one halftime,
+  ends, records the game, and its rewards match the same result under 4 quarters; a career game with 4 Quarters
+  (QUARTER 1-4, one halftime) and with First to 21 also play out. `formats` now expects career to follow Settings
+  (practice still 4 quarters).
+
 ## 9.0.0: career calendar
 Step 1 of the career calendar: the calendar layer and its UI only. No walking world, no new places or characters;
 the hub and every activity work as before. It is an in-game calendar, not the real date.

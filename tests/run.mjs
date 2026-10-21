@@ -46,7 +46,9 @@
 //                the human's team forced to win) through all four stages and into a new season; the date only moves
 //                forward and the hub's strip always shows 4 days
 //   formats      v8.6.5: the default game is 2 halves of 2:00 (label, halftime, end, shot clock, overtime); career and
-//                practice keep 4 quarters; explicit formats and a picked 4 quarters are unchanged
+//                practice keeps 4 quarters (v9.0.1: career follows the Settings format); explicit formats and a picked 4 quarters are unchanged
+//   career-format v9.0.1: career games follow Settings: the default is 2 halves (1ST HALF, one halftime, ends, same rewards as
+//                4 quarters for the same result), 4 quarters and First to 21 picked in Settings work too
 //   tomahawk     v8.6.5: Classic matches the 8.6.4 recording (tests/fixtures/tomahawk-classic.json); smooth, power,
 //                float: same dunk length and slam frame, finite, back to the normal pose; replays; the Dunk lab
 //   v863         hot spots spawn only on the attacking half of a team holding the ball live, +1/+2 follows the
@@ -997,7 +999,7 @@ T['v863'] = async ({ browser, base }) => {
     'CPU spot awareness ' + JSON.stringify(c), 'closeout distance ' + JSON.stringify(r.closeout), 'late game ' + JSON.stringify(L), 'off the glass ' + JSON.stringify(G), ...errs] };
 };
 
-// v8.6.5: the default game is 2 halves of 2:00; career and practice keep 4 quarters; explicit formats unchanged
+// v8.6.5: the default game is 2 halves of 2:00; practice keeps 4 quarters (v9.0.1: career follows Settings); explicit formats unchanged
 T['formats'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'formats');
   const r = await p.evaluate(() => {
@@ -1023,8 +1025,9 @@ T['formats'] = async ({ browser, base }) => {
     let k = 0; for (; k < 60 * 30 && M.quarter < 3; k++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; }
     for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
     out.ot = [M.quarter, periodLabel(M.quarter), Math.round(M.clock), M.fmt.sc].join('/');
-    // career and practice keep 4 quarters; explicit formats are untouched
+    // practice keeps 4 quarters; career follows Settings (v9.0.1); explicit formats are untouched
     newMatch(TEAMS[0], TEAMS[1], { humans: [], career: true }); out.career = M.fmt.format + '/' + M.fmt.periods;
+    SETTINGS.format = 'quarters'; newMatch(TEAMS[0], TEAMS[1], { humans: [], career: true }); out.careerQ = M.fmt.format + '/' + M.fmt.periods; SETTINGS.format = 'halves';
     newMatch(TEAMS[0], TEAMS[1], { humans: [], practice: 'ft' }); out.practice = M.fmt.format + '/' + M.fmt.periods;
     newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 60 } }); out.explicit = [M.fmt.format, M.fmt.periods, M.fmt.len, M.fmt.sc].join('/');
     SETTINGS.format = 'quarters'; newMatch(TEAMS[0], TEAMS[1], { humans: [] }); out.picked = [M.fmt.format, M.fmt.periods, periodLabel(1)].join('/'); SETTINGS.format = 'halves';
@@ -1034,7 +1037,7 @@ T['formats'] = async ({ browser, base }) => {
   const g = r.game;
   const ok = r.settings === 'halves/120/2 Halves/halves' && r.fmt === 'halves/2/120/24/60' && r.label && r.breakText === 'HALFTIME'
     && g.over && g.halftime === 1 && g.label2 === '2ND HALF' && g.shotClockRan && g.winner && (g.quarters === 2 || g.quarters > 2)
-    && r.ot.startsWith('3/OVERTIME/') && r.career === 'quarters/4' && r.practice === 'quarters/4' && r.explicit === 'quarters/4/60/15' && r.picked === 'quarters/4/QUARTER 1' && !errs.length;
+    && r.ot.startsWith('3/OVERTIME/') && r.career === 'halves/2' && r.careerQ === 'quarters/4' && r.practice === 'quarters/4' && r.explicit === 'quarters/4/60/15' && r.picked === 'quarters/4/QUARTER 1' && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
@@ -1436,6 +1439,42 @@ T['career-run'] = async ({ browser, base }) => {
     && r.strip.length > 20 && r.strip.every(n => n === 4) && r.games.every(g => g.wd === 'Wed' || g.wd === 'Sat') && new Set(r.games.map(g => g.d)).size === r.games.length && !r.noContinue && !r.err && !errs.length;
   return { ok, detail: [r.err || '', `games: season 1 ${s1.length}, season 2 ${s2.length}; titles ${r.trophies}; hub visits ${r.strip.length}, strip always 4: ${r.strip.every(n => n === 4)}; date went back: ${r.back}`,
     ...r.byStage, 'season 2 first game: ' + (s2[0] && s2[0].date), 'last day: ' + r.d, 'screens: ' + JSON.stringify(r.screens), r.noContinue ? 'no Continue: ' + r.noContinue : '', ...errs].filter(Boolean) };
+};
+
+// v9.0.1: career games follow the Settings format (2 halves of 2:00 by default)
+T['career-format'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'career-format');
+  await p.evaluate(CAL_HELPERS);
+  const r = await p.evaluate(() => {
+    const play = (format, seed) => {
+      window.__seed(seed); SETTINGS.format = format; window.__calFresh();
+      startCareerMatch(); for (let i = 0; i < 6 && Game.screen === 'story'; i++) Game.story.then();
+      const o = { screen: Game.screen, career: M.career, fmt: M.fmt.format + '/' + M.fmt.periods + '/' + M.fmt.len };
+      const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540; const g = cv.getContext('2d'), seen = [], ft = g.fillText.bind(g); g.fillText = (t, ...a) => { seen.push(String(t)); return ft(t, ...a); };
+      drawHUD(g); o.label = seen.find(t => /HALF|QUARTER|FIRST TO/.test(t)) || null;
+      const me = M.players.find(q => q.human === 0); if (format === 'first21') me.human = -1;   // no shot clock: an idle human would hold the ball, so the CPU plays him
+      let halftime = 0, qMax = 1, labels = new Set();
+      for (let n = 0; n < 60 * 60 * 20 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') { halftime++; Game.screen = 'play'; resumeFromHalf(); } qMax = Math.max(qMax, M.quarter); labels.add(periodLabel(M.quarter)); }
+      o.over = M.phase === 'over'; o.halftime = halftime; o.periods = qMax; o.labels = [...labels].join(',');
+      o.score = M.teams[0].score + '-' + M.teams[1].score;
+      // rewards don't depend on the format: the same result scores the same under the other format
+      me.human = 0;
+      const won = M.winner === 0, ctxR = { round: 0, rival: false, salah: false, stage: 0, roundName: 'Group game 1' }, a = JSON.stringify(careerRewards(won, false, ctxR));
+      const keep = M.fmt; M.fmt = makeFmt({ fmt: { format: format === 'halves' ? 'quarters' : 'halves', len: 120 } }); const b = JSON.stringify(careerRewards(won, false, ctxR)); M.fmt = keep;
+      o.sameRewards = a === b;
+      const g0 = C.gamesPlayed; careerAfterMatch(); o.recorded = C.gamesPlayed === g0 + 1 && Game.screen === 'postgame' && !!Game.post && Game.post.rw.bpTotal > 0;
+      return o;
+    };
+    const out = { halves: play('halves', 31), quarters: play('quarters', 32), first21: play('first21', 33) };
+    SETTINGS.format = 'halves';
+    return out;
+  });
+  await ctx.close();
+  const H = r.halves, Q = r.quarters, F = r.first21;
+  const ok = H.screen === 'play' && H.career && H.fmt === 'halves/2/120' && H.label === '1ST HALF' && H.halftime === 1 && H.over && H.periods >= 2 && H.labels.startsWith('1ST HALF,2ND HALF') && H.sameRewards && H.recorded
+    && Q.fmt === 'quarters/4/120' && Q.label === 'QUARTER 1' && Q.halftime === 1 && Q.over && Q.periods >= 4 && Q.sameRewards && Q.recorded
+    && F.fmt.startsWith('first21/1') && F.over && F.halftime === 0 && F.recorded && !errs.length;
+  return { ok, detail: Object.entries(r).map(([k, v]) => k + ': ' + JSON.stringify(v)).concat(errs) };
 };
 
 T['adaptive-res'] = async ({ browser, base }) => {

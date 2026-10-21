@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.0.0';
+const VERSION = '9.0.1';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -1862,9 +1862,9 @@ function newMatch(tA, tB, opts = {}) {
 }
 // Format for this match: the host's (or local) settings; attract/practice use fixed ones.
 function makeFmt(opts) {
-  // v8.6.5: career games and practice (gym drills, mini games) keep 4 quarters; they used to follow the Settings
-  // format, whose default was quarters until the default game became 2 halves. Their period length still follows Settings.
-  const f = opts.fmt || (opts.attract ? { format: 'quarters', len: 60, sc: 24 } : (opts.career || opts.practice) ? { format: 'quarters', len: SETTINGS.periodLen, target: SETTINGS.target }
+  // Practice (gym drills, mini games, the hub gym) keeps 4 quarters: it has no real periods. v9.0.1: career games follow
+  // the Settings format like Quick Play (2 halves of 2:00 by default). Barakah Run and scenarios pass their own fmt.
+  const f = opts.fmt || (opts.attract ? { format: 'quarters', len: 60, sc: 24 } : opts.practice ? { format: 'quarters', len: SETTINGS.periodLen, target: SETTINGS.target }
     : { format: SETTINGS.format, len: SETTINGS.periodLen, target: SETTINGS.target });
   const first21 = f.format === 'first21', len = f.len || 120;
   const sc = f.sc != null ? f.sc : first21 ? 0 : (SHOT_CLOCK_FOR[len] != null ? SHOT_CLOCK_FOR[len] : 24);
@@ -4419,7 +4419,7 @@ const STORY = {
     'Hold shoot and let go at the top of your jump. Green on the meter is money.', 'A contested shot is a gift to the other team. Find the open brother.', "Change direction while dribbling. The defender's ankles will need a break.",
     'Sprint at the rim and shoot: that is a dunk. Use it wisely.', 'Pray before the game, not just after it.', 'Defense is patience. Stay between your man and the rim.',
     'Help the man who falls, even if he wears the other jersey.', 'Talk on defense. A quiet team gets screened.', 'Stay low on defense. Tall legs, short temper, both are trouble.',
-    'Shake hands before tip-off. Adab first, then basketball.', 'Drink water. Your legs will thank you in the fourth.', 'A good pass makes two people happy.']
+    'Shake hands before tip-off. Adab first, then basketball.', 'Drink water. Your legs will thank you in the last minute.', 'A good pass makes two people happy.']
 };
 
 // ============================================================ MASJID GYM
