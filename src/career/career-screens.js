@@ -334,7 +334,7 @@ function wrapTextLeft(g, text, x, y, maxW, lh) {
 function drawHub(g) {
   const S = STAGES[C.stage], b = C.bracket, T = amanahTeam(), TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone layout
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Masjid Al-Amanah', 104, 36);
-  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(S.title + ', Small division', 104, 58);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(TT && typeof calShown === 'function' && calShown() ? calHubSubtitle(S) : S.title + ', Small division', 104, 58);   // v9.0: phones keep room for the calendar strip
   // player card
   panel(g, 30, 84, 290, 440, false);
   drawPortrait(g, 110, 262, playerDef(), T, 1.7, 'thobe');

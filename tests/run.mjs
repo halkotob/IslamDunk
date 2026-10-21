@@ -38,6 +38,13 @@
 //                two pads for two players, hot-plug, trivia and a Noor card, the on-screen picker, rumble, keyboard
 //   clip         v8.7.1: a seeded game's best play exported as a video (MediaRecorder): video Blob, 4-8 s, state untouched;
 //                refused during a live match; falls back to the still image without MediaRecorder
+//   calendar     v9.0: the career calendar model (month lengths, weekdays, Jumu'ah, Ramadan, the Eids, year rollover), stage
+//                schedules (every round a day, Wed/Sat only, never a Friday or two games a day, breaks, re-entry after the
+//                break), Continue skips empty days, saves from v5 (knockout), v6 (group stage), finished and season-over
+//                careers load with a sensible calendar, Settings → Career calendar Off, activity counters
+//   career-run   v9.0: a full career by bot: new career -> creator -> intro -> hub -> Continue, every game played (CPU-vs-CPU,
+//                the human's team forced to win) through all four stages and into a new season; the date only moves
+//                forward and the hub's strip always shows 4 days
 //   formats      v8.6.5: the default game is 2 halves of 2:00 (label, halftime, end, shot clock, overtime); career and
 //                practice keep 4 quarters; explicit formats and a picked 4 quarters are unchanged
 //   tomahawk     v8.6.5: Classic matches the 8.6.4 recording (tests/fixtures/tomahawk-classic.json); smooth, power,
@@ -55,6 +62,7 @@ import { FAKE_FIREBASE_APP, FAKE_FIREBASE_DB, FAKE_ROOM_INIT } from './fakes.js'
 import { PHONES, auditPhone, MIN_CSS_PX } from './phone-audit.mjs';
 import { TOMAHAWK_REC } from './tomahawk-rec.mjs';
 import { FAKE_PAD_INIT } from './fake-pad.js';
+import { CAL_HELPERS } from './calendar-setup.js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -534,10 +542,10 @@ T['phase6'] = async ({ browser, base }) => {
     const qp = TM.find(e => e.label === 'Quick Play'); menuActivate('title', TM, TM.indexOf(qp)); menuActivate('title', TM, qp.sub.findIndex(e => e.label === 'Play a game'));
     out.nested = menuState('title').path.length === 2; closeSub('title'); closeSub('title'); out.closed = menuState('title').sub === -1;
     // v8.6.2: the three touch-button settings (Button size, Button opacity, Left-handed) show only on touch devices;
-    // on touch the Controls & camera group has 8 rows (the phone audit checks that screen fits)
+    // on touch the Controls & camera group has 8 rows (the phone audit checks that screen fits); v9.0: Game has 7 on desktop (Career calendar)
     const grp = () => SET_GROUPS.map((g, i) => setGroupItems(i).length), tm0 = Input.touchMode;
     const desk = grp(); Input.touchMode = true; const touch = grp(); Input.touchMode = tm0;
-    out.settings = desk.every(n => n > 0 && n <= 6) && desk.reduce((a, n) => a + n, 0) === SET_ITEMS.filter(s => !s.touch).length - 1
+    out.settings = desk.every(n => n > 0 && n <= 7) && desk.reduce((a, n) => a + n, 0) === SET_ITEMS.filter(s => !s.touch).length - 1
       && touch.every(n => n > 0 && n <= 8) && touch.reduce((a, n) => a + n, 0) === SET_ITEMS.length - 1;
     // career card: the career player shows up in Quick Play
     C = freshCareer(); C.name = 'Yusuf'; C.bracket = makeBracket(0); C.lv.spd = 7; saveCareer(); C = null;
@@ -1277,6 +1285,157 @@ T['clip'] = async ({ browser, base }) => {
   const ok = r.live && r.started && r.state === 'done' && /^video\//.test(r.type || '') && r.size > 10000 && r.duration >= 4 && r.duration <= 8 && r.untouched && r.back === 'shareclip'
     && !r.fallback.started && r.fallback.state === 'fallback' && r.fallback.card && r.fallback.screen === 'clipvideo' && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
+// v9.0: the career calendar (model, schedules, Continue, saves, the setting)
+T['calendar'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'calendar');
+  await p.evaluate(CAL_HELPERS);
+  const r = await p.evaluate(() => {
+    window.__seed(9); const o = {};
+    // ---- model
+    o.lengths = CAL_LEN.join(',') === '30,29,30,29,30,29,30,29,30,29,30,29' && CAL_YEAR === 354 && CAL_MONTHS.length === 12 && CAL_MONTHS[8] === 'Ramadan';
+    let rt = true, wd = true, ram = true, fri = true, eids = [];
+    for (let d = 0; d < 3 * 354; d++) {
+      const t = calDate(d); if (calDayOf(t.y, t.m, t.day) !== d || t.day < 1 || t.day > CAL_LEN[t.m]) rt = false;
+      if (calWd(d + 1) !== (calWd(d) + 1) % 7 || calWd(d + 7) !== calWd(d)) wd = false;
+      if (calIsRamadan(d) !== (t.m === 8)) ram = false;
+      const h = calHoliday(d); if (h) eids.push(t.y + ':' + t.m + ':' + t.day + ':' + h.name);
+    }
+    o.roundTrip = rt; o.weekdays = wd && calWd(0) === 0 && CAL_WEEKDAYS[calWd(5)] === 'Friday'; o.ramadanMonth9 = ram;
+    o.eids = eids.join('|') === '1:9:1:Eid al-Fitr|1:11:10:Eid al-Adha|2:9:1:Eid al-Fitr|2:11:10:Eid al-Adha|3:9:1:Eid al-Fitr|3:11:10:Eid al-Adha';
+    o.rollover = JSON.stringify(calDate(353)) === JSON.stringify({ y: 1, m: 11, day: 29, wd: calWd(353) }) && calDate(354).y === 2 && calDate(354).m === 0 && calDate(354).day === 1;
+    window.__calFresh();
+    for (let d = 0; d < 354; d++) { const D = calDay(d); if (D.fri !== (calWd(d) === 5) || (D.fri && !D.games.length && !D.holiday && D.type !== 'jumuah') || (D.overlay === 'ramadan') !== calIsRamadan(d)) fri = false; }
+    o.jumuahFridays = fri;
+    // ---- schedules: every slot a day, in order, Wed/Sat only (final Saturday), never a Friday or an Eid
+    let sch = true;
+    for (let st = 0; st < 4; st++) for (let S = 0; S < 400; S += 3) for (const fmt of ['pool', 'ko']) {
+      const s = buildSchedule(st, S, { fmt }), n = fmt === 'pool' ? 5 : 3;
+      if (s.days.length !== n || s.keys.length !== n) sch = false;
+      s.days.forEach((d, i) => { const w = calWd(d); if ((w !== 3 && w !== 6) || calHoliday(d) || (i && d <= s.days[i - 1]) || d < S) sch = false; });
+      if (calWd(s.days[n - 1]) !== 6) sch = false;
+    }
+    o.schedules = sch;
+    const run = calTypicalRun(); o.breaks = run.every((s, i) => !i || s.days[0] - run[i - 1].days[4] >= CAL_CFG.brk + 1);
+    o.typical = run.map(s => STAGES[s.st].name + ' m' + (calDate(s.days[0]).m + 1) + '-m' + (calDate(s.days[4]).m + 1));
+    o.typicalOk = o.typical.join(',') === 'Local m3-m5,State m6-m8,National m9-m11,World m12-m1' && calIsRamadan(run[2].days[0]);
+    // ---- Continue: skips empty days, stops on Jumu'ah, runs the pregame flow on a game day
+    window.__calFresh(); const d0 = C.cal.d, D0 = calDay(d0);
+    const items = HUB_MENU(); o.hubItems = items.map(e => e.label + (e.badge ? '[' + e.badge + ']' : '')).join(',');
+    calContinue(); const d1 = C.cal.d, t1 = calDay(d1).type, s1 = Game.screen;
+    calContinue(); const d2 = C.cal.d, s2 = Game.screen;
+    o.cont = { d0: calText(d0), d1: calText(d1), t1, s1, d2: calText(d2), s2 };
+    o.continueOk = d1 > d0 + 1 && t1 === 'jumuah' && s1 === 'hub' && calDay(d2).type === 'game' && d2 === calGameDay() && ['scout', 'story'].includes(s2);
+    careerHub(); calContinue(); o.noSkip = C.cal.d === d2;   // a game day isn't passed by Continue...
+    careerHub(); calNextDay(); o.noSkipNext = C.cal.d === d2 && ['scout', 'story'].includes(Game.screen);   // ...or by Next day
+    // ---- a whole stage: one game per day, on its day, Wed/Sat; then a break; the next stage's days
+    window.__calFresh(); window.__calPlayTo(1, 0);
+    const L = C.cal.log; o.logDays = L.map(x => CAL_WD[calWd(x.d)] + ' ' + calDate(x.d).day);
+    o.stageGames = L.length === 5 && new Set(L.map(x => x.d)).size === 5 && L.every(x => [3, 6].includes(calWd(x.d))) && L.every((x, i) => !i || x.d > L[i - 1].d);
+    o.afterFinal = C.cal.d === L[4].d + 1 && C.cal.sched.st === 1 && C.cal.sched.days[0] >= L[4].d + 1 + CAL_CFG.brk && !C.cal.sched.entry;
+    // ---- out in the group stage: the re-entry is scheduled after the break, and played on its day
+    window.__calFresh();
+    const lose = () => { const gd = calGameDay(); calSetDay(gd); startCareerMatch(); M.teams[0].score = 10; M.teams[1].score = 30; M.winner = 1; M.phase = 'over'; careerAfterMatch(); return gd; };
+    lose(); lose(); const last = lose();
+    const rs = C.cal.sched; o.out = { out: !!C.bracket.out, entry: rs.entry, gap: rs.days[0] - last, today: C.cal.d - last };
+    let k = 0; careerHub(); while (Game.screen === 'hub' && k++ < 20) calContinue();
+    o.retry = C.bracket.out === false && C.retries === 1 && C.cal.d === rs.days[0] && !C.cal.sched.entry && calSlot() === 0 && ['scout', 'story'].includes(Game.screen);
+    o.outOk = o.out.out && o.out.entry && o.out.gap >= CAL_CFG.brk + 1 && o.out.today === 1;
+    // ---- counters for "activities done today" (unlimited; recorded)
+    window.__calFresh(); C.bp = 5000; buyStat(0); buyStat(1); const lv = C.cal.done.levels; calNextDay(); o.counters = lv === 2 && !C.cal.done.levels;
+    // ---- saves
+    // v5 era: no sv, a knockout bracket after its quarterfinal, State stage
+    const v5 = { v: 1, seed: 777, name: 'Old', look: freshCareer().look, stage: 1, bp: 50, hb: 80, lv: { sht: 5, spd: 5, dnk: 4, def: 4, sta: 4, pas: 4 }, trophies: [0], wins: 5, losses: 0, up: {}, seen: { intro: true, stage0: true, stage1: true }, done: false, divChamps: {},
+      bracket: { round: 1, out: false, rounds: [[{ a: 0, b: 5, sa: 30, sb: 22, w: 0 }, { a: 2, b: 3, sa: 20, sb: 25, w: 3 }, { a: 4, b: 6, sa: 28, sb: 18, w: 4 }, { a: 7, b: 1, sa: 21, sb: 30, w: 1 }], [{ a: 0, b: 3, sa: null, sb: null, w: null }, { a: 4, b: 1, sa: null, sb: null, w: null }]] } };
+    localStorage.setItem(SAVE_SLOT, JSON.stringify(v5)); C = null; loadCareer(SAVE_SLOT);
+    const c5 = C.cal; o.v5 = { sv: C.sv, d: calText(c5.d) + ' Y' + calDate(c5.d).y, fmt: c5.sched.fmt, slot: calSlot(), next: calText(calGameDay()), log: c5.log.map(x => calText(x.d) + ' ' + (x.w ? 'W' : 'L') + ' ' + x.r) };
+    o.v5ok = C.sv === 4 && c5.sched.fmt === 'ko' && calSlot() === 1 && c5.log.length === 1 && c5.log[0].w === 1 && c5.log[0].d < c5.d && calGameDay() >= c5.d && calDate(c5.d).m >= 4 && calDate(c5.d).m <= 7;
+    window.__calWin(); o.v5play = C.cal.log.length === 2 && C.bracket.round === 2 && calSlot() === 2 && calGameDay() > C.cal.log[1].d;
+    // v6 era: sv 3, group stage in progress (National, after group game 1)
+    window.__calFresh(); window.__calPlayTo(2, 1); delete C.cal; C.sv = 3; saveCareer(SAVE_SLOT); C = null; loadCareer(SAVE_SLOT);
+    o.v6 = { d: calText(C.cal.d), slot: calSlot(), next: calText(calGameDay()), log: C.cal.log.map(x => calText(x.d) + ' ' + x.r) };
+    o.v6ok = C.sv === 4 && C.cal.sched.fmt === 'pool' && calSlot() === 1 && C.cal.log.length === 1 && C.cal.log[0].d < C.cal.d && calGameDay() >= C.cal.d && calIsRamadan(calGameDay()) === calIsRamadan(calTypicalRun()[2].days[1]);
+    // finished career (World champions): the next thing is the Cup again after a break
+    window.__calFresh(); window.__calPlayTo(3, 4); window.__calWin(); const doneOk1 = C.done && C.bracket.champ;
+    delete C.cal; C.sv = 3; saveCareer(SAVE_SLOT); C = null; loadCareer(SAVE_SLOT);
+    o.doneOk = doneOk1 && C.cal.sched.entry && C.cal.sched.st === 3 && calGameDay() > C.cal.d && HUB_MENU().some(e => e.label === 'Continue') && HUB_MENU()[0].label.startsWith('Start Season');
+    // season over (lost a semifinal): no schedule until the new season, which starts after a break
+    window.__calFresh(); window.__calPlayTo(0, 3); const sf = calGameDay(); calSetDay(sf); startCareerMatch(); M.teams[0].score = 10; M.teams[1].score = 30; M.winner = 1; M.phase = 'over'; careerAfterMatch();
+    const so = !!C.seasonOver && C.cal.sched === null && C.cal.d === sf + 1;
+    delete C.cal; saveCareer(SAVE_SLOT); C = null; loadCareer(SAVE_SLOT);
+    const soLoad = !!C.seasonOver && C.cal.sched === null && typeof C.cal.d === 'number';
+    const dBefore = C.cal.d; startNewSeason(false);
+    o.seasonOver = so && soLoad && C.season === 2 && C.cal.sched.st === 0 && C.cal.sched.days[0] > dBefore && calGameDay() === C.cal.sched.days[0];
+    // the current format round-trips
+    window.__calFresh(); window.__calPlayTo(0, 2); saveCareer(SAVE_SLOT); const before = JSON.stringify(C.cal); C = null; loadCareer(SAVE_SLOT); o.roundTripSave = JSON.stringify(C.cal) === before;
+    // ---- out of step (the dev panel moves the stage, review mode changes the season): the next game is re-anchored on today
+    window.__calState('game'); const dA = C.cal.d; C.season = 2; calEnsure(); const sameDay = calGameDay() === dA && calDay(dA).type === 'game';
+    C.stage = 2; C.bracket = makeBracket(2); calEnsure(); const gap = calGameDay() - C.cal.d;
+    o.reanchor = sameDay && C.cal.sched.st === 2 && gap >= 0 && gap <= 6 && C.cal.d === dA;
+    // ---- Settings → Game → Career calendar Off: the old hub, no strip; the date still moves to the game's day
+    o.setting = setGroupItems(0).some(s => s.label === 'Career calendar');
+    window.__calFresh(); SETTINGS.calendar = false; const off = HUB_MENU().map(e => e.label);
+    Game.screen = 'hub'; CalUI.n = 0; render(ctx); const stripOff = CalUI.n;
+    const dOff = C.cal.d; hubSelect(0);
+    o.off = off[0] === 'Play next game' && off.includes('Bracket') && !off.includes('Schedule') && stripOff === 0 && C.cal.d === calGameDay() && C.cal.d > dOff;
+    SETTINGS.calendar = true; careerHub(); CalUI.n = 0; render(ctx); o.stripOn = CalUI.n === 4;
+    return o;
+  });
+  // render the month view on a few months (drawing errors)
+  await p.evaluate(() => { window.__calState('ramadan'); openCalendar(); }); await sleep(300);
+  for (const k of ['KeyE', 'KeyE', 'ArrowRight', 'ArrowDown', 'KeyQ', 'Escape']) { await p.keyboard.press(k); await sleep(120); }
+  const back = await p.evaluate(() => Game.screen);
+  await ctx.close();
+  const ok = Object.entries(r).every(([k, v]) => typeof v !== 'boolean' || v) && back === 'hub' && !errs.length;
+  return { ok, detail: [...Object.entries(r).map(([k, v]) => k + ': ' + JSON.stringify(v)), 'month view keys, Esc back to: ' + back, ...errs] };
+};
+
+// v9.0: a full career by bot, Continue only
+T['career-run'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'career-run');
+  const r = await p.evaluate(() => {
+    window.__seed(90);
+    const out = { games: [], back: 0, strip: [], screens: {}, steps: 0 };
+    C = freshCareer(); C.name = 'Bot'; Game.creator = { idx: 0, isNew: true }; setupPractice('free'); Game.screen = 'creator';
+    creatorDone(); out.intro = Game.screen; introSkip(); out.hub = Game.screen;
+    let lastD = C.cal.d, season2 = 0;
+    const playGame = () => {                                                   // the match itself (after any pregame dialogue)
+      for (let n = 0; n < 60 * 60 * 20 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; }
+      if (M.teams[0].score <= M.teams[1].score) M.teams[0].score = M.teams[1].score + 2;   // the human's team is forced to win
+      M.winner = 0; M.phase = 'over';
+      const d = C.cal.d, st = C.stage; careerAfterMatch();
+      out.games.push({ s: C.season, st, d, wd: CAL_WD[calWd(d)], date: calText(d) + ' Y' + calDate(d).y });
+    };
+    try { for (let step = 0; step < 900; step++) {
+      out.steps = step; const s = Game.screen; out.screens[s] = (out.screens[s] || 0) + 1;
+      if (C.cal.d < lastD) out.back++; lastD = C.cal.d;
+      if (s === 'hub') {
+        CalUI.n = 0; render(ctx); out.strip.push(CalUI.n);
+        if (C.season === 2 && out.games.some(g => g.s === 2)) break;              // into the new season: done
+        const items = HUB_MENU();
+        if (C.done && C.season === 1) { const ns = items.find(e => /^Start Season/.test(e.label)); ns.act(); continue; }
+        const c = items.find(e => e.label === 'Continue'); if (!c) { out.noContinue = items.map(e => e.label); break; }
+        c.act();
+      } else if (s === 'story') Game.story.then();
+      else if (s === 'scout') Game.screen = 'pregame';
+      else if (s === 'pregame') startCareerMatch();                               // may open the niyyah dialogue first
+      else if (s === 'play' && M.career) playGame();
+      else if (s === 'postgame') postgameContinue();
+      else if (s === 'csummary') summaryClose();
+      else if (s === 'newseason') { startNewSeason(false); season2++; }
+      else careerHub();
+    } } catch (e) { out.err = String(e && e.stack || e).slice(0, 300) + ' | screen ' + Game.screen + ' stage ' + C.stage + ' M.careerStage ' + M.careerStage + ' games ' + out.games.length; }
+    out.done1 = C.season === 2; out.d = calText(C.cal.d) + ' Y' + calDate(C.cal.d).y; out.trophies = C.titles.filter(t => t.s === 1).length;
+    out.byStage = [0, 1, 2, 3].map(st => { const G = out.games.filter(g => g.s === 1 && g.st === st); return G.length ? STAGES[st].name + ': ' + G[0].date + ' .. ' + G[G.length - 1].date + ' (' + G.length + ')' : ''; });
+    return out;
+  });
+  await ctx.close();
+  const s1 = r.games.filter(g => g.s === 1), s2 = r.games.filter(g => g.s === 2);
+  const ok = r.intro === 'introout' && r.hub === 'hub' && s1.length === 20 && r.trophies === 4 && s2.length >= 1 && r.back === 0
+    && r.strip.length > 20 && r.strip.every(n => n === 4) && r.games.every(g => g.wd === 'Wed' || g.wd === 'Sat') && new Set(r.games.map(g => g.d)).size === r.games.length && !r.noContinue && !r.err && !errs.length;
+  return { ok, detail: [r.err || '', `games: season 1 ${s1.length}, season 2 ${s2.length}; titles ${r.trophies}; hub visits ${r.strip.length}, strip always 4: ${r.strip.every(n => n === 4)}; date went back: ${r.back}`,
+    ...r.byStage, 'season 2 first game: ' + (s2[0] && s2[0].date), 'last day: ' + r.d, 'screens: ' + JSON.stringify(r.screens), r.noContinue ? 'no Continue: ' + r.noContinue : '', ...errs].filter(Boolean) };
 };
 
 T['adaptive-res'] = async ({ browser, base }) => {

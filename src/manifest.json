@@ -96,6 +96,7 @@
     "sim/tomahawk-styles.js",
     "core/gamepad.js",
     "screens/clip-video.js",
+    "career/calendar.js",
     "boot.js"
   ]
 }

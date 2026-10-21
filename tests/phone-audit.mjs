@@ -6,6 +6,7 @@
 //     left < -2 or right > canvas.width + 2 (device pixels) is an OVERFLOW
 //   - the font size (parsed from ctx.font) is converted to CSS pixels on screen; below MIN_CSS_PX is SMALL
 // Each screen is set up, rendered for a few frames, and the findings are recorded under its name.
+import { CAL_HELPERS, CAL_STATES } from './calendar-setup.js';
 export const MIN_CSS_PX = 11;
 export const PHONES = [
   ['iPhone 13 landscape', { viewport: { width: 750, height: 342 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }],
@@ -49,6 +50,7 @@ export const SCREENS = [
   ['title', `goTitle();`],
   ['settings', `goTitle(); Game.screen = 'settings'; Game.idx = 0;`],
   ['settings: controls & camera', `goTitle(); Game.screen = 'settings'; Game.setGroup = 1; Game.idx = 0;`],
+  ['settings: game', `goTitle(); Game.screen = 'settings'; Game.setGroup = 0; Game.idx = 0;`],
   ['howto', `goTitle(); Game.screen = 'howto';`],
   ['about', `goTitle(); Game.screen = 'about';`],
   ['achievements', `goTitle(); Game.screen = 'achievements'; Game.idx = 0;`],
@@ -77,6 +79,10 @@ export const SCREENS = [
   ['story', CAREER + ` playStory([['saleem', 'Assalamu alaikum. Ready for your first game at the Metro Masjid League? Keep your intention pure and play hard.']], () => careerHub());`],
   ['hub', CAREER + ` careerHub();`],
   ['cbracket', CAREER + ` careerHub(); Game.screen = 'cbracket';`],
+  // v9.0: the calendar strip on the hub and the month view, in the five review states (a season-2 hub too: the season moves into the subtitle)
+  ...CAL_STATES.flatMap(st => [['hub calendar: ' + st, CAL_HELPERS + ` window.__calState('${st}');`], ['month view: ' + st, CAL_HELPERS + ` window.__calState('${st}'); openCalendar();`]]),
+  ['hub calendar: season 2', CAL_HELPERS + ` window.__calState('game'); C.season = 2; careerHub();`],
+  ['hub calendar: schedule menu', CAL_HELPERS + ` window.__calState('game'); const it = HUB_MENU(); menuActivate('hub', it, it.findIndex(e => e.label === 'Schedule'));`],
   ['cstats', CAREER + ` careerHub(); openStats();`],
   ['cgoals', CAREER + ` careerHub(); openGoals();`],
   ['csummary', CAREER + ` careerHub(); openSummary(C.stage, 'menu');`],

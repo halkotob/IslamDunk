@@ -1,5 +1,61 @@
 # Changelog
 
+## 9.0.0: career calendar
+Step 1 of the career calendar: the calendar layer and its UI only. No walking world, no new places or characters;
+the hub and every activity work as before. It is an in-game calendar, not the real date.
+
+- **The calendar.** A Hijri-style year: Muharram, Safar, Rabi' al-Awwal, Rabi' al-Thani, Jumada al-Ula, Jumada
+  al-Thani, Rajab, Sha'ban, Ramadan, Shawwal, Dhul-Qa'dah, Dhul-Hijjah, 30 and 29 days alternating (354 days),
+  with a continuous 7-day week. Every Friday is Jumu'ah; Eid al-Fitr (1 Shawwal) and Eid al-Adha (10 Dhul-Hijjah)
+  are holidays; all of Ramadan carries an overlay that can sit on any day. Years show from Year 1. Each day is
+  `{ d, type, overlay, games[], events[] }` (types GAME, JUMUAH, HOLIDAY, EVENT, FREE; `events` is empty for now).
+- **The schedule.** Our games are on Wednesdays and Saturdays, never on a Friday or an Eid, one a day: group games
+  1-3, the semifinal, and the final on a Saturday (an old knockout bracket from a v5 save uses the last three days).
+  Opponents still come from the bracket, and every game is still played. A stage that ends (champion or out) is
+  followed by 7 free days (with their Jumu'ah); the next stage, or the re-entry after a loss, starts after that.
+  The stage windows are constants in `CAL_CFG`. A run with no retries: Local Sat 4 Rabi' al-Awwal - Sat 22
+  Jumada al-Ula (months 3-5), State Sat 6 Jumada al-Thani - Sat 24 Sha'ban (6-8), National Sat 9 Ramadan -
+  Sat 27 Dhul-Qa'dah (9-11, Ramadan inside), World Ummah Cup Sat 11 Dhul-Hijjah - Sat 24 Muharram of Year 2
+  (12-1). A new season starts after the break.
+- **Continue.** The hub's first item (default focus) is **Continue**, with a tag for what's next (Game today,
+  Game, Jumu'ah, Eid). It skips empty days and stops on the next day with a game, Jumu'ah, an Eid or an event; on a
+  game day the usual stage intro, scouting report and pregame run. After a game the date moves to the next day.
+  **Schedule** (where Bracket was) holds Calendar, Bracket and **Next day** (one day at a time, for later steps).
+  Neither ever passes a game. Nothing is lost by skipping. Training, the gym, the office, the shop and the masjid
+  stay unlimited; what you did today is counted in `C.cal.done` so a later step can limit it.
+- **The strip.** Top right of the hub: today and the next three days, each with weekday, date and month, the
+  opponent's crest on a game day, a mosque for Jumu'ah and a star for an Eid. Today is gold; Ramadan days are
+  indigo with a RAMADAN tag; an Eid has a gold edge. Phones get wider chips and short month names where the full
+  ones don't fit (Rabi' I, Jumada II...); the phone subtitle drops ", Small division" (and shows the season from
+  Season 2). Tap the strip, or Schedule › Calendar, for the month view.
+- **The month view.** The month as a grid with the same markers, W/L on past games, upcoming games with their
+  crest (or a ball when the opponent isn't decided yet), the chosen day's details (round, opponent, result; "After
+  Taraweeh" on a Ramadan game day; the break before the next stage), a key, and Back. Arrows move the day (and
+  cross months), Q/E change month, Esc goes back; touch: tap a day, the arrows by the title, Back; pad: D-pad,
+  LB for the next month, B back.
+- **Settings → Game → Career calendar** On/Off. Off: the old hub (Play next game, Bracket) with no dates shown;
+  the date still moves quietly to each game's day. The Game group now has 7 settings on desktop (the `phase6` cap
+  for a settings group goes from 6 to 7; on touch it stays within 8).
+- **Saves.** `C.cal = { d, sched, done, log }`; schema `sv` 4. A save from before 9.0 starts at the beginning of its
+  current stage's window (in its season's year), with the schedule built from the bracket: games already played
+  in it get their days (and W/L) in the past, and the next game is still ahead. An eliminated bracket gets its
+  re-entry after a break, a finished career (World champions) its "World Ummah Cup again", a season that's over
+  waits for the new season. Manual saves, the auto save and the saves screen are unchanged.
+- Untouched: matches, AI, online, mini games, Barakah Run, the tutorial, Quick Play, and career results, rewards,
+  brackets and seeds (cpu-parity unchanged). Salah still uses the real-time adhan.
+- **Review.** The month, weekday and holiday names are a flagged section of `docs/review/game-text.csv`
+  (`npm run review:export`). `npm run review:calendar` writes `docs/review/img/calendar-strip-<device>.png` and
+  `calendar-month-<state>-<device>.png` (desktop, iPhone landscape, 667x300) for a game day, Jumu'ah, Ramadan,
+  Eid and a stage break.
+- **Tests.** New `calendar` test (month lengths, weekdays, Jumu'ah, Ramadan, the Eids, year rollover; every
+  schedule on Wed/Sat, never a Friday or an Eid, in order, finals on Saturday; breaks; Continue skipping to
+  Jumu'ah then the game; neither Continue nor Next day passes a game; a whole stage; out in the group then the
+  re-entry after the break; counters; v5 knockout, v6 group-stage, World-champion and season-over saves; the
+  current save round trip; re-anchoring; the setting Off). New `career-run` bot: new career -> creator ->
+  intro -> hub -> Continue only, every game played (CPU vs CPU, our team forced to win) through all four stages
+  and the first game of Season 2: the date never goes back, the strip always shows 4 days. The phone audit
+  covers the strip and the month view in all five states, the Season 2 hub and the Schedule menu.
+
 ## 8.7.1: clip export
 - **Share a clip as a video.** The share screen (post-game Share, Barakah Run "Share a highlight") has
   **Make video (V)** next to Save image. It replays the chosen play onto an offscreen 1280x720 canvas at 30 fps:
