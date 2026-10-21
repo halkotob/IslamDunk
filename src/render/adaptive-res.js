@@ -49,7 +49,7 @@ RES.load();
   const _frame = frame;
   frame = function (now) {
     if (RES.lastNow) {
-      const playing = (Game.screen === 'play' || Game.screen === 'netplay' || Game.screen === 'gym') && !Game.paused && !(typeof document !== 'undefined' && document.hidden);
+      const playing = (Game.screen === 'play' || Game.screen === 'netplay' || Game.screen === 'gym' || Game.screen === 'world') && !Game.paused && !(typeof document !== 'undefined' && document.hidden);
       RES.sample(now - RES.lastNow, now, playing);
     }
     RES.lastNow = now;

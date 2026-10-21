@@ -110,8 +110,8 @@ function openMusalla() {
 function musFigure(g, p, x, y, s, pose) {
   // place the figure in world space so drawPlayer's projection lands it at (x, y)
   const z = (y - FLOOR_TOP - FX.sy) / ZS, k = depthK(z), dk = k || 1;
-  p.z = z; p.x = (x - FX.sx - W / 2) / dk + W / 2 + cam.x; p.T = amanahTeam();
-  const sink = pose === 'cross' ? 40 : pose === 'chair' ? 24 : 0;
+  p.z = z; p.x = (x - FX.sx - W / 2) / dk + W / 2 + cam.x; p.T = p.Tfix || amanahTeam();   // v9.2: Tfix = own kit colours
+  const sink = pose === 'cross' ? 40 : pose === 'chair' || pose === 'bench' ? 24 : 0;   // v9.2: 'bench' sits like 'chair' without drawing one
   g.save(); g.translate(x, y); g.scale(s / dk, s / dk); g.translate(-x, -y);
   // shadow
   g.fillStyle = 'rgba(40,20,10,0.25)'; g.beginPath(); g.ellipse(x, y + 1, pose === 'cross' ? 26 : 18, 5, 0, 0, Math.PI * 2); g.fill();
@@ -124,7 +124,7 @@ function musFigure(g, p, x, y, s, pose) {
   if (sink) {
     // the body sits lower; legs below the seat are hidden, then drawn folded
     p.y = -sink;
-    g.save(); g.beginPath(); g.rect(x - 200, y - 400, 400, 400 - (pose === 'chair' ? 26 : 8)); g.clip();
+    g.save(); g.beginPath(); g.rect(x - 200, y - 400, 400, 400 - (pose === 'chair' || pose === 'bench' ? 26 : 8)); g.clip();
     drawPlayer(g, p); g.restore();
     const robe = p.def.thobe || '#f4f4f0', dark = shade(robe, -0.18);
     if (pose === 'cross') {                             // crossed legs under the thobe, feet peeking out

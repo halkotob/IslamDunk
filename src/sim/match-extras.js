@@ -118,6 +118,7 @@ const hotGlow = () => radialSprite('hot', '255,190,70', 0.7);
 function drawHot(g) {
   const s = M.hot; if (!s) return;
   const fade = clamp(Math.min(10 - s.t, s.t) / 0.6, 0, 1), pulse = 0.75 + 0.25 * Math.sin(Game.t * 6), [x, y] = P(s.x, 0, s.z);
+  { const m = g.getTransform(), dx = m.a * x + m.c * y + m.e, cw = g.canvas.width, k = Math.hypot(m.a, m.b); if (dx < -80 * k || dx > cw + 80 * k) return; }   // v9.2: off the canvas: nothing to draw
   g.globalAlpha = fade * pulse; g.drawImage(hotGlow(), x - HOT_R * 1.6, y - HOT_R * ZS * 1.6, HOT_R * 3.2, HOT_R * ZS * 3.2);
   g.globalAlpha = fade; g.strokeStyle = '#ffcf6a'; g.lineWidth = 2.5; g.beginPath(); g.ellipse(x, y, HOT_R, HOT_R * ZS, 0, 0, Math.PI * 2); g.stroke();
   g.strokeStyle = 'rgba(255,207,106,0.5)'; g.lineWidth = 1.5; g.beginPath(); g.ellipse(x, y, HOT_R * (0.6 + 0.4 * ((Game.t * 0.8) % 1)), HOT_R * ZS * (0.6 + 0.4 * ((Game.t * 0.8) % 1)), 0, 0, Math.PI * 2); g.stroke();

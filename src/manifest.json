@@ -97,6 +97,10 @@
     "core/gamepad.js",
     "screens/clip-video.js",
     "career/calendar.js",
+    "career/world/world-engine.js",
+    "career/world/world-art.js",
+    "career/world/world-scenes.js",
+    "career/world/world-day.js",
     "boot.js"
   ]
 }

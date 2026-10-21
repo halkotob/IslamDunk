@@ -18,6 +18,7 @@ const files = manifest.files || manifest.order || manifest;
 const SECTION = [
   [/sim\/noor-powers/, 'Noor power-ups (v8.6.1: review the wording)'],
   [/career\/calendar/, 'Career calendar (v9.0: review the month, weekday and holiday names)'],
+  [/career\/world\//, 'Neighbourhood (v9.2: review the people, their lines, the signs and the store)'],
   [/data\/trivia/, 'Trivia'], [/data\/achievements/, 'Achievements'], [/career\/office/, 'Sheikh'], [/career\/career-story/, 'Sheikh, niyyah and stories'],
   [/career\/(career|career-screens|cinema|seasons|intro-world|musalla|musalla-walk|progression|salah)\.js/, 'Story and dialogue'],
   [/career\/(career-goals|gym-routines|gym-drills|masjid-props|masjid-projects)/, 'Career: goals, gym and masjid'],
@@ -30,6 +31,8 @@ const SECTION = [
 const FLAG = { file: /sim\/noor-powers/, text: /Noor power-up|Choose your Noor/, note: 'REVIEW 8.6.1: Islamic wording (Noor power-ups)' };
 // v9.0: the career calendar's month and holiday names (an in-game calendar, not real dates)
 const FLAG9 = { file: /career\/calendar/, note: 'REVIEW 9.0: Islamic wording (calendar months and holidays)' };
+// v9.2: everything new in the neighbourhood (NPC lines, signs, the store, banners)
+const FLAG92 = { file: /career\/world\//, note: 'REVIEW 9.2: neighbourhood text (people, signs, the store)' };
 const sectionOf = f => (SECTION.find(([re]) => re.test(f)) || [, 'Other'])[1];
 
 // ---- string literals with line numbers (skips comments; template literals keep ${...} as …)
@@ -63,7 +66,7 @@ function playerFacing(t) {
   if (t.length < 4) return false;
   if (!/[A-Za-z]{2}/.test(t)) return /[؀-ۿ]{2}/.test(t);               // Arabic lines count
   if (/^[#.]?[\w-]+$/.test(t) && !/^[A-Z][a-z]+$/.test(t)) return false;          // identifiers, keys, ids
-  if (/^#[0-9a-f]{3,8}$/i.test(t) || /rgba?\(|^(Backquote|Escape|Enter|Space|Tab|Shift\w*|Digit)$/.test(t) || /\bpx\b|^\d+px|font-|Key[A-Z]|Arrow|Numpad/.test(t)) return false;
+  if (/^#[0-9a-f]{3,8}$/i.test(t) || /rgba?\(|^(Backquote|Escape|Enter|Space|Tab|Shift\w*|Digit)$/.test(t) || /\bpx\b|\d+px|font-|Key[A-Z]|Arrow|Numpad/.test(t)) return false;
   if (/[{}=;]|=>|\(\)|^\.|\/\//.test(t)) return false;
   if (/^(idle|dribble|shot|pass|loose|held|play|title|hub|gym|story|thobe|kufi|hair|topi|imama|crochet|left|right|center|middle|alphabetic|round|bold|monospace)$/.test(t)) return false;
   if (/^(islamdunk|data:|https?:|\w+\.\w+$)/.test(t)) return false;
@@ -87,10 +90,10 @@ for (const f of files) {
   for (const L of literals(fs.readFileSync(p, 'utf8'))) {
     const text = unesc(L.s).replace(/\s+/g, ' ').trim();
     if (!playerFacing(text)) continue;
-    const flagged = FLAG.file.test(f) || FLAG9.file.test(f);                                  // the review section lists every one of its lines, even if repeated elsewhere
+    const flagged = FLAG.file.test(f) || FLAG9.file.test(f) || FLAG92.file.test(f);                                  // the review section lists every one of its lines, even if repeated elsewhere
     if (seen.has(text) && !flagged) { seen.get(text).also++; continue; }
     const sp = /\[\s*'(\w+)'\s*,\s*$/.exec(L.prev); const who = sp && SPEAKERS[sp[1]];
-    const r = { section: sectionOf(f), where: f + ':' + L.line + (who ? ' — ' + who : ''), text, isNew: phase1.size && !phase1.has(text) ? 'new' : '', flag: FLAG9.file.test(f) ? FLAG9.note : flagged || FLAG.text.test(text) ? FLAG.note : '', also: 0 };
+    const r = { section: sectionOf(f), where: f + ':' + L.line + (who ? ' — ' + who : ''), text, isNew: phase1.size && !phase1.has(text) ? 'new' : '', flag: FLAG92.file.test(f) ? FLAG92.note : FLAG9.file.test(f) ? FLAG9.note : flagged || FLAG.text.test(text) ? FLAG.note : '', also: 0 };
     if (!seen.has(text)) seen.set(text, r); rows.push(r);
   }
 }
@@ -110,4 +113,4 @@ for (const sec of order) {
   for (const [i, r] of R) md += `| ${i} | \`${r.where.replace(/\|/g, '/')}\` | ${r.flag ? '**' + r.flag.split(':')[0] + '** ' : ''}${r.isNew ? '**NEW** ' : ''}${r.text.replace(/\|/g, '\\|')} |\n`;
 }
 fs.writeFileSync(path.join(OUT, 'game-text.md'), md);
-console.log(`review packet: ${rows.length} lines (${newN} new since Phase 1, ${rows.filter(r => r.flag === FLAG.note).length} flagged for the 8.6.1 wording review, ${rows.filter(r => r.flag === FLAG9.note).length} for the 9.0 calendar review), ${marks.size} earlier marks carried over`);
+console.log(`review packet: ${rows.length} lines (${newN} new since Phase 1, ${rows.filter(r => r.flag === FLAG.note).length} flagged for the 8.6.1 wording review, ${rows.filter(r => r.flag === FLAG9.note).length} for the 9.0 calendar review, ${rows.filter(r => r.flag === FLAG92.note).length} for the 9.2 neighbourhood review), ${marks.size} earlier marks carried over`);

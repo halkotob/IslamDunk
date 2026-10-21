@@ -7,6 +7,7 @@
 //   - the font size (parsed from ctx.font) is converted to CSS pixels on screen; below MIN_CSS_PX is SMALL
 // Each screen is set up, rendered for a few frames, and the findings are recorded under its name.
 import { CAL_HELPERS, CAL_STATES } from './calendar-setup.js';
+import { WORLD_HELPERS } from './world-setup.js';
 export const MIN_CSS_PX = 11;
 export const PHONES = [
   ['iPhone 13 landscape', { viewport: { width: 750, height: 342 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }],
@@ -81,6 +82,16 @@ export const SCREENS = [
   ['cbracket', CAREER + ` careerHub(); Game.screen = 'cbracket';`],
   // v9.0: the calendar strip on the hub and the month view, in the five review states (a season-2 hub too: the season moves into the subtitle)
   ...CAL_STATES.flatMap(st => [['hub calendar: ' + st, CAL_HELPERS + ` window.__calState('${st}');`], ['month view: ' + st, CAL_HELPERS + ` window.__calState('${st}'); openCalendar();`]]),
+  // v9.2: the neighbourhood: each scene (HUD, buttons, hint), a speech bubble, a prompt, the shop, the menu, a banner, night
+  ...[['home', 'home'], ['street', 'street-west'], ['masjid front', 'masjid-front'], ['store', 'store']].map(([n, v]) => ['world: ' + n, WORLD_HELPERS + ` window.__worldPhoto('${v}', 1);`]),
+  ['world: speech bubble', WORLD_HELPERS + ` window.__worldPhoto('street-west', 1); worldTalkTo(World.npcs.find(q => q.id === 'daniel'));`],
+  ['world: long bubble', WORLD_HELPERS + ` window.__worldPhoto('street-west', 1); worldSay([['yusuf', 'I walk to the corner and back every day. The doctor says it’s good. The bench agrees.']], World.npcs.find(q => q.id === 'yusuf'));`],
+  ['world: prompt', WORLD_HELPERS + ` window.__worldPhoto('street-west', 1); worldEnter('street', { x: 386, d: 0.05, face: 1 }, { noFade: true }); World.near = worldNearest();`],
+  ['world: closed prompt', WORLD_HELPERS + ` window.__worldPhoto('street-west', 3); worldEnter('street', { x: 1680, d: 0.05, face: 1 }, { noFade: true }); World.near = worldNearest();`],
+  ['world: shop', WORLD_HELPERS + ` window.__worldPhoto('store', 1); C.store = { band_white: 1, shoe_gold: 1 }; worldOpenShop(true);`],
+  ['world: menu', WORLD_HELPERS + ` window.__worldPhoto('home', 1); World.menu = { idx: 0 };`],
+  ['world: jumuah banner', WORLD_HELPERS + ` window.__worldPhoto('home', 0); let d = C.cal.d; while (calWd(d) !== 5) d++; calSetDay(d); worldBanner('Jumu’ah today. The masjid is at the end of the street.');`],
+  ['world: night street', WORLD_HELPERS + ` window.__worldPhoto('street-east', 3);`],
   ['hub calendar: season 2', CAL_HELPERS + ` window.__calState('game'); C.season = 2; careerHub();`],
   ['hub calendar: schedule menu', CAL_HELPERS + ` window.__calState('game'); const it = HUB_MENU(); menuActivate('hub', it, it.findIndex(e => e.label === 'Schedule'));`],
   ['cstats', CAREER + ` careerHub(); openStats();`],

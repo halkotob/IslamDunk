@@ -45,6 +45,17 @@
 //   career-run   v9.0: a full career by bot: new career -> creator -> intro -> hub -> Continue, every game played (CPU-vs-CPU,
 //                the human's team forced to win) through all four stages and into a new season; the date only moves
 //                forward and the hub's strip always shows 4 days
+//   world-flow   v9.2 neighbourhood: a free day starts at home; Go out, the store and the masjid once a day, each visit moves
+//                the time of day on, night only home, End the day, Skip the day, after a game the next morning at home,
+//                Jumu'ah highlight, short leavable talks (a different set the next day), the store (Halal Bucks, cosmetic,
+//                owned/worn, creator rows), the mirror, saves (old saves start at home), calendar Off, sign text size
+//   world-walk   v9.2 walk bot: reachability over the walkable mask, walks to every portal, NPC and use point (stuck, off the
+//                floor, through a prop), feet on the ground line, depth order, camera inside the drawn world
+//   world-robust v9.2 rapid presses and taps in every scene, leaving mid-talk (Esc, Leave), tab away/back, resizes, phone
+//                rotation, no page errors; night frame time per scene with the game's own loop
+//   world-save   v9.2 save in every scene and time of day, reload, same place; the hub comes back; old saves start at home
+//   world-visual v9.2 visual regression: every view x time of day x 3 sizes against docs/review/img/world-*.png
+//   world-pad    v9.2 the stick walks, A talks, B leaves, Start opens the menu
 //   formats      v8.6.5: the default game is 2 halves of 2:00 (label, halftime, end, shot clock, overtime); career and
 //                practice keeps 4 quarters (v9.0.1: career follows the Settings format); explicit formats and a picked 4 quarters are unchanged
 //   career-format v9.0.1: career games follow Settings: the default is 2 halves (1ST HALF, one halftime, ends, same rewards as
@@ -65,6 +76,8 @@ import { PHONES, auditPhone, MIN_CSS_PX } from './phone-audit.mjs';
 import { TOMAHAWK_REC } from './tomahawk-rec.mjs';
 import { FAKE_PAD_INIT } from './fake-pad.js';
 import { CAL_HELPERS } from './calendar-setup.js';
+import { WORLD_HELPERS, WORLD_VIEWS, WORLD_TODS } from './world-setup.js';
+import { PHONES as WORLD_PHONES } from './phone-audit.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -1327,9 +1340,10 @@ T['calendar'] = async ({ browser, base }) => {
     window.__calFresh(); const d0 = C.cal.d, D0 = calDay(d0);
     const items = HUB_MENU(); o.hubItems = items.map(e => e.label + (e.badge ? '[' + e.badge + ']' : '')).join(',');
     calContinue(); const d1 = C.cal.d, t1 = calDay(d1).type, s1 = Game.screen;
-    calContinue(); const d2 = C.cal.d, s2 = Game.screen;
+    if (Game.screen === 'world') { Game.worldSuppress = true; careerHub(); } calContinue(); const d2 = C.cal.d, s2 = Game.screen;
     o.cont = { d0: calText(d0), d1: calText(d1), t1, s1, d2: calText(d2), s2 };
-    o.continueOk = d1 > d0 + 1 && t1 === 'jumuah' && s1 === 'hub' && calDay(d2).type === 'game' && d2 === calGameDay() && ['scout', 'story'].includes(s2);
+    o.continueOk = d1 > d0 + 1 && t1 === 'jumuah' && (s1 === 'world' && World.scene === 'home') &&   // v9.2: a non-game day starts at home
+      calDay(d2).type === 'game' && d2 === calGameDay() && ['scout', 'story'].includes(s2);
     careerHub(); calContinue(); o.noSkip = C.cal.d === d2;   // a game day isn't passed by Continue...
     careerHub(); calNextDay(); o.noSkipNext = C.cal.d === d2 && ['scout', 'story'].includes(Game.screen);   // ...or by Next day
     // ---- a whole stage: one game per day, on its day, Wed/Sat; then a break; the next stage's days
@@ -1342,7 +1356,7 @@ T['calendar'] = async ({ browser, base }) => {
     const lose = () => { const gd = calGameDay(); calSetDay(gd); startCareerMatch(); M.teams[0].score = 10; M.teams[1].score = 30; M.winner = 1; M.phase = 'over'; careerAfterMatch(); return gd; };
     lose(); lose(); const last = lose();
     const rs = C.cal.sched; o.out = { out: !!C.bracket.out, entry: rs.entry, gap: rs.days[0] - last, today: C.cal.d - last };
-    let k = 0; careerHub(); while (Game.screen === 'hub' && k++ < 20) calContinue();
+    let k = 0; careerHub(); while ((Game.screen === 'hub' || Game.screen === 'world') && k++ < 20) { if (Game.screen === 'world') { Game.worldSuppress = true; careerHub(); } calContinue(); }
     o.retry = C.bracket.out === false && C.retries === 1 && C.cal.d === rs.days[0] && !C.cal.sched.entry && calSlot() === 0 && ['scout', 'story'].includes(Game.screen);
     o.outOk = o.out.out && o.out.entry && o.out.gap >= CAL_CFG.brk + 1 && o.out.today === 1;
     // ---- counters for "activities done today" (unlimited; recorded)
@@ -1475,6 +1489,303 @@ T['career-format'] = async ({ browser, base }) => {
     && Q.fmt === 'quarters/4/120' && Q.label === 'QUARTER 1' && Q.halftime === 1 && Q.over && Q.periods >= 4 && Q.sameRewards && Q.recorded
     && F.fmt.startsWith('first21/1') && F.over && F.halftime === 0 && F.recorded && !errs.length;
   return { ok, detail: Object.entries(r).map(([k, v]) => k + ': ' + JSON.stringify(v)).concat(errs) };
+};
+
+// v9.2: the neighbourhood: the day's flow, the store, talking, look items, saves, the setting
+T['world-flow'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'world-flow');
+  await p.evaluate(WORLD_HELPERS);
+  const r = await p.evaluate(() => {
+    window.__seed(92); const o = {}, step = n => { for (let i = 0; i < n; i++) careerUpdate(1 / 60); for (let i = 0; i < 120 && Game.screen === 'world' && World.fadeDir; i++) careerUpdate(1 / 60); }, press = k => { Input.pressed[k] = true; careerUpdate(1 / 60); Input.pressed = {}; };
+    const where = () => Game.screen === 'world' ? World.scene + '/' + worldLoc().tod : Game.screen;
+    const portal = id => World.def.portals.find(q => q.id === id), use = id => World.def.uses.find(q => q.id === id);
+    // a free day starts at home in the morning, with Go out and Skip the day on screen
+    window.__worldDay(); worldStartDay(); step(30);
+    o.start = where() === 'home/0' && worldButtons().map(b => b.label).join() === 'Skip the day,Go out';
+    // G goes out; the store (once a day) moves the time on when you leave it
+    press('KeyG'); step(30); o.out = where() === 'street/0';
+    portal('store').act(); step(30); o.store = where() === 'store/0' && !!worldLoc().vis.store && C.cal.done.visit_store === 1;
+    portal('out').act(); step(30); o.afterStore = where() === 'street/1' && worldStoreOk() === 'You went to the store today';
+    // the masjid: the door goes into the hub (inside the masjid); Go outside comes back out, an hour on
+    portal('masjid').act(); step(30); portal('door').act(); step(30);
+    const hub = HUB_MENU().map(e => e.label); o.hub = Game.screen === 'hub' && hub[0] === 'Continue' && hub[1] === 'Go outside';
+    hub && HUB_MENU().find(e => e.label === 'Go outside').act(); step(30);
+    o.outside = where() === 'masjidfront/2' && worldMasjidOk() !== true;
+    // home at dusk: night; at night only home is open
+    portal('street').act(); step(30); portal('home').act(); step(30);
+    o.night = where() === 'home/3' && worldStoreOk() !== true && worldNightOk() !== true;
+    // End the day at the bed: tomorrow, home, morning, nothing visited
+    const d0 = C.cal.d; use('bed').act(); step(30);
+    o.endDay = C.cal.d === d0 + 1 && where() === 'home/0' && !worldLoc().vis.store;
+    // Skip the day: jumps like Continue (a game day goes to the pregame)
+    let k = 0; while (Game.screen === 'world' && k++ < 12) { press('KeyN'); step(30); }
+    o.skipToGame = ['scout', 'story', 'pregame'].includes(Game.screen) && calGameToday();
+    // after the game: the next morning at home
+    careerHub(); for (let i = 0; i < 6 && Game.screen === 'story'; i++) Game.story.then();
+    if (Game.screen === 'hub') calContinue();
+    for (let i = 0; i < 6 && Game.screen === 'story'; i++) Game.story.then();
+    if (Game.screen === 'scout') Game.screen = 'pregame';
+    if (Game.screen === 'pregame') startCareerMatch(); for (let i = 0; i < 6 && Game.screen === 'story'; i++) Game.story.then();
+    M.teams[0].score = 30; M.teams[1].score = 20; M.winner = 0; M.phase = 'over'; careerAfterMatch(); postgameContinue();
+    for (let i = 0; i < 12 && Game.screen === 'story'; i++) Game.story.then();
+    o.wake = where() === 'home/0' && !calGameToday();
+    // Jumu'ah: the way to the masjid is highlighted
+    let fri = C.cal.d; while (calWd(fri) !== 5) fri++; calSetDay(fri); worldStartDay(); step(20);
+    o.jumuah = World.bannerT > 0 && /Jumu/.test(World.banner); press('KeyG'); step(30); o.beacon = !!portal('masjid').beacon();
+    // talking: short, leavable, a different set the next day
+    worldEnter('street', { x: 1000, d: 0.32, face: -1 }, { noFade: true }); step(2);
+    const yusuf = World.npcs.find(q => q.id === 'yusuf'); worldTalkTo(yusuf); const L1 = JSON.stringify(World.talk.lines);
+    o.talkShort = World.talk.lines.length <= 2; press('Escape'); o.leftTalk = !World.talk && Game.screen === 'world';
+    worldTalkTo(yusuf); const nl = World.talk.lines.length; for (let i = 0; i < nl; i++) { step(20); press('KeyE'); } press('KeyE'); step(5); o.talkEnds = !World.talk;   // the extra press doesn't reopen it
+    calSetDay(C.cal.d + 1); worldEnter('street', { x: 1000, d: 0.32, face: -1 }, { noFade: true }); worldTalkTo(World.npcs.find(q => q.id === 'yusuf'));
+    o.nextDayDiffers = JSON.stringify(World.talk.lines) !== L1; worldLeaveTalk();
+    // the store: cosmetic only, Halal Bucks, owned and worn shown; creator rows only offer what you own
+    worldEnter('store', 'door', { noFade: true }); worldOpenShop(true);
+    const lv = JSON.stringify(C.lv), it = STORE_ITEMS.find(x => x.id === 'band_green'); C.hb = 50; storeBuy(it); o.poor = !storeOwned(it.id) && C.hb === 50 && /more Halal Bucks/.test(World.shop.msg);
+    C.hb = 500; storeBuy(it); o.bought = storeOwned(it.id) && C.hb === 440 && C.look.band === 2 && JSON.stringify(C.lv) === lv;
+    const bi = CREATOR_ROWS.findIndex(q => q.key === 'band'); C.look.band = 0; creatorStep(bi, 1); o.rowOwned = C.look.band === 2;   // white isn't owned: skipped
+    const shoe = STORE_ITEMS.find(x => x.id === 'shoe_gold'); o.locked = swatchLocked('shoe', shoe.idx); storeBuy(shoe); o.unlocked = !swatchLocked('shoe', shoe.idx) && C.look.shoes === shoe.idx;
+    o.items = STORE_ITEMS.length >= 6 && STORE_ITEMS.length <= 8 && STORE_ITEMS.every(x => x.price > 0 && ['shoe', 'kufi', 'band', 'bottle'].includes(x.kind));
+    press('Escape'); o.shopLeft = !World.shop;
+    // the mirror opens the look editor and comes back to the same spot
+    worldEnter('home', 'mirror', { noFade: true }); const mx = World.x; use('mirror').act(); o.mirror = Game.screen === 'creator';
+    careerHub(); o.mirrorBack = Game.screen === 'world' && World.scene === 'home' && World.x === mx;
+    // an old save (no location) loads and starts at home; a saved location comes back
+    worldEnter('street', { x: 1500, d: 0.5, face: 1 }, { noFade: true }); worldSaveLoc(); const keep = JSON.stringify(C.cal.loc);
+    delete C.cal.loc; saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); o.oldSave = where() === 'home/0';
+    C.cal.loc = JSON.parse(keep); saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); o.resume = where() === 'street/0' && Math.round(World.x) === 1500;
+    // text baked into scenes (signs) is big enough for the smallest phone: >= 19.8 game px (11 CSS px at 667x300),
+    // with every masjid upgrade at its top level and at every time of day
+    const keepUp = C.up; C.up = {}; for (const pj of PROJECTS.masjid) C.up[pj.key] = pj.tiers.length;
+    World.signText.clear();
+    for (const id in WORLD_SCENES) for (let tod = 0; tod < 4; tod++) { World.cache = null; worldCache(WORLD_SCENES[id], tod); }
+    C.up = keepUp; World.cache = null;
+    o.signs = [...World.signText.entries()].map(([t, px]) => t + ' ' + px).join(' | ');
+    o.signText = World.signText.size >= 6 && [...World.signText.values()].every(px => px >= 19.8);
+    // calendar Off: the old hub, no walking
+    SETTINGS.calendar = false; window.__calFresh(); careerHub(); o.off = Game.screen === 'hub' && !HUB_MENU().some(e => e.label === 'Go outside');
+    Game.worldWake = C; careerHub(); o.offWake = Game.screen === 'hub'; SETTINGS.calendar = true;
+    return o;
+  });
+  await ctx.close();
+  const ok = Object.entries(r).every(([k, v]) => k === 'signs' || v === true) && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
+// v9.2: the walk bot. In every scene: a reachability check over the walkable mask, then it walks (real stick
+// input through the game's update) to every portal, NPC and interaction point and checks the prompt appears.
+// Fails if it gets stuck, stands somewhere not walkable, steps through a prop, or can't reach a target; checks
+// feet on the ground line (pixels), depth order every frame it draws, the camera inside the drawn world, and
+// records the average update and draw time per scene.
+T['world-walk'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'world-walk');
+  await p.evaluate(WORLD_HELPERS);
+  const r = await p.evaluate(() => {
+    window.__seed(7); window.__worldDay(); worldStartDay(); World.perf = {};
+    const out = { scenes: {}, problems: [] }, bad = m => { if (out.problems.length < 30) out.problems.push(m); };
+    for (const id of ['home', 'street', 'masjidfront', 'store']) {
+      const def = WORLD_SCENES[id]; worldLoc().tod = 1; worldEnter(id, 'start', { noFade: true });
+      const res = out.scenes[id] = { cells: 0, reach: 0, targets: 0, reached: 0, frames: 0, maxStep: 0, depthOk: true, feet: [], cam: true };
+      // ---- the grid: walkable cells (static NPCs count as obstacles), flood fill from the spawn
+      let x0 = 1e9, x1 = -1e9; for (const P of def.walk) for (const [x] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+      const DX = 6, DD = 0.01, nx = Math.ceil((x1 - x0) / DX) + 1, nd = 101, idx = (i, j) => j * nx + i;
+      const still = World.npcs.filter(o => !(o.n.path && o.n.path.length > 1));
+      const free = new Uint8Array(nx * nd);
+      for (let j = 0; j < nd; j++) for (let i = 0; i < nx; i++) { const x = x0 + i * DX, d = j * DD; if (wWalkable(def, x, d, false) && !still.some(o => !o.ghost && ((x - o.x) / 30) ** 2 + ((d - o.d) / 0.085) ** 2 < 1.3)) { free[idx(i, j)] = 1; res.cells++; } }
+      const cellOf = (x, d) => [Math.round((x - x0) / DX), Math.round(d / DD)];
+      const bfs = (si, sj) => { const prev = new Int32Array(nx * nd).fill(-2), q = [idx(si, sj)]; prev[q[0]] = -1;
+        for (let h = 0; h < q.length; h++) { const c = q[h], i = c % nx, j = (c - i) / nx; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const ii = i + a, jj = j + b; if (ii < 0 || jj < 0 || ii >= nx || jj >= nd) continue; const k = idx(ii, jj); if (!free[k] || prev[k] !== -2) continue; prev[k] = c; q.push(k); } }
+        return prev; };
+      let [si, sj] = cellOf(World.x, World.d); if (!free[idx(si, sj)]) bad(id + ': the spawn is not walkable');
+      let prev = bfs(si, sj); for (let k = 0; k < free.length; k++) if (free[k] && prev[k] !== -2) res.reach++;
+      if (res.reach !== res.cells) bad(id + ': ' + (res.cells - res.reach) + ' walkable cells cannot be reached from the spawn');
+      // ---- walk to each target
+      const targets = worldTargets().slice();
+      for (const q of targets) {
+        res.targets++;
+        const [tx, td] = wTargetPos(q), rx = (q.rx || WORLD_REACH.x) * 0.8, rd = (q.rd || WORLD_REACH.d) * 0.8;
+        [si, sj] = cellOf(World.x, World.d); prev = bfs(si, sj);
+        let goal = -1, gs = 1e9;
+        for (let k = 0; k < free.length; k++) { if (prev[k] === -2) continue; const i = k % nx, j = (k - i) / nx, x = x0 + i * DX, d = j * DD; if (Math.abs(x - tx) < rx && Math.abs(d - td) < rd) { const sc = Math.abs(x - tx) / rx + Math.abs(d - td) / rd; if (sc < gs) { gs = sc; goal = k; } } }
+        const name = q.id || (q.n && q.n.id);
+        if (goal < 0) { bad(id + ': no reachable spot next to ' + name); continue; }
+        let path = []; for (let c = goal; c >= 0; c = prev[c]) path.unshift(c);
+        let wi = 0, stuck = 0, best = 1e9, lx = World.x, ld = World.d, replans = 0;
+        // re-plan with the moving NPCs where they are now (and the target, if it walks)
+        const replan = () => { const fr = new Uint8Array(free); for (const o of World.npcs) if (o.n.path && o.n.path.length > 1 && o !== q) { const ci = Math.round((o.x - x0) / DX), cj = Math.round(o.d / DD); for (let j = Math.max(0, cj - 11); j <= Math.min(nd - 1, cj + 11); j++) for (let i = Math.max(0, ci - 7); i <= Math.min(nx - 1, ci + 7); i++) { const x = x0 + i * DX, d = j * DD; if (((x - o.x) / 34) ** 2 + ((d - o.d) / 0.1) ** 2 < 1) fr[idx(i, j)] = 0; } }
+          const [ti, tj] = wTargetPos(q); [si, sj] = cellOf(World.x, World.d); const keep = free.slice(); free.set(fr); const pv = bfs(si, sj); free.set(keep);
+          let gg = -1, bs = 1e9; for (let k = 0; k < fr.length; k++) { if (pv[k] === -2) continue; const i = k % nx, j = (k - i) / nx, x = x0 + i * DX, d = j * DD; if (Math.abs(x - ti) < rx && Math.abs(d - tj) < rd) { const sc = Math.abs(x - ti) / rx + Math.abs(d - tj) / rd; if (sc < bs) { bs = sc; gg = k; } } }
+          if (gg >= 0) { path = []; for (let c = gg; c >= 0; c = pv[c]) path.unshift(c); wi = 0; } replans++; };
+        for (let f = 0; f < 6000 && wi < path.length; f++) {
+          if (f > 2 && World.near === q && q.n) break;                     // next to a (moving) person: arrived
+          if (f && f % 45 === 0 && World.npcs.some(o => o.n.path && o.n.path.length > 1)) replan();
+          const c = path[Math.min(path.length - 1, wi)], i = c % nx, j = (c - i) / nx, wx = x0 + i * DX, wd = j * DD;
+          const ddx = wx - World.x, ddd = wd - World.d;
+          if (Math.abs(ddx) < 4 && Math.abs(ddd) < 0.013) { wi += 3; if (wi >= path.length && wi - 3 < path.length - 1) wi = path.length - 1; stuck = 0; best = 1e9; continue; }
+          Input.padAxis[0] = { ax: clamp(ddx / 14, -1, 1), az: clamp(ddd / 0.025, -1, 1) };
+          careerUpdate(1 / 60); res.frames++;
+          if (Game.screen !== 'world' || World.scene !== id) { bad(id + ': left the scene while walking to ' + name); break; }
+          const st = Math.hypot(World.x - lx, (World.d - ld) * 300); res.maxStep = Math.max(res.maxStep, st);
+          if (Math.abs(World.x - lx) > 4.5 || Math.abs(World.d - ld) > 0.016) bad(id + ': moved too far in one frame');
+          if (!wOnFloor(def, World.x, World.d) || wPropHit(def, World.x, World.d, 0, 0)) bad(id + ': stood off the floor or inside a prop at ' + Math.round(World.x) + ',' + World.d.toFixed(2));
+          if (wPropHit(def, (World.x + lx) / 2, (World.d + ld) / 2, 0, 0)) bad(id + ': stepped through a prop');
+          lx = World.x; ld = World.d;
+          if (f % 6 === 0) { worldDraw(ctx); for (let k = 1; k < World.drawn.length; k++) if (World.drawn[k] < World.drawn[k - 1] - 1e-9) res.depthOk = false;
+            const vw = World.vw, m = WORLD_MARGIN; if (World.camX < -m || World.camX + vw > def.w + m || (def.w >= vw && (World.camX < -0.5 || World.camX > def.w - vw + 0.5))) res.cam = false; }
+          const dist = Math.abs(ddx) + Math.abs(ddd) * 300; if (dist < best - 0.5) { best = dist; stuck = 0; } else if (++stuck > 240) { bad(id + ': stuck on the way to ' + name + ' at ' + Math.round(World.x) + ',' + World.d.toFixed(2)); break; }
+        }
+        Input.padAxis[0] = { ax: 0, az: 0 }; careerUpdate(1 / 60); careerUpdate(1 / 60);
+        res.per = (res.per || '') + name + ':' + (res.frames - (res.f0 || 0)) + ' '; res.f0 = res.frames;
+        if (World.near === q) res.reached++; else bad(id + ': no prompt next to ' + name + ' (near: ' + (World.near && (World.near.id || World.near.n.id)) + ')');
+      }
+      // ---- feet on the ground line: draw each person alone and find the lowest solid pixel (shadows are faint)
+      const cv = document.createElement('canvas'); cv.width = 400; cv.height = 400; const g = cv.getContext('2d');
+      for (const who of [{ id: 'you', p: World.me, pose: 'stand', k: 1 }, ...World.npcs.map(o => ({ id: o.id, p: o.p, pose: o.n.pose || 'stand', k: o.k }))]) {
+        g.clearRect(0, 0, 400, 400); const s = wScale(def, 0.5) * who.k; musFigure(g, who.p, 200, 300, s, who.pose);
+        const D = g.getImageData(0, 0, 400, 400).data; let low = -1; for (let y = 399; y >= 0 && low < 0; y--) for (let x = 0; x < 400; x++) if (D[(y * 400 + x) * 4 + 3] > 200) { low = y; break; }
+        res.feet.push(who.id + ':' + (low - 300)); if (low - 300 < -1 || low - 300 > 5 * s) bad(id + ': ' + who.id + ' floats or sinks: lowest solid pixel ' + (low - 300) + ' px from the ground line (allowed -1 .. ' + (5 * s).toFixed(1) + ')');
+      }
+      if (!res.depthOk) bad(id + ': depth order broken'); if (!res.cam) bad(id + ': the camera showed past the drawn world');
+    }
+    out.perf = worldPerfReport();
+    return out;
+  });
+  await ctx.close();
+  const S = r.scenes, ok = !r.problems.length && Object.values(S).every(x => x.targets === x.reached && x.reach === x.cells) && !errs.length;
+  return { ok, detail: [...Object.entries(S).map(([k, v]) => `${k}: ${v.cells} walkable cells, ${v.reach} reachable; ${v.reached}/${v.targets} targets reached in ${v.frames} frames; max step ${v.maxStep.toFixed(1)}; feet ${v.feet.join(' ')}; frames per target ${v.per}`),
+    ...r.problems, ...errs] };
+};
+
+// v9.2: no page errors under abuse: rapid repeated presses in every scene (keyboard and taps), leaving
+// mid-conversation (Esc and the Leave button), tabbing away and back, resizing, rotating a phone; then the
+// average frame time per scene with the game's own loop (update + draw CPU time, and the frame interval)
+T['world-robust'] = async ({ browser, base }) => {
+  const detail = []; let ok = true;
+  for (const [dn, dev] of [['desktop', { viewport: { width: 1280, height: 720 } }], ['phone', Object.assign({}, WORLD_PHONES[0][1])]]) {
+    const errs = [], ctx = await newContext(browser, { device: dev, seed: true }), p = await open(ctx, base + '/', errs, 'world-robust ' + dn);
+    await p.evaluate(WORLD_HELPERS); if (dn === 'phone') await p.evaluate(() => { Input.touchMode = true; });
+    const state = () => p.evaluate(() => ({ s: Game.screen, w: Game.screen === 'world' ? World.scene : null, talk: !!World.talk, fade: World.fadeDir }));
+    await p.evaluate(() => { window.__worldDay(); worldStartDay(); });
+    const keys = ['KeyE', 'Enter', 'KeyK', 'Space', 'Escape', 'KeyG', 'KeyN', 'ArrowLeft', 'ArrowRight', 'KeyD', 'KeyA', 'KeyW', 'KeyS', 'Escape', 'Escape'];
+    const seen = new Set();
+    for (const sc of ['home', 'street', 'masjidfront', 'store']) {
+      await p.evaluate(sc => { if (!C || !C.cal) window.__worldDay(); if (Game.screen !== 'world') { Game.worldSuppress = true; careerHub(); } World.menu = World.shop = World.talk = null; worldEnter(sc, 'start', { noFade: true }); }, sc);
+      for (let i = 0; i < 60; i++) { await p.keyboard.press(keys[(i * 7 + sc.length) % keys.length], { delay: 0 }); if (i % 9 === 0) await sleep(30); }
+      // taps anywhere on the canvas (touch on the phone)
+      const box = await p.evaluate(() => { const c = canvas.getBoundingClientRect(); return { x: c.left, y: c.top, w: c.width, h: c.height }; });
+      for (let i = 0; i < 12; i++) { const x = box.x + box.w * ((i * 37) % 100) / 100, y = box.y + box.h * ((i * 53) % 100) / 100; if (dn === 'phone') await p.touchscreen.tap(x, y); else await p.mouse.click(x, y); }
+      seen.add(JSON.stringify(await state()));
+    }
+    // leaving mid-conversation: Esc, then the Leave button (a click/tap on its rect)
+    const talk = await p.evaluate(() => { Game.worldSuppress = true; careerHub(); worldLoc().tod = 1; worldEnter('street', { x: 1000, d: 0.32, face: -1 }, { noFade: true }); World.menu = null; worldTalkTo(World.npcs.find(q => q.id === 'yusuf')); return !!World.talk; });
+    await sleep(100); await p.keyboard.press('Escape'); await sleep(100); const escLeft = !(await state()).talk;
+    await p.evaluate(() => worldTalkTo(World.npcs.find(q => q.id === 'yusuf'))); await sleep(150);
+    const leave = await p.evaluate(() => { const c = canvas.getBoundingClientRect(), k = c.height / H, ox = Math.round((W - 960) / 2); const r = Game.rects.filter(q => q.w === 112 && q.h === 34).pop(); return r && { x: c.left + (r.x) * k + r.w * k / 2, y: c.top + r.y * k + r.h * k / 2 }; });
+    if (leave) { if (dn === 'phone') await p.touchscreen.tap(leave.x, leave.y); else await p.mouse.click(leave.x, leave.y); }
+    await sleep(120); const btnLeft = !(await state()).talk;
+    // tab away and back, resize, rotate
+    const other = await ctx.newPage(); await other.goto('about:blank'); await other.bringToFront(); await sleep(400); await p.bringToFront(); await other.close();
+    await p.evaluate(() => { window.dispatchEvent(new Event('blur')); document.dispatchEvent(new Event('visibilitychange')); window.dispatchEvent(new Event('focus')); });
+    const sizes = dn === 'phone' ? [[342, 750], [750, 342], [667, 300], [750, 342]] : [[1024, 640], [1600, 900], [800, 600], [1280, 720]];
+    for (const [w, h] of sizes) { await p.setViewportSize({ width: w, height: h }); await p.keyboard.down('KeyD'); await sleep(250); await p.keyboard.up('KeyD'); }
+    const end = await state();
+    // frame time per scene at night (the heaviest: the tint and the lights), with the game's own loop
+    const perf = {};
+    for (const sc of ['home', 'street', 'masjidfront', 'store']) {
+      await p.evaluate(sc => { World.menu = World.shop = World.talk = null; worldLoc().tod = 3; worldEnter(sc, 'start', { noFade: true }); World.perf = {}; window.__fr = []; let last = performance.now(); const tick = t => { window.__fr.push(t - last); last = t; if (window.__fr.length < 120) requestAnimationFrame(tick); }; requestAnimationFrame(tick); }, sc);
+      await sleep(2200);
+      perf[sc] = await p.evaluate(() => { const f = window.__fr.slice(10), r = worldPerfReport()[World.scene] || {}; return { cpu: +((r.update || 0) + (r.draw || 0)).toFixed(2), frame: +(f.reduce((a, x) => a + x, 0) / Math.max(1, f.length)).toFixed(1) }; });
+    }
+    await ctx.close();
+    const good = talk && escLeft && btnLeft && !!leave && ['world', 'hub', 'scout', 'story', 'pregame', 'creator'].includes(end.s) && !errs.length;
+    ok = ok && good;
+    detail.push(`${dn}: mashed keys and taps in 4 scenes (states ${[...seen].length}), Esc leaves a talk ${escLeft}, Leave button ${btnLeft}, tab away/back + ${sizes.length} resizes ok, end ${JSON.stringify(end)}`);
+    detail.push(`${dn}: night frame time per scene (ms, CPU update+draw / frame interval): ${JSON.stringify(perf)}`);
+    for (const e of errs) detail.push('   pageerror ' + e);
+  }
+  return { ok, detail };
+};
+
+// v9.2: save in every scene and time of day, reload, arrive in the same place; the hub comes back as the hub
+T['world-save'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'world-save');
+  await p.evaluate(WORLD_HELPERS);
+  const r = await p.evaluate(() => {
+    const out = [], fails = [];
+    for (const sc of ['home', 'street', 'masjidfront', 'store']) for (let tod = 0; tod < 4; tod++) {
+      window.__worldDay(); worldStartDay(); const L = worldLoc(); L.tod = tod; L.vis.store = tod > 1 ? 1 : 0;
+      const def = WORLD_SCENES[sc], sp = def.spots.start; worldEnter(sc, { x: sp[0] + 37, d: Math.min(0.9, sp[1] + 0.13), face: -1 }, { noFade: true });
+      if (!wWalkable(def, World.x, World.d)) worldEnter(sc, 'start', { noFade: true });
+      const want = { sc, x: Math.round(World.x), d: Math.round(World.d * 1000) / 1000, tod, store: L.vis.store, day: C.cal.d };
+      worldSaveLoc(); C = null; World.scene = null; Game.screen = 'title';
+      loadCareer(SAVE_AUTO); careerHub();
+      const got = { sc: Game.screen === 'world' ? World.scene : Game.screen, x: Math.round(World.x), d: Math.round(World.d * 1000) / 1000, tod: worldLoc().tod, store: worldLoc().vis.store || 0, day: C.cal.d };
+      const same = JSON.stringify(want) === JSON.stringify(got); if (!same) fails.push(JSON.stringify(want) + ' -> ' + JSON.stringify(got));
+      out.push(sc + '/' + tod + (same ? ' ok' : ' MOVED'));
+    }
+    // inside the masjid (the hub): comes back to the hub
+    window.__worldDay(); worldStartDay(); worldEnter('masjidfront', 'door', { noFade: true }); WORLD_SCENES.masjidfront.portals[0].act(); for (let i = 0; i < 60; i++) careerUpdate(1 / 60);
+    const inHub = Game.screen === 'hub'; saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); const hubBack = inHub && Game.screen === 'hub';
+    // a save from before 9.2 (no location) starts at home
+    delete C.cal.loc; saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); const oldHome = Game.screen === 'world' && World.scene === 'home' && worldLoc().tod === 0;
+    return { out, fails, hubBack, oldHome };
+  });
+  await ctx.close();
+  const ok = !r.fails.length && r.out.length === 16 && r.hubBack && r.oldHome && !errs.length;
+  return { ok, detail: [r.out.join(', '), 'hub comes back as the hub: ' + r.hubBack, 'old save starts at home: ' + r.oldHome, ...r.fails, ...errs] };
+};
+
+// v9.2: visual regression. Every view at every time of day on desktop and both phone sizes, rendered as a frozen
+// deterministic frame and compared with the committed baseline (docs/review/img/world-*.png, made by
+// npm run review:world). A pixel differs when any channel is off by more than 10/255; the test fails when more
+// than 0.2% of a frame's pixels differ (frames are exact on the same machine; the slack is for anti-aliasing), or a baseline is missing (an unreviewed change: look at it, then
+// re-run npm run review:world to accept it).
+const WORLD_DIFF = { channel: 10, share: 0.002 };
+T['world-visual'] = async ({ browser, base }) => {
+  const detail = []; let ok = true, frames = 0, worst = { share: 0 };
+  const devs = [['desktop', { viewport: { width: 1280, height: 720 } }], ['iphone', { viewport: { width: 750, height: 342 }, isMobile: true, hasTouch: true }], ['667x300', { viewport: { width: 667, height: 300 }, isMobile: true, hasTouch: true }]];
+  for (const [dn, dev] of devs) {
+    const errs = [], ctx = await newContext(browser, { device: dev, seed: true }), p = await open(ctx, base + '/', errs, 'world-visual ' + dn);
+    await p.evaluate(WORLD_HELPERS); await p.evaluate(t => { Input.touchMode = t; }, dn !== 'desktop');
+    for (const [view] of WORLD_VIEWS) for (let tod = 0; tod < 4; tod++) {
+      const file = path.join(ROOT, 'docs/review/img', `world-${view}-${WORLD_TODS[tod]}-${dn}.png`);
+      await p.evaluate(([v, t]) => window.__worldPhoto(v, t), [view, tod]); await sleep(260);
+      const shot = await p.screenshot(); frames++;
+      if (!fs.existsSync(file)) { ok = false; detail.push(`MISSING baseline ${path.basename(file)}`); continue; }
+      const d = await p.evaluate(async ([a, b, ch]) => {
+        const load = s => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.src = 'data:image/png;base64,' + s; });
+        const [A, B] = await Promise.all([load(a), load(b)]); if (A.width !== B.width || A.height !== B.height) return { size: [A.width, A.height, B.width, B.height] };
+        const c = document.createElement('canvas'); c.width = A.width; c.height = A.height; const g = c.getContext('2d');
+        g.drawImage(A, 0, 0); const da = g.getImageData(0, 0, c.width, c.height).data; g.clearRect(0, 0, c.width, c.height); g.drawImage(B, 0, 0); const db = g.getImageData(0, 0, c.width, c.height).data;
+        let n = 0; for (let i = 0; i < da.length; i += 4) if (Math.abs(da[i] - db[i]) > ch || Math.abs(da[i + 1] - db[i + 1]) > ch || Math.abs(da[i + 2] - db[i + 2]) > ch) n++;
+        return { share: n / (da.length / 4) };
+      }, [shot.toString('base64'), fs.readFileSync(file).toString('base64'), WORLD_DIFF.channel]);
+      if (d.size || d.share > WORLD_DIFF.share) { ok = false; detail.push(`CHANGED ${path.basename(file)}: ${d.size ? 'size ' + d.size : (d.share * 100).toFixed(2) + '% of pixels differ'}`); }
+      if (d.share > worst.share) worst = { share: d.share, file: path.basename(file) };
+    }
+    for (const e of errs) { ok = false; detail.push('pageerror ' + e); }
+    await ctx.close();
+  }
+  detail.unshift(`${frames} frames compared, threshold: a channel off by > ${WORLD_DIFF.channel}, at most ${WORLD_DIFF.share * 100}% of pixels; largest difference ${(worst.share * 100).toFixed(3)}% (${worst.file || '-'})`);
+  return { ok, detail };
+};
+
+// v9.2: the neighbourhood with a gamepad: the stick walks, A talks and advances, B leaves, Start opens the menu
+T['world-pad'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true, pad: true }), p = await open(ctx, base + '/', errs, 'world-pad');
+  await p.evaluate(WORLD_HELPERS);
+  await p.evaluate(() => { window.__padPlug(0, true); window.__worldDay(); worldLoc().tod = 1; worldEnter('street', { x: 840, d: 0.3, face: 1 }, { noFade: true }); });
+  const st = () => p.evaluate(() => ({ x: Math.round(World.x), talk: !!World.talk, menu: !!World.menu, near: World.near && (World.near.id || (World.near.n && World.near.n.id)), screen: Game.screen }));
+  const s0 = await st();
+  await p.evaluate(() => window.__padSet(0, { axes: [1, 0] })); await sleep(700); await p.evaluate(() => window.__padSet(0, {}));
+  const s1 = await st();
+  await p.evaluate(() => { worldEnter('street', { x: 1000, d: 0.3, face: -1 }, { noFade: true }); }); await sleep(200);
+  const press = async b => { await p.evaluate(b => window.__padSet(0, { [b]: true }), b); await sleep(120); await p.evaluate(() => window.__padSet(0, {})); await sleep(350); };
+  const near = (await st()).near; await press('A'); const talking = (await st()).talk; await press('B'); const left = !(await st()).talk;
+  await press('START'); const menu = (await st()).menu; await press('B'); const closed = !(await st()).menu;
+  await ctx.close();
+  const ok = s1.x > s0.x + 60 && near === 'yusuf' && talking && left && menu && closed && !errs.length;
+  return { ok, detail: [`stick walked ${s0.x} -> ${s1.x}; next to ${near}; A talks ${talking}; B leaves ${left}; Start menu ${menu}, B closes ${closed}`, ...errs] };
 };
 
 T['adaptive-res'] = async ({ browser, base }) => {

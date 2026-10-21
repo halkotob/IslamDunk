@@ -1,5 +1,81 @@
 # Changelog
 
+## 9.2.0: the neighbourhood
+Step 2 of the career calendar. On free days your player walks from home through the neighbourhood to the masjid and
+the corner store. Matches, AI, online, Barakah Run, Quick Play and every other mode are untouched.
+
+- **A small scene engine** (`src/career/world/`). Scenes are data:
+  - the floor's depth range;
+  - walkable polygons;
+  - layers: far (parallax), base, foreground, and the lights;
+  - props with collision footprints, depth-sorted with the characters;
+  - portals, interaction points, and NPCs with idle poses, short strolls and lines;
+  - four times of day.
+
+  Every layer and prop is rendered once per scene and time of day into offscreen canvases. These are cut into
+  tiles at most 2048 px wide (GPU texture limits, iOS canvas memory) at the canvas's backing scale. Adaptive
+  resolution now also runs in the neighbourhood.
+
+  The engine also provides:
+  - a camera that never shows the world's edge;
+  - fades between scenes;
+  - prompts with E, the touch TALK button or pad A.
+
+  Keyboard, touch (stick + TALK) and gamepad all work.
+- **Four scenes.**
+  - **Home:** living room and bedroom. The door goes out, the bed ends the day, and the wardrobe mirror opens
+    the look editor. The prayer corner is decoration only, and the window shows the time of day.
+  - **The street,** about three screens wide:
+    - your house and two neighbours' houses;
+    - the Corner Market, and the masjid at the end behind its wall;
+    - trees, parked cars, fences, mailboxes, a hydrant, a bench;
+    - streetlights that come on at dusk;
+    - closed gates at both ends.
+  - **The masjid front:** the building follows your masjid upgrades (renovated walls, dome, minaret,
+    calligraphy, garden). The door goes into the career hub; the hub's new "Go outside" comes back out.
+  - **The Corner Market:** shelves, a fridge, the counter and Abu Karim.
+- **Seven neighbours,** each with one or two short lines, picked by day so they don't repeat back to back.
+  Every conversation can be left with Esc, Back, pad B or the Leave button.
+  - On the street: Uncle Yusuf on the bench, the kids Bilal and Sami passing a ball, Mr. Daniel next door, and
+    Hamza out for a walk.
+  - At the masjid: Br. Idris.
+  - In the store: Abu Karim.
+- **The day.**
+  - A free calendar day (anything but a game day) starts at home in the morning, with Go out (G) and Skip the
+    day (N) always on screen.
+  - The store and the masjid can each be visited once a day. Each visit moves the time of day on (morning,
+    afternoon, dusk, night), and coming home at dusk or later makes it night. At night only home is open.
+  - End the day at the bed moves to the next day; a game day goes straight to the pregame. Skip the day, or the
+    hub's Continue, jumps to the next day with something on it.
+  - After a game's post-game you wake up at home the next morning.
+  - On Jumu'ah the way to the masjid is marked; the sermon itself is for a later step.
+  - Visits are counted in the v9.0 per-day counters.
+  - Nothing is penalised: no streaks, no timers.
+  - Settings → Career calendar Off keeps the old hub with no walking.
+- **The Corner Market** sells 7 cosmetic items for Halal Bucks at fixed prices. Owned and worn are shown, and
+  there are no stats, random items or new currency. The items:
+  - gold and teal sneakers;
+  - saffron and indigo cap colors;
+  - white and green headbands;
+  - a water bottle.
+
+  They show on your player and in the creator. The two new rows (Headband, Water bottle) only offer what you
+  own. The headband shows in every view; the bottle shows in the neighbourhood.
+- **Saves.** `C.cal.loc` keeps the scene, position, time of day and today's visits, so loading puts you back in
+  the same place. Saves from before 9.2 start at home on a free day.
+- **Quality gates.**
+  - `docs/art-style.md`: the style guide.
+  - `npm run review:world`: 84 frames (7 views × 4 times of day × desktop and both phone sizes) into
+    `docs/review/img`, linked from `docs/review/gallery.html`.
+  - New tests: `world-flow`, `world-walk` (the walk bot), `world-robust`, `world-save`, `world-visual` (pixel
+    diff against those frames: any channel off by more than 10/255 on more than 0.2% of pixels fails) and
+    `world-pad`.
+  - The phone audit covers every scene, a bubble, prompts, the shop, the menu, a banner and night.
+- **Other changes.**
+  - The match hot-spot label isn't drawn when it's off the canvas. Nothing visible changes, but the phone audit
+    no longer flags it on unlucky seeds.
+  - The `calendar` test now expects a non-game day to start at home.
+
 ## 9.0.1: career uses the game format
 - **Career games follow Settings → Format and Period length**, like Quick Play: by default 2 halves of 2:00 (24 s
   shot clock); pick 4 Quarters (or First to 21) and career uses that. Practice (gym drills, mini games, the hub gym)
