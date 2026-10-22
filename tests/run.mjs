@@ -67,6 +67,9 @@
 //                possession), closes out on it, and is unchanged with no spot; late game (trailing gets a shot
 //                up, leading uses the shot clock); off the glass only to a trailing teammate
 //   studio, studio-anim, studio-csv, studio-excluded   v9.2.1-9.2.2 Review Studio (tests/studio.mjs; npm test builds dist/review first)
+//   v93          v9.3.0: a team's own court (editor rows, first on the venue screen, built gym and park floors, share
+//                codes, career away games, online lobby), 3 on 3 third-player picks, your players as mini game
+//                opponents (HORSE, Lightning and King of the Court line-ups), Teams & Players: right no longer duplicates
 // Every test fails on any uncaught page error.
 import { chromium, devices } from 'playwright';
 import http from 'node:http';
@@ -638,6 +641,61 @@ T['v86'] = async ({ browser, base }) => {
   await p.evaluate(() => { goTitle(); MiniMenu.kind = 'custom'; openMinis(); }); await sleep(300);
   await p.evaluate(() => openRoom()); await sleep(300);
   await p.evaluate(() => { Game.screen = 'profile'; }); await sleep(300);
+  await ctx.close();
+  const ok = Object.values(r).every(v => v === true) && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
+// v9.3: your own court, 3 on 3 third-player picks, your players in mini games, Teams & Players keys
+T['v93'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'v93');
+  const r = await p.evaluate(() => {
+    window.__seed(93); const out = {}, d = csLoad();
+    const pa = csNewPlayer(); pa.name = 'Yaqub'; pa.stats.sht = 10; const pb = csNewPlayer(); pb.name = 'Idris'; d.players.push(pa, pb);
+    const t = csNewTeam(); t.name = 'Masjid Test'; t.venue = 'own'; t.court = { b: 0, w: 4, p: 0, m: 2, n: 1 }; t.roster = [{ k: 'p', id: pa.id }, { k: 'p', id: pb.id }]; d.teams.push(t); csSave();
+    const ti = teamPool().findIndex(x => x.custom === t.id), T = teamAt(ti);
+    out.spec = !!T.court && T.court.key === t.c1 && T.home === 'own_' + t.id;
+    // editor rows: the court settings show up for "Your own court"
+    CSUI.tab = 0; openCSEdit(t); out.rows = csEditRows().some(x => x.label.trim() === 'Floor'); csEditDone();
+    // venue screen: the team's court first; choosing it starts the match there
+    startSelect('1p'); Game.sel.a = ti; Game.sel.b = 1; let got = null; openVenueSelect(v => { got = v; });
+    out.first = venueOptions()[0].id === 'own_' + t.id; chooseVenue(0);
+    out.chosen = !!(got && got.court && got.host === 0);
+    newMatch(T, TEAMS[1], { humans: [], venue: got }); out.built = !!(VL && VL.spec.court && VL.floor);
+    for (const b of [1, 2]) { t.court.b = b; csSave(); const v = ctVenue(teamAt(ti), 1); newMatch(TEAMS[1], teamAt(ti), { humans: [], venue: v }); for (let i = 0; i < 30; i++) updateMatch(STEP); }
+    out.kinds = VL.spec.kind === 'outdoor';
+    // codes keep the court; the career plays away games on it; the online lobby can pick it
+    const n0 = d.teams.length; out.code = !!csImport(csShareCode('team', t)).ok && d.teams[n0].venue === 'own' && d.teams[n0].court.w === 4;
+    out.career = !!careerVenue(0, 1, null, teamAt(ti)).court && !careerVenue(0, 0, null, teamAt(ti)).court;
+    Lobby.opts(); Lobby.o.game = 'vs'; Lobby.o.a = ti; Lobby.o.venue = 'own:a'; out.lobby = !!Lobby.venue().court && Lobby.rows().find(x => x.label === 'Venue').get().includes('own court');
+    // 3 on 3: pick the third players
+    goTitle(); startSelect('1p'); Game.sel.three = true; Game.sel.a = 0; Game.sel.b = 1; selectOK(); selectOK(); out.pick3 = Game.screen === 'pick3';
+    const ch = p3Choices(TEAMS[0]), ki = ch.findIndex(x => x && x.k === 'p' && x.id === pa.id); P3.pick[0] = ch[ki]; P3.pick[1] = null; p3Done();
+    out.back = Game.screen === 'select' && Game.sel.step === 2; selectOK();
+    let v3 = null; Game.venueNext = v => { v3 = v; }; chooseVenue(0); startMatchFromSelect(v3);
+    out.three = M.three && M.teamDefs[0].players[2].name === 'Yaqub' && M.teamDefs[1].players.length === 3;
+    // mini games: your player as the HORSE opponent, and "My players" line-ups
+    goTitle(); MiniMenu.kind = 'horse'; openMinis(); const orow = minisRows().find(x => x.label === 'Opponent'); for (let i = 0; i < 12 && MiniMenu.opp !== 'cs:' + pa.id; i++) orow.step(1);
+    startQuickMini(); out.horse = M.players[1].def.name === 'Yaqub';
+    for (let n = 0; n < 60 * 20; n++) miniStep(STEP);
+    goTitle(); MiniMenu.kind = 'lightning'; MiniMenu.lineup = 2; openMinis(); out.lineupRow = minisRows().some(x => x.label === 'Opponents');
+    startQuickMini(); const ids = M.miniIds.slice(1); out.lightning = ids.includes('cs:' + pa.id) && ids.includes('cs:' + pb.id) && MINI_OPPS.every(o => !o[0].startsWith('cs:'));
+    for (let n = 0; n < 60 * 20; n++) miniStep(STEP);
+    goTitle(); MiniMenu.kind = 'kotc'; startQuickMini(); out.kotc = KOTC.roster.includes('cs:' + pa.id); KOTC.on = false;
+    MiniMenu.lineup = 0; goTitle();
+    return out;
+  });
+  // Teams & Players: right switches tabs and no longer duplicates; U duplicates
+  await p.evaluate(() => { goTitle(); openCS(0); CSUI.idx = 1; }); await sleep(200);
+  const n0 = await p.evaluate(() => csLoad().teams.length);
+  await p.keyboard.press('KeyD'); await sleep(200);
+  r.noDup = await p.evaluate(n => csLoad().teams.length === n && CSUI.tab === 1, n0);
+  await p.evaluate(() => { CSUI.tab = 0; CSUI.idx = 1; }); await p.keyboard.press('KeyU'); await sleep(200);
+  r.dup = await p.evaluate(n => csLoad().teams.length === n + 1, n0);
+  // the new screens draw
+  await p.evaluate(() => { CSUI.tab = 0; openCSEdit(csLoad().teams[0]); }); await sleep(300);
+  await p.evaluate(() => { goTitle(); startSelect('1p'); Game.sel.three = true; Game.sel.a = 0; Game.sel.b = 1; selectOK(); selectOK(); }); await sleep(300);
+  await p.evaluate(() => { const ti = teamPool().findIndex(x => x.court); goTitle(); startSelect('1p'); Game.sel.a = ti; Game.sel.b = 1; openVenueSelect(() => {}); }); await sleep(400);
   await ctx.close();
   const ok = Object.values(r).every(v => v === true) && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };

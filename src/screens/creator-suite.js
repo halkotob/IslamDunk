@@ -251,10 +251,11 @@ function csListUpdate() {
   const R = csRows(), n = R.length;
   if (menuHit('up')) { CSUI.idx = (CSUI.idx + n - 1) % n; SFX.blip(); CSUI.confirm = null; }
   if (menuHit('down')) { CSUI.idx = (CSUI.idx + 1) % n; SFX.blip(); CSUI.confirm = null; }
-  if (menuHit('left') || menuHit('right') || Input.pressed.Tab) { CSUI.tab ^= 1; CSUI.idx = 0; CSUI.scroll = 0; SFX.blip(); }
+  if (menuHit('left') || menuHit('right') || Input.pressed.Tab) { CSUI.tab ^= 1; CSUI.idx = 0; CSUI.scroll = 0; SFX.blip(); return; }
+  const pad = Input.lastDev === 'pad';                                 // v9.3: D is also "right", so Duplicate is U; a pad's X shares and Y duplicates
   if (menuHit('ok')) csAct('edit');
-  else if (Input.pressed.KeyC) csAct('share');
-  else if (Input.pressed.KeyD) csAct('dup');
+  else if (Input.pressed.KeyC || (pad && Input.pressed.KeyJ)) csAct('share');
+  else if (Input.pressed.KeyU || (pad && Input.pressed.KeyH)) csAct('dup');
   else if (Input.pressed.Delete || Input.pressed.KeyX) csAct('del');
   else if (Input.pressed.KeyG) csAct('league');
   else if (Input.pressed.KeyI) openCSImport();
@@ -301,7 +302,7 @@ function drawCSList(g) {
   const bw = Math.min(120, 524 / acts.length - 8);
   acts.forEach(([l, k], i) => uiButton(g, 406 + i * (bw + 8), 452, bw, 34, l, () => csAct(k), i === 0));
   uiButton(g, 406, 494, 200, 32, 'Import a code', openCSImport, false);
-  g.textAlign = 'right'; g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText('Enter edit  •  C code  •  D duplicate  •  X delete' + (CSUI.tab === 0 ? '  •  G career' : '') + '  •  I import', 930, 516);
+  g.textAlign = 'right'; g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(Input.lastDev === 'pad' ? 'A edit  •  X share code  •  Y duplicate  •  View: any button' : 'Enter edit  •  C code  •  U duplicate  •  X delete' + (CSUI.tab === 0 ? '  •  G career' : '') + '  •  I import', 930, 516);
   W = rw; Game.ox = 0; g.restore();
 }
 // ---- the editor
@@ -388,7 +389,9 @@ function drawCSShare(g) {
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('Send this to a friend. They choose Teams & Players → Import a code and paste it.', W / 2, 138);
   g.fillStyle = 'rgba(0,0,0,0.35)'; roundRect(g, 140, 156, 680, 220, 10); g.fill();
   g.fillStyle = '#cfe6f3'; g.font = `12px monospace`; g.textAlign = 'left';
-  const code = CSUI.share || '', per = 92; for (let i = 0, y = 176; i < code.length && y < 370; i += per, y += 16) g.fillText(code.slice(i, i + per), 152, y);
+  // v9.3: wrap by measured width (phones draw this text larger), with an ellipsis if the box is full; Copy copies all of it
+  const code = CSUI.share || '', cw = g.measureText('MMMMMMMMMM').width / 10, per = Math.max(20, Math.floor(656 / cw)), lh = Math.max(16, Math.ceil(cw * 1.9));
+  for (let i = 0, y = 176; i < code.length; i += per, y += lh) { const last = y + lh > 370 && i + per < code.length; g.fillText(last ? code.slice(i, i + per - 1) + '…' : code.slice(i, i + per), 152, y); if (last) break; }
   uiButton(g, W / 2 - 200, 396, 190, 40, 'Copy code', () => csCopy(code), true);
   uiButton(g, W / 2 + 10, 396, 190, 40, 'Back', () => BACK.csshare(), false);
   W = rw; Game.ox = 0; g.restore();
@@ -414,7 +417,7 @@ function drawCSImport(g) {
 }
 // ---- screens and title entry
 {
-  const SCR = { cslist: [csListUpdate, drawCSList], csedit: [csEditUpdate, drawCSEdit], csshare: [() => { if (menuHit('back')) BACK.csshare(); else if (menuHit('ok')) csCopy(CSUI.share); }, drawCSShare],
+  const SCR = { cslist: [() => csListUpdate(), g => drawCSList(g)], csedit: [() => csEditUpdate(), g => drawCSEdit(g)], csshare: [() => { if (menuHit('back')) BACK.csshare(); else if (menuHit('ok')) csCopy(CSUI.share); }, drawCSShare],
     csimport: [() => { if (menuHit('back')) Game.screen = 'cslist'; else if (menuHit('ok')) csPasteButton(); }, drawCSImport] };
   const _gu = gameUpdate;
   gameUpdate = function (rdt) { const sc = Game.screen, was = SCR[sc]; _gu.apply(this, arguments); if (was && Game.screen === sc) { SCR[sc][0](); attractTick(rdt); } };

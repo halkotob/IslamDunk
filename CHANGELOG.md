@@ -1,5 +1,34 @@
 # Changelog
 
+## 9.3.0: your own court, 3 on 3 picks, your players in mini games
+Phase 7, part 1. Builds on 9.2.3.
+
+- **Your own court.** Teams & Players → edit a team → Home court → **Your own court**, then:
+  - Building: masjid gym, community gym or outdoor park.
+  - Floor: honey wood, light maple, dark walnut, or gray, blue or green sport floor.
+  - Paint: the team's main or second color, natural, red, navy or teal.
+  - Center: crest, short name, both, or nothing.
+  - Name on baselines: on or off.
+
+  The editor shows a live preview. The court is listed first on the venue screen when the team plays in Quick Play.
+  It can be picked in the online lobby's Venue list, and your friend sees it as you made it, because the court
+  travels in the venue spec. A team in your career league plays its home games against you there. Share codes
+  carry the court.
+- **3 on 3 (beta): pick the third players.** After both teams are chosen, a new screen picks each side's third
+  player. It can be anyone in Teams & Players (your players, your career player, the masjid brothers, any
+  built-in player), or Auto for the guest player as before.
+- **Your players in mini games.** Your own players and your career player can be the opponent in HORSE and
+  Around the World. A new **Opponents** row (Masjid regulars, Mixed, My players) fills Lightning,
+  King of the Court, 7 Up and custom games. CPU accuracy follows the player's shooting stat. Online mini games are
+  unchanged.
+- **Fixes:**
+  - On the Teams & Players list, pressing right (D or D-pad right) switched tabs and also duplicated the entry.
+    Duplicate is now U. On a gamepad, X copies the share code and Y duplicates.
+  - The share code no longer runs past the edge of the screen on phones.
+- **Checks:** the team editor (with and without a court), player editor, share, import, mini game room, the new
+  3 on 3 screen and the venue screen with your own court are in the phone text audit
+  (`tests/phone-audit.mjs`), so the Review Studio shows them too. New `v93` test.
+
 ## 9.2.3: Review Studio, Phase 3 scaffold (sounds and voice)
 The game itself is unchanged; only the version number moves.
 

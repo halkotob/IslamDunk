@@ -101,6 +101,7 @@
     "career/world/world-art.js",
     "career/world/world-scenes.js",
     "career/world/world-day.js",
+    "screens/v93-creator.js",
     "boot.js"
   ]
 }

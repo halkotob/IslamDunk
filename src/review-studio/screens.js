@@ -9,13 +9,7 @@ export const STUDIO_SCREENS = [
   ['run map', RUN + ` runPickVow(0);`],
   ['run choice', RUN + ` runPickVow(0); Run.choicesV2 = ['train', 'masjid']; runChooseNode(0);`],
   ['run end', RUN + ` runPickVow(0); Run.active = false; Run.champion = false; Game.screen = 'runend'; Game.idx = 0;`],
-  ['run badges', `goTitle(); openBarakah(); Game.screen = 'runbadges'; Game.idx = 0;`],
-  ['custom teams: import', `goTitle(); openCS(0); openCSImport();`],
-  ['custom teams: share', `goTitle(); openCS(0); CSUI.share = csShareCode('team', { name: 'Masjid Al-Noor', short: 'NOOR', c1: TEAMS[0].c1, c2: TEAMS[0].c2, crest: TEAMS[0].crest, roster: [{ k: 'team', t: 0, i: 0 }, { k: 'team', t: 0, i: 1 }] }); Game.screen = 'csshare';`],
-  ['custom teams: edit a team', `goTitle(); openCS(0); openCSEdit(csNewTeam());`],
-  ['custom teams: edit a player', `goTitle(); openCS(1); openCSEdit(csNewPlayer());`],
-  ['mini game room', `goTitle(); openMinis(); openRoom();`],
-  ['mini game room: import', `goTitle(); openMinis(); openRoom(); Game.screen = 'mrimport'; MR.msg = '';`]
+  ['run badges', `goTitle(); openBarakah(); Game.screen = 'runbadges'; Game.idx = 0;`]
 ];
 // the Game.screen each setup lands on (the studio test fails if a setup lands anywhere else)
 export const SCREEN_OF = {
@@ -108,7 +102,10 @@ export const SCREEN_OF = {
   "custom teams: edit a team": "csedit",
   "custom teams: edit a player": "csedit",
   "mini game room": "miniroom",
-  "mini game room: import": "mrimport"
+  "mini game room: import": "mrimport",
+  "custom teams: edit a team (own court)": "csedit",
+  "3 on 3: third players": "pick3",
+  "venue: your own court": "venue"
 };
 export const NOT_RENDERABLE = {
   hostlobby: 'Needs a live online session with you as host and a guest connected. The online-loop, online-room and online-fb tests play it with a fake network.',
