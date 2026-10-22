@@ -1,0 +1,9 @@
+# GitHub Pages (Jekyll) settings. Pages serves the repository root; the game is the generated index.html.
+# The Review Studio is an internal tool and is never published: its entry page and code are excluded here.
+# (It doesn't run from Pages anyway: it needs `npm run build:review`; see docs/review/README.md.)
+exclude:
+  - review.html
+  - src/review-studio/
+  - tools/vite-plugin-review.js
+  - tools/studio-run.mjs
+  - docs/review/studio-ids.json

@@ -66,6 +66,7 @@
 //                shooter (dunks and mini-game spots unchanged); CPU uses a live spot (at most every other
 //                possession), closes out on it, and is unchanged with no spot; late game (trailing gets a shot
 //                up, leading uses the shot clock); off the glass only to a trailing teammate
+//   studio, studio-csv, studio-excluded   v9.2.1 Review Studio (tests/studio.mjs; npm test builds dist/review first)
 // Every test fails on any uncaught page error.
 import { chromium, devices } from 'playwright';
 import http from 'node:http';
@@ -78,6 +79,7 @@ import { FAKE_PAD_INIT } from './fake-pad.js';
 import { CAL_HELPERS } from './calendar-setup.js';
 import { WORLD_HELPERS, WORLD_VIEWS, WORLD_TODS } from './world-setup.js';
 import { PHONES as WORLD_PHONES } from './phone-audit.mjs';
+import { STUDIO_TESTS } from './studio.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -1825,6 +1827,8 @@ T['adaptive-res'] = async ({ browser, base }) => {
     && r.flicker.down === 1 && r.flicker.upped === 0 && r.flicker.after === 1 && r.flicker.heldWithin30s === 1 && r.full_heavy === 0 && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
+
+Object.assign(T, STUDIO_TESTS);   // the Review Studio (tests/studio.mjs)
 
 // ------------------------------------------------------------------ runner
 const { srv, base } = await serve();

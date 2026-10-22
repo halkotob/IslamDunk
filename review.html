@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Islam Dunk Review Studio</title>
+</head>
+<body>
+<!-- Islam Dunk Review Studio: review every line, sprite, animation and screen of the game without playing it.
+     Internal tool. Not part of the game builds (dist/web, Pages, Electron). See docs/review/README.md. -->
+<header id="top">
+  <button id="navbtn" class="iconbtn" aria-label="Categories" title="Categories">☰</button>
+  <div class="brand"><b>Review Studio</b><span id="build"></span></div>
+  <input id="q" type="search" placeholder="Search text, id or file" aria-label="Search" autocomplete="off">
+  <div id="filters" role="group" aria-label="Filter">
+    <button data-st="all" class="chip on">All</button>
+    <button data-st="todo" class="chip">Unreviewed</button>
+    <button data-st="keep" class="chip v-keep">Keep</button>
+    <button data-st="fix" class="chip v-fix">Fix</button>
+    <button data-st="delete" class="chip v-delete">Delete</button>
+    <button data-tg="isNew" class="chip tog" title="Added since the version in “Last review”">New since last review</button>
+    <button data-tg="religious" class="chip tog" title="Islamic wording: for the content / religious reviewer">Religious review</button>
+  </div>
+  <div id="progress"><span id="prog-text"></span><div class="bar"><i id="prog-bar"></i></div></div>
+  <div id="who">
+    <input id="rname" placeholder="Your name" aria-label="Reviewer name" autocomplete="name">
+    <select id="rrole" aria-label="Role"></select>
+    <label class="lr" title="New since last review means added after this version">Last review <select id="lastrev" aria-label="Last reviewed version"></select></label>
+  </div>
+  <div id="io">
+    <button id="imp">Import…</button><input id="impfile" type="file" accept=".csv,text/csv" hidden>
+    <button id="dl">Download CSV</button>
+    <button id="cp">Copy as CSV</button>
+    <button id="confl" hidden>Conflicts</button>
+  </div>
+</header>
+<main id="app">
+  <nav id="nav" aria-label="Categories"></nav>
+  <section id="listcol"><div id="listhead"></div><div id="list" tabindex="0" aria-label="Items"></div></section>
+  <section id="stage" aria-live="polite"><div id="stagebar"></div><div id="view"></div></section>
+  <aside id="side"></aside>
+</main>
+<div id="loading">Loading the game…</div>
+<dialog id="dlg"><form method="dialog"><div id="dlgbody"></div><menu><button value="ok">Close</button></menu></form></dialog>
+<div id="gamehost" aria-hidden="true"></div>
+<div id="lens" hidden><canvas width="132" height="132"></canvas><span></span></div>
+<script type="module" src="/src/review-studio/main.js"></script>
+</body>
+</html>

@@ -1,5 +1,68 @@
 # Changelog
 
+## 9.2.1: Review Studio, Phase 1 (dialogue and text, sprites)
+A separate web tool for reviewing everything in the game without playing it. Per item it records a verdict
+(**Keep**, **Fix** or **Delete**), a comment and suggested text, and exports them as CSV. The game itself is
+unchanged: no game file changes in this release except the version number.
+
+- **Its own build.** `review.html` and `src/review-studio/` form a separate Vite entry (`vite --mode review`):
+  - `npm run review:studio` starts the dev server on port 5174;
+  - `npm run build:review` builds into `dist/review/`;
+  - `npm run review:preview` serves that build.
+
+  It is never in `dist/web`, the GitHub Pages root or the Electron app. `_config.yml` excludes its files from Pages,
+  and a test checks all of this. It is not published anywhere. `docs/review/README.md` explains how to host it
+  privately.
+- **The real game draws every item.**
+  - The studio loads the shipping game page in a same-origin frame, `game.html`. Its `localStorage` and
+    `sessionStorage` are in memory, so a real save can never be touched.
+  - An agent script runs in the game's own scope and calls the game's functions: the dialogue tables,
+    `drawPortrait`, `drawCrest`, the venue builder, `drawBallAt`, the hoop, `drawExterior`, the neighbourhood scene
+    cache and `drawHUD`.
+  - Random picks such as greetings use a fixed seed, so the item list is the same every time.
+- **Items, each with a stable ID.** 3,208 items:
+  - **Dialogue (464 lines):** story scenes, Sheikh pools, talks and lessons, the niyyah, partner scenes, musalla
+    news and talks, milestones, the intro and neighbourhood people. Conversations are shown as conversations, with
+    the speaker's face, and each line has its own verdict.
+  - **Trivia (181):** the question with the right answer, the wrong answers and the explanation.
+  - **Text (2,341):** achievements, Noor effects, taunts, calendar names, and every other player-facing string from
+    `game-text.csv` that isn't already part of an item above, grouped by its game-text.csv section.
+  - **Sprites (222):** cast, team players and the rival, neighbourhood people, every creator option, crests, kits,
+    balls, the hoop, all 20 courts (this replaces the gallery), the four neighbourhood scenes and their 30 props,
+    My Masjid outside with no projects and with every project, and the HUD.
+- **The review screen.**
+  - **Left:** categories with counts and completion bars.
+  - **Top:** search; filters (Unreviewed, Keep, Fix, Delete, New since last review, Religious review); progress;
+    the reviewer's name and role.
+  - **Middle:** a virtualised list with cached thumbnails, and the item as it ships. Sprites can be shown at 1x, 2x,
+    4x, 8x or Fit, on a light, dark or checkered background, facing right or left, in thobe or any team's kit, at
+    any time of day, with a pixel lens.
+  - **Right:** where the item lives (file:line), when it appears, the version it was added in, the verdict, the
+    comment, the suggested text and other reviewers' marks.
+  - **Keys:** K, F and D set the verdict and move on; the arrows move; N goes to the comment; Ctrl/⌘+Z undoes.
+    Touch works too.
+  - Marks autosave to `localStorage`.
+  - Desktop and tablet layouts; it also works on phones.
+- **CSV.**
+  - **Download / Copy as CSV:** `id, category, name, where, version_added, verdict, comment, suggested, reviewer,
+    role, reviewed_at, build_version`.
+  - **Import:** a studio CSV (merged by id + reviewer, newest wins, conflicts listed), `game-text.csv` (Keep / Change
+    / Cut) and the in-game `?review=1` export. Change becomes Fix and Cut becomes Delete.
+  - `npm run review:report -- <csv>` prints a worklist by file and applies nothing.
+- **ID registry.** `docs/review/studio-ids.json` records every ID and the version it was added in. The first
+  versions come from `git blame` of each item's line; "phase1" means it was in the Phase 1 packet.
+  `npm run review:ids` adds new IDs. Removing an ID needs `--remove "why"`.
+- **Tests:**
+  - `studio`: loads with no errors, every item of every category draws, counts per category, IDs are unique and
+    stable.
+  - `studio-csv`: keys and undo, CSV round trip, both older imports, merge conflicts, Delete changes no game file, the
+    game frame's storage is sandboxed, the report.
+  - `studio-excluded`: not in dist/web, the Electron renderer or Pages.
+
+  `npm test` now also builds the studio.
+- `scripts/review-export.mjs` now shares its text extraction with the studio (`tools/review-text.mjs`). The packet
+  is regenerated and includes the PAD_TEXT lines added since the last export.
+
 ## 9.2.0: the neighbourhood
 Step 2 of the career calendar. On free days your player walks from home through the neighbourhood to the masjid and
 the corner store. Matches, AI, online, Barakah Run, Quick Play and every other mode are untouched.

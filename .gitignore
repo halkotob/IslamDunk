@@ -18,3 +18,4 @@ npm-debug.log*
 # test artifacts
 tests/output/
 test-results/
+tests/.scratch/

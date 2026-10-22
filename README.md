@@ -70,6 +70,22 @@ Conventions that still apply:
 
 See [MIGRATION.md](MIGRATION.md) for the old-line → new-file map.
 
+## Review Studio
+
+An internal tool for reviewing every line, sprite, animation and screen without playing: Keep / Fix / Delete per
+item, comments, and CSV export. It runs the real game in a sandboxed frame and never changes it.
+It is not part of the web, Pages or Electron builds.
+
+| Command | What it does |
+|---|---|
+| `npm run review:studio` | Dev server: http://localhost:5174/review.html |
+| `npm run build:review` | Static build in `dist/review/`. Serve it over http (for example `npm run review:preview` or `npx serve dist/review`). It does not open from disk. |
+| `npm run review:report -- export.csv` | Prints a worklist from an export, grouped by file. Changes nothing. |
+| `npm run review:ids` | Updates the item ID registry, `docs/review/studio-ids.json`. |
+
+How to host it privately for remote reviewers: [docs/review/README.md](docs/review/README.md#review-studio-recommended).
+It is not published anywhere.
+
 ## GitHub Pages
 
 Pages serves the repository root of `main`: `index.html`, `manifest.webmanifest` and `icons/` there are
