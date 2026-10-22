@@ -36,8 +36,8 @@ reviewers access without publishing it:
 
 - **Who are you:** type your name and pick a role (Content/religious, Art, Gameplay, Other). Marks are kept per
   reviewer, so two people on one computer don't overwrite each other.
-- **Left:** the categories, with counts and a completion bar: Dialogue, Trivia, Text, Sprites, Animations and Screens.
-  Sounds and Voice come in Phase 3.
+- **Left:** the categories, with counts and a completion bar: Dialogue, Trivia, Text, Sprites, Animations, Screens,
+  Sounds and Voice.
 - **Top:**
   - search (text, ID or file);
   - filters: Unreviewed, Keep, Fix, Delete, New since last review, and Religious review (Islamic wording);
@@ -56,6 +56,17 @@ reviewers access without publishing it:
     the phone text audit does it. The checks are listed under the screen: text past the edge, text under 11 CSS
     px, overlapping tap targets (**Show tap targets** draws them), the touch buttons over the scoreboard, and page
     errors. Screens that can't be shown here are listed under **Not renderable**, with the reason.
+  - sounds: every sound effect in `src/core/utils-audio.js`, with a play button (or P). They are synthesised by
+    Web Audio, so there are no files.
+  - voice: the lines listed in `assets/voice/manifest.json`, each with its transcript and a player. There is no
+    voice yet, so this shows how to add it. The format:
+
+    ```json
+    { "lines": [ { "id": "saleem-intro-1", "file": "saleem-intro-1.mp3", "transcript": "Assalamu alaikum! …", "speaker": "saleem" } ] }
+    ```
+
+    `file` is under `assets/voice/`, `speaker` is a cast id or a name, and each line's review ID is `voice/<file>`.
+    A bare array of lines works too.
 - **Right:** where the item lives (file:line, every place the same text is used), when it appears in the game,
   the version it was added in, the flags, the verdict buttons, the comment, the suggested text, and other
   reviewers' marks.
@@ -95,6 +106,7 @@ Every item has a stable ID derived from where it comes from:
 | `text/<file>/<slug>-<hash>` | Every other player-facing string. |
 | `anim/<state>/<variant>` | An animation, for example `anim/dunk/tomahawk-float`, `anim/taunt/sujood`, `anim/react/fist`. |
 | `screen/<name>/<size>` | A screen at `desktop`, `phone-750x342` or `phone-667x300`, for example `screen/hub/phone-750x342`; `screen/<name>/not-renderable` for a screen that can't be shown. |
+| `sound/<name>`, `voice/<file>` | A sound effect (`sound/slam`), a recorded voice line. |
 | `sprite/<kind>/…` | Sprites: `cast/saleem`, `player/<team>/<n>`, `npc/<id>`, `creator/<row>/<n>`, `crest/<team>`, `jersey/<team>`, `ball/<skin>`, `hoop/default`, `venue/<id>`, `scene/<id>`, `prop/<scene>/<id>`, `masjid/none`, `masjid/all`, `hud/desktop`, `hud/touch`. |
 
 `studio-ids.json` records every ID and the version it was added in, which drives "new since last review".

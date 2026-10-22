@@ -7,7 +7,7 @@
 //                   merge by id + reviewer with the newest mark winning, conflicts listed; Delete never changes the
 //                   game or game-text.csv (file hashes before / after); the game frame's storage is sandboxed;
 //                   review:report prints a worklist and changes nothing
-//   studio-anim     every animation plays on the game's sim, reaches its state, finite joints, deterministic, flip
+//   studio-anim     (Phase 3: every sound in the list plays) every animation plays on the game's sim, reaches its state, finite joints, deterministic, flip
 //   studio-excluded the studio is not in dist/web or the Electron renderer build
 import fs from 'node:fs';
 import path from 'node:path';
@@ -73,12 +73,14 @@ STUDIO_TESTS['studio-anim'] = async ({ browser }) => {
     const c = document.createElement('canvas'); c.width = 520; c.height = 380; rs.animDraw(c.getContext('2d'), 520, 380);
     const d = c.getContext('2d').getImageData(0, 0, 520, 380).data; let px = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 10) px++;
     out.drawn = px; rs.animStop();
+    out.sounds = rs.sounds().length; out.soundErr = [];
+    for (const k of rs.sounds()) { try { rs.playSound(k); } catch (e) { out.soundErr.push(k + ': ' + e.message); } }
     return out;
   });
   const gameErr = await p.evaluate(() => window.__studio.gameErrors());
   await st.close();
-  const ok = r.n >= 50 && !r.bad.length && r.deterministic && r.face !== r.flipFace && r.who === 'dunk' && r.drawn > 2000 && !st.errors.length && !gameErr.length;
-  return { ok, detail: [`${r.n} animations; deterministic ${r.deterministic}; faces ${r.face} / flipped ${r.flipFace}; Sh. Saleem dunk ${r.who}; ${r.drawn} px drawn`, ...r.bad, ...st.errors, ...gameErr] };
+  const ok = r.n >= 50 && !r.bad.length && r.deterministic && r.face !== r.flipFace && r.who === 'dunk' && r.drawn > 2000 && r.sounds >= 15 && !r.soundErr.length && !st.errors.length && !gameErr.length;
+  return { ok, detail: [`${r.sounds} sounds play without errors; ${r.n} animations; deterministic ${r.deterministic}; faces ${r.face} / flipped ${r.flipFace}; Sh. Saleem dunk ${r.who}; ${r.drawn} px drawn`, ...r.bad, ...r.soundErr, ...st.errors, ...gameErr] };
 };
 
 STUDIO_TESTS['studio-csv'] = async ({ browser }) => {

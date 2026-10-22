@@ -1,4 +1,4 @@
-// Phase 2: Animations and Screens.
+// Phase 2: Animations and Screens. Phase 3 (scaffold): Sounds and Voice.
 // Each item carries stage(G, bar, view, el, S) which draws it into the studio's stage.
 import { SCREEN_OF, NOT_RENDERABLE, STUDIO_SCREENS } from './screens.js';
 
@@ -21,5 +21,11 @@ export async function extraCategories(G, data, hooks) {
   const reached = new Set(Object.values(SCREEN_OF));
   for (const s of data.screenNames) if (!reached.has(s)) out.push({ id: 'screen/' + s + '/not-renderable', cat: 'Screens', group: 'Not renderable', kind: 'screen-na', name: s + ' (not renderable here)',
     reason: NOT_RENDERABLE[s] || 'No setup for this screen yet.', text: '', when: NOT_RENDERABLE[s] || 'No setup for this screen yet.', stage: hooks.stageNA });
+  // ---- sounds (Phase 3 scaffold)
+  for (const k of G.rs.sounds()) out.push({ id: 'sound/' + k, cat: 'Sounds', group: 'Sound effects', kind: 'sound', name: k, sound: k, text: '', src: 'core/utils-audio.js', when: 'SFX.' + k + '(): a synthesised sound effect (Web Audio, no file).', stage: hooks.stageSound });
+  // ---- voice (Phase 3 scaffold): assets/voice/manifest.json
+  const voice = Array.isArray(data.voice) ? data.voice : data.voice && Array.isArray(data.voice.lines) ? data.voice.lines : null;
+  if (voice && voice.length) for (const v of voice) out.push({ id: 'voice/' + v.file, cat: 'Voice', group: v.speaker || 'Voice', kind: 'voice', name: (v.speaker ? v.speaker + ': ' : '') + (v.transcript || v.file), voice: v, text: v.transcript || '', src: 'assets/voice/' + v.file, stage: hooks.stageVoice });
+  else out.push({ id: 'voice/none', cat: 'Voice', group: 'Voice', kind: 'voice-empty', placeholder: true, name: 'No voice lines yet', text: '', src: 'assets/voice/manifest.json', stage: hooks.stageVoiceEmpty });
   return out;
 }

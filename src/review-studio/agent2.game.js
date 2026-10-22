@@ -1,4 +1,4 @@
-// Review Studio agent, Phase 2: animations and screens. Evaluated in the game frame after agent.game.js.
+// Review Studio agent, Phase 2: animations and screens (and the Phase 3 sound list). Evaluated in the game frame after agent.game.js.
 // Animations run on the game's own simulation: a throwaway match, the move started with the game's own starter
 // (startDunk, startShot, doPass, startJump, trySteal, knockDown, startDribbleMove, taunts, reactions...), then
 // updateMatch(STEP) one step at a time, so animate() poses the rig exactly as in a game. Screens use the same
@@ -172,4 +172,7 @@
     return Object.entries(TouchUI.btns).map(([n, el]) => [n, el.getBoundingClientRect()]).filter(([, q]) => q.width && q.left < sb.r && q.right > sb.l && q.top < sb.b && q.bottom > sb.t).map(([n]) => n);
   };
 
+  // ---------------------------------------------------------------- sounds (Phase 3 scaffold)
+  RS.sounds = () => Object.keys(SFX).filter(k => typeof SFX[k] === 'function' && SFX[k].length === 0 && !['init', 'resume', 'setOn', 'tone', 'hiss', 'setCrowdLevel'].includes(k) && !/^_/.test(k));
+  RS.playSound = k => { const on = SETTINGS.sound; SETTINGS.sound = true; try { SFX.init && SFX.init(); SFX.resume && SFX.resume(); SFX.setOn && SFX.setOn(true); SFX[k](); } finally { setTimeout(() => { SETTINGS.sound = on; }, 1500); } };
 })();

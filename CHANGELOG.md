@@ -1,5 +1,17 @@
 # Changelog
 
+## 9.2.3: Review Studio, Phase 3 scaffold (sounds and voice)
+The game itself is unchanged; only the version number moves.
+
+- **Sounds (23).** Every sound effect in `src/core/utils-audio.js` (building blocks that need arguments, like `tone` and `netNoise`, are left out), listed with a play button (or P). Each one plays
+  through the game's own `SFX` code with sound switched on just for that play, and gets a verdict like any other item
+  (`sound/<name>`).
+- **Voice.** The studio reads `assets/voice/manifest.json` (`{ "lines": [{ id, file, transcript, speaker }] }`). Each
+  line becomes an item (`voice/<file>`) with its transcript and an audio player. There is no voice yet, so the
+  Voice category shows how to add it and the format. `docs/review/README.md` documents the format.
+- **Tests:** `studio-anim` also plays every sound without errors. The 23 `sound/…` IDs are added to the registry.
+  The empty-voice notice is not an item: it is never exported and has no ID.
+
 ## 9.2.2: Review Studio, Phase 2 (animations and screens)
 The game itself is unchanged; only the version number moves.
 

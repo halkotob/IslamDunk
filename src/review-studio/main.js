@@ -36,7 +36,7 @@ async function boot() {
   S.G = await openGame($('#gamehost'));
   S.items = buildItems(S.G.rs, S.data);
   const reg = (S.data.registry && S.data.registry.ids) || {};
-  for (const it of await extraCategories(S.G, S.data, { stageAnim, stageScreen, stageNA })) {
+  for (const it of await extraCategories(S.G, S.data, { stageAnim, stageScreen, stageNA, stageSound, stageVoice, stageVoiceEmpty })) {
     Object.assign(it, { version: reg[it.id] || S.data.version, where: it.where || it.src || '', occ: [], religious: !!it.religious, flag: '' });
     S.items.push(it);
   }
@@ -268,6 +268,7 @@ function drawSide() {
   const fl = it.kind === 'screen' && SC.flags[it.id];
   if (fl) { const o = fl.found.filter(f => f.kind === 'overflow').length, sm = fl.found.filter(f => f.kind === 'small').length, ov = fl.nOverlaps + fl.touch.length;
     side.append(el('div', { class: 'note' }, `Screen checks: ${o} past the edge · ${sm} small text · ${ov} overlapping targets · ${fl.errors.length} errors`)); }
+  if (it.placeholder) { side.append(el('div', { class: 'note' }, 'Nothing to review here yet.')); return; }
   const vb = el('div', { class: 'verdicts', role: 'group', 'aria-label': 'Verdict' });
   for (const [v, k] of [['keep', 'K'], ['fix', 'F'], ['delete', 'D']]) vb.append(el('button', { class: v + (m.verdict === v ? ' on' : ''), 'aria-pressed': m.verdict === v ? 'true' : 'false', 'data-v': v,
     onclick: () => { store.set(it.id, { verdict: m.verdict === v ? '' : v }); afterMark(it); } }, VLABEL[v], el('kbd', {}, k)));
@@ -299,7 +300,7 @@ function setupKeys() {
     if (k === 'arrowright' || k === 'arrowdown' || k === 'j') { e.preventDefault(); step(1); return; }
     if (k === 'arrowleft' || k === 'arrowup') { e.preventDefault(); step(-1); return; }
     if (k === 'pagedown') { e.preventDefault(); step(10); return; } if (k === 'pageup') { e.preventDefault(); step(-10); return; }
-    if (AN.keys && (k === ' ' || k === ',' || k === '.')) { e.preventDefault(); AN.keys(k); return; }
+    if (AN.keys && (k === ' ' || k === ',' || k === '.' || k === 'p')) { e.preventDefault(); AN.keys(k); return; }
     if (k === 'n' && it) { e.preventDefault(); const t = $('#f-comment'); if (t) t.focus(); return; }
   });
   // swipe left / right on the stage moves between items on touch screens
@@ -312,6 +313,7 @@ function setupKeys() {
 export function exportRows() {
   const rows = [];
   for (const it of S.items) {
+    if (it.placeholder) continue;
     const base = { id: it.id, category: it.cat + ' / ' + it.group, name: it.name, where: it.where, version_added: it.version, build_version: S.data.version };
     const ms = Object.entries(store.marksFor(it.id));
     if (!ms.length) rows.push(Object.assign({ verdict: '', comment: '', suggested: '', reviewer: '', role: '', reviewed_at: '' }, base));
@@ -452,10 +454,34 @@ function screenFlagList(res, s) {
 }
 function stageNA(G, bar, view, it) { hideGame(); view.append(el('div', { class: 'card' }, el('h3', {}, 'Not renderable here'), el('p', {}, 'Game.screen “' + it.id.split('/')[1] + '”'), el('p', {}, it.reason))); return { done: Promise.resolve() }; }
 
+// ------------------------------------------------------------------ Phase 3 (scaffold): sounds and voice
+function stageSound(G, bar, view, it) {
+  const play = () => { try { G.rs.playSound(it.sound); st.textContent = 'Played ' + it.sound + ' at ' + new Date().toLocaleTimeString(); } catch (e) { st.textContent = 'Could not play: ' + e.message; } };
+  const st = el('div', { class: 'note' }, 'Press Play (or P). Sounds are made by the game’s Web Audio code, so there is no file.');
+  bar.append(el('button', { onclick: play }, '▶ Play'));
+  view.append(el('div', { class: 'card' }, el('h3', {}, 'Sound effect'), el('div', { class: 'q' }, 'SFX.' + it.sound + '()'), el('button', { class: 'bigplay', onclick: play }, '▶ Play'), st));
+  AN.keys = k => { if (k === 'p' || k === ' ') play(); };
+  return { done: Promise.resolve() };
+}
+function stageVoice(G, bar, view, it) {
+  const v = it.voice, a = el('audio', { controls: true, src: 'voice/' + v.file, preload: 'none' });
+  view.append(el('div', { class: 'card' }, el('h3', {}, (v.speaker || 'Voice') + ' · ' + v.id), el('div', { class: 'q' }, v.transcript || '(no transcript)'), a,
+    el('div', { class: 'note' }, 'assets/voice/' + v.file)));
+  AN.keys = k => { if (k === 'p' || k === ' ') { if (a.paused) a.play(); else a.pause(); } };
+  return { done: Promise.resolve() };
+}
+function stageVoiceEmpty(G, bar, view, it) {
+  view.append(el('div', { class: 'card' }, el('h3', {}, 'No voice lines yet'),
+    el('p', {}, 'The game has no recorded voice yet. When it does, add the files to assets/voice/ and list them in assets/voice/manifest.json. Each line then shows up here with its transcript, a player and a verdict:'),
+    el('pre', { class: 'code' }, JSON.stringify({ lines: [{ id: 'saleem-intro-1', file: 'saleem-intro-1.mp3', transcript: 'Assalamu alaikum! You must be the brother who just moved to Eastside.', speaker: 'saleem' }] }, null, 2)),
+    el('p', { class: 'note' }, 'id: stable name for the line (its review ID is voice/<file>) · file: under assets/voice/ · transcript: what is said · speaker: a cast id (saleem, khalil, …) or a name. See docs/review/README.md.')));
+  return { done: Promise.resolve() };
+}
+
 // ------------------------------------------------------------------ test hooks
 Object.assign(window.__studio, {
   exportCsv: csvText, importCsv: (t, n) => { const r = doImport(t, n); $('#dlg').open && $('#dlg').close(); return r && { format: r.res.format, rows: r.res.rows.length, unmatched: r.res.unmatched.length, ...r.rep, conflicts: r.rep.conflicts.length }; },
-  list: () => S.items.map(it => ({ id: it.id, cat: it.cat, group: it.group, name: it.name, where: it.where, version: it.version, religious: it.religious })),
+  list: () => S.items.filter(it => !it.placeholder).map(it => ({ id: it.id, cat: it.cat, group: it.group, name: it.name, where: it.where, version: it.version, religious: it.religious })),
   select: id => selectId(id),
   // render every item of a category (or all) through the stage, collecting failures
   async renderAll(cat) {
