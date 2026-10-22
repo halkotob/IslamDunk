@@ -116,6 +116,13 @@
     return { id: S.a.id, f: S.f, n: S.a.n, state: me.state, st: Math.round(me.st_t * 1000) / 1000, y: Math.round(me.y * 10) / 10, rot: Math.round((me.rot || 0) * 1000) / 1000,
       spin: Math.round((me.spin || 0) * 1000) / 1000, face: me.face, joints: JOINTS.map(k => [k, Math.round(me.j[k].a * 1000) / 1000]), holding: ball.owner === me };
   };
+  RS.animMe = () => S && S.c.me;
+  // where the moving player is in a frame animDraw(g, w, h) draws: his feet and his body's middle (canvas units)
+  RS.animFocus = (w, h) => {
+    if (!S) return null; const c = S.c, a = S.a, me = c.me, fx = FX.sx, fy = FX.sy; FX.sx = FX.sy = 0;
+    try { const ax = a.follow ? me.x : a.hoop ? (c.x0 + c.hx) / 2 : c.x0, [sx, sy] = P(ax, 0, c.z0), ox = Math.round(w / 2 - sx), oy = Math.round(h - 34 - sy), [px, py] = P(me.x, 0, me.z), [, ty] = P(me.x, me.y, me.z);
+      return { x: px + ox, feet: py + oy, mid: ty + oy - 52 * depthK(me.z) }; } finally { FX.sx = fx; FX.sy = fy; }
+  };                                // the moving player (the art-slice compare page marks him)
   RS.animStop = () => { S = null; M.cmdHook = null; unseed(); };
   // draw the current frame: the player (and anyone near him), the ball, the hoop for shots and dunks
   RS.animDraw = (g, w, h) => {

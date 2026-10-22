@@ -1,5 +1,43 @@
 # Changelog
 
+## 9.6.0: art slice (three candidate looks, preview only)
+One character and one court in three looks, so a direction can be picked before the whole cast is restyled. The current
+look stays the default and nothing is replaced.
+
+- **The looks** (the hero only: the default player, in a team kit):
+  - **A, Clean cel:** two or three flat tone steps lit from the top left, a coloured outline (a darker tint of each fill) that
+    is heavier on the silhouette, and crisp highlights.
+  - **B, Soft painted:** stacked soft shading per body part, a rim light on the lit side, a thin outline and a fine
+    grain on cloth.
+  - **C, Bold cartoon:** a thick black outline, a bigger head, hands and shoes, two-tone shading, more saturated
+    colours, and stronger squash and stretch.
+- **In all three:**
+  - The face has shaped eyes with a shine, lids and tapered brows. The beard has a sheen and strands.
+  - Hands are mittens with a thumb. Shoes have a sole, toe cap and laces.
+  - The shorts, jersey and thobe hems trail the body's motion, with fold lines.
+  - The ball is shaded, with seams and a highlight.
+  - The contact shadow shrinks with jump height. Landing kicks up dust. Speed lines and sweat show only on a sprint.
+  - Squash and stretch on jump, land and dunk are stronger (drawing only).
+- **The court** (the Masjid League Arena only):
+  - Plank tones, wood grain, paint speckle and soft light pools on the floor, darker toward its edges.
+  - The back rows of the crowd fade into haze.
+  - The near side is darker.
+  - The backboard glass has a glint, and the net and rim are shaded.
+  - The court lines are where they were.
+- **How to see them:**
+  - Add `?look=a`, `?look=b` or `?look=c` to the address, or use Settings → Look (preview). Neither is saved.
+  - `docs/review/look-compare.html` shows all four side by side: every animation, at 1x, 2x and 4x, on dark or light,
+    facing either way, with play, pause, speed and frame step. It also has the whole court and a match frame at the
+    phone-audit size.
+  - Contact sheets and GIFs are in `docs/review/img/look-*`. `npm run review:looks` rebuilds them all.
+- **Drawing only.** The looks never touch the simulation, hitboxes, timing, replays, online snapshots or saves.
+- **New tests:**
+  - `looks-parity`: seeded games are byte-identical in every look. It also checks `?look=` parsing, and that the
+    default is unchanged and pixel-identical.
+  - `looks-bounds`: every animation frame in every look stays inside its sprite box in one piece.
+  - `looks-perf`: frame time at the phone-audit size is within +10% of the current look.
+  - `looks-compare`: the compare page draws every panel, with no errors.
+
 ## 9.5.0: Tournament, League, top plays, My clips, accessibility
 Phase 7, part 2. Builds on 9.4.0. There were no review results to apply yet: no marks in `game-text.csv` and no
 Review Studio exports.
