@@ -66,7 +66,7 @@
 //                shooter (dunks and mini-game spots unchanged); CPU uses a live spot (at most every other
 //                possession), closes out on it, and is unchanged with no spot; late game (trailing gets a shot
 //                up, leading uses the shot clock); off the glass only to a trailing teammate
-//   studio, studio-csv, studio-excluded   v9.2.1 Review Studio (tests/studio.mjs; npm test builds dist/review first)
+//   studio, studio-anim, studio-csv, studio-excluded   v9.2.1-9.2.2 Review Studio (tests/studio.mjs; npm test builds dist/review first)
 // Every test fails on any uncaught page error.
 import { chromium, devices } from 'playwright';
 import http from 'node:http';

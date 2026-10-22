@@ -7,6 +7,7 @@
 //                   merge by id + reviewer with the newest mark winning, conflicts listed; Delete never changes the
 //                   game or game-text.csv (file hashes before / after); the game frame's storage is sandboxed;
 //                   review:report prints a worklist and changes nothing
+//   studio-anim     every animation plays on the game's sim, reaches its state, finite joints, deterministic, flip
 //   studio-excluded the studio is not in dist/web or the Electron renderer build
 import fs from 'node:fs';
 import path from 'node:path';
@@ -28,7 +29,12 @@ STUDIO_TESTS['studio'] = async ({ browser }) => {
   const counts = await p.evaluate(() => window.__studio.counts());
   for (const [c, v] of Object.entries(counts)) detail.push(`${c}: ${v.total} (${Object.entries(v.groups).map(([g, n]) => g + ' ' + n).join(', ')})`);
   const failed = [];
-  for (const c of Object.keys(counts)) { const r = await p.evaluate(c => window.__studio.renderAll(c), c); if (r.n !== counts[c].total) failed.push(`${c}: drew ${r.n} of ${counts[c].total}`); for (const f of r.failed) failed.push(`${f.id}: ${f.error}`); }
+  let screens = [];
+  for (const c of Object.keys(counts)) { const r = await p.evaluate(c => window.__studio.renderAll(c), c); if (r.n !== counts[c].total) failed.push(`${c}: drew ${r.n} of ${counts[c].total}`); for (const f of r.failed) failed.push(`${f.id}: ${f.error}`); if (r.screens) screens = screens.concat(r.screens); }
+  // screens: each setup lands on the screen it is listed for, and none throws a page error
+  for (const s of screens) { if (s.screen !== s.expect) failed.push(`${s.id}: set up on "${s.screen}", listed as "${s.expect}"`); for (const e of s.errors) failed.push(`${s.id}: page error: ${e}`); }
+  const sum = k => screens.reduce((a, s) => a + s[k], 0), flagged = k => screens.filter(s => s[k]).map(s => s.id.replace(/^screen\//, '') + ' ' + s[k]);
+  const na = await p.evaluate(() => window.__studio.S.items.filter(i => i.kind === 'screen-na').map(i => i.id + ': ' + i.reason));
   const list = await p.evaluate(() => window.__studio.list());
   const ids = list.map(i => i.id), dup = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
   const reg = JSON.parse(fs.readFileSync(path.join(ROOT, 'docs/review/studio-ids.json'), 'utf8')), have = new Set(ids);
@@ -38,9 +44,41 @@ STUDIO_TESTS['studio'] = async ({ browser }) => {
   await st.close();
   const total = Object.values(counts).reduce((a, v) => a + v.total, 0);
   detail.unshift(`${total} items; render failures ${failed.length}; duplicate IDs ${dup.length}; registered IDs gone ${gone.length}; removed IDs back ${back.length}; not registered yet ${unreg.length} (new in this build)`);
+  detail.push(`screens: ${screens.length} rendered; flags (for review, not failures): ${sum('overflow')} text past the edge, ${sum('small')} small text, ${sum('overlaps')} overlapping tap targets`,
+    '  past the edge: ' + flagged('overflow').join(', '), '  small text: ' + flagged('small').join(', '), '  overlapping targets: ' + flagged('overlaps').join(', '), ...na.map(n => 'not renderable: ' + n));
   detail.push(...failed.slice(0, 30), ...dup.slice(0, 10).map(d => 'duplicate ' + d), ...gone.slice(0, 20).map(g => 'gone without being listed as removed: ' + g), ...back.map(b => 'a removed ID is back: ' + b), ...st.errors, ...gameErr.map(e => 'game frame: ' + e));
   const ok = !failed.length && !dup.length && !gone.length && !back.length && !st.errors.length && !gameErr.length && total > 3000;
   return { ok, detail };
+};
+
+// animations: every one plays through the game's own sim; the expected state shows up; joints stay finite;
+// the same id gives the same frames twice; flip plays toward the other hoop; another character works
+STUDIO_TESTS['studio-anim'] = async ({ browser }) => {
+  const st = await openStudio(browser, DIST), p = st.page;
+  const r = await p.evaluate(() => {
+    const rs = window.__studio.S.G.rs, out = { n: 0, bad: [], states: {} };
+    const EXPECT = { dunk: 'dunk', hang: 'hang', shoot: 'shoot', pass: 'pass', steal: 'steal', block: 'jump', fall: 'down', shove: 'shove', move: null };
+    for (const a of rs.anims()) {
+      out.n++; const seen = new Set(); let info = rs.animStart(a.id, {}); seen.add(info.state);
+      for (let i = 0; i < a.n; i++) { info = rs.animStep(); seen.add(info.state); if (info.joints.some(([, v]) => !isFinite(v)) || !isFinite(info.y)) { out.bad.push(a.id + ': joints not finite at ' + i); break; } }
+      const want = EXPECT[a.id.split('/')[0]];
+      if (want && !seen.has(want)) out.bad.push(a.id + ': never reached ' + want + ' (' + [...seen].join(',') + ')');
+      out.states[a.id] = [...seen].join(',');
+    }
+    const at = (id, o, f) => { rs.animStart(id, o); let x; for (let i = 0; i < f; i++) x = rs.animStep(); return x; };
+    const j1 = JSON.stringify(at('dunk/tomahawk-classic', {}, 40).joints), j2 = JSON.stringify(at('dunk/tomahawk-classic', {}, 40).joints);
+    out.deterministic = j1 === j2;
+    out.flipFace = at('run/default', { flip: true }, 20).face; out.face = at('run/default', {}, 20).face;
+    out.who = at('dunk/twohand', { who: 'cast/saleem' }, 30).state;
+    const c = document.createElement('canvas'); c.width = 520; c.height = 380; rs.animDraw(c.getContext('2d'), 520, 380);
+    const d = c.getContext('2d').getImageData(0, 0, 520, 380).data; let px = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 10) px++;
+    out.drawn = px; rs.animStop();
+    return out;
+  });
+  const gameErr = await p.evaluate(() => window.__studio.gameErrors());
+  await st.close();
+  const ok = r.n >= 50 && !r.bad.length && r.deterministic && r.face !== r.flipFace && r.who === 'dunk' && r.drawn > 2000 && !st.errors.length && !gameErr.length;
+  return { ok, detail: [`${r.n} animations; deterministic ${r.deterministic}; faces ${r.face} / flipped ${r.flipFace}; Sh. Saleem dunk ${r.who}; ${r.drawn} px drawn`, ...r.bad, ...st.errors, ...gameErr] };
 };
 
 STUDIO_TESTS['studio-csv'] = async ({ browser }) => {

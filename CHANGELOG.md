@@ -1,5 +1,43 @@
 # Changelog
 
+## 9.2.2: Review Studio, Phase 2 (animations and screens)
+The game itself is unchanged; only the version number moves.
+
+- **Animations (55).** Each one runs on the game's own simulation: a throwaway match, the move started by the game's
+  own code (`startDunk`, `startShot` with the shot type, `doPass`, `startJump`, `trySteal`, `tryShove`,
+  `knockDown`, `startDribbleMove`, `startFake`, taunts, `react`), then `updateMatch` one 1/60 s step per frame, so
+  `animate()` poses the rig exactly as in a game. Random picks use a fixed seed, so every playback is the same.
+  - **Stand and move:** idle, walk, run, sprint.
+  - **Dribble:** Classic and Stride styles, and in place.
+  - **Dribble moves:** crossover, behind the back, spin, hesitation, step-back, drop step, and the pump fake that
+    picks up the dribble.
+  - **Shots:** jump shot, fadeaway, floater, hook, layup, reverse, up and under.
+  - **Dunks:** two-hand, windmill, 360, the four tomahawk styles, the alley-oop catch, hanging on the rim.
+  - **Passes:** chest, bounce, lead, the alley-oop lob.
+  - **Defense:** steal, block, shove, ankle break.
+  - **Falls:** knocked down and getting up.
+  - **Celebrate:** the celebration, all 10 taunts, and five reactions.
+
+  Controls: play / pause; speed 1x, 0.5x or 0.25x; a frame back or on; loop; flip direction; with or without the
+  ball; and a character picker covering the cast, every team player and the neighbourhood people. The frame number,
+  the rig state, the height and all nine joint angles are shown for every frame.
+- **Screens (270 views + 3 not renderable).**
+  - The phone text audit's 76 setups and 14 of the studio's own are each shown at desktop 16:9 and the two phone
+    sizes. The studio's own cover the splash, the `?review=1` screen, the career intro outside, the Barakah Run vow,
+    map, choice, end and badges, the custom team editor and player editor, its import and share screens, and the mini-game room and
+    its import.
+  - The live game page is shown, so the touch buttons are there too. A throwaway career is used, in memory.
+  - The checks are the phone audit's: text past the edge, text under 11 CSS px, overlapping tap targets (with an
+    overlay), the touch buttons over the scoreboard, and page errors.
+  - `hostlobby`, `netplay` and `netwait` need a live online session. They are listed as not renderable, with the
+    reason.
+- **Tests:**
+  - `studio-anim`: every animation reaches its state with finite joints, plays the same twice, flips, and works with
+    another character.
+  - `studio` now also renders every animation and every screen, and checks that each setup lands on the screen it
+    is listed for. The screen flags are reported, not failed.
+- **ID registry:** 328 new IDs (`anim/…`, `screen/…`), added in 9.2.2.
+
 ## 9.2.1: Review Studio, Phase 1 (dialogue and text, sprites)
 A separate web tool for reviewing everything in the game without playing it. Per item it records a verdict
 (**Keep**, **Fix** or **Delete**), a comment and suggested text, and exports them as CSV. The game itself is

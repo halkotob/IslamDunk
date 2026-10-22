@@ -2,6 +2,7 @@
 // agent (agent.game.js) evaluated in the game's own global scope. Everything the studio shows is drawn by the
 // game's code through this frame.
 import AGENT from './agent.game.js?raw';
+import AGENT2 from './agent2.game.js?raw';
 
 export async function openGame(host) {
   const f = document.createElement('iframe');
@@ -13,7 +14,7 @@ export async function openGame(host) {
   const ready = () => { try { return G.eval("typeof Game !== 'undefined' && Game.screen !== undefined && typeof Net !== 'undefined' && Net.avail !== 'checking'"); } catch (e) { return false; } };
   for (let i = 0; i < 400 && !ready(); i++) await new Promise(r => setTimeout(r, 50));
   if (!ready()) throw new Error('the game frame did not start');
-  G.eval(AGENT);
+  G.eval(AGENT); G.eval(AGENT2);
   G.eval('SETTINGS.sound = false; try { localStorage.setItem("islamdunk.portraitOK", "1"); } catch (e) {}');
   const api = {
     frame: f, win: G, rs: G.__RS,
@@ -22,7 +23,7 @@ export async function openGame(host) {
     canvas: () => G.document.getElementById('game'),
     // resize the frame (CSS px) and let the game lay itself out again
     async size(w, h, touch) {
-      f.style.width = w + 'px'; f.style.height = h + 'px';
+      f.style.width = w + 'px'; f.style.height = h + 'px'; host.style.width = w + 'px'; host.style.height = h + 'px';
       await frames(G, 3);
       G.eval('Input.touchMode = ' + (touch ? 'true' : 'false'));
       await frames(G, 2);

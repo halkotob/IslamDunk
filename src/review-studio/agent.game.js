@@ -64,6 +64,7 @@ window.__RS = (() => {
     return out;
   };
   RS.people = () => people().map(p => ({ key: p.key, name: p.name }));
+  RS.defOf = key => { const p = people().find(q => q.key === key); if (!p) throw new Error('no person ' + key); return p.def(); };
   RS.teams = () => TEAMS.concat([rivalTeam(0)]).map(T => ({ short: T.short, name: T.name, c1: T.c1, c2: T.c2, crest: T.crest, players: T.players.map(p => p.name) }));
   // draw a person: outfit 'thobe' or 'kit' (team colours), facing right or left, at (x, y) feet, scale s
   RS.drawPerson = (g, key, x, y, s, o = {}) => {
@@ -128,7 +129,7 @@ window.__RS = (() => {
   RS.drawHud = (g, touch) => {
     const tm = Input.touchMode; Input.touchMode = !!touch;
     try {
-      if (!RS._hudMatch) { newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP); RS._hudMatch = true; M.teams[0].score = 12; M.teams[1].score = 9; }
+      if (RS._hudMatch !== M) { newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP); RS._hudMatch = M; M.teams[0].score = 12; M.teams[1].score = 9; }
       drawHUD(g);
     } finally { Input.touchMode = tm; }
   };

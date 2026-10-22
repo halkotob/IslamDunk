@@ -36,8 +36,8 @@ reviewers access without publishing it:
 
 - **Who are you:** type your name and pick a role (Content/religious, Art, Gameplay, Other). Marks are kept per
   reviewer, so two people on one computer don't overwrite each other.
-- **Left:** the categories, with counts and a completion bar: Dialogue, Trivia, Text and Sprites now; Animations,
-  Screens, Sounds and Voice come in Phases 2 and 3.
+- **Left:** the categories, with counts and a completion bar: Dialogue, Trivia, Text, Sprites, Animations and Screens.
+  Sounds and Voice come in Phase 3.
 - **Top:**
   - search (text, ID or file);
   - filters: Unreviewed, Keep, Fix, Delete, New since last review, and Religious review (Islamic wording);
@@ -49,6 +49,13 @@ reviewers access without publishing it:
   - sprites drawn by the game's code at 1x, 2x, 4x, 8x or Fit, on light, dark or checkered backgrounds, facing
     right or left, in thobe or team kit (any team's colours), with a pixel lens for exact pixels and colours.
     Props and scenes also switch time of day.
+  - animations played by the game's own simulation and `animate()`: play / pause, 1x, 0.5x or 0.25x, a frame
+    back or on (`,` `.`), loop, flip direction (toward the other hoop), with or without the ball, any character.
+    The frame number, the rig state and every joint angle are shown under the picture.
+  - screens: the live game page at desktop 16:9 (1280×720) and two phone sizes (750×342, 667×300), set up the way
+    the phone text audit does it. The checks are listed under the screen: text past the edge, text under 11 CSS
+    px, overlapping tap targets (**Show tap targets** draws them), the touch buttons over the scoreboard, and page
+    errors. Screens that can't be shown here are listed under **Not renderable**, with the reason.
 - **Right:** where the item lives (file:line, every place the same text is used), when it appears in the game,
   the version it was added in, the flags, the verdict buttons, the comment, the suggested text, and other
   reviewers' marks.
@@ -86,6 +93,8 @@ Every item has a stable ID derived from where it comes from:
 | `trivia/<index>` | A trivia question. |
 | `text/achievement/<id>`, `text/noor/<id>`, `text/taunt/<id>`, `text/calendar/…` | Achievements, Noor effects, taunts and calendar names. |
 | `text/<file>/<slug>-<hash>` | Every other player-facing string. |
+| `anim/<state>/<variant>` | An animation, for example `anim/dunk/tomahawk-float`, `anim/taunt/sujood`, `anim/react/fist`. |
+| `screen/<name>/<size>` | A screen at `desktop`, `phone-750x342` or `phone-667x300`, for example `screen/hub/phone-750x342`; `screen/<name>/not-renderable` for a screen that can't be shown. |
 | `sprite/<kind>/…` | Sprites: `cast/saleem`, `player/<team>/<n>`, `npc/<id>`, `creator/<row>/<n>`, `crest/<team>`, `jersey/<team>`, `ball/<skin>`, `hoop/default`, `venue/<id>`, `scene/<id>`, `prop/<scene>/<id>`, `masjid/none`, `masjid/all`, `hud/desktop`, `hud/touch`. |
 
 `studio-ids.json` records every ID and the version it was added in, which drives "new since last review".

@@ -1,7 +1,7 @@
 {
   "name": "islam-dunk",
   "productName": "Islam Dunk",
-  "version": "9.2.1",
+  "version": "9.2.2",
   "description": "Islam Dunk: 2v2 masjid-league arcade basketball",
   "private": true,
   "type": "module",

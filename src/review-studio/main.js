@@ -35,7 +35,11 @@ async function boot() {
   $('#build').textContent = 'game ' + S.data.version;
   S.G = await openGame($('#gamehost'));
   S.items = buildItems(S.G.rs, S.data);
-  for (const it of await extraCategories(S.G, S.data)) S.items.push(it);
+  const reg = (S.data.registry && S.data.registry.ids) || {};
+  for (const it of await extraCategories(S.G, S.data, { stageAnim, stageScreen, stageNA })) {
+    Object.assign(it, { version: reg[it.id] || S.data.version, where: it.where || it.src || '', occ: [], religious: !!it.religious, flag: '' });
+    S.items.push(it);
+  }
   locateSprites(S.items, S.data.defs || {});
   const ids = new Set();
   for (const it of S.items) {
@@ -158,13 +162,15 @@ function selectId(id) {
 function drawStage() {
   const it = S.view[S.cur], bar = $('#stagebar'), view = $('#view');
   bar.replaceChildren(); view.replaceChildren(); view.className = '';
+  AN.token++; AN.keys = null; S.stageRes = null;
+  if (!it || it.kind !== 'screen') { SC.token++; hideGame(); }
   if (!it) { view.append(el('div', { class: 'empty' }, 'Nothing here with these filters.')); return; }
   try {
     if (it.kind === 'line') stageLine(it, view);
     else if (it.kind === 'trivia') stageTrivia(it, view);
     else if (it.kind === 'text') stageText(it, view);
     else if (it.kind === 'sprite') stageSprite(it, bar, view);
-    else if (it.stage) it.stage(S.G, bar, view, el, S);
+    else if (it.stage) S.stageRes = it.stage(S.G, bar, view, it);
     delete S.renderErrors[it.id];
   } catch (e) {
     S.renderErrors[it.id] = String(e && e.message || e);
@@ -259,6 +265,9 @@ function drawSide() {
     el('dt', {}, 'When'), el('dd', {}, it.when || TRIGGERS[it.group] || (it.section ? 'Shown in: ' + it.section : '—')),
     el('dt', {}, 'Added'), el('dd', {}, (it.version === 'phase1' ? 'Phase 1' : 'v' + it.version) + (isNew(it) ? ' · new since last review' : '')),
     it.flag || it.religious ? el('dt', {}, 'Flags') : null, it.flag || it.religious ? el('dd', {}, [it.religious ? 'Religious review' : null, it.flag].filter(Boolean).join(' · ')) : null));
+  const fl = it.kind === 'screen' && SC.flags[it.id];
+  if (fl) { const o = fl.found.filter(f => f.kind === 'overflow').length, sm = fl.found.filter(f => f.kind === 'small').length, ov = fl.nOverlaps + fl.touch.length;
+    side.append(el('div', { class: 'note' }, `Screen checks: ${o} past the edge · ${sm} small text · ${ov} overlapping targets · ${fl.errors.length} errors`)); }
   const vb = el('div', { class: 'verdicts', role: 'group', 'aria-label': 'Verdict' });
   for (const [v, k] of [['keep', 'K'], ['fix', 'F'], ['delete', 'D']]) vb.append(el('button', { class: v + (m.verdict === v ? ' on' : ''), 'aria-pressed': m.verdict === v ? 'true' : 'false', 'data-v': v,
     onclick: () => { store.set(it.id, { verdict: m.verdict === v ? '' : v }); afterMark(it); } }, VLABEL[v], el('kbd', {}, k)));
@@ -290,6 +299,7 @@ function setupKeys() {
     if (k === 'arrowright' || k === 'arrowdown' || k === 'j') { e.preventDefault(); step(1); return; }
     if (k === 'arrowleft' || k === 'arrowup') { e.preventDefault(); step(-1); return; }
     if (k === 'pagedown') { e.preventDefault(); step(10); return; } if (k === 'pageup') { e.preventDefault(); step(-10); return; }
+    if (AN.keys && (k === ' ' || k === ',' || k === '.')) { e.preventDefault(); AN.keys(k); return; }
     if (k === 'n' && it) { e.preventDefault(); const t = $('#f-comment'); if (t) t.focus(); return; }
   });
   // swipe left / right on the stage moves between items on touch screens
@@ -342,6 +352,106 @@ function showConflicts() { dialog(el('h3', {}, 'Import conflicts'), el('p', { cl
 function updateConflictBtn() { const b = $('#confl'), n = store.state.conflicts.length; b.hidden = !n; b.textContent = 'Conflicts (' + n + ')'; }
 function dialog(...kids) { const d = $('#dlg'); $('#dlgbody').replaceChildren(...kids); if (!d.open) d.showModal(); }
 
+// ------------------------------------------------------------------ Phase 2: animations
+const AN = { token: 0, playing: false };
+function stageAnim(G, bar, view, it) {
+  const a = it.anim, o = S.an || (S.an = { speed: 1, loop: true, flip: false, ball: null, who: '', zoom: 0, playing: true });
+  const tok = ++AN.token, rs = G.rs;
+  const ballOn = a.needBall ? true : o.ball == null ? a.ball : o.ball;
+  const restart = () => rs.animStart(a.id, { who: o.who || null, flip: o.flip, ball: ballOn });
+  let info = restart();
+  const NW = 520, NH = 380, src = el('canvas', { width: NW, height: NH }), sg = src.getContext('2d');
+  const vw = Math.max(100, view.clientWidth - 32), vh = Math.max(100, view.clientHeight - 200);
+  let z = o.zoom || Math.min(vw / NW, vh / NH); if (!o.zoom) z = z >= 1 ? Math.floor(z * 2) / 2 : z;
+  const dpr = window.devicePixelRatio || 1, c = el('canvas', { width: Math.round(NW * z * dpr), height: Math.round(NH * z * dpr) });
+  c.style.width = NW * z + 'px'; c.style.height = NH * z + 'px';
+  const dg = c.getContext('2d'); dg.imageSmoothingEnabled = false;
+  const infoBox = el('div', { class: 'animinfo' }), joints = el('table', { class: 'joints' });
+  const draw = () => {
+    sg.clearRect(0, 0, NW, NH); rs.animDraw(sg, NW, NH);
+    dg.clearRect(0, 0, c.width, c.height); dg.drawImage(src, 0, 0, c.width, c.height);
+    infoBox.textContent = `Frame ${info.f} / ${info.n} · ${(info.f / 60).toFixed(2)} s · state ${info.state} (${info.st.toFixed(3)} s) · height ${info.y} · ${info.face > 0 ? 'facing right' : 'facing left'}${info.holding ? ' · has the ball' : ''}`;
+    joints.replaceChildren(el('tr', {}, ...info.joints.map(([k]) => el('th', { title: JOINT_NAMES[k] || k }, k)), el('th', {}, 'rot'), el('th', {}, 'spin')),
+      el('tr', {}, ...info.joints.map(([, v]) => el('td', {}, v.toFixed(3))), el('td', {}, info.rot.toFixed(3)), el('td', {}, info.spin.toFixed(3))));
+  };
+  const step = () => { info = rs.animStep(); if (info.f >= info.n) { if (o.loop) info = restart(); else { o.playing = false; playBtn.textContent = '▶ Play'; } } };
+  const goto = n => { info = restart(); for (let i = 0; i < n; i++) info = rs.animStep(); draw(); };
+  const btn = (t, f, on, title) => el('button', { class: on ? 'on' : '', title: title || t, onclick: f }, t);
+  const playBtn = btn(o.playing ? '❚❚ Pause' : '▶ Play', () => { o.playing = !o.playing; playBtn.textContent = o.playing ? '❚❚ Pause' : '▶ Play'; if (o.playing) loop(); }, false, 'Play / pause (space)');
+  const redo = () => { store.setUi('an', o); drawStage(); };
+  const seg = (opts, key) => { const g = el('div', { class: 'grp' }); for (const [v, t] of opts) g.append(btn(t, () => { o[key] = v; redo(); }, o[key] === v)); return g; };
+  bar.append(playBtn, seg([[1, '1x'], [0.5, '0.5x'], [0.25, '0.25x']], 'speed'),
+    btn('◀ Frame', () => { o.playing = false; playBtn.textContent = '▶ Play'; goto(Math.max(0, info.f - 1)); }, false, 'One frame back (,)'),
+    btn('Frame ▶', () => { o.playing = false; playBtn.textContent = '▶ Play'; step(); draw(); }, false, 'One frame on (.)'),
+    btn('Loop', () => { o.loop = !o.loop; redo(); }, o.loop), btn(o.flip ? '← Left' : 'Right →', () => { o.flip = !o.flip; redo(); }, o.flip, 'Flip direction (play toward the other hoop)'),
+    el('button', { class: ballOn ? 'on' : '', disabled: a.needBall || null, title: a.needBall ? 'This move needs the ball' : 'With / without the ball', onclick: () => { o.ball = !ballOn; redo(); } }, ballOn ? 'With ball' : 'No ball'));
+  const who = el('select', { 'aria-label': 'Character', onchange: e => { o.who = e.target.value; redo(); } }, el('option', { value: '' }, 'Default player'), ...rs.people().map(p => el('option', { value: p.key }, p.name)));
+  who.value = o.who || ''; bar.append(el('label', {}, 'Character', who), seg([[0, 'Fit'], [1, '1x'], [2, '2x'], [3, '3x']], 'zoom'));
+  view.className = 'bg-' + (S.sp.bg || 'dark');
+  view.append(el('div', { class: 'animwrap' }, c, infoBox, el('div', { class: 'jointwrap' }, joints), el('div', { class: 'note' }, 'Joint angles in radians (0 = limb straight down, + = forward): n = near side, f = far side; h hip, k knee, s shoulder, e elbow. Space plays / pauses, , and . step a frame.')));
+  draw();
+  let last = 0, acc = 0;
+  const loop = () => {
+    last = performance.now(); acc = 0;
+    const tick = now => {
+      if (tok !== AN.token || !o.playing) return;
+      acc += Math.min(0.1, (now - last) / 1000) * 60 * o.speed; last = now;
+      let n = 0; while (acc >= 1 && n < 4) { step(); acc -= 1; n++; }
+      if (n) draw();
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+  AN.keys = k => { if (k === ' ') playBtn.click(); else if (k === ',') bar.querySelectorAll('button')[4].click(); else if (k === '.') bar.querySelectorAll('button')[5].click(); };
+  if (o.playing) loop();
+  return { done: Promise.resolve(), check: () => { if (!rs.animInfo()) throw new Error('no animation running'); for (let i = 0; i < a.n; i++) rs.animStep(); draw(); } };
+}
+const JOINT_NAMES = { nh: 'near hip', nk: 'near knee', fh: 'far hip', fk: 'far knee', ns: 'near shoulder', ne: 'near elbow', fs: 'far shoulder', fe: 'far elbow', lean: 'body lean' };
+
+// ------------------------------------------------------------------ Phase 2: screens
+const SC = { token: 0, flags: {} };
+function hideGame() { const h = $('#gamehost'); h.style.cssText = ''; h.classList.remove('shown'); }
+function stageScreen(G, bar, view, it) {
+  const s = it.screen, tok = ++SC.token;
+  const vw = Math.max(200, view.clientWidth - 32), sc = Math.min(1, vw / s.w);
+  const ph = el('div', { class: 'screenph', style: `width:${s.w * sc}px;height:${s.h * sc}px` }), flagsBox = el('div', { class: 'flags' }, 'Setting up the screen… (the first career screen plays a whole CPU game first, a few seconds)');
+  const showTargets = el('button', { class: S.sp.targets ? 'on' : '', onclick: () => { S.sp.targets = !S.sp.targets; store.setUi('sp', S.sp); drawStage(); } }, 'Show tap targets');
+  bar.append(el('button', { onclick: () => drawStage() }, 'Set up again'), showTargets, el('span', { class: 'note' }, s.label + ' · CSS px; the live game, running'));
+  const overlay = el('canvas', { class: 'targets', width: s.w, height: s.h });
+  view.append(el('div', { class: 'screenwrap' }, ph, flagsBox));
+  const place = () => { if (tok !== SC.token) return; const r = ph.getBoundingClientRect(), h = $('#gamehost');
+    h.classList.add('shown'); h.style.cssText = `left:${r.left}px;top:${r.top}px;width:${s.w}px;height:${s.h}px;transform:scale(${sc});transform-origin:0 0;`; };
+  const done = (async () => {
+    await G.size(s.w, s.h, s.touch);
+    const r = G.rs.screenSetup(s.js);
+    if (r.error) throw new Error('setup failed: ' + r.error);
+    await G.frames(10); G.rs.auditOn(); await G.frames(6);
+    const res = G.rs.auditResult(r.e0); res.setScreen = r.screen;
+    res.touch = s.touch && res.screen === 'play' ? G.rs.touchOverScoreboard() : [];
+    if (tok !== SC.token) return res;
+    SC.flags[it.id] = res; place(); new ResizeObserver(place).observe(ph); view.addEventListener('scroll', place, { passive: true });
+    flagsBox.replaceChildren(...screenFlagList(res, s));
+    if (S.sp.targets) { const g = overlay.getContext('2d'), k = s.w / res.W; g.strokeStyle = '#00e5ff'; g.lineWidth = 2; for (const [x, y, w, h] of res.rects) g.strokeRect(x * k, y * k, w * k, h * k);
+      g.strokeStyle = '#ff3b6b'; for (const o of res.overlaps) { const [x, y, w, h] = o.a; g.strokeRect(x * k, y * k, w * k, h * k); } ph.append(overlay); overlay.style.cssText = `width:100%;height:100%;position:relative;z-index:30`; }
+    drawSide();
+    return res;
+  })();
+  done.catch(e => { if (tok === SC.token) flagsBox.replaceChildren(el('div', { class: 'err' }, String(e.message || e))); });
+  return { done };
+}
+function screenFlagList(res, s) {
+  const over = res.found.filter(f => f.kind === 'overflow'), small = res.found.filter(f => f.kind === 'small');
+  const L = [];
+  const row = (cls, t, items) => L.push(el('details', { class: 'flag ' + cls, open: items.length && items.length < 8 ? true : null }, el('summary', {}, t), ...items.map(x => el('div', {}, x))));
+  row(over.length ? 'bad' : 'ok', `${over.length} text past the edge`, over.map(f => `“${f.text}” spans ${f.left}…${f.right} of ${f.width} px`));
+  row(small.length ? 'bad' : 'ok', `${small.length} text under ${11} CSS px`, small.map(f => `“${f.text}” at ${f.css} px`));
+  row(res.nOverlaps || res.touch.length ? 'bad' : 'ok', `${res.nOverlaps + res.touch.length} overlapping tap targets`, [...res.touch.map(n => `the ${n} button covers the scoreboard`), ...res.overlaps.map(o => `[${o.a.join(', ')}] overlaps [${o.b.join(', ')}] by ${o.area} px²`)]);
+  row(res.errors.length ? 'bad' : 'ok', `${res.errors.length} page errors`, res.errors);
+  L.push(el('div', { class: 'note' }, `Game.screen: ${res.setScreen}${res.screen !== res.setScreen ? ' (then ' + res.screen + ')' : ''}${s.game && res.setScreen !== s.game ? ' (expected ' + s.game + ')' : ''}. Text and size checks are the phone text audit’s (tests/phone-audit.mjs).`));
+  return L;
+}
+function stageNA(G, bar, view, it) { hideGame(); view.append(el('div', { class: 'card' }, el('h3', {}, 'Not renderable here'), el('p', {}, 'Game.screen “' + it.id.split('/')[1] + '”'), el('p', {}, it.reason))); return { done: Promise.resolve() }; }
+
 // ------------------------------------------------------------------ test hooks
 Object.assign(window.__studio, {
   exportCsv: csvText, importCsv: (t, n) => { const r = doImport(t, n); $('#dlg').open && $('#dlg').close(); return r && { format: r.res.format, rows: r.res.rows.length, unmatched: r.res.unmatched.length, ...r.rep, conflicts: r.rep.conflicts.length }; },
@@ -354,11 +464,15 @@ Object.assign(window.__studio, {
     for (let i = 0; i < S.view.length; i++) {
       const it = S.view[i]; if (cat && it.cat !== cat) continue;
       S.cur = i; drawStage(); out.n++;
+      if (S.stageRes) {
+        try { if (S.stageRes.check) S.stageRes.check(); const r = await S.stageRes.done; if (r && it.kind === 'screen') { out.screens = out.screens || []; out.screens.push({ id: it.id, screen: r.setScreen, after: r.screen, expect: it.screen.game, overflow: r.found.filter(f => f.kind === 'overflow').length, small: r.found.filter(f => f.kind === 'small').length, overlaps: r.nOverlaps + r.touch.length, errors: r.errors }); } }
+        catch (e) { S.renderErrors[it.id] = String(e && e.message || e); }
+      }
       if (S.renderErrors[it.id]) out.failed.push({ id: it.id, error: S.renderErrors[it.id] });
       if (it.kind === 'sprite' && !document.querySelector('#view canvas')) out.failed.push({ id: it.id, error: 'no canvas' });
       if (i % 40 === 0) await new Promise(r => setTimeout(r, 0));
     }
-    S.f = keep; applyFilters(); return out;
+    S.f = keep; applyFilters(); hideGame(); return out;
   },
   counts() { const c = {}; for (const it of S.items) { c[it.cat] = c[it.cat] || { total: 0, groups: {} }; c[it.cat].total++; c[it.cat].groups[it.group] = (c[it.cat].groups[it.group] || 0) + 1; } return c; },
   gameErrors: () => S.G.errors(),

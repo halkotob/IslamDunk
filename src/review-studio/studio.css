@@ -105,7 +105,19 @@ kbd { font: 11px/1 ui-monospace, monospace; border: 1px solid var(--line); borde
 #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); font-size: 18px; z-index: 10; }
 #loading.gone { display: none; }
 #gamehost { position: fixed; left: -20000px; top: 0; width: 1280px; height: 720px; overflow: hidden; }
-#gamehost iframe { border: 0; width: 1280px; height: 720px; display: block; }
+#gamehost iframe { border: 0; width: 100%; height: 100%; display: block; }
+#gamehost.shown { position: fixed; z-index: 5; box-shadow: 0 0 0 1px var(--line), 0 6px 30px #0008; }
+.animwrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.animwrap canvas { image-rendering: pixelated; background: #0006; border-radius: 6px; }
+.animinfo { font: 13px ui-monospace, monospace; }
+.jointwrap { max-width: 100%; overflow-x: auto; } .joints { border-collapse: collapse; font: 12px ui-monospace, monospace; } .joints th, .joints td { padding: 3px 7px; border: 1px solid var(--line); text-align: right; } .joints th { color: var(--dim); font-weight: 500; }
+.animwrap .note { max-width: 640px; text-align: center; }
+.screenwrap { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.screenph { background: #000; position: relative; flex: none; }
+.flags { display: flex; flex-direction: column; gap: 4px; font-size: 13px; max-width: 100%; }
+.flag summary { cursor: pointer; } .flag.ok summary { color: var(--keep); } .flag.bad summary { color: var(--fix); font-weight: 600; }
+.flag div { font: 12px ui-monospace, monospace; color: var(--dim); padding: 1px 0 1px 18px; word-break: break-word; }
+#view.bg-light .animinfo, #view.bg-light .joints { color: #111; }
 dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 12px; max-width: min(900px, 94vw); max-height: 86vh; }
 dialog::backdrop { background: #000a; }
 dialog menu { display: flex; justify-content: flex-end; padding: 0; margin: 12px 0 0; }
