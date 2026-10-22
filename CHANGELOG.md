@@ -1,5 +1,42 @@
 # Changelog
 
+## 9.5.0: Tournament, League, top plays, My clips, accessibility
+Phase 7, part 2. Builds on 9.4.0. There were no review results to apply yet: no marks in `game-text.csv` and no
+Review Studio exports.
+
+- **Tournament** (Quick Play → Play a game → Tournament).
+  - 4 or 8 teams in a knockout bracket: quarterfinals, semifinals, final.
+  - Pick your team, your player, and whether your own teams fill the field first.
+  - You play your games. The others are decided by a quick simulation from team strength, plus luck.
+  - Knocked out: the rest plays out and the champion is shown.
+- **League** (Quick Play → Play a game → League).
+  - 4, 6 or 8 teams play everyone once or twice (a bye with an odd count), then the top two meet in the final.
+  - Tabs:
+    - **Standings:** W, L, points for and against, +/-.
+    - **Schedule:** matchday by matchday.
+    - **Leaders:** points, rebounds and assists per game, from your games' box scores and the simulated ones.
+- **Both:**
+  - Any teams from the team list (built-in masjids, your career team, your own teams).
+  - Your team's own court (or home court) hosts your games, and the final is at the Masjid League Arena.
+  - Games follow Settings (difficulty, format, period length).
+  - Saved after every game: one tournament and one league at a time, shown as "(continue)" in the menu.
+  - N (or Start over on touch) ends one and starts again.
+- **Top plays.** After a game with two or more highlights, **Top plays** (T) on the post-game screen plays the best three
+  back to back, each labelled, then returns to the best play.
+- **My clips.**
+  - After **Make video**, **Keep in My clips** (K) stores the video in this browser, up to 12, oldest out first.
+  - **Options → Extras → My clips** lists them with their poster. You can play them, save them to a file again, or
+    delete them.
+  - Nothing is uploaded.
+- **Settings → Accessibility** (a new group):
+  - **Shot release:** Timed or Automatic. Automatic is the release Casual controls already use (near the top of the
+    jump, good but not always perfect), without Casual's auto guard. Online keeps timed release.
+  - **Text size:** Normal, Large or Larger, on a computer. Small text is raised to a minimum as it's drawn, the way
+    phones already do. Phones keep their own minimum.
+  - **Team colors:** Normal or Colorblind-safe. Colorblind-safe dresses the two sides in blue and orange (Okabe-Ito)
+    with light and dark trim, in every game.
+- **Checks:** the new screens are in the phone text audit (and so in the Review Studio). New `v95` test.
+
 ## 9.4.0: Jumu'ah
 On Fridays in career mode, going into the masjid can include Jumu'ah: a short, calm scene where Sh. Saleem gives 2 or 3
 reminders. Each reminder is a trivia question from the Noor bank, so listening teaches answers. It is optional and

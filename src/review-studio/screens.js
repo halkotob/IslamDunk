@@ -110,7 +110,14 @@ export const SCREEN_OF = {
   "mini game room: import": "mrimport",
   "custom teams: edit a team (own court)": "csedit",
   "3 on 3: third players": "pick3",
-  "venue: your own court": "venue"
+  "venue: your own court": "venue",
+  "tournament setup": "sersetup",
+  "tournament bracket": "series",
+  "league standings": "series",
+  "league schedule": "series",
+  "league leaders": "series",
+  "my clips": "myclips",
+  "settings: accessibility": "settings"
 };
 export const NOT_RENDERABLE = {
   hostlobby: 'Needs a live online session with you as host and a guest connected. The online-loop, online-room and online-fb tests play it with a fake network.',

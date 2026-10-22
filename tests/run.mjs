@@ -75,6 +75,9 @@
 //   v93          v9.3.0: a team's own court (editor rows, first on the venue screen, built gym and park floors, share
 //                codes, career away games, online lobby), 3 on 3 third-player picks, your players as mini game
 //                opponents (HORSE, Lightning and King of the Court line-ups), Teams & Players: right no longer duplicates
+//   v95          v9.5.0: a tournament (bracket, a real game to the post-game screen, knocked out, played out, saved), a
+//                league (schedule, standings, final, leaders), the Quick Play entries, colorblind-safe kits, larger
+//                text on a computer, automatic shot release, Settings → Accessibility, the top plays reel, My clips
 // Every test fails on any uncaught page error.
 import { chromium, devices } from 'playwright';
 import http from 'node:http';
@@ -702,6 +705,76 @@ T['v93'] = async ({ browser, base }) => {
   await p.evaluate(() => { CSUI.tab = 0; openCSEdit(csLoad().teams[0]); }); await sleep(300);
   await p.evaluate(() => { goTitle(); startSelect('1p'); Game.sel.three = true; Game.sel.a = 0; Game.sel.b = 1; selectOK(); selectOK(); }); await sleep(300);
   await p.evaluate(() => { const ti = teamPool().findIndex(x => x.court); goTitle(); startSelect('1p'); Game.sel.a = ti; Game.sel.b = 1; openVenueSelect(() => {}); }); await sleep(400);
+  await ctx.close();
+  const ok = Object.values(r).every(v => v === true) && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
+// v9.5: tournament and league (brackets, standings, finals, saves), top plays reel, My clips, accessibility
+T['v95'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'v95');
+  const r = await p.evaluate(() => {
+    window.__seed(95); const out = {};
+    const result = win => { M.teams[0].score = win ? 21 : 12; M.teams[1].score = win ? 15 : 21; finishMatch(); finalContinue(); };
+    // a whole tournament: win the first game, then lose
+    goTitle(); openSeries('tour'); SER.setup.size = 8; serStart();
+    let d = SER.d; out.bracket = Game.screen === 'series' && d.rounds[0].length === 4 && !!serNext(d);
+    serPlay(); out.playing = Game.screen === 'play' && !!M.series && M.teamDefs[0].name === serTeam(d.keys[0]).name; result(true);
+    d = SER.d; out.round2 = Game.screen === 'series' && d.rounds.length === 2 && d.rounds[0].every(g => g.w >= 0) && !!serNext(d);
+    serPlay(); result(false); d = SER.d;                         // knocked out: the rest plays out and a champion is crowned
+    out.tourDone = !serNext(d) && d.done && d.champ > 0 && d.rounds.length === 3 && d.rounds[2][0].w === d.champ && Object.keys(d.stats).length > 0;
+    out.saved = !!serLoad('tour') && serLoad('tour').done;
+    // one tournament game played for real, start to the post-game screen
+    serDrop('tour'); openSeries('tour'); SER.setup.size = 4; serStart(); serPlay();
+    for (let n = 0; n < 60 * 60 * 12 && M.phase !== 'over'; n++) { if (Game.screen === 'halftime') Game.screen = 'play'; updateMatch(STEP); }
+    out.realGame = M.phase === 'over' && SER.d.rounds[0].every(g => g.w >= 0);
+    finalContinue(); out.backToHub = Game.screen === 'series';
+    // a league: everyone once, the final, standings and leaders
+    openSeries('league'); SER.setup.size = 6; serStart(); d = SER.d;
+    out.schedule = d.days.length === 5 && d.days.every(day => day.length === 3);
+    for (let k = 0; k < 20 && !d.done; k++) { if (serNext(d)) { serPlay(); result(k % 3 !== 2); } else serMain(); d = SER.d; }
+    const S = serStandings(d);
+    out.leagueDone = d.done && !!d.final && d.final.w >= 0 && S.reduce((a, s) => a + s.w, 0) === 15 && S[0].w >= S[5].w;
+    out.leaders = Object.values(d.stats).filter(s => s.gp > 0).length >= 12;
+    // the menu shows "continue" while one is saved
+    serDrop('league'); openSeries('league'); serStart();
+    const qp = TITLE_MENU().find(e => e.label === 'Quick Play'), pg = qp.sub.find(e => e.label === 'Play a game');
+    out.menu = pg.sub.some(e => e.label === 'League (continue)') && pg.sub.some(e => /^Tournament/.test(e.label));
+    // accessibility
+    SETTINGS.cbSafe = true; newMatch(TEAMS[0], TEAMS[1], { humans: [] });
+    out.cb = M.teams[0].def.c1 === CB_KITS[0].c1 && M.teams[1].players[0].T.c1 === CB_KITS[1].c1; SETTINGS.cbSafe = false;
+    const g = canvas.getContext('2d'); g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.font = '8px sans-serif'; Input.touchMode = false;
+    SETTINGS.textSize = 0; const w0 = g.measureText('Hello there').width; SETTINGS.textSize = 2; const w2 = g.measureText('Hello there').width; g.restore();
+    out.text = w2 > w0 * 1.5;
+    SETTINGS.autoShot = true; SETTINGS.casual = false; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); M.phase = 'live';
+    const me = M.players.find(q => q.human === 0); giveBall(me, 'inbound'); me.state = 'shoot'; me.st_t = 0.05; humanCmd(0, me.cmd); const held = me.cmd.bHeld;
+    me.st_t = 0.9; humanCmd(0, me.cmd); out.autoShot = held === true && me.cmd.bHeld === false; SETTINGS.autoShot = false;
+    const gi = SET_GROUPS.findIndex(x => x.name === 'Accessibility');
+    out.settings = gi >= 0 && setGroupItems(gi).map(x => x.label).join() === 'Shot release,Text size,Team colors';
+    // a CPU game for highlights
+    window.__seed(7); newMatch(TEAMS[2], TEAMS[5], { humans: [], fmt: { format: 'quarters', len: 120 } });
+    for (let n = 0; n < 60 * 60 * 14 && M.phase !== 'over'; n++) { if (Game.screen === 'halftime') Game.screen = 'title'; updateMatch(STEP); }
+    out.hl = (M.highlights || []).length >= 2;
+    Game.screen = 'final'; Game.finalTab = 0; reelStart(); out.reel = REEL.on && REEL.n >= 2;
+    return out;
+  });
+  await sleep(4500);
+  r.reelMoves = await p.evaluate(() => REEL.i >= 1 || !REEL.on);
+  // My clips: keep one, list it, delete it
+  r.clips = await p.evaluate(async () => {
+    await mycTx('readwrite', s => { s.put({ id: 'test', at: Date.now(), name: 'test.webm', type: 'video/webm', blob: new Blob(['x'], { type: 'video/webm' }), poster: '', label: 'Big dunk', teams: ['A', 'B'], score: [21, 18] }); });
+    openMyClips(); await new Promise(r => setTimeout(r, 300)); const one = MYC.list.length === 1;
+    mycDelete(MYC.list[0]); mycDelete(MYC.list[0]); await new Promise(r => setTimeout(r, 300));
+    const menu = TITLE_MENU().find(e => e.label === 'Options').sub.find(e => e.label === 'Extras').sub.some(e => e.label === 'My clips');
+    return one && MYC.list.length === 0 && menu;
+  });
+  // the screens draw (with large text too)
+  await p.evaluate(() => { SETTINGS.textSize = 2; openSeries('league'); SER.tab = 0; }); await sleep(300);
+  await p.evaluate(() => { SER.tab = 1; }); await sleep(300); await p.evaluate(() => { SER.tab = 2; }); await sleep(300);
+  await p.evaluate(() => { serDrop('tour'); openSeries('tour'); }); await sleep(300);
+  await p.evaluate(() => { serStart(); }); await sleep(300);
+  await p.evaluate(() => { openMyClips(); }); await sleep(300);
+  await p.evaluate(() => { goTitle(); Game.screen = 'settings'; Game.setGroup = SET_GROUPS.findIndex(x => x.name === 'Accessibility'); Game.idx = 0; SETTINGS.textSize = 0; }); await sleep(300);
   await ctx.close();
   const ok = Object.values(r).every(v => v === true) && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };

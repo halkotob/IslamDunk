@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.4.0';
+const VERSION = '9.5.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -22532,6 +22532,585 @@ BACK.jumuah = () => jumFinish();
     if (this.el && (Game.screen === 'jumuah' || (Game.screen === 'world' && World.jum)) && this.el.style.display !== 'none') { this.el.style.display = 'none'; this.shown = false; Input.stick.ax = Input.stick.az = 0; }
     return r;
   };
+}
+// ================================================= v9.5: TOURNAMENT AND LEAGUE (Quick Play → Play a game)
+//   * Tournament: 4 or 8 teams in a knockout bracket. You play your games; the others are decided by
+//     a quick simulation (team strength plus luck). Lose and you can watch the rest play out.
+//   * League: 4, 6 or 8 teams play everyone once or twice, then the top two meet in the final.
+//     Standings (wins, losses, points for and against) and stat leaders (points, rebounds, assists per
+//     game, from your games' box scores and the simulated ones).
+//   * Any teams from the team list: the built-in masjids, your career team and your own teams
+//     ("My teams first" puts yours in before the built-in ones). Your team's own court (or home court)
+//     is the venue for your games; the final is at the Masjid League Arena.
+//   * Both are saved after every game (one tournament and one league at a time) and can be left and picked
+//     up from the same menu entry. Games use your Settings (difficulty, format, period length).
+const SER_KEYS = { tour: 'islamdunk.tournament', league: 'islamdunk.league' };
+const SER = { kind: 'tour', d: null, setup: null, tab: 0, idx: 0, scroll: 0 };
+function serKey(T) { return T.custom === 'career' ? 'career' : T.custom ? 'c:' + T.custom : 'b:' + T.name; }
+function serTeam(k) { return teamPool().find(t => serKey(t) === k) || TEAMS[0]; }
+function serLoad(kind) { try { const o = JSON.parse(localStorage.getItem(SER_KEYS[kind]) || 'null'); return o && o.v === 1 && o.kind === kind ? o : null; } catch (e) { return null; } }
+function serSave() { const d = SER.d; if (!d) return; try { localStorage.setItem(SER_KEYS[d.kind], JSON.stringify(d)); } catch (e) {} }
+function serDrop(kind) { try { localStorage.removeItem(SER_KEYS[kind]); } catch (e) {} if (SER.d && SER.d.kind === kind) SER.d = null; }
+const serName = (d, i) => serTeam(d.keys[i]).name;
+
+// ---- quick simulation for games you don't play
+function serPower(T) {
+  const ps = T.players || []; if (!ps.length) return 25;
+  return ps.reduce((a, p) => { const s = p.stats || {}; return a + (s.spd || 5) + (s.sht || 5) + (s.dnk || 5) + (s.def || 5) + (s.stl || 5); }, 0) / ps.length;
+}
+function serBoxSim(T, pts) {                                   // split a team's points (and rebounds, assists) between its players
+  const ps = T.players, w = ps.map(p => Math.max(1, (p.stats.sht || 5) + (p.stats.dnk || 5) * 0.6)), sw = w.reduce((a, b) => a + b, 0);
+  let left = pts; const rows = ps.map((p, i) => { const v = i === ps.length - 1 ? left : Math.round(pts * w[i] / sw); left -= v; return { n: p.name, pts: Math.max(0, v), reb: 0, ast: 0 }; });
+  for (let i = 0; i < 8 + rint(8); i++) { const r = rows[rint(rows.length)]; r.reb++; }
+  for (let i = 0; i < 2 + rint(6); i++) { const r = rows[rint(rows.length)]; r.ast++; }
+  return rows;
+}
+function serSim(d, g) {
+  const A = serTeam(d.keys[g.a]), B = serTeam(d.keys[g.b]);
+  const pa = 1 / (1 + Math.exp(-(serPower(A) - serPower(B)) / 4)), aWins = Math.random() < pa;
+  const win = 21, lose = clamp(21 - 2 - rint(11), 6, 19);
+  g.sa = aWins ? win : lose; g.sb = aWins ? lose : win; g.w = aWins ? g.a : g.b; g.sim = true;
+  serAddBox(d, g.a, serBoxSim(A, g.sa)); serAddBox(d, g.b, serBoxSim(B, g.sb));
+}
+function serAddBox(d, ti, rows) {
+  for (const r of rows) {
+    const k = d.keys[ti] + '|' + r.n, s = d.stats[k] || (d.stats[k] = { n: r.n, t: ti, gp: 0, pts: 0, reb: 0, ast: 0 });
+    s.gp++; s.pts += r.pts || 0; s.reb += r.reb || 0; s.ast += r.ast || 0;
+  }
+}
+
+// ---- building a tournament or league
+function serField(you, size, mine) {
+  const P = teamPool(), keys = [serKey(teamAt(you))], own = P.filter(t => t.custom && serKey(t) !== keys[0]).map(serKey), base = P.filter(t => !t.custom).map(serKey).filter(k => k !== keys[0]);
+  const pool = mine ? [...shuffle(own), ...shuffle(base)] : shuffle([...own, ...base]);
+  for (const k of pool) if (keys.length < size && !keys.includes(k)) keys.push(k);
+  return keys;
+}
+function serNew(o) {
+  const keys = serField(o.you, o.size, o.mine);
+  const d = { v: 1, kind: o.kind, keys, ctrl: o.ctrl | 0, stats: {}, done: false, champ: -1, made: Date.now() };
+  if (o.kind === 'tour') {
+    const order = [0, ...shuffle(keys.slice(1).map((_, i) => i + 1))];
+    d.rounds = [[]]; for (let i = 0; i < order.length; i += 2) d.rounds[0].push({ a: order[i], b: order[i + 1], sa: null, sb: null, w: -1 });
+  } else {
+    // round robin (circle method), once or twice; an odd count gets a bye
+    const n = keys.length, ids = keys.map((_, i) => i); if (n % 2) ids.push(-1);
+    const m = ids.length, days = [];
+    for (let r = 0; r < m - 1; r++) { const day = []; for (let i = 0; i < m / 2; i++) { const a = ids[i], b = ids[m - 1 - i]; if (a >= 0 && b >= 0) day.push(r % 2 ? { a: b, b: a } : { a, b }); } days.push(day); ids.splice(1, 0, ids.pop()); }
+    const all = o.twice ? [...days, ...days.map(day => day.map(g => ({ a: g.b, b: g.a })))] : days;
+    d.days = all.map(day => day.map(g => Object.assign(g, { sa: null, sb: null, w: -1 }))); d.day = 0; d.final = null;
+  }
+  SER.d = d; serSave(); return d;
+}
+// your next game, or null
+function serNext(d) {
+  if (!d || d.done) return null;
+  if (d.kind === 'tour') { const R = d.rounds[d.rounds.length - 1]; return R.find(g => g.w < 0 && (g.a === 0 || g.b === 0)) || null; }
+  if (d.final) return d.final.w < 0 && (d.final.a === 0 || d.final.b === 0) ? d.final : null;
+  const day = d.days[d.day]; return day ? day.find(g => g.w < 0 && (g.a === 0 || g.b === 0)) || null : null;
+}
+function serStandings(d) {
+  const T = d.keys.map((k, i) => ({ i, w: 0, l: 0, pf: 0, pa: 0 }));
+  for (const day of d.days || []) for (const g of day) if (g.w >= 0) { const A = T[g.a], B = T[g.b]; A.pf += g.sa; A.pa += g.sb; B.pf += g.sb; B.pa += g.sa; if (g.w === g.a) { A.w++; B.l++; } else { B.w++; A.l++; } }
+  return T.sort((x, y) => y.w - x.w || (y.pf - y.pa) - (x.pf - x.pa) || y.pf - x.pf || x.i - y.i);
+}
+// play every game that isn't yours up to the point where you play next (or to the end)
+function serAdvance(d, toEnd) {
+  for (let guard = 0; guard < 200 && !d.done; guard++) {
+    if (d.kind === 'tour') {
+      const R = d.rounds[d.rounds.length - 1];
+      for (const g of R) if (g.w < 0 && ((g.a !== 0 && g.b !== 0) || toEnd)) serSim(d, g);
+      if (R.some(g => g.w < 0)) break;
+      if (R.length === 1) { d.done = true; d.champ = R[0].w; break; }
+      const N = []; for (let i = 0; i < R.length; i += 2) N.push({ a: R[i].w, b: R[i + 1].w, sa: null, sb: null, w: -1 }); d.rounds.push(N);
+    } else {
+      if (d.final) { if (d.final.w < 0 && ((d.final.a !== 0 && d.final.b !== 0) || toEnd)) serSim(d, d.final); if (d.final.w >= 0) { d.done = true; d.champ = d.final.w; } break; }
+      const day = d.days[d.day];
+      if (!day) { const S = serStandings(d); d.final = { a: S[0].i, b: S[1].i, sa: null, sb: null, w: -1, final: true }; continue; }
+      for (const g of day) if (g.w < 0 && ((g.a !== 0 && g.b !== 0) || toEnd)) serSim(d, g);
+      if (day.some(g => g.w < 0)) break;
+      d.day++;
+    }
+  }
+  serSave();
+}
+const serOut = d => d.kind === 'tour' ? d.rounds.some(R => R.some(g => g.w >= 0 && (g.a === 0 || g.b === 0) && g.w !== 0)) : !!(d.final && d.final.a !== 0 && d.final.b !== 0);
+function serRoundName(d) {
+  if (d.kind === 'league') return d.final ? 'Final' : 'Matchday ' + (d.day + 1) + ' of ' + d.days.length;
+  const left = d.rounds[d.rounds.length - 1].length; return left === 1 ? 'Final' : left === 2 ? 'Semifinals' : 'Quarterfinals';
+}
+
+// ---- playing your game
+function serVenue(T, final) {
+  if (final) return null;                                         // the final: Masjid League Arena
+  if (T.court && typeof ctVenue === 'function') return ctVenue(T, 0);
+  const base = T.home && VENUE_LIST.find(v => v.id === T.home);
+  return base && base.kind !== 'classic' && !venueLocked(base) ? makeVenue(base, base.kind === 'outdoor' ? { backdrop: base.backdrop } : {}) : null;
+}
+function serPlay() {
+  const d = SER.d, g = serNext(d); if (!g) return;
+  const opp = g.a === 0 ? g.b : g.a, you = serTeam(d.keys[0]), them = serTeam(d.keys[opp]);
+  const final = d.kind === 'tour' ? d.rounds[d.rounds.length - 1].length === 1 : !!g.final;
+  const venue = serVenue(you, final), humans = [{ team: 0, slot: Math.min(d.ctrl, you.players.length - 1), pad: 0 }];
+  Game.lastMatch = null; Game.paused = false; Game.trivia = null;
+  newMatch(you, them, { humans, venue }); M.series = { kind: d.kind, opp, final };
+  Game.screen = 'play'; startVenueIntro(venue);
+  if (!venue) FX.callout(serRoundName(d).toUpperCase(), '#ffd76a', d.kind === 'tour' ? 'TOURNAMENT' : 'LEAGUE');
+}
+{
+  const _fm = finishMatch;
+  finishMatch = function () {
+    const r = _fm.apply(this, arguments), S = M.series, d = SER.d;
+    if (S && d && !S.saved) {
+      S.saved = true; const g = serNext(d);
+      if (g) {
+        const youA = g.a === 0, ys = M.teams[0].score, os = M.teams[1].score;
+        g.sa = youA ? ys : os; g.sb = youA ? os : ys; g.w = M.winner === 0 ? 0 : S.opp;
+        serAddBox(d, 0, M.teams[0].players.map(p => ({ n: p.def.name, pts: p.stats.pts || 0, reb: p.stats.reb || 0, ast: p.stats.ast || 0 })));
+        serAddBox(d, S.opp, M.teams[1].players.map(p => ({ n: p.def.name, pts: p.stats.pts || 0, reb: p.stats.reb || 0, ast: p.stats.ast || 0 })));
+        serAdvance(d, false);
+        if (serOut(d) && !d.done) d.out = true;
+        serSave();
+      }
+    }
+    return r;
+  };
+  const _fc = finalContinue;
+  finalContinue = function () { if (M.series) { M.series = null; openSeries(SER.d.kind); return; } return _fc.apply(this, arguments); };
+  const _cr = canRematch;
+  canRematch = function () { return !M.series && _cr.apply(this, arguments); };
+  const _nm = newMatch;
+  newMatch = function () { if (M) M.series = null; return _nm.apply(this, arguments); };
+}
+
+// ---- setup screen
+function openSeries(kind) {
+  SER.kind = kind; SER.d = serLoad(kind); SER.tab = 0; SER.idx = 0; SER.scroll = null;
+  if (SER.d) { Game.screen = 'series'; return; }
+  const P = teamPool(), mineAt = P.findIndex(t => t.custom && t.custom !== 'career');
+  SER.setup = { kind, you: mineAt >= 0 ? mineAt : 0, size: kind === 'tour' ? 8 : 6, mine: true, twice: false, ctrl: 0 };
+  Game.screen = 'sersetup'; Game.idx = 0;
+}
+function serSetupRows() {
+  const o = SER.setup, n = teamCount(), sizes = o.kind === 'tour' ? [4, 8] : [4, 6, 8], cyc = (a, v, d) => a[(a.indexOf(v) + d + a.length) % a.length];
+  const T = teamAt(o.you);
+  const R = [
+    { label: 'Your team', get: () => T.name, step: d => { o.you = (o.you + d + n) % n; o.ctrl = 0; } },
+    { label: 'Your player', get: () => (T.players[o.ctrl] || T.players[0]).name, step: () => { o.ctrl = (o.ctrl + 1) % T.players.length; } },
+    { label: 'Teams', get: () => String(Math.min(o.size, n)), step: d => { o.size = cyc(sizes, o.size, d); } },
+    { label: 'Opponents', get: () => o.mine ? 'My teams first' : 'Any teams', step: () => { o.mine = !o.mine; } }
+  ];
+  if (o.kind === 'league') R.push({ label: 'Play each team', get: () => o.twice ? 'Twice' : 'Once', step: () => { o.twice = !o.twice; } });
+  R.push({ label: o.kind === 'tour' ? 'Start the tournament' : 'Start the league', start: true, step: () => serStart() });
+  R.push({ label: 'Back', back: true, step: () => goTitle() });
+  return R;
+}
+function serStart() {
+  const o = SER.setup; if (teamCount() < 4) { toast('You need at least 4 teams', 2); return; }
+  serNew({ kind: o.kind, you: o.you, size: o.kind === 'tour' ? (teamCount() >= o.size ? o.size : 4) : Math.min(o.size, teamCount()), mine: o.mine, twice: o.twice, ctrl: o.ctrl });
+  serAdvance(SER.d, false); SER.tab = 0; Game.screen = 'series'; SFX.good && SFX.good();
+}
+function serSetupUpdate() {
+  const R = serSetupRows(); Game.idx = clamp(Game.idx | 0, 0, R.length - 1);
+  menuNav(R.length, i => R[i].step(1));
+  const r = R[Game.idx];
+  if (r && !r.start && !r.back) { if (menuHit('left')) { r.step(-1); SFX.blip(); } if (menuHit('right')) { r.step(1); SFX.blip(); } }
+  if (menuHit('back')) goTitle();
+}
+function drawSerSetup(g) {
+  dim(g, 0.78);
+  const o = SER.setup, T = teamAt(o.you);
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `32px ${FONT}`; g.fillText(o.kind === 'tour' ? 'Tournament' : 'League', W / 2, 70);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`;
+  g.fillText(o.kind === 'tour' ? 'A knockout bracket. Win every game to lift the trophy.' : 'Play everyone, then the top two meet in the final.', W / 2, 98);
+  drawCrest(g, W / 2, 140, 22, T);
+  const R = serSetupRows();
+  drawMenuList(g, 'sersetup', R.map(r => ({ label: r.label, value: r.start || r.back ? null : r.get() })), Game.idx, 190, 42, i => { Game.idx = i; R[i].step(1); }, i => { Game.idx = i; }, true, 500);
+}
+
+// ---- the hub: bracket or standings, schedule, leaders
+function serUpdate() {
+  const d = SER.d; if (!d) { goTitle(); return; }
+  const tabs = d.kind === 'tour' ? 2 : 3;
+  if (menuHit('left') || Input.pressed.Tab) { SER.tab = (SER.tab + (menuHit('left') ? tabs - 1 : 1)) % tabs; SFX.blip(); }
+  else if (menuHit('right')) { SER.tab = (SER.tab + 1) % tabs; SFX.blip(); }
+  if (menuHit('ok')) serMain();
+  else if (Input.pressed.KeyN) serAbandon();
+  else if (menuHit('back')) goTitle();
+}
+function serMain() {
+  const d = SER.d;
+  if (d.done) { serDrop(d.kind); openSeries(d.kind); return; }
+  if (serNext(d)) serPlay();
+  else { serAdvance(d, true); SER.scroll = null; SFX.blip(); }
+}
+function serAbandon() {
+  const d = SER.d;
+  if (SER.confirm !== d.made) { SER.confirm = d.made; toast('Press N again to end this ' + (d.kind === 'tour' ? 'tournament' : 'league') + ' and start over', 2.5); return; }
+  SER.confirm = null; serDrop(d.kind); openSeries(d.kind);
+}
+function serTitle(d) {
+  if (d.done) return serName(d, d.champ) + (d.champ === 0 ? ': you are the champions!' : ' are the champions');
+  if (serNext(d)) { const g = serNext(d), opp = g.a === 0 ? g.b : g.a; return serRoundName(d) + ': you play ' + serName(d, opp); }
+  return serOut(d) || d.out ? 'You’re out. Watch the rest play out.' : serRoundName(d);
+}
+function drawSeries(g) {
+  dim(g, 0.84);
+  const o = Math.round((W - 960) / 2), rw = W; g.save(); g.translate(o, 0); W = 960; Game.ox = o;
+  try {
+    const d = SER.d, tabs = d.kind === 'tour' ? ['Bracket', 'Leaders'] : ['Standings', 'Schedule', 'Leaders'];
+    g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText(d.kind === 'tour' ? 'Tournament' : 'League', W / 2, 40);
+    g.fillStyle = d.done && d.champ === 0 ? '#9dffb0' : IVORY; g.font = `15px ${BODY}`; g.fillText(fitText(g, serTitle(d), 900), W / 2, 64);
+    tabs.forEach((t, i) => { const x = W / 2 - tabs.length * 70 + i * 140, on = SER.tab === i; g.fillStyle = on ? GOLD : 'rgba(255,255,255,0.1)'; roundRect(g, x + 5, 76, 130, 28, 14); g.fill(); g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${FONT}`; g.textAlign = 'center'; g.fillText(t, x + 70, 95); addRect(x + 5, 76, 130, 28, () => { SER.tab = i; }); });
+    panel(g, 30, 114, 900, 336, false);
+    const tab = tabs[SER.tab];
+    if (tab === 'Bracket') drawSerBracket(g, d); else if (tab === 'Standings') drawSerStandings(g, d); else if (tab === 'Schedule') drawSerSchedule(g, d); else drawSerLeaders(g, d);
+    const main = d.done ? 'Start a new one' : serNext(d) ? 'Play your game' : 'Play out the rest';
+    uiButton(g, W / 2 - 230, 466, 220, 42, main, serMain, true);
+    uiButton(g, W / 2 + 10, 466, 220, 42, 'Leave (saved)', goTitle, false);
+    if (!Input.touchMode) { g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.textAlign = 'center'; g.fillText('Enter: ' + main.toLowerCase() + '   ← →: tabs   N: end and start over   Esc: leave (saved)', W / 2, 528); }
+    else uiButton(g, W - 150, 470, 120, 34, 'Start over', serAbandon, false);
+  } finally { W = rw; Game.ox = 0; g.restore(); }
+}
+function serTeamCell(g, d, i, x, y, w, score, won, live) {
+  const T = serTeam(d.keys[i]);
+  g.fillStyle = live ? 'rgba(232,195,90,0.22)' : 'rgba(255,255,255,0.06)'; roundRect(g, x, y, w, 26, 6); g.fill();
+  drawCrest(g, x + 14, y + 13, 9, T);
+  g.textAlign = 'left'; g.font = `12px ${won ? FONT : BODY}`; g.fillStyle = i === 0 ? GOLD : won === false ? '#8a9aab' : '#fff';
+  g.fillText(fitText(g, T.short || T.name, w - 62), x + 28, y + 17);
+  if (score != null) { g.textAlign = 'right'; g.fillText(String(score), x + w - 8, y + 17); }
+}
+function drawSerBracket(g, d) {
+  const size = d.keys.length, rounds = Math.log2(size), cw = 860 / (rounds + 1), x0 = 50;
+  for (let r = 0; r <= rounds; r++) {
+    const R = d.rounds[r], n = size / Math.pow(2, r + 1), x = x0 + r * cw, w = cw - 30;
+    g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`;
+    g.fillText(r === rounds ? 'CHAMPION' : n === 1 ? 'FINAL' : n === 2 ? 'SEMIFINALS' : 'QUARTERFINALS', x, 136);
+    if (r === rounds) { if (d.done) { serTeamCell(g, d, d.champ, x, 280, w, null, true, d.champ === 0); g.fillStyle = GOLD; star8(g, x + w / 2, 250, 18); g.fill(); } continue; }
+    for (let k = 0; k < n; k++) {
+      const gap = 300 / n, y = 150 + gap * k + gap / 2 - 28, gm = R && R[k];
+      if (!gm) { g.fillStyle = 'rgba(255,255,255,0.04)'; roundRect(g, x, y, w, 26, 6); g.fill(); roundRect(g, x, y + 30, w, 26, 6); g.fill(); continue; }
+      const live = gm.w < 0 && (gm.a === 0 || gm.b === 0);
+      serTeamCell(g, d, gm.a, x, y, w, gm.sa, gm.w < 0 ? null : gm.w === gm.a, live);
+      serTeamCell(g, d, gm.b, x, y + 30, w, gm.sb, gm.w < 0 ? null : gm.w === gm.b, live);
+    }
+  }
+}
+function drawSerStandings(g, d) {
+  const S = serStandings(d), cols = [['TEAM', 60, 'left'], ['W', 520, 'right'], ['L', 580, 'right'], ['PF', 660, 'right'], ['PA', 740, 'right'], ['+/-', 830, 'right']];
+  g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; for (const [t, x, a] of cols) { g.textAlign = a; g.fillText(t, x, 138); }
+  const lh = Math.min(34, 290 / S.length);
+  S.forEach((s, r) => {
+    const y = 146 + r * lh, T = serTeam(d.keys[s.i]);
+    if (r < 2) { g.fillStyle = 'rgba(232,195,90,0.12)'; g.fillRect(44, y, 872, lh - 3); }
+    g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText(String(r + 1), 50, y + lh / 2 + 5);
+    drawCrest(g, 80, y + lh / 2 - 1, Math.min(11, lh / 2 - 3), T);
+    g.fillStyle = s.i === 0 ? GOLD : '#fff'; g.font = `14px ${BODY}`; g.fillText(fitText(g, T.name, 400), 98, y + lh / 2 + 5);
+    g.textAlign = 'right'; g.font = `14px ${FONT}`;
+    [[s.w, 520], [s.l, 580], [s.pf, 660], [s.pa, 740], [(s.pf - s.pa > 0 ? '+' : '') + (s.pf - s.pa), 830]].forEach(([v, x]) => g.fillText(String(v), x, y + lh / 2 + 5));
+  });
+  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(d.final ? 'Final: ' + serName(d, d.final.a) + ' vs ' + serName(d, d.final.b) + (d.final.w >= 0 ? '  (' + d.final.sa + '–' + d.final.sb + ')' : '') : 'The top two (highlighted) play the final.', 50, 440);
+}
+function drawSerSchedule(g, d) {
+  const days = [...d.days.map((day, i) => ({ name: 'Matchday ' + (i + 1), games: day })), ...(d.final ? [{ name: 'Final', games: [d.final] }] : [])];
+  const cur = d.final ? days.length - 1 : Math.min(d.day, days.length - 1);
+  SER.scroll = clamp(SER.scroll == null ? cur : SER.scroll, 0, days.length - 1);
+  if (menuHit('up')) SER.scroll = Math.max(0, SER.scroll - 1); if (menuHit('down')) SER.scroll = Math.min(days.length - 1, SER.scroll + 1);
+  const show = days.slice(SER.scroll, SER.scroll + 2);
+  show.forEach((day, c) => {
+    const x = 60 + c * 440;
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `14px ${FONT}`; g.fillText(day.name, x, 140);
+    day.games.forEach((gm, k) => {
+      const y = 152 + k * 64;
+      serTeamCell(g, d, gm.a, x, y, 380, gm.sa, gm.w < 0 ? null : gm.w === gm.a, gm.w < 0 && (gm.a === 0 || gm.b === 0));
+      serTeamCell(g, d, gm.b, x, y + 28, 380, gm.sb, gm.w < 0 ? null : gm.w === gm.b, gm.w < 0 && (gm.a === 0 || gm.b === 0));
+    });
+  });
+  g.textAlign = 'right'; g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText((Input.touchMode ? '' : '↑ ↓ ') + (SER.scroll + 1) + '–' + Math.min(days.length, SER.scroll + 2) + ' of ' + days.length, 910, 440);
+  if (Input.touchMode) { uiButton(g, 700, 418, 40, 28, '‹', () => { SER.scroll = Math.max(0, SER.scroll - 1); }, false); uiButton(g, 750, 418, 40, 28, '›', () => { SER.scroll = Math.min(days.length - 1, SER.scroll + 1); }, false); }
+}
+function drawSerLeaders(g, d) {
+  const all = Object.values(d.stats).filter(s => s.gp > 0);
+  [['POINTS', 'pts'], ['REBOUNDS', 'reb'], ['ASSISTS', 'ast']].forEach(([t, k], c) => {
+    const x = 60 + c * 290, L = all.slice().sort((a, b) => b[k] / b.gp - a[k] / a.gp).slice(0, 6);
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(t + ' PER GAME', x, 140);
+    if (!L.length) { g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('After the first games', x, 170); }
+    L.forEach((s, r) => {
+      const y = 166 + r * 44, T = serTeam(d.keys[s.t]);
+      drawCrest(g, x + 10, y, 9, T);
+      g.textAlign = 'left'; g.fillStyle = s.t === 0 ? GOLD : '#fff'; g.font = `13px ${BODY}`; g.fillText(fitText(g, s.n, 180), x + 26, y + 5);
+      g.fillStyle = '#9fb3c8'; g.font = `10px ${BODY}`; g.fillText(fitText(g, T.short || T.name, 120) + '  •  ' + s.gp + ' GP', x + 26, y + 20);
+      g.textAlign = 'right'; g.fillStyle = '#fff'; g.font = `16px ${FONT}`; g.fillText((s[k] / s.gp).toFixed(1), x + 260, y + 7);
+    });
+  });
+}
+
+// ---- screens, and the Quick Play entries
+{
+  const SCR = { sersetup: [serSetupUpdate, drawSerSetup], series: [serUpdate, drawSeries] };
+  const _gu = gameUpdate;
+  gameUpdate = function (rdt) { const sc = Game.screen, was = SCR[sc]; _gu.apply(this, arguments); if (was && Game.screen === sc) { SCR[sc][0](); attractTick(rdt); } };
+  const _r = render;
+  render = function (g) { _r(g); const s = SCR[Game.screen]; if (!s) return; s[1](g); drawBackButton(g); };
+  BACK.sersetup = () => goTitle(); BACK.series = () => goTitle();
+  const _tm = TITLE_MENU;
+  TITLE_MENU = function () {
+    const M0 = _tm.apply(this, arguments), qp = M0.find(e => e.label === 'Quick Play'), pg = qp && qp.sub && qp.sub.find(e => e.label === 'Play a game');
+    const lab = (k, n) => n + (serLoad(k) ? ' (continue)' : '');
+    const items = [{ label: lab('tour', 'Tournament'), act: () => openSeries('tour') }, { label: lab('league', 'League'), act: () => openSeries('league') }];
+    if (pg) pg.sub.push(...items); else if (qp) qp.sub.push(...items);
+    return M0;
+  };
+}
+// ================================================= v9.5: TOP PLAYS REEL AND MY CLIPS
+//   * Top plays: after a game with two or more highlights, "Top plays" (T) plays the best three back to
+//     back in the post-game panel, each with its label and player, then returns to the best play.
+//   * My clips: when a clip video is made (Share → Make video), "Keep in My clips" stores it in this
+//     browser (IndexedDB, up to 12; the oldest goes first). Options → Extras → My clips lists them with
+//     their poster, plays them, saves them to a file again, or deletes them. Nothing leaves the device.
+//     Browsers that can't record video keep the still image instead, as before.
+
+// ---- top plays
+const REEL = { on: false, i: 0, t0: 0, n: 0 };
+function reelStart() { const hl = M.highlights || []; if (hl.length < 2) return; Object.assign(REEL, { on: true, i: 0, t0: Game.t, n: Math.min(3, hl.length) }); SFX.blip(); }
+{
+  const _df = drawFinalScreen;
+  drawFinalScreen = function (g) {
+    const hl = M.highlights || [], tab = Game.finalTab || 0;
+    if (!REEL.on || tab !== 0 || hl.length < 2) { REEL.on = false; _df.apply(this, arguments); }
+    else {
+      let clip = hl[REEL.i];
+      if ((Game.t - REEL.t0) * 60 >= clip.frames.length) { REEL.i++; REEL.t0 = Game.t; if (REEL.i >= REEL.n) { REEL.on = false; hl[0].t0 = Game.t; } clip = hl[REEL.i] || hl[0]; }
+      if (REEL.on) {
+        const order = [clip, ...hl.filter(c => c !== clip)], keep = M.highlights; clip.t0 = REEL.t0;
+        M.highlights = order; try { _df.apply(this, arguments); } finally { M.highlights = keep; }
+        const who = M.players[clip.idx], label = 'TOP PLAYS ' + (REEL.i + 1) + '/' + REEL.n + ': ' + (clip.label || 'HIGHLIGHT') + (who ? ' • ' + who.def.name.toUpperCase() : '');
+        g.font = `11px ${FONT}`; const lw = Math.max(g.measureText(label).width + 22, 300);
+        g.fillStyle = 'rgba(0,0,0,0.9)'; roundRect(g, 400, 160, lw, 22, 11); g.fill();
+        g.fillStyle = '#ffcf6a'; g.textAlign = 'left'; g.fillText(label, 411, 175);
+      } else _df.apply(this, arguments);
+    }
+    if (tab === 0 && hl.length >= 2 && !Net.role) uiButton(g, 512, 372, 122, 28, REEL.on ? '■ Stop' : '▶ Top plays (T)', () => { if (REEL.on) REEL.on = false; else reelStart(); }, false);
+  };
+  const _fu = finalUpdate;
+  finalUpdate = function () { if (Input.pressed.KeyT && (M.highlights || []).length >= 2 && !Net.role) { if (REEL.on) REEL.on = false; else reelStart(); } return _fu.apply(this, arguments); };
+  const _nm = newMatch;
+  newMatch = function () { REEL.on = false; return _nm.apply(this, arguments); };
+}
+
+// ---- My clips (IndexedDB)
+const MYC = { db: null, list: null, idx: 0, busy: false, thumbs: new Map(), overlay: null, MAX: 12 };
+function mycDB() {
+  if (MYC.db) return Promise.resolve(MYC.db);
+  return new Promise((res, rej) => {
+    if (!window.indexedDB) { rej(new Error('no IndexedDB')); return; }
+    const r = indexedDB.open('islamdunk-clips', 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore('clips', { keyPath: 'id' }); };
+    r.onsuccess = () => { MYC.db = r.result; res(MYC.db); }; r.onerror = () => rej(r.error);
+  });
+}
+function mycTx(mode, fn) { return mycDB().then(db => new Promise((res, rej) => { const t = db.transaction('clips', mode), s = t.objectStore('clips'), out = fn(s); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); })); }
+function mycRefresh() {
+  return mycTx('readonly', s => s.getAll()).then(all => { MYC.list = (all || []).sort((a, b) => b.at - a.at); MYC.idx = clamp(MYC.idx, 0, Math.max(0, MYC.list.length - 1)); return MYC.list; })
+    .catch(() => { MYC.list = []; MYC.err = 'My clips needs browser storage, which isn’t available here.'; return []; });
+}
+function mycKeep() {
+  if (!ClipVid.blob || MYC.busy) return;
+  MYC.busy = true;
+  let poster = ''; try { const c = makeCanvas(320, 180); c.getContext('2d').drawImage(ClipVid.poster, 0, 0, 320, 180); poster = c.toDataURL('image/jpeg', 0.8); } catch (e) {}
+  const clip = ShareCard.clips && ShareCard.clips[ShareCard.index], meta = clip && (clip.share || {}), teams = (meta.teams || []).map(t => t && t.name || '');
+  const rec = { id: Date.now().toString(36) + rint(1e6).toString(36), at: Date.now(), name: ClipVid.name, type: ClipVid.blob.type, blob: ClipVid.blob, poster,
+    label: (clip && clip.label) || 'Highlight', teams, score: meta.score || [] };
+  mycRefresh().then(list => mycTx('readwrite', s => { s.put(rec); list.slice(MYC.MAX - 1).forEach(o => s.delete(o.id)); }))
+    .then(() => { MYC.saved = ClipVid.name; toast('Kept in My clips (Options → Extras)', 2.5); SFX.good && SFX.good(); })
+    .catch(() => toast('This browser can’t keep clips', 2.5)).finally(() => { MYC.busy = false; mycRefresh(); });
+}
+{
+  const _dv = drawClipVideo;
+  drawClipVideo = function (g) {
+    _dv.apply(this, arguments);
+    if (ClipVid.state === 'done' && ClipVid.blob) {
+      const kept = MYC.saved === ClipVid.name;
+      uiButton(g, W / 2 - 110, 488, 220, 34, kept ? 'Kept in My clips ✓' : MYC.busy ? 'Keeping…' : 'Keep in My clips (K)', () => { if (!kept) mycKeep(); }, false);
+    }
+  };
+  const _gu = gameUpdate;
+  gameUpdate = function (rdt) {
+    if (Game.screen === 'clipvideo' && ClipVid.state === 'done' && Input.pressed.KeyK && MYC.saved !== ClipVid.name) { mycKeep(); Input.pressed.KeyK = false; }
+    return _gu.apply(this, arguments);
+  };
+}
+// the list screen
+function openMyClips() { MYC.err = ''; MYC.list = null; MYC.idx = 0; Game.screen = 'myclips'; mycRefresh(); }
+function mycThumb(rec) {
+  if (!rec.poster) return null;
+  let im = MYC.thumbs.get(rec.id); if (!im) { im = new Image(); im.src = rec.poster; MYC.thumbs.set(rec.id, im); }
+  return im.complete && im.naturalWidth ? im : null;
+}
+function mycPlay(rec) {
+  if (!rec || MYC.overlay) return;
+  const url = URL.createObjectURL(rec.blob), wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(4,10,16,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
+  const v = document.createElement('video'); v.src = url; v.controls = true; v.autoplay = true; v.playsInline = true; v.loop = true;
+  v.style.cssText = 'max-width:92vw;max-height:78vh;border:2px solid #e8c35a;border-radius:8px;background:#000';
+  const b = document.createElement('button'); b.textContent = 'Close'; b.style.cssText = 'font:16px sans-serif;padding:10px 28px;border-radius:20px;border:1px solid #e8c35a;background:#1d2b38;color:#fff;cursor:pointer';
+  const close = () => { try { v.pause(); } catch (e) {} wrap.remove(); URL.revokeObjectURL(url); MYC.overlay = null; removeEventListener('keydown', key, true); };
+  const key = e => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === 'Backspace') { e.preventDefault(); e.stopPropagation(); close(); } };
+  b.onclick = close; wrap.onclick = e => { if (e.target === wrap) close(); };
+  addEventListener('keydown', key, true);
+  wrap.append(v, b); document.body.appendChild(wrap); MYC.overlay = { close };
+}
+function mycSave(rec) {
+  if (!rec) return;
+  try { const url = URL.createObjectURL(rec.blob), a = document.createElement('a'); a.download = rec.name || 'islam-dunk-clip.webm'; a.href = url; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); toast('Video ready: check your downloads.'); }
+  catch (e) { toast('Saving isn’t available here.'); }
+}
+function mycDelete(rec) {
+  if (!rec) return;
+  if (MYC.confirm !== rec.id) { MYC.confirm = rec.id; toast('Press Delete again to remove this clip', 2.5); return; }
+  MYC.confirm = null; mycTx('readwrite', s => s.delete(rec.id)).then(mycRefresh); toast('Removed', 1.5);
+}
+function myClipsUpdate() {
+  if (MYC.overlay) return;
+  const L = MYC.list || [], n = L.length, rec = L[MYC.idx];
+  if (n) {
+    if (menuHit('up')) { MYC.idx = (MYC.idx + n - 1) % n; SFX.blip(); MYC.confirm = null; }
+    if (menuHit('down')) { MYC.idx = (MYC.idx + 1) % n; SFX.blip(); MYC.confirm = null; }
+    if (menuHit('ok')) mycPlay(rec);
+    else if (Input.pressed.KeyS) mycSave(rec);
+    else if (Input.pressed.Delete || Input.pressed.KeyX) mycDelete(rec);
+  }
+  if (menuHit('back')) goTitle();
+}
+function drawMyClips(g) {
+  dim(g, 0.84);
+  const o = Math.round((W - 960) / 2), rw = W; g.save(); g.translate(o, 0); W = 960; Game.ox = o;
+  try {
+    g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('My clips', W / 2, 48);
+    g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Clips you keep after making a video. They stay in this browser, on this device.', W / 2, 74);
+    const L = MYC.list;
+    if (!L) { g.fillStyle = '#9fb3c8'; g.font = `14px ${BODY}`; g.fillText('Loading…', W / 2, 260); return; }
+    if (!L.length) { g.fillStyle = '#9fb3c8'; g.font = `15px ${BODY}`; wrapText(g, MYC.err || 'No clips yet. After a game, choose Share, then Make video, then Keep in My clips.', W / 2, 250, 620, 22); return; }
+    panel(g, 30, 92, 330, 430, false);
+    const vis = 8, s0 = clamp(MYC.idx - vis + 1, 0, Math.max(0, L.length - vis));
+    L.slice(s0, s0 + vis).forEach((r, k) => {
+      const i = s0 + k, y = 104 + k * 51, on = i === MYC.idx;
+      g.fillStyle = on ? 'rgba(232,195,90,0.9)' : 'rgba(255,255,255,0.05)'; roundRect(g, 42, y, 306, 45, 9); g.fill();
+      g.textAlign = 'left'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${FONT}`; g.fillText(fitText(g, r.label.toUpperCase(), 280), 56, y + 19);
+      g.fillStyle = on ? NIGHT : '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(fitText(g, (r.teams && r.teams.length ? r.teams.join(' vs ') + '  •  ' : '') + new Date(r.at).toLocaleDateString(), 280), 56, y + 36);
+      addRect(42, y, 306, 45, () => { if (MYC.idx === i) mycPlay(r); MYC.idx = i; });
+    });
+    const rec = L[MYC.idx];
+    panel(g, 380, 92, 550, 360, false);
+    const im = rec && mycThumb(rec);
+    if (im) { g.drawImage(im, 400, 110, 510, 287); addRect(400, 110, 510, 287, () => mycPlay(rec)); g.fillStyle = 'rgba(0,0,0,0.5)'; g.beginPath(); g.arc(655, 253, 34, 0, Math.PI * 2); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.moveTo(644, 234); g.lineTo(644, 272); g.lineTo(676, 253); g.closePath(); g.fill(); }
+    else { g.fillStyle = 'rgba(255,255,255,0.06)'; g.fillRect(400, 110, 510, 287); }
+    if (rec) {
+      g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText(fitText(g, (rec.teams || []).join('  ' + (rec.score || []).join(' – ') + '  ') || rec.label, 500), 400, 422);
+      g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(fitText(g, rec.name + '  •  ' + (rec.blob.size / 1048576).toFixed(1) + ' MB', 500), 400, 442);
+      uiButton(g, 380, 466, 170, 40, 'Play', () => mycPlay(rec), true);
+      uiButton(g, 560, 466, 170, 40, 'Save to a file', () => mycSave(rec), false);
+      uiButton(g, 740, 466, 190, 40, MYC.confirm === rec.id ? 'Tap again to delete' : 'Delete', () => mycDelete(rec), false);
+    }
+    if (!Input.touchMode) { g.textAlign = 'right'; g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText('↑ ↓ choose   Enter play   S save   X delete   Esc back', 930, 528); }
+  } finally { W = rw; Game.ox = 0; g.restore(); }
+}
+{
+  const SCR = { myclips: [myClipsUpdate, drawMyClips] };
+  const _gu = gameUpdate;
+  gameUpdate = function (rdt) { const sc = Game.screen, was = SCR[sc]; _gu.apply(this, arguments); if (was && Game.screen === sc) { SCR[sc][0](); attractTick(rdt); } };
+  const _r = render;
+  render = function (g) { _r(g); const s = SCR[Game.screen]; if (!s) return; s[1](g); drawBackButton(g); };
+  BACK.myclips = () => { if (MYC.overlay) MYC.overlay.close(); goTitle(); };
+  const _tm = TITLE_MENU;
+  TITLE_MENU = function () {
+    const M0 = _tm.apply(this, arguments), op = M0.find(e => e.label === 'Options'), ex = op && op.sub && op.sub.find(e => e.label === 'Extras');
+    const item = { label: 'My clips', act: openMyClips };
+    if (ex) ex.sub.push(item); else if (op) op.sub.push(item);
+    return M0;
+  };
+}
+// ================================================= v9.5: ACCESSIBILITY (Settings)
+// All three are in Settings → Accessibility.
+//   * Team colors: Normal, or Colorblind-safe. Colorblind-safe dresses the two sides of
+//     every game in blue and orange (Okabe-Ito colors, told apart with any common color blindness), with
+//     light and dark trim. Only how the game looks on this screen changes.
+//   * Text size: Normal, Large or Larger, on a computer. Small text is raised to a
+//     minimum size as it's drawn (the same way phones already raise it), so layouts that fit on a phone
+//     fit here too. Phones keep their own minimum.
+//   * Shot release: Timed (classic) or Automatic. Automatic releases the shot near the
+//     top of the jump on its own: a good release, not always a perfect one. Defense is unchanged (the
+//     Casual controls setting turns on both automatic release and auto guard). Online games keep the
+//     timed release, so both players play the same game.
+SETTINGS.cbSafe = false; SETTINGS.textSize = 0; SETTINGS.autoShot = false;
+(() => { try { const o = JSON.parse(localStorage.getItem('islamdunk.access') || '{}'); SETTINGS.cbSafe = !!o.cb; SETTINGS.textSize = clamp(o.ts | 0, 0, 2); SETTINGS.autoShot = !!o.as; } catch (e) {} })();
+function accessSave() { try { localStorage.setItem('islamdunk.access', JSON.stringify({ cb: SETTINGS.cbSafe ? 1 : 0, ts: SETTINGS.textSize, as: SETTINGS.autoShot ? 1 : 0 })); } catch (e) {} }
+const CB_KITS = [{ c1: '#0072B2', c2: '#f4f4f4' }, { c1: '#E69F00', c2: '#1d1d1d' }];
+const TEXT_SIZES = ['Normal', 'Large', 'Larger'], TEXT_MIN = [0, 13, 15];   // minimum font size in game units (phones get about 14)
+
+// ---- team colors: applied after the match is built, so every other newMatch wrapper (online custom
+// teams, 3 on 3, Barakah Run) has already picked its teams
+{
+  const _nm = newMatch;
+  newMatch = function (tA, tB, opts) {
+    const r = _nm.apply(this, arguments);
+    if (SETTINGS.cbSafe && !M.attract && M.teams && M.teams.length === 2) {
+      M.teams.forEach((t, k) => {
+        const d = Object.assign({}, t.def, CB_KITS[k]); t.def = d; M.teamDefs[k] = d;
+        for (const p of t.players) p.T = d;
+      });
+    }
+    return r;
+  };
+}
+
+// ---- text size on a computer
+function deskFloor(g) {
+  if (Input.touchMode || !SETTINGS.textSize) return null;
+  const f = g.font, m = /([\d.]+)px/.exec(f); if (!m) return null;
+  const t = g.getTransform(), k = Math.hypot(t.a, t.b) / ((canvas && canvas.width ? canvas.width : W) / W); if (!(k > 0)) return null;
+  const min = TEXT_MIN[SETTINGS.textSize] / k; if (+m[1] >= min - 0.01) return null;
+  g.font = f.replace(m[0], (Math.ceil(min * 10) / 10) + 'px'); return f;
+}
+function deskTextInstall(g) {
+  if (!g || g.__desk) return; g.__desk = true;
+  for (const name of ['fillText', 'strokeText', 'measureText']) {
+    const prev = g[name];
+    g[name] = function (text, ...a) { const old = deskFloor(this); try { return prev.call(this, text, ...a); } finally { if (old !== null) this.font = old; } };
+  }
+}
+{
+  const _r = render;
+  render = function (g) { const r = _r.apply(this, arguments); deskTextInstall(g); return r; };   // after the phone pass installs its own
+  const effPx = g => { const old = deskFloor(g), m = /([\d.]+)px/.exec(g.font), px = m ? +m[1] : 12; if (old !== null) g.font = old; return px; };
+  const _wt = wrapText;
+  wrapText = function (g, text, x, y, maxW, lh) { return _wt.call(this, g, text, x, y, maxW, SETTINGS.textSize && !Input.touchMode ? Math.max(lh, effPx(g) * 1.18) : lh); };
+  const _wl = wrapTextLeft;
+  wrapTextLeft = function (g, text, x, y, maxW, lh) { return _wl.call(this, g, text, x, y, maxW, SETTINGS.textSize && !Input.touchMode ? Math.max(lh, effPx(g) * 1.18) : lh); };
+}
+
+// ---- automatic shot release (the same release Casual controls use)
+{
+  const _hc = humanCmd;
+  humanCmd = function (pad, c) {
+    _hc.apply(this, arguments);
+    if (!SETTINGS.autoShot || SETTINGS.casual || Net.role || M.attract || !M.players) return;
+    const p = M.players.find(q => q.human === pad); if (!p) return;
+    if ((p.state === 'windup' || p.state === 'shoot') && ball.owner === p) {
+      if (p.asRel == null) p.asRel = apexT(p) + gauss() * 0.035 * (M.mini ? 1.3 : 1);
+      c.bHeld = p.state === 'windup' || p.st_t < p.asRel;
+    } else p.asRel = null;
+  };
+}
+
+// ---- the settings rows
+{
+  const after = (label, item) => { const i = SET_ITEMS.findIndex(s => s.label === label); SET_ITEMS.splice(i >= 0 ? i + 1 : SET_ITEMS.length - 1, 0, item); };
+  after('Controls', { label: 'Shot release', get: () => SETTINGS.casual ? 'Automatic (Casual)' : SETTINGS.autoShot ? 'Automatic' : 'Timed', step: () => { if (SETTINGS.casual) { toast('Casual controls already release shots for you', 2.5); return; } SETTINGS.autoShot = !SETTINGS.autoShot; accessSave(); } });
+  after('Resolution', { label: 'Text size', get: () => Input.touchMode ? 'Phone size' : TEXT_SIZES[SETTINGS.textSize], step: d => { if (Input.touchMode) { toast('Phones already use a larger minimum text size', 2.5); return; } SETTINGS.textSize = (SETTINGS.textSize + (d || 1) + 3) % 3; accessSave(); } });
+  after('Text size', { label: 'Team colors', get: () => SETTINGS.cbSafe ? 'Colorblind-safe' : 'Normal', step: () => { SETTINGS.cbSafe = !SETTINGS.cbSafe; accessSave(); } });
+  // their own group, before Sound & display (which takes everything not listed)
+  if (!SET_GROUPS.some(g => g.name === 'Accessibility')) SET_GROUPS.splice(SET_GROUPS.length - 1, 0, { name: 'Accessibility', labels: ['Shot release', 'Text size', 'Team colors'] });
 }
 
 boot();
