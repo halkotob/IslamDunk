@@ -120,6 +120,12 @@ npm run review:ids -- --remove "why" <id> …
 The first versions came from `git blame` of each item's source line. "phase1" means the text was in the first review
 packet, and "8.6.0" means 8.6.0 or earlier, since that is the first commit in this repository.
 
+## Jumu'ah khutbah (v9.4)
+
+`jumuah-reminders.md` lists every reminder Sh. Saleem can give at Jumu'ah, each built from a trivia question and its
+explanation, with the exact words. To change a reminder, change the trivia question or explanation. The list comes
+from `npm run review:jumuah`, which also refreshes the screenshots `img/jumuah-*.png`.
+
 ## The older ways (still work)
 
 There are two ways to review, and both work. Use whichever suits you, or mix them.

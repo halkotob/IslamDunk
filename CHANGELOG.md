@@ -1,5 +1,54 @@
 # Changelog
 
+## 9.4.0: Jumu'ah
+On Fridays in career mode, going into the masjid can include Jumu'ah: a short, calm scene where Sh. Saleem gives 2 or 3
+reminders. Each reminder is a trivia question from the Noor bank, so listening teaches answers. It is optional and
+never a mini-game. Matches, AI, online and every other mode are untouched. (The brief named this 9.2.0; that number went to the neighbourhood and 9.3.0 to the
+custom courts, so this is 9.4.0.)
+
+- **The door.** On a free Friday with the Career calendar on, going into the masjid asks first: **Attend Jumu'ah** or
+  **Not today**, one press either way (Enter / tap; Esc means Not today). Not today goes in as on any other day.
+  There is no penalty, streak or message. The street's existing Jumu'ah marks stay: the date pill and the gold
+  marker over the masjid.
+- **The scene.** It is set in the musalla, using the existing art. The brothers sit in rows facing a small wooden
+  minbar where Sh. Saleem stands. It opens with "The brothers sit for the khutbah.", then his reminders appear in a
+  speech panel. Each advances on its own after 12-18 s, or with Enter / a tap; a whole talk takes about 30-60 s.
+  - Esc, Back or the Skip button leave at any time.
+  - The player only listens. There are no buttons to time, no quiz, no score or reward, and no game sounds. The
+    prayer itself is not shown.
+  - Afterwards the day goes on inside the masjid (the hub), as after any visit.
+- **What is said.** Each reminder is one lead-in ("Today's reminder:", "Let us also remember:", "And a last
+  reminder:") plus an existing trivia explanation (`TRIVIA_WHY`). When the explanation doesn't name the answer, the
+  question and its answer come first. No other words are added.
+  - 178 of the 181 questions can appear. Three are left out because their explanations talk about the game: 90 (our
+    masjid's name), 166 ("even a game") and 179 (Noor on the court).
+  - `docs/review/jumuah-reminders.md` lists every one for religious review (`npm run review:jumuah`).
+- **What it teaches.** Reminders come from questions you haven't studied and that weren't used in the last few
+  Fridays (the last 9 questions). The talk is picked from the day and kept in the save, so a reload shows the same
+  talk.
+  - Each reminder that has been on screen goes into `C.learned`, exactly like studying at the shelf: it shows
+    "Studied" in the Noor challenge and counts toward Student of Knowledge (books_10). Skipping keeps what was
+    already shown.
+  - At the end a card lists "Today's khutbah touched on:" with the questions.
+  - When everything is studied, the talk has two general reminders and nothing new is marked.
+  - The shelf is unchanged.
+- **Saves.**
+  - `C.cal.jum = { days, recent, talk }` is created when first needed, so old saves load as they are.
+  - Attending also counts in the calendar's day counters (`jumuah`) for later steps. Nothing shows a streak or a
+    missed Jumu'ah.
+- **Review:**
+  - `npm run review:export` lists the new strings, plus a "Jumu'ah khutbah" section with every reminder. A new
+    **From trivia bank** column gives each one's question number.
+  - The Review Studio has the reminders under Dialogue → Jumu'ah khutbah, and the scene under Screens.
+- **Tests:**
+  - `jumuah`:
+    - only on Fridays; the walk to the door by keys;
+    - attending marks 2-3 new questions studied (Noor challenge "Studied", books_10, the counter);
+    - every line traces to a question and its explanation;
+    - skipping at the door, in the room, after each reminder and on the card;
+    - the same talk after a reload; all studied; an old save; Career calendar Off; the shelf unchanged.
+  - `jumuah-visual`: baselines at 3 sizes.
+  - The phone text audit covers the door question, the room, a reminder, the longest possible reminder and the card.
 ## 9.3.0: your own court, 3 on 3 picks, your players in mini games
 Phase 7, part 1. Builds on 9.2.3.
 

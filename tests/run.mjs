@@ -66,6 +66,11 @@
 //                shooter (dunks and mini-game spots unchanged); CPU uses a live spot (at most every other
 //                possession), closes out on it, and is unchanged with no spot; late game (trailing gets a shot
 //                up, leading uses the shot clock); off the glass only to a trailing teammate
+//   jumuah       v9.4 Jumu'ah: only on Fridays (calendar on), the question at the door (Attend / Not today, one press),
+//                attending marks 2-3 new questions studied (Noor challenge "Studied", books_10, calendar counter), every
+//                reminder traces to a trivia question + explanation, skipping at each point, same talk after a reload,
+//                all studied (2 general reminders, no marks), old saves, Career calendar Off; the walk in and out by keys
+//   jumuah-visual v9.4 the door question, the room, a reminder and the card at 3 sizes against docs/review/img/jumuah-*.png
 //   studio, studio-anim, studio-csv, studio-excluded   v9.2.1-9.2.2 Review Studio (tests/studio.mjs; npm test builds dist/review first)
 //   v93          v9.3.0: a team's own court (editor rows, first on the venue screen, built gym and park floors, share
 //                codes, career away games, online lobby), 3 on 3 third-player picks, your players as mini game
@@ -83,6 +88,7 @@ import { CAL_HELPERS } from './calendar-setup.js';
 import { WORLD_HELPERS, WORLD_VIEWS, WORLD_TODS } from './world-setup.js';
 import { PHONES as WORLD_PHONES } from './phone-audit.mjs';
 import { STUDIO_TESTS } from './studio.mjs';
+import { JUMUAH_HELPERS, JUMUAH_STAGES } from './jumuah-setup.js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -1884,6 +1890,106 @@ T['adaptive-res'] = async ({ browser, base }) => {
   const ok = r.hz60_heavy_3s === 1 && r.hz60_heavy_9s === 3 && r.hz60_recover_30s === 0 && r.backing_after === '2400x1350' && r.lock30_steady_20s === 0 && r.lock30_struggling_6s >= 1
     && r.flicker.down === 1 && r.flicker.upped === 0 && r.flicker.after === 1 && r.flicker.heldWithin30s === 1 && r.full_heavy === 0 && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
+
+// v9.4: Jumu'ah. The scene is calm and optional; these check the flow, what counts as studied, and that nothing breaks.
+T['jumuah'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'jumuah');
+  await p.evaluate(JUMUAH_HELPERS);
+  const ev = (f, a) => p.evaluate(f, a), out = {};
+  const key = async k => { await p.keyboard.press(k); await sleep(120); };
+  // 1. not on other days: a free non-Friday has no question at the door
+  out.notFri = await ev(() => { window.__jumFriday(); let d = C.cal.d + 1; while (calWd(d) === CAL_FRIDAY || d === calGameDay() || calDay(d).type === DAY_TYPE.GAME) d++; calSetDay(d); worldLoc().tod = 0; return { pending: jumuahPending(), fri: calDay(d).fri }; });
+  // 2. the walk: up to the door with the keys, E, the question, Enter (attend), the scene
+  await ev(() => { window.__jumFriday(); worldEnter('masjidfront', { x: 750, d: 0.3, face: 1 }, { noFade: true }); });
+  await p.keyboard.down('KeyW'); for (let i = 0; i < 30 && !(await ev(() => World.near && World.near.id === 'door')); i++) await sleep(60); await p.keyboard.up('KeyW');
+  await key('KeyE'); out.asked = await ev(() => !!World.jum);
+  const before = await ev(() => ({ n: C.learned.length, talk: jumuahTalk(), prog: (Ach.load().prog || {}).books_10 || 0 }));
+  await key('Enter'); await p.waitForFunction(() => Game.screen === 'jumuah', null, { timeout: 5000 }).catch(() => {});
+  out.scene = await ev(() => Game.screen);
+  // every line is a lead-in + a trivia explanation (with the question and answer when the explanation doesn't name it)
+  out.lines = await ev(() => Game.jum.lines.map((l, k) => { const q = jumuahTalk().qs[k]; return { q, ok: l.endsWith(TRIVIA_WHY[q]) && JUMUAH_LEAD.some(x => l.startsWith(x)) && (l === JUMUAH_LEAD.find(x => l.startsWith(x)) + TRIVIA_WHY[q] || l.includes(TRIVIA[q][0].replace(/\.\.\.$/, '').trim())) }; }));
+  // listen: Enter advances; the card; Enter leaves into the masjid
+  for (let k = 0; k < 6 && !(await ev(() => Game.jum && Game.jum.card)); k++) await key('Enter');
+  out.card = await ev(() => !!(Game.jum && Game.jum.card));
+  await key('Enter'); await sleep(200);
+  out.after = await ev(t0 => ({ screen: Game.screen, n: C.learned.length, studied: t0.qs.every(q => C.learned.includes(q)), prog: (Ach.load().prog || {}).books_10 || 0, counter: C.cal.done.jumuah || 0, days: C.cal.jum.days.slice(), vis: worldLoc().vis.masjid }), before.talk);
+  out.count = before.talk.qs.length;
+  // the Noor challenge shows "Studied" for one of them
+  out.noor = await ev(q => {
+    const seen = []; const f = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (t) { seen.push(String(t)); return f.apply(this, arguments); };
+    try { newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); openTrivia(M.players[0]); Game.trivia.qi = q; Game.screen = 'play'; render(ctx); }
+    finally { CanvasRenderingContext2D.prototype.fillText = f; }
+    const r = seen.includes('Studied'); Game.trivia = null; goTitle(); return r;
+  }, before.talk.qs[0]);
+  // 3. the same talk after a reload (the talk is kept in the save), and the same talk from the same state
+  const t1 = await ev(() => { window.__jumFriday(); const t = jumuahTalk(); saveCareer(); return { qs: t.qs.slice(), d: C.cal.d }; });
+  await p.reload(); await p.waitForFunction(() => typeof Game !== 'undefined' && Game.screen !== undefined && typeof Net !== 'undefined' && Net.avail !== 'checking');
+  await ev(JUMUAH_HELPERS);
+  out.reload = await ev(t => { loadCareer(SAVE_AUTO); const a = jumuahTalk().qs.slice(); C.cal.jum.talk = null; const b = jumuahTalk().qs.slice(); return { same: JSON.stringify(a) === JSON.stringify(t.qs), regen: JSON.stringify(b) === JSON.stringify(t.qs), d: C.cal.d === t.d }; }, t1);
+  // 4. skipping at each point: the room, after the first reminder, after the second, on the card, at the door
+  out.skips = [];
+  for (const at of ['open', 1, 2, 'card', 'door']) {
+    const r = await ev(at => {
+      window.__jumFriday(); const n0 = C.learned.length;
+      if (at === 'door') { jumuahAsk(); return { n0, at }; }
+      jumuahTalk().answered = 2; openJumuah(); Game.jum.fade = 0;
+      if (typeof at === 'number') for (let k = 0; k < at; k++) jumShow(k);
+      if (at === 'card') { for (let k = 0; k < Game.jum.lines.length; k++) jumShow(k); Game.jum.card = true; }
+      return { n0, at, shown: jumuahTalk().shown.length };
+    }, at);
+    await key('Escape'); await sleep(250);
+    out.skips.push(await ev(r => ({ at: r.at, screen: Game.screen, ask: !!World.jum, added: C.learned.length - r.n0, shown: r.shown == null ? 0 : r.shown }), r));
+  }
+  // 5. every question studied: two general reminders, nothing new marked
+  out.all = await ev(() => { window.__jumFriday(true); const n0 = C.learned.length, t = jumuahTalk(); t.answered = 2; openJumuah(); for (let k = 0; k < Game.jum.lines.length; k++) jumShow(k); Game.jum.card = true; render(ctx); const r = { general: t.general, n: t.qs.length, added: C.learned.length - n0, newly: Game.jum.newly }; jumFinish(); return r; });
+  // 6. an old save (no Jumu'ah state, no learned list) loads and works
+  out.old = await ev(() => { window.__jumFriday(); delete C.cal.jum; delete C.learned; saveCareer(); C = null; loadCareer(SAVE_AUTO); worldLoc().tod = 0; return { learned: Array.isArray(C.learned), pending: jumuahPending(), talk: jumuahTalk().qs.length }; });
+  // 7. Career calendar Off: no neighbourhood, no Jumu'ah
+  out.calOff = await ev(() => { window.__jumFriday(); SETTINGS.calendar = false; const r = { today: jumuahToday(), pending: jumuahPending() }; SETTINGS.calendar = true; return r; });
+  // 8. the shelf is unchanged: it still studies one question after a game
+  out.shelf = await ev(() => { window.__jumFriday(); C.gamesPlayed = 3; C.shelfAt = 0; Game.office = { panel: null }; const n0 = C.learned.length; shelfOpen(); return C.learned.length - n0; });
+  await ctx.close();
+  const sk = out.skips;
+  const ok = out.notFri.pending === false && out.notFri.fri === false && out.asked && out.scene === 'jumuah' && out.count >= 2 && out.count <= 3 && out.lines.every(l => l.ok) && out.card
+    && out.after.screen === 'hub' && out.after.n - before.n === out.count && out.after.studied && out.after.prog === out.after.n && out.after.counter === 1 && out.after.days.length === 1 && out.after.vis === 1 && out.noor
+    && out.reload.same && out.reload.regen && out.reload.d
+    && sk[0].screen === 'hub' && sk[0].added === 0 && sk[1].added === 1 && sk[2].added === 2 && sk[3].added === sk[3].shown && sk.slice(0, 4).every(s => s.screen === 'hub') && sk[4].screen === 'hub' && sk[4].added === 0 && !sk[4].ask
+    && out.all.general && out.all.n === 2 && out.all.added === 0 && out.all.newly === 0 && out.old.learned && out.old.pending && out.old.talk >= 2
+    && out.calOff.today === false && out.calOff.pending === false && out.shelf === 1 && !errs.length;
+  return { ok, detail: [JSON.stringify(out).slice(0, 2500), ...errs] };
+};
+
+// v9.4: Jumu'ah visual regression: the door question, the room, a reminder and the card at desktop and both phone sizes
+T['jumuah-visual'] = async ({ browser, base }) => {
+  const detail = []; let ok = true, frames = 0, worst = { share: 0 };
+  const devs = [['desktop', { viewport: { width: 1280, height: 720 } }], ['iphone', { viewport: { width: 750, height: 342 }, isMobile: true, hasTouch: true }], ['667x300', { viewport: { width: 667, height: 300 }, isMobile: true, hasTouch: true }]];
+  for (const [dn, dev] of devs) {
+    const errs = [], ctx = await newContext(browser, { device: dev, seed: true }), p = await open(ctx, base + '/', errs, 'jumuah-visual ' + dn);
+    await p.evaluate(JUMUAH_HELPERS); await p.evaluate(t => { Input.touchMode = t; try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} }, dn !== 'desktop');
+    for (const st of JUMUAH_STAGES.filter(s => s !== 'long')) {
+      const file = path.join(ROOT, 'docs/review/img', `jumuah-${st}-${dn}.png`);
+      await p.evaluate(s => window.__jumPhoto(s), st); await sleep(300);
+      const shot = await p.screenshot(); frames++;
+      if (!fs.existsSync(file)) { ok = false; detail.push(`MISSING baseline ${path.basename(file)}`); continue; }
+      const d = await p.evaluate(async ([a, b, ch]) => {
+        const load = s => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.src = 'data:image/png;base64,' + s; });
+        const [A, B] = await Promise.all([load(a), load(b)]); if (A.width !== B.width || A.height !== B.height) return { size: [A.width, A.height, B.width, B.height] };
+        const c = document.createElement('canvas'); c.width = A.width; c.height = A.height; const g = c.getContext('2d');
+        g.drawImage(A, 0, 0); const da = g.getImageData(0, 0, c.width, c.height).data; g.clearRect(0, 0, c.width, c.height); g.drawImage(B, 0, 0); const db = g.getImageData(0, 0, c.width, c.height).data;
+        let n = 0; for (let i = 0; i < da.length; i += 4) if (Math.abs(da[i] - db[i]) > ch || Math.abs(da[i + 1] - db[i + 1]) > ch || Math.abs(da[i + 2] - db[i + 2]) > ch) n++;
+        return { share: n / (da.length / 4) };
+      }, [shot.toString('base64'), fs.readFileSync(file).toString('base64'), WORLD_DIFF.channel]);
+      if (d.size || d.share > WORLD_DIFF.share) { ok = false; detail.push(`CHANGED ${path.basename(file)}: ${d.size ? 'size ' + d.size : (d.share * 100).toFixed(2) + '% of pixels differ'} (this run: tests/output/${path.basename(file)})`); fs.mkdirSync(path.join(ROOT, 'tests/output'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'tests/output', path.basename(file)), shot); }
+      if (d.share > worst.share) worst = { share: d.share, file: path.basename(file) };
+    }
+    for (const e of errs) { ok = false; detail.push('pageerror ' + e); }
+    await ctx.close();
+  }
+  detail.unshift(`${frames} frames compared; largest difference ${(worst.share * 100).toFixed(3)}% (${worst.file || '-'})`);
+  return { ok, detail };
 };
 
 Object.assign(T, STUDIO_TESTS);   // the Review Studio (tests/studio.mjs)

@@ -42,6 +42,8 @@ window.__RS = (() => {
     add('Intro', 'intro/wrap', 'Intro: Saleem wraps up', flat(INTRO_WRAP), 'career/intro-world.js');
     // the neighbourhood (v9.2)
     if (typeof WORLD_LINES !== 'undefined') for (const id of Object.keys(WORLD_LINES)) WORLD_LINES[id].forEach((set, i) => add('Neighbourhood', 'npc/' + id + '/' + i, WORLD_NPC_LOOK[id].name + ' (day ' + (i + 1) + ')', set.map(([sp, t]) => L(sp, t)), 'career/world/world-scenes.js'));
+    // v9.4: every reminder the Jumu'ah khutbah can say (each is a trivia question + its explanation)
+    if (typeof jumuahEligible === 'function') for (const i of jumuahEligible()) add('Jumu’ah khutbah', 'jumuah/' + i, 'Khutbah reminder from trivia #' + i, [L('saleem', JUMUAH_LEAD[0] + jumuahCore(i))], 'career/jumuah.js');
     return U;
   };
   RS.speakerName = sp => sp === 'you' ? 'You' : sp === 'elder' ? 'An elder' : safe(() => castDef(sp).name, null) || (typeof WORLD_NPC_LOOK !== 'undefined' && WORLD_NPC_LOOK[sp] ? WORLD_NPC_LOOK[sp].name : sp);

@@ -30,7 +30,7 @@ function backVisible() {
 }
 function drawBackButton(g) {
   if (!backVisible()) return;
-  const label = Game.screen === 'story' ? 'Skip' : (Game.screen === 'musalla' && Game.mus && Game.mus.talk) || (Game.screen === 'hub' && Game.hubMenu && Game.hubMenu.open) ? 'Close' : 'Back';
+  const label = Game.screen === 'story' || Game.screen === 'jumuah' ? 'Skip' : (Game.screen === 'musalla' && Game.mus && Game.mus.talk) || (Game.screen === 'hub' && Game.hubMenu && Game.hubMenu.open) ? 'Close' : 'Back';
   const hov = hovering(8, 8, 80, 32), pr = pressing(8, 8, 80, 32);
   g.fillStyle = pr ? '#c9a24a' : hov ? GOLD : 'rgba(8,16,24,0.85)'; roundRect(g, 8, 8, 80, 32, 16); g.fill();
   g.strokeStyle = 'rgba(232,195,90,0.7)'; g.lineWidth = 1.5; g.stroke();

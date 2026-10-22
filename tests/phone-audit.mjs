@@ -8,6 +8,7 @@
 // Each screen is set up, rendered for a few frames, and the findings are recorded under its name.
 import { CAL_HELPERS, CAL_STATES } from './calendar-setup.js';
 import { WORLD_HELPERS } from './world-setup.js';
+import { JUMUAH_HELPERS } from './jumuah-setup.js';
 export const MIN_CSS_PX = 11;
 export const PHONES = [
   ['iPhone 13 landscape', { viewport: { width: 750, height: 342 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }],
@@ -101,6 +102,8 @@ export const SCREENS = [
   ['world: menu', WORLD_HELPERS + ` window.__worldPhoto('home', 1); World.menu = { idx: 0 };`],
   ['world: jumuah banner', WORLD_HELPERS + ` window.__worldPhoto('home', 0); let d = C.cal.d; while (calWd(d) !== 5) d++; calSetDay(d); worldBanner('Jumu’ah today. The masjid is at the end of the street.');`],
   ['world: night street', WORLD_HELPERS + ` window.__worldPhoto('street-east', 3);`],
+  // v9.4: Jumu'ah: the question at the door, the room, a reminder, the longest reminder, the "touched on" card
+  ...[['at the door', 'ask'], ['the room', 'open'], ['a reminder', 'talk'], ['the longest reminder', 'long'], ['touched on', 'card']].map(([n, st]) => ['jumuah: ' + n, JUMUAH_HELPERS + ` window.__jumPhoto('${st}');`]),
   ['hub calendar: season 2', CAL_HELPERS + ` window.__calState('game'); C.season = 2; careerHub();`],
   ['hub calendar: schedule menu', CAL_HELPERS + ` window.__calState('game'); const it = HUB_MENU(); menuActivate('hub', it, it.findIndex(e => e.label === 'Schedule'));`],
   ['cstats', CAREER + ` careerHub(); openStats();`],

@@ -9,6 +9,7 @@ export const SECTION = [
   [/sim\/noor-powers/, 'Noor power-ups (v8.6.1: review the wording)'],
   [/career\/calendar/, 'Career calendar (v9.0: review the month, weekday and holiday names)'],
   [/career\/world\//, 'Neighbourhood (v9.2: review the people, their lines, the signs and the store)'],
+  [/career\/jumuah/, 'Jumu’ah (v9.4: the scene; the khutbah itself is built from the trivia bank)'],
   [/data\/trivia/, 'Trivia'], [/data\/achievements/, 'Achievements'], [/career\/office/, 'Sheikh'], [/career\/career-story/, 'Sheikh, niyyah and stories'],
   [/career\/(career|career-screens|cinema|seasons|intro-world|musalla|musalla-walk|progression|salah)\.js/, 'Story and dialogue'],
   [/career\/(career-goals|gym-routines|gym-drills|masjid-props|masjid-projects)/, 'Career: goals, gym and masjid'],
@@ -23,6 +24,7 @@ export const FLAG = { file: /sim\/noor-powers/, text: /Noor power-up|Choose your
 export const FLAG9 = { file: /career\/calendar/, note: 'REVIEW 9.0: Islamic wording (calendar months and holidays)' };
 // v9.2: everything new in the neighbourhood (NPC lines, signs, the store, banners)
 export const FLAG92 = { file: /career\/world\//, note: 'REVIEW 9.2: neighbourhood text (people, signs, the store)' };
+export const FLAG93 = { file: /career\/jumuah/, note: 'REVIEW 9.4: Jumu’ah (religious review)' };
 export const sectionOf = f => (SECTION.find(([re]) => re.test(f)) || [, 'Other'])[1];
 
 // ---- string literals with line numbers (skips comments; template literals keep ${...} as …)
@@ -75,10 +77,10 @@ export function collectText(root, phase1 = phase1Set(root)) {
     for (const L of literals(fs.readFileSync(p, 'utf8'))) {
       const text = unesc(L.s).replace(/\s+/g, ' ').trim();
       if (!playerFacing(text)) continue;
-      const flagged = FLAG.file.test(f) || FLAG9.file.test(f) || FLAG92.file.test(f);                                  // the review section lists every one of its lines, even if repeated elsewhere
+      const flagged = FLAG.file.test(f) || FLAG9.file.test(f) || FLAG92.file.test(f) || FLAG93.file.test(f);                                  // the review section lists every one of its lines, even if repeated elsewhere
       if (seen.has(text) && !flagged) { seen.get(text).also++; continue; }
       const sp = /\[\s*'(\w+)'\s*,\s*$/.exec(L.prev); const who = sp && SPEAKERS[sp[1]];
-      const r = { section: sectionOf(f), file: f, line: L.line, speaker: sp ? sp[1] : null, where: f + ':' + L.line + (who ? ' — ' + who : ''), text, isNew: phase1.size && !phase1.has(text) ? 'new' : '', flag: FLAG92.file.test(f) ? FLAG92.note : FLAG9.file.test(f) ? FLAG9.note : flagged || FLAG.text.test(text) ? FLAG.note : '', also: 0 };
+      const r = { section: sectionOf(f), file: f, line: L.line, speaker: sp ? sp[1] : null, where: f + ':' + L.line + (who ? ' — ' + who : ''), text, isNew: phase1.size && !phase1.has(text) ? 'new' : '', flag: FLAG93.file.test(f) ? FLAG93.note : FLAG92.file.test(f) ? FLAG92.note : FLAG9.file.test(f) ? FLAG9.note : flagged || FLAG.text.test(text) ? FLAG.note : '', also: 0 };
       if (!seen.has(text)) seen.set(text, r); rows.push(r);
     }
   }
@@ -87,3 +89,18 @@ export function collectText(root, phase1 = phase1Set(root)) {
   return rows;
 }
 export const SECTION_ORDER = () => [...new Set(SECTION.map(s => s[1]).concat('Other'))];
+
+// v9.4: every khutbah reminder, composed exactly as the game does (src/career/jumuah.js between the <jumuah-text>
+// markers, run against src/data/trivia.js and TRIVIA_WHY in src/career/office.js)
+export function jumuahReminders(root) {
+  const read = f => fs.readFileSync(path.join(root, 'src', f), 'utf8');
+  const tv = read('data/trivia.js'), of = read('career/office.js'), ju = read('career/jumuah.js');
+  const a = of.indexOf('const TRIVIA_WHY'), b = of.indexOf('];', a) + 2;
+  const j0 = ju.indexOf('// <jumuah-text>'), j1 = ju.indexOf('// </jumuah-text>');
+  if (a < 0 || j0 < 0 || j1 < 0) return [];
+  const lines = ju.slice(0, j1).split('\n').length;
+  const src = tv + '\n' + of.slice(a, b) + '\n' + ju.slice(j0, j1) + '\nreturn { TRIVIA, TRIVIA_WHY, JUMUAH_SKIP, jumuahEligible, jumuahCore };';
+  const m = new Function(src)();
+  const tl = i => { const k = tv.indexOf(JSON.stringify(m.TRIVIA[i][0]).slice(1, -1).slice(0, 30)); return k < 0 ? 0 : tv.slice(0, k).split('\n').length; };
+  return m.jumuahEligible().map(i => ({ i, text: m.jumuahCore(i), where: 'data/trivia.js:' + tl(i) + ' (trivia #' + i + ') + career/office.js TRIVIA_WHY', jline: lines }));
+}

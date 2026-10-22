@@ -13,7 +13,7 @@ import { norm } from './csv.js';
 
 export const CATS = ['Dialogue', 'Trivia', 'Text', 'Sprites', 'Animations', 'Screens', 'Sounds', 'Voice'];
 const MASJID_SRC = 'career/masjid-projects.js:81';
-const RELIGIOUS_GROUPS = new Set(['Sheikh', 'Sheikh talks', 'Sheikh lessons', 'Niyyah', 'Noor effects', 'Calendar']);
+const RELIGIOUS_GROUPS = new Set(['Jumu’ah khutbah', 'Jumu’ah', 'Sheikh', 'Sheikh talks', 'Sheikh lessons', 'Niyyah', 'Noor effects', 'Calendar']);
 export const RELIGIOUS_WORDS = /\b(allah|qur'?an|qur’an|hadith|prophet|ﷺ|salah|salat|du['’]?a|sunnah|ayah|ayat|surah|ramadan|eid|jannah|iman|dhikr|sabr|tawakkul|bismillah|insha|masha|subhan|alhamdu|astaghfir|haram|halal|sadaqah|zakat|wudu|jumu['’]?ah|khutbah|imam|sahab|niyyah|taqwa|ihsan|shukr|barakah|deen|ummah|mus[-' ]?haf|rak['’]?ah|isha|fajr|dhuhr|asr|maghrib|adhan|iqamah|hijri|muharram|sha['’]?ban|rajab|dhul|shawwal)/i;
 
 const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36).padStart(7, '0').slice(-6); };
@@ -34,6 +34,7 @@ export const TRIGGERS = {
   Milestones: 'A milestone moment in the career (progression beats).',
   Intro: 'The career intro: outside the masjid, then the gym, the first time you start a career.',
   Neighbourhood: 'A person in the neighbourhood (v9.2) on a free day; one set of lines per day.',
+  'Jumu’ah khutbah': 'On a Friday in career mode, if you attend Jumu’ah: Sh. Saleem says 2-3 of these. Each is a trivia question and its explanation; fix the trivia to change it.',
   Trivia: 'A trivia question during a game (Noor) or in the trivia mini game. The first answer is the right one.',
   Achievements: 'The Achievements screen and the toast when you earn one.',
   'Noor effects': 'The Noor power-up choice after a right trivia answer, and the effect banner in play.',
