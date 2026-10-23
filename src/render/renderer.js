@@ -319,7 +319,6 @@ function drawGroup(g, segs, f) {
     }
   }
 }
-let playerLookHook = null;
 function drawPlayer(g, p) {
   const T = p.T, def = p.def, lk = def.look, [bx, by] = P(p.x, p.y, p.z);
   const sc = p.spin ? Math.cos(p.spin) : 1, fs = p.face * (Math.abs(sc) < 0.2 ? 0.2 * sgn(sc) : sc), f = sgn(fs);
@@ -372,43 +371,41 @@ function drawPlayer(g, p) {
   };
   const dk = depthK(p.z), br = 1 + 0.02 * Math.sin(Game.t * 11 + p.x * 0.01) * clamp(((p.fat || 0) - 0.45) / 0.55, 0, 1);   // breathing hard
   const begin = () => { g.save(); g.translate(bx, by); if (Math.abs(p.rot) > 0.01) g.rotate(p.rot); g.scale(sw * dk * (2 - br), sh * dk * br); g.lineCap = 'round'; g.lineJoin = 'round'; };
-  if (!(playerLookHook && playerLookHook(g, p))) {   // v9.6: a preview look draws the body instead (src/render/looks.js); off by default
-    if (!p._refl && (p.boost > 0 || p.fire)) {
-      const cyy = by - (hipH + 12) * sh, a = 0.75 + 0.25 * Math.sin(M.time * 12);
-      g.globalAlpha = a; g.drawImage(p.boost > 0 ? boostGlow() : fireGlow(), bx - 50, cyy - 72, 100, 144); g.globalAlpha = 1;
-    }
-    if (heldBall && ball.behind) drawBall(g);
-    begin();
-    const torso = { t: 'p', c: top, sh: cel(top), lx: 5, ly: 1.5, p: [...L(-8.8, hipH + 1), ...L(8.8, hipH + 1), ...L(shX + 10.5, shY + 1), ...L(shX + 4.5, shY + 6), ...L(shX - 5.5, shY + 6), ...L(shX - 11, shY)] };
-    const body = [...legSegs('f', true), ...armSegs('f', true), torso];
-    if (thobe) {
-      const [nkx, nky, nfx, nfy] = leg(J.nh.a, J.nk.a), [fkx, fky, ffx, ffy] = leg(J.fh.a, J.fk.a);
-      const n2 = L(lerp(nkx, nfx, hemK), lerp(nky, nfy, hemK)), f2 = L(lerp(fkx, ffx, hemK), lerp(fky, ffy, hemK));
-      const sway = cl.x * f, yb = Math.max(n2[1], f2[1]) - cl.y * 0.6, xa = Math.max(n2[0], f2[0]) + 3 + sway, xb = Math.min(n2[0], f2[0]) - 3 + sway;
-      body.push({ t: 'p', c: robe, sh: cel(robe), lx: 4, ly: 1, p: [...L(-8, hipH + 4), ...L(8, hipH + 4), xa, yb, lerp(xa, xb, 0.5), yb + 1.5, xb, yb] });
-    }
-    drawGroup(g, body, f);
-    // The existing cel shading and cloth sway carry fabric form without extra seams.
-    if (!thobe) {
-      g.strokeStyle = T.c2; g.lineWidth = 2.2; g.beginPath(); g.moveTo(...L(-6.5, hipH + 3)); g.lineTo(...L(shX - 8, shY)); g.stroke();   // side piping
-      g.beginPath(); g.moveTo(...L(shX + 3, shY + 3.5)); g.quadraticCurveTo(...L(shX + 6, shY - 1), ...L(shX + 8.5, shY + 0.5)); g.stroke();   // collar
-      const [nx, ny] = L(shX * 0.5 + 1.5, (hipH + shY) / 2 + 1);
-      if (!p._refl) { g.save(); g.scale(1 / sw, 1 / sh); drawTextSprite(g, textSprite(String(def.num), 11, T.c2, shade(T.c1, -0.5), 2.4), nx * sw, ny * sh + 4); g.restore(); }   // no mirrored text in reflections (slow, unreadable)
-    }
-    drawGroup(g, legSegs('n', false), f);
-    // head: profile with nose, cel shade on the back of the head
-    const [HX, HY] = L(hx, hy);
-    const bigHead = M.fun && M.fun.bigHead && !M.gym, hs = 1.15 * (bigHead ? 1.7 : 1);   // arcade head (+15%)
-    g.save(); g.translate(HX, HY + 8); g.scale(hs, hs); g.translate(-HX, -HY - 8);
-    drawGroup(g, [{ t: 'c', x: HX + 8.6 * f, y: HY + 0.8, r: 2.1, c: skin }, { t: 'p', c: skin, sh: cel(skin), lx: 3, ly: 2.5, p: circlePts(HX, HY, 9.5) }], f);
-    drawBeard(g, HX, HY, f, beard, beardLen, hair);
-    drawFace(g, HX, HY, f, p.expr ? p.expr.k : null, hair, def.glasses);
-    drawCap(g, HX, HY, f, cap === 'kufiEmb' || cap === 'kufiStripe' ? 'kufi' : cap, capCol, hair); drawCapPattern(g, HX, HY, f, cap, capCol);
-    g.restore();
-    drawGroup(g, armSegs('n', false), f);
-    g.restore();
-    if (heldBall && !ball.behind) drawBall(g);
+  if (!p._refl && (p.boost > 0 || p.fire)) {
+    const cyy = by - (hipH + 12) * sh, a = 0.75 + 0.25 * Math.sin(M.time * 12);
+    g.globalAlpha = a; g.drawImage(p.boost > 0 ? boostGlow() : fireGlow(), bx - 50, cyy - 72, 100, 144); g.globalAlpha = 1;
   }
+  if (heldBall && ball.behind) drawBall(g);
+  begin();
+  const torso = { t: 'p', c: top, sh: cel(top), lx: 5, ly: 1.5, p: [...L(-8.8, hipH + 1), ...L(8.8, hipH + 1), ...L(shX + 10.5, shY + 1), ...L(shX + 4.5, shY + 6), ...L(shX - 5.5, shY + 6), ...L(shX - 11, shY)] };
+  const body = [...legSegs('f', true), ...armSegs('f', true), torso];
+  if (thobe) {
+    const [nkx, nky, nfx, nfy] = leg(J.nh.a, J.nk.a), [fkx, fky, ffx, ffy] = leg(J.fh.a, J.fk.a);
+    const n2 = L(lerp(nkx, nfx, hemK), lerp(nky, nfy, hemK)), f2 = L(lerp(fkx, ffx, hemK), lerp(fky, ffy, hemK));
+    const sway = cl.x * f, yb = Math.max(n2[1], f2[1]) - cl.y * 0.6, xa = Math.max(n2[0], f2[0]) + 3 + sway, xb = Math.min(n2[0], f2[0]) - 3 + sway;
+    body.push({ t: 'p', c: robe, sh: cel(robe), lx: 4, ly: 1, p: [...L(-8, hipH + 4), ...L(8, hipH + 4), xa, yb, lerp(xa, xb, 0.5), yb + 1.5, xb, yb] });
+  }
+  drawGroup(g, body, f);
+  // The existing cel shading and cloth sway carry fabric form without extra seams.
+  if (!thobe) {
+    g.strokeStyle = T.c2; g.lineWidth = 2.2; g.beginPath(); g.moveTo(...L(-6.5, hipH + 3)); g.lineTo(...L(shX - 8, shY)); g.stroke();   // side piping
+    g.beginPath(); g.moveTo(...L(shX + 3, shY + 3.5)); g.quadraticCurveTo(...L(shX + 6, shY - 1), ...L(shX + 8.5, shY + 0.5)); g.stroke();   // collar
+    const [nx, ny] = L(shX * 0.5 + 1.5, (hipH + shY) / 2 + 1);
+    if (!p._refl) { g.save(); g.scale(1 / sw, 1 / sh); drawTextSprite(g, textSprite(String(def.num), 11, T.c2, shade(T.c1, -0.5), 2.4), nx * sw, ny * sh + 4); g.restore(); }   // no mirrored text in reflections (slow, unreadable)
+  }
+  drawGroup(g, legSegs('n', false), f);
+  // head: profile with nose, cel shade on the back of the head
+  const [HX, HY] = L(hx, hy);
+  const bigHead = M.fun && M.fun.bigHead && !M.gym, hs = 1.15 * (bigHead ? 1.7 : 1);   // arcade head (+15%)
+  g.save(); g.translate(HX, HY + 8); g.scale(hs, hs); g.translate(-HX, -HY - 8);
+  drawGroup(g, [{ t: 'c', x: HX + 8.6 * f, y: HY + 0.8, r: 2.1, c: skin }, { t: 'p', c: skin, sh: cel(skin), lx: 3, ly: 2.5, p: circlePts(HX, HY, 9.5) }], f);
+  drawBeard(g, HX, HY, f, beard, beardLen, hair);
+  drawFace(g, HX, HY, f, p.expr ? p.expr.k : null, hair, def.glasses);
+  drawCap(g, HX, HY, f, cap === 'kufiEmb' || cap === 'kufiStripe' ? 'kufi' : cap, capCol, hair); drawCapPattern(g, HX, HY, f, cap, capCol);
+  g.restore();
+  drawGroup(g, armSegs('n', false), f);
+  g.restore();
+  if (heldBall && !ball.behind) drawBall(g);
   if (p.human >= 0 && !M.attract && !p.noMarker && !p._refl && M.phase === 'live' && !M.practice && ball.owner === p && sigAvailable(p)) drawSkillCue(g, p);
   if (p.human >= 0 && !M.attract && !p.noMarker && !p._refl) {
     const [tx, ty] = P(p.x, p.y + 118 * sh, p.z), col = p.human === 0 ? '#ff5a5a' : '#46a8ff';

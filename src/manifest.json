@@ -106,7 +106,6 @@
     "screens/v95-series.js",
     "screens/v95-highlights.js",
     "screens/v95-access.js",
-    "render/looks.js",
     "boot.js"
   ]
 }

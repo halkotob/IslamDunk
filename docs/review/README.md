@@ -126,20 +126,6 @@ packet, and "8.6.0" means 8.6.0 or earlier, since that is the first commit in th
 explanation, with the exact words. To change a reminder, change the trivia question or explanation. The list comes
 from `npm run review:jumuah`, which also refreshes the screenshots `img/jumuah-*.png`.
 
-## Art slice: compare looks (v9.6)
-
-`look-compare.html` shows the hero (the default player, in a team kit) and the Masjid League Arena in the current look
-and three candidates: A clean cel, B soft painted, C bold cartoon. Open the file in a browser; it needs no build and no
-server.
-- Pick an animation; play, pause, 1x, 0.5x or 0.25x, and step frame by frame.
-- Zoom: whole scene, 1x, 2x or 4x. Dark or light background; facing right or left.
-- Below: the whole court in each look, and a match frame at the phone-audit size (750×342).
-- Item ids match the Review Studio (`anim/<state>/<variant>`, `sprite/venue/classic`).
-
-Contact sheets are `img/look-sheet-<look>.png` and GIFs are `img/look-<look>.gif` (run, dribble, shoot, tomahawk
-dunk, celebrate). `npm run review:looks` rebuilds all of these. To try a look in the game itself, add `?look=a`, `?look=b`
-or `?look=c` to the address, or use Settings → Look (preview). Neither is saved.
-
 ## The older ways (still work)
 
 There are two ways to review, and both work. Use whichever suits you, or mix them.
