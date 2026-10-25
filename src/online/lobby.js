@@ -288,7 +288,7 @@ function drawLobby(g) {
     g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(r === 'r' ? 'Ready for a rematch. Press Ready if the host changes the game.' : 'The host starts the game when you’re ready', W / 2, 512);
   }
   uiButton(g, 30, 456, 110, 34, 'Leave', () => Lobby.leave());
-  if (Lobby.toast) { g.fillStyle = 'rgba(8,14,22,0.92)'; roundRect(g, W / 2 - 90, 120, 180, 26, 13); g.fill(); g.textAlign = 'center'; g.fillStyle = '#9dffb0'; g.font = `13px ${FONT}`; g.fillText(Lobby.toast.m, W / 2, 138); }
+  if (Lobby.toast) textPill(g, W / 2, 120, 26, Lobby.toast.m, `13px ${FONT}`, 'rgba(8,14,22,0.92)', '#9dffb0', 180, W - 40);   // v9.6.2: sized to the message
 }
 {
   const _rend = render;
@@ -304,8 +304,7 @@ function drawLobby(g) {
         g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Hang tight, the game resumes when they’re back', W / 2, H / 2 + 16);
       }
       if (Net.role === 'host' && !Net.guestPeer && M.online && Game.screen === 'play') {
-        g.fillStyle = 'rgba(8,14,22,0.85)'; roundRect(g, W / 2 - 210, 70, 420, 26, 13); g.fill();
-        g.textAlign = 'center'; g.fillStyle = '#ffb08a'; g.font = `12px ${FONT}`; g.fillText('Your friend dropped. The CPU plays for them. Lobby ' + Net.code + ' stays open to rejoin.', W / 2, 88);
+        textPill(g, W / 2, 70, 26, 'Your friend dropped. The CPU plays for them. Lobby ' + Net.code + ' stays open to rejoin.', `12px ${FONT}`, 'rgba(8,14,22,0.85)', '#ffb08a', 420, W - 40);   // v9.6.2
       }
     }
   };

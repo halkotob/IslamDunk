@@ -90,8 +90,7 @@ drawCreator = function (g) {
   const tagRows = (g, x, y0, dy, oy) => { const m = myMods(); STAT_ROWS.forEach(([k], i) => modTag(g, x, y0 + i * dy + oy, m[k] || 0)); };
   const _hub = drawHub;
   drawHub = function (g) {
-    _hub.apply(this, arguments);
-    tagRows(g, 234, 292, 22, 9);
+    _hub.apply(this, arguments);                                         // v9.6.2: the hub's top stats draw the body's bonus in their bars
     const b = C.bracket; if (!b || b.champ || b.out) return;
     const m = ourMatch(), opp = teamOf(C.stage, m.a === 0 ? m.b : m.a);
     if (opp.tier == null) return;

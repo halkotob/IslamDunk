@@ -346,7 +346,7 @@ function drawMiniHUD(g) {
       g.fillStyle = mg.timer < 3 ? '#e05a5a' : '#ffcf6a'; roundRect(g, W / 2 - 150, 102, 300 * clamp(mg.timer / (mg.timerLen || 10), 0, 1), 8, 4); g.fill();
     }
   }
-  if (mg.msg && !mg.done) { g.textAlign = 'center'; g.fillStyle = 'rgba(8,14,22,0.8)'; roundRect(g, W / 2 - 200, 118, 400, 26, 13); g.fill(); g.fillStyle = '#fff'; g.font = `13px ${BODY}`; g.fillText(mg.msg, W / 2, 136); }
+  if (mg.msg && !mg.done) textPill(g, W / 2, 118, 26, mg.msg, `13px ${BODY}`, 'rgba(8,14,22,0.8)', '#fff', 400, W - 40);   // v9.6.2: sized to the message
   if (mg.said) {
     const p = M.players[mg.said.who]; if (p) { const [x, y] = P(p.x, p.y + 132, p.z); g.font = `12px ${BODY}`; const w = g.measureText(mg.said.text).width + 20;
       g.fillStyle = 'rgba(255,255,255,0.95)'; roundRect(g, x - w / 2, y - 24, w, 24, 12); g.fill(); g.beginPath(); g.moveTo(x - 5, y); g.lineTo(x + 5, y); g.lineTo(x, y + 6); g.fill();

@@ -674,7 +674,7 @@ function drawHUD(g) {
     g.fillStyle = bonus ? 'rgba(242,207,107,0.92)' : 'rgba(8,14,22,0.78)'; roundRect(g, bx, top + bh + 3, w, 15, 7); g.fill();
     g.fillStyle = bonus ? NIGHT : '#cfd8e3'; g.textAlign = 'center'; g.fillText(txt, bx + w / 2, top + bh + 14);
   }
-  if (M.double) { g.fillStyle = 'rgba(40,30,90,0.9)'; roundRect(g, x0, top + bh + 4, 156, 18, 9); g.fill(); g.fillStyle = '#ffe38a'; g.font = `10px ${FONT}`; g.fillText('LAYLATUL QADR \u00d7 2', x0 + 78, top + bh + 17); }
+  if (M.double) { g.font = `10px ${FONT}`; const lw = Math.max(156, Math.ceil(g.measureText('LAYLATUL QADR \u00d7 2').width) + 16), lh = Math.max(18, Math.ceil(phoneEffPx(g)) + 6); g.fillStyle = 'rgba(40,30,90,0.9)'; roundRect(g, x0 + 78 - lw / 2, top + bh + 4, lw, lh, lh / 2); g.fill(); g.fillStyle = '#ffe38a'; g.fillText('LAYLATUL QADR \u00d7 2', x0 + 78, top + bh + 4 + lh / 2 + phoneEffPx(g) * 0.36); }   // v9.6.2: measured
   g.restore();
   if (M.ft) drawFtBanner(g);
   // player cards

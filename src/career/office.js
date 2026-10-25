@@ -488,8 +488,9 @@ function drawOffice(g) {
   // labels (tap targets)
   [[160, 380, 'Bookshelf', 0], [dx, 400, 'Sh. Saleem', 1]].forEach(([x, y, label, i]) => {
     const on = of.sel === i && !of.panel;
-    g.fillStyle = on ? 'rgba(232,195,90,0.95)' : 'rgba(8,16,24,0.8)'; roundRect(g, x - 70, y, 140, 26, 13); g.fill();
-    g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${FONT}`; g.textAlign = 'center'; g.fillText(label, x, y + 18);
+    g.font = `13px ${FONT}`; const lw = Math.max(140, Math.ceil(g.measureText(label).width) + 24);   // v9.6.2: measured
+    g.fillStyle = on ? 'rgba(232,195,90,0.95)' : 'rgba(8,16,24,0.8)'; roundRect(g, x - lw / 2, y, lw, 26, 13); g.fill();
+    g.fillStyle = on ? NIGHT : '#fff'; g.textAlign = 'center'; g.fillText(label, x, y + 18);
     if (!of.panel) addRect(x - 110, i === 0 ? 100 : 180, 220, i === 0 ? 330 : 250, () => officeAct(i));
   });
   g.fillStyle = 'rgba(8,16,24,0.8)'; roundRect(g, 96, 8, 360, 32, 16); g.fill();

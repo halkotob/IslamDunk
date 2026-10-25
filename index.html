@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.6.1';
+const VERSION = '9.6.2';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -2806,7 +2806,7 @@ function drawHUD(g) {
     g.fillStyle = bonus ? 'rgba(242,207,107,0.92)' : 'rgba(8,14,22,0.78)'; roundRect(g, bx, top + bh + 3, w, 15, 7); g.fill();
     g.fillStyle = bonus ? NIGHT : '#cfd8e3'; g.textAlign = 'center'; g.fillText(txt, bx + w / 2, top + bh + 14);
   }
-  if (M.double) { g.fillStyle = 'rgba(40,30,90,0.9)'; roundRect(g, x0, top + bh + 4, 156, 18, 9); g.fill(); g.fillStyle = '#ffe38a'; g.font = `10px ${FONT}`; g.fillText('LAYLATUL QADR \u00d7 2', x0 + 78, top + bh + 17); }
+  if (M.double) { g.font = `10px ${FONT}`; const lw = Math.max(156, Math.ceil(g.measureText('LAYLATUL QADR \u00d7 2').width) + 16), lh = Math.max(18, Math.ceil(phoneEffPx(g)) + 6); g.fillStyle = 'rgba(40,30,90,0.9)'; roundRect(g, x0 + 78 - lw / 2, top + bh + 4, lw, lh, lh / 2); g.fill(); g.fillStyle = '#ffe38a'; g.fillText('LAYLATUL QADR \u00d7 2', x0 + 78, top + bh + 4 + lh / 2 + phoneEffPx(g) * 0.36); }   // v9.6.2: measured
   g.restore();
   if (M.ft) drawFtBanner(g);
   // player cards
@@ -3136,9 +3136,12 @@ function drawMenuList(g, key, items, idx, y, gap, onSel, onHover, active = true,
       g.textAlign = 'left'; g.fillText(it.label, -w / 2 + 20, 1);
       g.textAlign = 'right'; g.fillText(it.value ? '\u25C2 ' + it.value + ' \u25B8' : '', w / 2 - 18, 1);
     } else {
-      g.textAlign = 'center'; g.fillText(it.label, it.badge ? -28 : 0, 1);
+      let bw = 0; if (it.badge) { const f = g.font; g.font = `12px ${FONT}`; bw = g.measureText(it.badge).width + 16; g.font = f; }
+      let lx = it.badge ? -28 : 0;                                       // v9.6.2: the label never runs under the badge
+      if (it.badge) { const lw = g.measureText(it.label).width, hi = w / 2 - bw - 36, lo = -w / 2 + 16; if (lx + lw / 2 > hi) lx = Math.max(lo + lw / 2, hi - lw / 2); }
+      g.textAlign = 'center'; g.fillText(it.label, lx, 1);
       if (it.badge) {
-        g.font = `12px ${FONT}`; const bw = g.measureText(it.badge).width + 16;
+        g.font = `12px ${FONT}`;
         g.fillStyle = a > 0.5 ? 'rgba(11,19,48,0.18)' : 'rgba(232,195,90,0.18)'; roundRect(g, w / 2 - bw - 30, -10, bw, 20, 10); g.fill();
         g.fillStyle = a > 0.5 ? NIGHT : '#f2cf6b'; g.textAlign = 'center'; g.fillText(it.badge, w / 2 - bw / 2 - 30, 1);
       }
@@ -3189,7 +3192,7 @@ function menuStackUpdate(id, items, onRootBack) {
   if (menuHit('ok') || (list[m[key]] && list[m[key]].sub && menuHit('right'))) menuActivate(id, items, m[key]);
   else if (menuHit('back')) { if (!closeSub(id) && onRootBack) onRootBack(); }
 }
-function drawMenuStack(g, id, items, y, gap = 40) {
+function drawMenuStack(g, id, items, y, gap = 40, width = 320) {   // v9.6.2: width (the career hub fits its column)
   const m = menuState(id); menuSync(m);
   if (m.path.length && !menuListAt(items, m.path)) { m.path.length = 0; m.sub = -1; }
   if (m.path.length >= 2) {                           // a group inside a group: show just that list
@@ -3198,14 +3201,14 @@ function drawMenuStack(g, id, items, y, gap = 40) {
     g.save(); g.globalAlpha = m.dt; g.translate((1 - m.dt) * 60, 0);
     g.textAlign = 'center'; g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.fillText('‹  ' + par.label.toUpperCase(), W / 2, y - 18);
     addRect(W / 2 - 110, y - 36, 220, 26, () => closeSub(id));
-    drawMenuList(g, id + ':d' + m.path.join('.'), par.sub, m.sidx, y + 14, gap, i => menuActivate(id, items, i), i => { m.sidx = i; }, true);
+    drawMenuList(g, id + ':d' + m.path.join('.'), par.sub, m.sidx, y + 14, gap, i => menuActivate(id, items, i), i => { m.sidx = i; }, true, width);
     g.restore(); return;
   }
   if (m.sub >= 0) m.last = m.sub;
   m.t += ((m.sub >= 0 ? 1 : 0) - m.t) * Math.min(1, (Game.rdt || STEP) * 12);
   if (m.t < 0.98) {
     g.save(); g.globalAlpha = 1 - m.t; g.translate(-m.t * 90, 0);
-    drawMenuList(g, id + ':p', items, m.idx, y, gap, i => menuActivate(id, items, i), i => { m.idx = i; }, m.sub < 0);
+    drawMenuList(g, id + ':p', items, m.idx, y, gap, i => menuActivate(id, items, i), i => { m.idx = i; }, m.sub < 0, width);
     g.restore();
   }
   const par = items[m.sub >= 0 ? m.sub : m.last];
@@ -3213,9 +3216,17 @@ function drawMenuStack(g, id, items, y, gap = 40) {
     g.save(); g.globalAlpha = m.t; g.translate((1 - m.t) * 90, 0);
     g.textAlign = 'center'; g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.fillText('‹  ' + par.label.toUpperCase(), W / 2, y - 18);
     if (m.sub >= 0) addRect(W / 2 - 110, y - 36, 220, 26, () => closeSub(id));
-    drawMenuList(g, id + ':s' + m.last, par.sub, m.sidx, y + 14, gap, i => menuActivate(id, items, i), i => { m.sidx = i; }, m.sub >= 0);
+    drawMenuList(g, id + ':s' + m.last, par.sub, m.sidx, y + 14, gap, i => menuActivate(id, items, i), i => { m.sidx = i; }, m.sub >= 0, width);
     g.restore();
   }
+}
+// v9.6.2: a centred pill sized to its text (measured, so the raised phone font fits too), between minW and maxW;
+// text that still doesn't fit is shortened with an ellipsis. Returns the pill's width.
+function textPill(g, cx, y, h, text, font, bg, fg, minW = 0, maxW = 900, pad = 28) {
+  g.font = font; const w = clamp(Math.ceil(g.measureText(text).width) + pad, minW, maxW);
+  g.fillStyle = bg; roundRect(g, cx - w / 2, y, w, h, h / 2); g.fill();
+  g.fillStyle = fg; g.textAlign = 'center'; g.font = font; const px = typeof phoneEffPx === 'function' ? phoneEffPx(g) : h / 2;
+  g.fillText(fitText(g, text, w - pad + 4), cx, y + h / 2 + px * 0.36); return w;
 }
 // ---- shared buttons with hover (mouse) and pressed (touch) states
 function uiButton(g, x, y, w, h, label, fn, primary) {
@@ -4810,7 +4821,7 @@ function drawGymHUD(g) {
     let ix = Math.max(132, 36 + g.measureText('AL-AMANAH GYM').width);
     g.font = `11px ${BODY}`; g.fillStyle = '#f2cf6b'; g.fillText(C.bp + ' BP', ix, iy + 18); ix = Math.max(196, ix + 14 + g.measureText(C.bp + ' BP').width);
     g.fillStyle = '#9dffb0'; g.fillText(C.hb + (Input.touchMode ? ' HB' : ' Halal Bucks'), ix, iy + 18);
-    if (C.prayBonus) { g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, 320, iy, 140, 28, 14); g.fill(); g.fillStyle = '#f2cf6b'; g.font = `10px ${FONT}`; g.fillText('Salah bonus ready', 334, iy + 18); } }
+    if (C.prayBonus) { g.font = `10px ${FONT}`; const bw = Math.max(140, Math.ceil(g.measureText('Salah bonus ready').width) + 28); g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, 320, iy, bw, 28, 14); g.fill(); g.fillStyle = '#f2cf6b'; g.textAlign = 'left'; g.fillText('Salah bonus ready', 334, iy + 18); } }   // v9.6.2: measured
   const d = Gym.drill;
   if (d && d.mini) drawMiniHUD(g);
   else if (d) {
@@ -4820,8 +4831,7 @@ function drawGymHUD(g) {
     else if (d.kind === 'cones') txt = 'Cone dribble   ' + d.time.toFixed(1) + 's   Cone ' + Math.min(d.idx + 1, CONES.length) + '/' + CONES.length;
     else if (typeof DRILL_HUD !== 'undefined' && DRILL_HUD[d.kind]) txt = DRILL_HUD[d.kind](d);
     else txt = 'You ' + M.teams[0].score + '  \u2013  ' + M.teams[1].score + ' Nasser   (first to 11)';
-    g.fillStyle = 'rgba(8,16,24,0.82)'; roundRect(g, W / 2 - 200, 70, 400, 34, 17); g.fill();
-    g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = `15px ${FONT}`; g.fillText(txt, W / 2, 93);
+    textPill(g, W / 2, 70, 34, txt, `15px ${FONT}`, 'rgba(8,16,24,0.82)', '#fff', 400, W - 40);   // v9.6.2: sized to the text
     if (d.kind === 'three') for (let r = 0; r < 5; r++) for (let b = 0; b < 3; b++) {
       const i = r * 3 + b, x = W / 2 - 110 + r * 46 + b * 12;
       g.fillStyle = i < d.shots ? 'rgba(255,255,255,0.2)' : b === 2 ? '#f2cf6b' : '#e8661c'; g.beginPath(); g.arc(x, 118, 4.5, 0, Math.PI * 2); g.fill();
@@ -4855,8 +4865,7 @@ function drawGymHUD(g) {
     }
   }
   if (Gym.toastT > 0) {
-    g.globalAlpha = clamp(Gym.toastT, 0, 1); g.fillStyle = 'rgba(8,16,24,0.85)'; roundRect(g, W / 2 - 300, 150, 600, 34, 17); g.fill();
-    g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = `14px ${BODY}`; g.fillText(Gym.toast, W / 2, 172); g.globalAlpha = 1;
+    g.globalAlpha = clamp(Gym.toastT, 0, 1); textPill(g, W / 2, 150, 34, Gym.toast, `14px ${BODY}`, 'rgba(8,16,24,0.85)', '#fff', 600, W - 40); g.globalAlpha = 1;   // v9.6.2
   }
   if (Input.touchMode && !TouchUI.el && !Gym.overlay && !Gym.result && !Gym.fade) drawTouch(g);
   if (Gym.overlay === 'adhan') drawAdhan(g);
@@ -4999,13 +5008,13 @@ function hubFirstLabel() {
 const HUB_MENU = () => hubExtra([
   { label: hubFirstLabel(), act: () => hubSelect(0) },
   { label: 'Practice', act: () => enterGym() },
-  { label: 'My Player', badge: C.bp + ' BP', sub: [
-    { label: 'Upgrade stats', badge: C.bp + ' BP', act: () => { Game.screen = 'train'; Game.idx = 0; } },
+  { label: 'My Player', sub: [                                         // v9.6.2: the balances are the chips at the top right
+    { label: 'Upgrade stats', act: () => { Game.screen = 'train'; Game.idx = 0; } },
     { label: 'Customize', act: () => { Game.creator = { idx: 0, isNew: false }; Game.screen = 'creator'; } },
     { label: 'Season summaries', act: () => openSummary(C.stage, 'menu') }] },
-  { label: 'My Masjid', badge: C.hb + ' HB', sub: [
+  { label: 'My Masjid', sub: [
     { label: 'Visit the masjid', act: () => { Game.screen = 'masjid'; Game.masjidView = Game.masjidView || 'ext'; } },
-    { label: 'Projects', badge: C.hb + ' HB', act: () => { Game.screen = 'shop'; Game.idx = 0; Game.shopTab = Game.shopTab || 'masjid'; } }] },
+    { label: 'Projects', act: () => { Game.screen = 'shop'; Game.idx = 0; Game.shopTab = Game.shopTab || 'masjid'; } }] },
   { label: 'Bracket', act: () => { Game.screen = 'cbracket'; } }
 ]);
 const HUB_CORNER = [['Save and load', () => { Game.hubMenu.open = false; Game.screen = 'saves'; Game.idx = 0; Game.saveMsg = ''; Game.confirmNew = false; }],
@@ -5248,50 +5257,109 @@ function wrapTextLeft(g, text, x, y, maxW, lh) {
   for (const w of words) { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { g.fillText(line, x, yy); line = w; yy += lh; } else line = t; }
   g.fillText(line, x, yy);
 }
+// v9.6.2: the hub in three columns (960x540): your card (left), the next game and the menu (centre), the balances
+// and trophies (right). Everything below a row of variable height is placed from the row above it (HubL), so the
+// raised phone font (phone-pass.js) can never push one thing into another. The full stat list is in
+// My Player > Upgrade stats; the gym bests are in My Player > Records > Personal bests.
+const HubL = { left: { x: 30, y: 84, w: 290, h: 440 }, mid: { x: 336, w: 290 }, right: { x: 642, w: 290 }, pad: 16 };
+const HUB_GOLD_DIM = '#9fb3c8';
+function hubPx(g) { return typeof phoneEffPx === 'function' ? phoneEffPx(g) : +(/([\d.]+)px/.exec(g.font) || [0, 12])[1]; }
+// your three best stats (trained level plus the body's bonus), best first; ties keep the stat order
+function hubTopStats(n = 3) {
+  const m = typeof myMods === 'function' ? myMods() : {};
+  return STAT_ROWS.map(([k, label], i) => { const base = C.lv[k] || 4, mod = m[k] || 0; return { k, label, base, mod, eff: clamp(base + mod, 1, 10), i }; })
+    .sort((a, b) => b.eff - a.eff || a.i - b.i).slice(0, n);
+}
 function drawHub(g) {
   const S = STAGES[C.stage], b = C.bracket, T = amanahTeam(), TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone layout
+  const OP = 0.94, L = HubL.left, pad = HubL.pad, x0 = L.x + pad, x1 = L.x + L.w - pad;
+  g.fillStyle = 'rgba(4,8,14,0.6)'; g.fillRect(-400, 0, W + 800, H);   // the gym behind the hub steps back (its text is hidden: hub-layout.js)
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Masjid Al-Amanah', 104, 36);
-  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(TT && typeof calShown === 'function' && calShown() ? calHubSubtitle(S) : S.title + ', Small division', 104, 58);   // v9.0: phones keep room for the calendar strip
-  // player card
-  panel(g, 30, 84, 290, 440, false);
+  const capX = typeof calShown === 'function' && calShown() ? (typeof calStripGeom === 'function' ? calStripGeom(g).x : 412) - 12 : 932;
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(fitText(g, TT && typeof calShown === 'function' && calShown() ? calHubSubtitle(S) : S.title + ', Small division', capX - 104), 104, 58);   // v9.0: phones keep room for the calendar strip
+  // ---- your card: who you are, your three best stats, the salah bonus, your badges
+  panel(g, L.x, L.y, L.w, L.h, false, OP);
   drawPortrait(g, 110, 262, playerDef(), T, 1.7, 'thobe');
-  g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.fillText(C.name || 'You', 170, 130);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('#' + C.look.num + '  Guard', 170, TT ? 154 : 150);
-  g.fillText('Record ' + C.wins + '\u2013' + C.losses, 170, TT ? 178 : 170);
-  STAT_ROWS.forEach(([k, label], i) => { const y = 292 + i * 22; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(label, 46, y + 8); pips(g, 140, y, C.lv[k]); });
-  if (C.prayBonus) { g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, 46, 432, 256, 26, 13); g.fill(); g.fillStyle = '#f2cf6b'; g.font = `12px ${FONT}`; g.fillText('Salah bonus ready for next game', 60, 450); }
-  // next game
+  g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.fillText(fitText(g, C.name || 'You', x1 - 170), 170, 130);
+  g.fillStyle = HUB_GOLD_DIM; g.font = `13px ${BODY}`; const lh = Math.max(20, hubPx(g) + 6);
+  g.fillText('#' + C.look.num + '  Guard', 170, 130 + lh);
+  g.fillText('Record ' + C.wins + '–' + C.losses, 170, 130 + 2 * lh);
+  g.fillText(fitText(g, PLAY_STYLE_TXT[C.look.style || 0], x1 - 170), 170, 130 + 3 * lh);
+  let y = Math.max(292, 130 + 3 * lh + 30);
+  g.fillStyle = HUB_GOLD_DIM; g.font = `11px ${FONT}`; const hp = hubPx(g); g.fillText('TOP STATS', x0, y);
+  g.textAlign = 'right'; g.fillStyle = '#f2cf6b'; g.fillText('All stats ›', x1, y); g.textAlign = 'left';
+  { g.font = `11px ${FONT}`; const aw = g.measureText('All stats ›').width; addRect(x1 - aw - 6, y - hp - 4, aw + 12, hp + 12, () => { Game.screen = 'train'; Game.idx = 0; }); }
+  y += 10;
+  const rows = HubL.stats = [];
+  for (const st of hubTopStats(3)) {
+    g.font = `13px ${BODY}`; const rh = Math.max(22, hubPx(g) + 8);
+    g.fillStyle = IVORY; g.fillText(fitText(g, st.label, 100), x0, y + rh - 7);
+    buildPips(g, 150, y + rh - 16, st.base, st.mod);
+    g.font = `12px ${FONT}`; g.fillStyle = '#fff'; g.textAlign = 'right'; g.fillText(String(st.eff), x1, y + rh - 7); g.textAlign = 'left';
+    rows.push({ k: st.k, y: y + rh - 7 }); y += rh;
+  }
+  if (C.prayBonus) {
+    g.font = `12px ${FONT}`; const ph = Math.max(26, hubPx(g) + 12); y += 8;
+    g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, x0, y, x1 - x0, ph, ph / 2); g.fill();
+    g.fillStyle = '#f2cf6b'; g.fillText(fitText(g, 'Salah bonus ready for next game', x1 - x0 - 24), x0 + 14, y + ph / 2 + hubPx(g) * 0.36); y += ph;
+  }
+  HubL.badges = { x: x0, y: y + 14, w: x1 - x0, bottom: L.y + L.h - 12 };   // drawn by career-goals.js
+  // ---- the next game
   panel(g, 336, 84, 290, 120, true);
-  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`;
-  if (b.champ) { g.fillStyle = GOLD; g.font = `16px ${FONT}`; g.fillText('World champions', 481, 130); g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Keep practicing, or play the Cup again.', 481, 156); }
-  else if (b.out) { g.fillText('ELIMINATED', 481, 112); g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Sabr. Train up and enter again.', 481, 140); }
+  g.textAlign = 'center'; g.fillStyle = HUB_GOLD_DIM; g.font = `12px ${FONT}`;
+  if (b.champ) { g.fillStyle = GOLD; g.font = `16px ${FONT}`; g.fillText('World champions', 481, 130); g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'Keep practicing, or play the Cup again.', 266), 481, 156); }
+  else if (b.out) { g.fillText('ELIMINATED', 481, 112); g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'Sabr. Train up and enter again.', 266), 481, 140); }
   else {
     const m = ourMatch(), opp = teamOf(C.stage, m.a === 0 ? m.b : m.a);
-    g.fillText('NEXT: ' + roundLabel(b).toUpperCase(), 481, 108);
+    g.fillText(fitText(g, 'NEXT: ' + roundLabel(b).toUpperCase(), 266), 481, 108);
     drawCrest(g, 380, 150, 18, opp);
-    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(fitText(g, opp.name, 210), 408, TT ? 140 : 148);
-    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, opp.place + (opp.rival ? '  (rival)' : ''), 210), 408, TT ? 164 : 166);
+    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(fitText(g, opp.name, 206), 408, TT ? 140 : 148);
+    g.fillStyle = HUB_GOLD_DIM; g.font = `13px ${BODY}`; g.fillText(fitText(g, opp.place + (opp.rival ? '  (rival)' : ''), 206), 408, TT ? 164 : 166);
   }
-  drawMenuStack(g, 'hub', HUB_MENU(), 262, 42);
-  // currencies and trophies
-  panel(g, 642, 84, 290, 440, false);
-  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('BARAKAH POINTS', 662, 116);
-  g.fillStyle = '#f2cf6b'; g.font = `28px ${FONT}`; g.fillText(String(C.bp), 662, 148);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(TT ? 'Spend on training' : 'Spend on training. Earned in practice and games.', 662, TT ? 170 : 166);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('HALAL BUCKS', 662, 204);
-  g.fillStyle = '#9dffb0'; g.font = `28px ${FONT}`; g.fillText(String(C.hb), 662, 236);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(TT ? 'Spend on projects' : 'Spend on masjid and gym projects.', 662, TT ? 258 : 254);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('TROPHIES', 662, 296);
+  // ---- the menu, on its own panel; the weekly goal is its first row (career-goals.js), Continue fits inside it
+  panel(g, 336, 216, 290, 308, false, OP);
+  HubL.goal = { x: 346, y: 224, w: 270, h: 28 };
+  drawMenuStack(g, 'hub', HUB_MENU(), 292, 42, 262);
+  // ---- balances (tap: Barakah Points opens My Player, Halal Bucks opens My Masjid) and trophies
+  const chip = (x, w, val, unit, col, fn) => {
+    const hov = hovering(x, 84, w, 34);
+    g.fillStyle = hov ? 'rgba(40,52,70,0.96)' : 'rgba(10,18,28,0.94)'; roundRect(g, x, 84, w, 34, 17); g.fill(); g.strokeStyle = 'rgba(255,255,255,0.14)'; g.lineWidth = 1; g.stroke();
+    g.textAlign = 'left'; g.font = `16px ${FONT}`; const t = fitText(g, val, w - 70); g.fillStyle = col; g.fillText(t, x + 14, 107);
+    const tw = g.measureText(t).width; g.font = `12px ${FONT}`; g.fillStyle = HUB_GOLD_DIM; g.fillText(unit, x + 20 + tw, 107);
+    g.textAlign = 'right'; g.font = `16px ${FONT}`; g.fillStyle = HUB_GOLD_DIM; g.fillText('›', x + w - 12, 106); g.textAlign = 'left';
+    addRect(x, 84, w, 34, fn);
+  };
+  const openSub = label => { const it = HUB_MENU(), i = it.findIndex(e => e.label === label); if (i >= 0) menuActivate('hub', it, i); };
+  chip(642, 139, String(C.bp), 'BP', '#f2cf6b', () => openSub('My Player'));
+  chip(793, 139, String(C.hb), 'HB', '#9dffb0', () => openSub('My Masjid'));
+  g.font = `12px ${FONT}`; const tp = hubPx(g); g.font = `12px ${BODY}`; const np = hubPx(g);
+  const th = 30 + tp + 34 + np + 14;
+  panel(g, 642, 130, 290, th, false, OP);
+  g.textAlign = 'left'; g.fillStyle = HUB_GOLD_DIM; g.font = `12px ${FONT}`; g.fillText('TROPHIES', 662, 130 + 14 + tp);
+  const iy = 130 + 22 + tp + 17, slot = 250 / 4;
   STAGES.forEach((st, i) => {
-    const x = 690 + i * 66, won = C.trophies.includes(i);
-    g.fillStyle = won ? GOLD : 'rgba(255,255,255,0.12)'; star8(g, x, 330, 18); g.fill();
-    g.textAlign = 'center'; g.fillStyle = won ? '#fff' : '#6d7a8c'; g.font = `12px ${BODY}`; g.fillText(TT && st.name.length > 6 ? st.name.slice(0, 3) + '.' : st.name, x, 368);
+    const x = 662 + slot * (i + 0.5), won = C.trophies.includes(i);
+    g.fillStyle = won ? GOLD : 'rgba(255,255,255,0.14)'; star8(g, x, iy, 14); g.fill();
+    g.textAlign = 'center'; g.fillStyle = won ? '#fff' : '#7d8a9c'; g.font = `12px ${BODY}`; g.fillText(g.measureText(st.name).width <= slot - 4 ? st.name : fitText(g, st.name.slice(0, 3) + '.', slot - 4), x, iy + 20 + np);
   });
-  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
-  const by = TT ? 24 : 20, b0 = TT ? 404 : 410;
-  g.fillText('Best free throws: ' + C.best.ft + '/10', 662, b0); g.fillText('Best three-point: ' + C.best.three + '/20', 662, b0 + by);
-  g.fillText('Best cone run: ' + (C.best.cones ? C.best.cones + 's' : '\u2013'), 662, b0 + 2 * by); g.fillText('1v1 wins vs Nasser: ' + C.best.v1, 662, b0 + 3 * by);
+  g.textAlign = 'left';
   drawHubCorner(g);
+}
+// v9.6.2: My Player > Records > Personal bests (was on the hub)
+function openRecords() { Game.screen = 'crecords'; }
+function drawRecords(g) {
+  dim(g, 0.86); const TT = Input.touchMode && g === ctx;   // Back (top left), a tap anywhere, Enter or Esc all close it
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('Personal bests', W / 2, 60);
+  panel(g, W / 2 - 230, 90, 460, 330, false, 0.94);
+  const rows = [['Free throws', C.best.ft + ' / 10', 'Free-throw drill'], ['Three-point shooting', C.best.three + ' / 20', 'Three-point drill'],
+    ['Cone run', C.best.cones ? C.best.cones + ' s' : '–', 'Fastest time'], ['1v1 against Nasser', String(C.best.v1), 'Games won in the gym']];
+  rows.forEach(([a, v, sub], i) => {
+    const y = 140 + i * 66;
+    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `17px ${FONT}`; g.fillText(a, W / 2 - 200, y);
+    g.fillStyle = HUB_GOLD_DIM; g.font = `13px ${BODY}`; g.fillText(sub, W / 2 - 200, y + (TT ? 26 : 22));
+    g.textAlign = 'right'; g.fillStyle = '#f2cf6b'; g.font = `22px ${FONT}`; g.fillText(v, W / 2 + 200, y + 6);
+  });
+  addRect(0, 0, W, H, () => careerHub());
 }
 function drawTrain(g) {
   panel(g, W / 2 - 300, 50, 600, 440, true);
@@ -5786,14 +5854,16 @@ function backVisible() {
   if (s === 'hub') return menuState('hub').sub >= 0 || (Game.hubMenu && Game.hubMenu.open);
   return true;
 }
+const BackBtn = { x: 8, y: 8, w: 80, h: 32 };
 function drawBackButton(g) {
   if (!backVisible()) return;
   const label = Game.screen === 'story' || Game.screen === 'jumuah' ? 'Skip' : (Game.screen === 'musalla' && Game.mus && Game.mus.talk) || (Game.screen === 'hub' && Game.hubMenu && Game.hubMenu.open) ? 'Close' : 'Back';
-  const hov = hovering(8, 8, 80, 32), pr = pressing(8, 8, 80, 32);
-  g.fillStyle = pr ? '#c9a24a' : hov ? GOLD : 'rgba(8,16,24,0.85)'; roundRect(g, 8, 8, 80, 32, 16); g.fill();
+  g.font = `14px ${FONT}`; const w = Math.max(80, Math.ceil(g.measureText('\u2039 ' + label).width) + 28); BackBtn.w = w;   // v9.6.2: fits its label
+  const hov = hovering(8, 8, w, 32), pr = pressing(8, 8, w, 32);
+  g.fillStyle = pr ? '#c9a24a' : hov ? GOLD : 'rgba(8,16,24,0.85)'; roundRect(g, 8, 8, w, 32, 16); g.fill();
   g.strokeStyle = 'rgba(232,195,90,0.7)'; g.lineWidth = 1.5; g.stroke();
-  g.fillStyle = hov || pr ? NIGHT : '#fff'; g.font = `14px ${FONT}`; g.textAlign = 'center'; g.fillText('\u2039 ' + label, 48, 29);
-  addRect(4, 4, 90, 42, () => BACK[Game.screen]());
+  g.fillStyle = hov || pr ? NIGHT : '#fff'; g.textAlign = 'center'; g.fillText('\u2039 ' + label, 8 + w / 2, 29);
+  addRect(4, 4, w + 10, 42, () => BACK[Game.screen]());
 }
 function drawPauseButton(g) {
   g.fillStyle = 'rgba(8,16,24,0.7)'; roundRect(g, W - 48, 8, 38, 32, 8); g.fill();
@@ -6592,7 +6662,7 @@ function drawMiniHUD(g) {
       g.fillStyle = mg.timer < 3 ? '#e05a5a' : '#ffcf6a'; roundRect(g, W / 2 - 150, 102, 300 * clamp(mg.timer / (mg.timerLen || 10), 0, 1), 8, 4); g.fill();
     }
   }
-  if (mg.msg && !mg.done) { g.textAlign = 'center'; g.fillStyle = 'rgba(8,14,22,0.8)'; roundRect(g, W / 2 - 200, 118, 400, 26, 13); g.fill(); g.fillStyle = '#fff'; g.font = `13px ${BODY}`; g.fillText(mg.msg, W / 2, 136); }
+  if (mg.msg && !mg.done) textPill(g, W / 2, 118, 26, mg.msg, `13px ${BODY}`, 'rgba(8,14,22,0.8)', '#fff', 400, W - 40);   // v9.6.2: sized to the message
   if (mg.said) {
     const p = M.players[mg.said.who]; if (p) { const [x, y] = P(p.x, p.y + 132, p.z); g.font = `12px ${BODY}`; const w = g.measureText(mg.said.text).width + 20;
       g.fillStyle = 'rgba(255,255,255,0.95)'; roundRect(g, x - w / 2, y - 24, w, 24, 12); g.fill(); g.beginPath(); g.moveTo(x - 5, y); g.lineTo(x + 5, y); g.lineTo(x, y + 6); g.fill();
@@ -7107,8 +7177,9 @@ function drawOffice(g) {
   // labels (tap targets)
   [[160, 380, 'Bookshelf', 0], [dx, 400, 'Sh. Saleem', 1]].forEach(([x, y, label, i]) => {
     const on = of.sel === i && !of.panel;
-    g.fillStyle = on ? 'rgba(232,195,90,0.95)' : 'rgba(8,16,24,0.8)'; roundRect(g, x - 70, y, 140, 26, 13); g.fill();
-    g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${FONT}`; g.textAlign = 'center'; g.fillText(label, x, y + 18);
+    g.font = `13px ${FONT}`; const lw = Math.max(140, Math.ceil(g.measureText(label).width) + 24);   // v9.6.2: measured
+    g.fillStyle = on ? 'rgba(232,195,90,0.95)' : 'rgba(8,16,24,0.8)'; roundRect(g, x - lw / 2, y, lw, 26, 13); g.fill();
+    g.fillStyle = on ? NIGHT : '#fff'; g.textAlign = 'center'; g.fillText(label, x, y + 18);
     if (!of.panel) addRect(x - 110, i === 0 ? 100 : 180, 220, i === 0 ? 330 : 250, () => officeAct(i));
   });
   g.fillStyle = 'rgba(8,16,24,0.8)'; roundRect(g, 96, 8, 360, 32, 16); g.fill();
@@ -9293,7 +9364,7 @@ function drawMusallaScreen(g) {
       [...opts.map(o => o[0]), 'Goodbye'].forEach((q, k) => {
         const y = 404 + k * 31, on = t.idx === k;
         g.fillStyle = on ? 'rgba(232,195,90,0.92)' : 'rgba(255,255,255,0.1)'; roundRect(g, 520, y, 384, 27, 13); g.fill();
-        g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${on ? FONT : BODY}`; g.textAlign = 'left'; g.fillText(q, 534, y + 18);
+        g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${on ? FONT : BODY}`; g.textAlign = 'left'; g.fillText(fitText(g, q, 356), 534, y + 18);   // v9.6.2: fits its row
         addRect(520, y, 384, 27, () => { t.idx = k; talkChoose(k); });
       });
     } else {
@@ -13035,7 +13106,7 @@ function drawLobby(g) {
     g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(r === 'r' ? 'Ready for a rematch. Press Ready if the host changes the game.' : 'The host starts the game when you’re ready', W / 2, 512);
   }
   uiButton(g, 30, 456, 110, 34, 'Leave', () => Lobby.leave());
-  if (Lobby.toast) { g.fillStyle = 'rgba(8,14,22,0.92)'; roundRect(g, W / 2 - 90, 120, 180, 26, 13); g.fill(); g.textAlign = 'center'; g.fillStyle = '#9dffb0'; g.font = `13px ${FONT}`; g.fillText(Lobby.toast.m, W / 2, 138); }
+  if (Lobby.toast) textPill(g, W / 2, 120, 26, Lobby.toast.m, `13px ${FONT}`, 'rgba(8,14,22,0.92)', '#9dffb0', 180, W - 40);   // v9.6.2: sized to the message
 }
 {
   const _rend = render;
@@ -13051,8 +13122,7 @@ function drawLobby(g) {
         g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Hang tight, the game resumes when they’re back', W / 2, H / 2 + 16);
       }
       if (Net.role === 'host' && !Net.guestPeer && M.online && Game.screen === 'play') {
-        g.fillStyle = 'rgba(8,14,22,0.85)'; roundRect(g, W / 2 - 210, 70, 420, 26, 13); g.fill();
-        g.textAlign = 'center'; g.fillStyle = '#ffb08a'; g.font = `12px ${FONT}`; g.fillText('Your friend dropped. The CPU plays for them. Lobby ' + Net.code + ' stays open to rejoin.', W / 2, 88);
+        textPill(g, W / 2, 70, 26, 'Your friend dropped. The CPU plays for them. Lobby ' + Net.code + ' stays open to rejoin.', `12px ${FONT}`, 'rgba(8,14,22,0.85)', '#ffb08a', 420, W - 40);   // v9.6.2
       }
     }
   };
@@ -13691,12 +13761,13 @@ roundButton = function (g, cx, cy, r, glyph, fn) {
   g.restore();
   addRect(cx - r - 6, cy - r - 6, r * 2 + 12, r * 2 + 12, fn);
 };
-panel = function (g, x, y, w, h, strong) {
+panel = function (g, x, y, w, h, strong, op) {   // op: v9.6.2, the fill's opacity (the career hub uses 0.94)
   g.save();
   g.shadowColor = 'rgba(0,0,0,0.38)'; g.shadowBlur = 16; g.shadowOffsetY = 5;
   const gr = g.createLinearGradient(0, y, 0, y + h);
-  if (strong) { gr.addColorStop(0, 'rgba(18,58,60,0.96)'); gr.addColorStop(1, 'rgba(8,30,34,0.96)'); }
-  else { gr.addColorStop(0, 'rgba(16,28,42,0.86)'); gr.addColorStop(1, 'rgba(6,12,20,0.86)'); }
+  const a = op || (strong ? 0.96 : 0.86);
+  if (strong) { gr.addColorStop(0, `rgba(18,58,60,${a})`); gr.addColorStop(1, `rgba(8,30,34,${a})`); }
+  else { gr.addColorStop(0, `rgba(16,28,42,${a})`); gr.addColorStop(1, `rgba(6,12,20,${a})`); }
   g.fillStyle = gr; roundRect(g, x, y, w, h, 12); g.fill();
   g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0;
   g.strokeStyle = strong ? GOLD : 'rgba(255,255,255,0.13)'; g.lineWidth = strong ? 2 : 1; g.stroke();
@@ -14934,8 +15005,7 @@ drawCreator = function (g) {
   const tagRows = (g, x, y0, dy, oy) => { const m = myMods(); STAT_ROWS.forEach(([k], i) => modTag(g, x, y0 + i * dy + oy, m[k] || 0)); };
   const _hub = drawHub;
   drawHub = function (g) {
-    _hub.apply(this, arguments);
-    tagRows(g, 234, 292, 22, 9);
+    _hub.apply(this, arguments);                                         // v9.6.2: the hub's top stats draw the body's bonus in their bars
     const b = C.bracket; if (!b || b.champ || b.out) return;
     const m = ourMatch(), opp = teamOf(C.stage, m.a === 0 ? m.b : m.a);
     if (opp.tier == null) return;
@@ -16557,20 +16627,57 @@ function nextGoal() {
   if (b && !b.out && !b.champ) { const rn = typeof roundLabel === 'function' ? roundLabel(b) : 'next game'; return { txt: 'Win your ' + rn, pay: 'keeps the run going' }; }
   return { txt: 'All goals done this week. Next week starts in ' + (G.week.start + 3 - (C.gamesPlayed || 0)) + ' game(s)', pay: '' };
 }
+// v9.6.2: earned badges on your hub card. Each pill is sized to its full name (measured, so the raised phone font
+// fits too), they flow left to right from HubL.badges and wrap; what doesn't fit becomes a "+N" chip. Any pill
+// opens Goals & badges, where each badge's description is.
+function hubBadgeLayout(g, got, A) {
+  g.font = `11px ${FONT}`; const px = hubPx(g), h = Math.max(20, Math.ceil(px + 9)), gap = 6, padX = 8;
+  const wOf = t => Math.max(36, Math.ceil(g.measureText(t).width) + padX * 2);
+  const head = Math.ceil(px) + 8, top = A.y + head, rowsMax = Math.max(0, Math.floor((A.bottom - top + gap) / (h + gap)));
+  const out = []; let x = A.x, row = 0;
+  for (let i = 0; i < got.length; i++) {
+    const t = got[i].name, w = Math.min(wOf(t), A.w), more = got.length - i - 1, chipW = more ? wOf('+' + (more + 1)) : 0;
+    let nx = x, nr = row; if (nx + w > A.x + A.w + 0.5) { nx = A.x; nr = row + 1; }
+    const last = nr === rowsMax - 1, fitsHere = nr < rowsMax && (!more || !last || nx + w + gap + chipW <= A.x + A.w + 0.5);
+    if (!fitsHere) {                                                      // the rest is one "+N" chip
+      const n = got.length - i, cw = wOf('+' + n);
+      let cx = x, cr = row; if (cx + cw > A.x + A.w + 0.5) { cx = A.x; cr = row + 1; }
+      if (cr < rowsMax) out.push({ chip: true, t: '+' + n, x: cx, y: top + cr * (h + gap), w: cw, h });
+      else if (out.length) { const p = out.pop(); out.push({ chip: true, t: '+' + (n + 1), x: p.x, y: p.y, w: wOf('+' + (n + 1)), h }); }
+      break;
+    }
+    out.push({ t, x: nx, y: top + nr * (h + gap), w, h, b: got[i] }); x = nx + w + gap; row = nr;
+  }
+  return { pills: out, px, headY: A.y + Math.ceil(px) };
+}
+function drawHubBadges(g) {
+  const A = HubL.badges; if (!A) return;
+  const G = cg(), got = BADGES.filter(b => G.badges[b.id]);
+  g.textAlign = 'left'; g.font = `11px ${FONT}`; g.fillStyle = HUB_GOLD_DIM;
+  if (A.bottom - A.y < hubPx(g) + 8) return;                            // no room at all (never on the stock layout)
+  g.fillText('BADGES', A.x, A.y + Math.ceil(hubPx(g)));
+  if (!got.length) { g.font = `12px ${BODY}`; const t = fitText(g, 'None yet: see Goals & badges', A.w); g.fillStyle = '#7d8a9c'; g.fillText(t, A.x, A.y + Math.ceil(hubPx(g)) * 2 + 10); addRect(A.x, A.y, A.w, 40, () => openGoals()); return; }
+  const Lb = hubBadgeLayout(g, got, A); HubL.badgePills = Lb.pills;
+  for (const p of Lb.pills) {
+    g.fillStyle = p.chip ? 'rgba(255,255,255,0.16)' : 'rgba(232,195,90,0.9)'; roundRect(g, p.x, p.y, p.w, p.h, p.h / 2); g.fill();
+    g.fillStyle = p.chip ? '#fff' : NIGHT; g.font = `11px ${FONT}`; g.textAlign = 'center';
+    g.fillText(fitText(g, p.t, p.w - 12), p.x + p.w / 2, p.y + p.h / 2 + Lb.px * 0.36);
+    addRect(p.x, p.y, p.w, p.h, () => openGoals());
+  }
+  g.textAlign = 'left';
+}
 {
   const _dh = drawHub;
   drawHub = function (g) {
     _dh.apply(this, arguments);
-    const ng = nextGoal(), x = 336, y = 210, w = 290;
-    g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, x, y, w, 24, 12); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.5)'; g.lineWidth = 1; g.stroke();
-    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.fillText('NEXT', x + 10, y + 16);
-    const tx = x + 16 + g.measureText('NEXT').width;                      // v8.6.2: clears the raised phone font
-    g.fillStyle = IVORY; g.font = `11px ${BODY}`; let t = ng.txt + (ng.pay ? '  •  ' + ng.pay : ''); while (g.measureText(t).width > x + w - 10 - tx && t.length > 8) t = t.slice(0, -2);
-    g.fillText(t, tx, y + 16);
-    addRect(x, y, w, 24, () => openGoals());
-    // earned badges on your card
-    const G = cg(), got = BADGES.filter(b => G.badges[b.id]);
-    got.slice(0, 4).forEach((b, i) => { const bx = 46 + i * 62; g.fillStyle = 'rgba(232,195,90,0.85)'; roundRect(g, bx, 476, 58, 18, 9); g.fill(); g.fillStyle = NIGHT; g.font = `9px ${FONT}`; g.textAlign = 'center'; g.fillText(b.name.split(' ')[0].toUpperCase(), bx + 29, 488); });
+    // v9.6.2: the weekly goal is the menu panel's first row (HubL.goal, set by drawHub), labelled WEEK GOAL
+    const ng = nextGoal(), R = HubL.goal || { x: 336, y: 210, w: 290, h: 24 }, x = R.x, y = R.y, w = R.w, h = R.h;
+    g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, x, y, w, h, h / 2); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.5)'; g.lineWidth = 1; g.stroke();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; const by = y + h / 2 + hubPx(g) * 0.36; g.fillText('WEEK GOAL', x + 12, by);
+    const tx = x + 20 + g.measureText('WEEK GOAL').width;
+    g.fillStyle = IVORY; g.font = `11px ${BODY}`; g.fillText(fitText(g, ng.txt + (ng.pay ? '  •  ' + ng.pay : ''), x + w - 12 - tx), tx, by);
+    addRect(x, y, w, h, () => openGoals());
+    drawHubBadges(g);
   };
   const _he = hubExtra;
   hubExtra = function (items) {
@@ -17329,8 +17436,7 @@ function extSpots() {
       if (s.id === 'garden') for (let i = 0; i < 6; i++) { const bx = s.x + t * (60 + i * 18), by = s.y - t * (40 + i * 9) + Math.sin(t * 9 + i) * 3; g.strokeStyle = '#3a3a3a'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(bx - 4, by - 2); g.lineTo(bx, by + 1); g.lineTo(bx + 4, by - 2); g.stroke(); }
       if (s.id === 'fount') for (let i = 0; i < 16; i++) { const k = ((t * 1.3 + i / 16) % 1), a = i * 2.39; g.fillStyle = `rgba(160,215,240,${0.9 * (1 - k)})`; g.beginPath(); g.arc(s.x + Math.cos(a) * k * 50, s.y + 6 - Math.sin(k * Math.PI) * 26 + Math.sin(a) * 6, 2, 0, Math.PI * 2); g.fill(); }
       if (s.id === 'park') { const k = clamp(t / 2.4, 0, 1), cx = lerp(-60, s.x, Math.min(1, k * 1.4)), cy = k < 0.7 ? 494 : lerp(494, s.y + 34, (k - 0.7) / 0.3); g.fillStyle = '#2e86de'; roundRect(g, cx - 17, cy - 10, 34, 18, 5); g.fill(); g.fillStyle = 'rgba(160,200,230,0.9)'; g.fillRect(cx - 9, cy - 7, 18, 6); g.fillStyle = '#1c1c1c'; g.fillRect(cx - 14, cy + 7, 8, 3); g.fillRect(cx + 6, cy + 7, 8, 3); }
-      g.fillStyle = 'rgba(8,16,24,0.82)'; roundRect(g, W / 2 - 290, H - 84, 580, 32, 16); g.fill();
-      g.fillStyle = '#fff'; g.font = `13px ${BODY}`; g.textAlign = 'center'; g.fillText(s.cap, W / 2, H - 63);
+      textPill(g, W / 2, H - 84, 32, s.cap, `13px ${BODY}`, 'rgba(8,16,24,0.82)', '#fff', 580, W - 40);   // v9.6.2: sized to the caption
       if (t > 4) F.id = null;
     }
     for (const sp of S) {                                  // small markers on what you can tap
@@ -23111,6 +23217,32 @@ function deskTextInstall(g) {
   after('Text size', { label: 'Team colors', get: () => SETTINGS.cbSafe ? 'Colorblind-safe' : 'Normal', step: () => { SETTINGS.cbSafe = !SETTINGS.cbSafe; accessSave(); } });
   // their own group, before Sound & display (which takes everything not listed)
   if (!SET_GROUPS.some(g => g.name === 'Accessibility')) SET_GROUPS.splice(SET_GROUPS.length - 1, 0, { name: 'Accessibility', labels: ['Shot release', 'Text size', 'Team colors'] });
+}
+// ===================================================== v9.6.2: CAREER HUB, the parts that live outside drawHub
+// - The gym behind the hub keeps its look but not its words: while the hub (or Personal bests) is up, the scene is drawn with text
+//   off (signs, name tags, speech bubbles), and drawHub darkens it. No blur: a canvas blur every frame costs too
+//   much on phones.
+// - My Player > Records > Personal bests (the gym bests that used to be on the hub).
+{
+  const _ds = drawScene;
+  drawScene = function (g) {
+    if ((Game.screen !== 'hub' && Game.screen !== 'crecords') || !g || typeof g.fillText !== 'function') return _ds.apply(this, arguments);
+    const own = Object.prototype.hasOwnProperty.call(g, 'fillText'), f = g.fillText, s = g.strokeText, ownS = Object.prototype.hasOwnProperty.call(g, 'strokeText');
+    g.fillText = g.strokeText = function () {};
+    try { return _ds.apply(this, arguments); }
+    finally { if (own) g.fillText = f; else delete g.fillText; if (ownS) g.strokeText = s; else delete g.strokeText; }
+  };
+  CAREER_SCREENS.add('crecords');
+  const _cu = careerUpdate; careerUpdate = function (rdt) { if (Game.screen === 'crecords') { if (menuHit('back') || menuHit('ok')) careerHub(); return; } return _cu.apply(this, arguments); };
+  const _cr = careerRender; careerRender = function (g) { if (Game.screen === 'crecords') return drawRecords(g); return _cr.apply(this, arguments); };
+  BACK.crecords = () => careerHub();
+  const _he = hubExtra;
+  hubExtra = function (items) {
+    const R = _he.apply(this, arguments), mp = R.find(e => e.label === 'My Player'), rec = mp && mp.sub && mp.sub.find(s => s.label === 'Records' && s.sub);
+    if (rec && !rec.sub.some(s => s.label === 'Personal bests')) rec.sub.push({ label: 'Personal bests', act: () => openRecords() });
+    else if (mp && mp.sub && !rec && !mp.sub.some(s => s.label === 'Personal bests')) mp.sub.push({ label: 'Personal bests', act: () => openRecords() });
+    return R;
+  };
 }
 
 boot();

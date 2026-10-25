@@ -30,9 +30,12 @@ function drawMenuList(g, key, items, idx, y, gap, onSel, onHover, active = true,
       g.textAlign = 'left'; g.fillText(it.label, -w / 2 + 20, 1);
       g.textAlign = 'right'; g.fillText(it.value ? '\u25C2 ' + it.value + ' \u25B8' : '', w / 2 - 18, 1);
     } else {
-      g.textAlign = 'center'; g.fillText(it.label, it.badge ? -28 : 0, 1);
+      let bw = 0; if (it.badge) { const f = g.font; g.font = `12px ${FONT}`; bw = g.measureText(it.badge).width + 16; g.font = f; }
+      let lx = it.badge ? -28 : 0;                                       // v9.6.2: the label never runs under the badge
+      if (it.badge) { const lw = g.measureText(it.label).width, hi = w / 2 - bw - 36, lo = -w / 2 + 16; if (lx + lw / 2 > hi) lx = Math.max(lo + lw / 2, hi - lw / 2); }
+      g.textAlign = 'center'; g.fillText(it.label, lx, 1);
       if (it.badge) {
-        g.font = `12px ${FONT}`; const bw = g.measureText(it.badge).width + 16;
+        g.font = `12px ${FONT}`;
         g.fillStyle = a > 0.5 ? 'rgba(11,19,48,0.18)' : 'rgba(232,195,90,0.18)'; roundRect(g, w / 2 - bw - 30, -10, bw, 20, 10); g.fill();
         g.fillStyle = a > 0.5 ? NIGHT : '#f2cf6b'; g.textAlign = 'center'; g.fillText(it.badge, w / 2 - bw / 2 - 30, 1);
       }
@@ -83,7 +86,7 @@ function menuStackUpdate(id, items, onRootBack) {
   if (menuHit('ok') || (list[m[key]] && list[m[key]].sub && menuHit('right'))) menuActivate(id, items, m[key]);
   else if (menuHit('back')) { if (!closeSub(id) && onRootBack) onRootBack(); }
 }
-function drawMenuStack(g, id, items, y, gap = 40) {
+function drawMenuStack(g, id, items, y, gap = 40, width = 320) {   // v9.6.2: width (the career hub fits its column)
   const m = menuState(id); menuSync(m);
   if (m.path.length && !menuListAt(items, m.path)) { m.path.length = 0; m.sub = -1; }
   if (m.path.length >= 2) {                           // a group inside a group: show just that list
@@ -92,14 +95,14 @@ function drawMenuStack(g, id, items, y, gap = 40) {
     g.save(); g.globalAlpha = m.dt; g.translate((1 - m.dt) * 60, 0);
     g.textAlign = 'center'; g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.fillText('‹  ' + par.label.toUpperCase(), W / 2, y - 18);
     addRect(W / 2 - 110, y - 36, 220, 26, () => closeSub(id));
-    drawMenuList(g, id + ':d' + m.path.join('.'), par.sub, m.sidx, y + 14, gap, i => menuActivate(id, items, i), i => { m.sidx = i; }, true);
+    drawMenuList(g, id + ':d' + m.path.join('.'), par.sub, m.sidx, y + 14, gap, i => menuActivate(id, items, i), i => { m.sidx = i; }, true, width);
     g.restore(); return;
   }
   if (m.sub >= 0) m.last = m.sub;
   m.t += ((m.sub >= 0 ? 1 : 0) - m.t) * Math.min(1, (Game.rdt || STEP) * 12);
   if (m.t < 0.98) {
     g.save(); g.globalAlpha = 1 - m.t; g.translate(-m.t * 90, 0);
-    drawMenuList(g, id + ':p', items, m.idx, y, gap, i => menuActivate(id, items, i), i => { m.idx = i; }, m.sub < 0);
+    drawMenuList(g, id + ':p', items, m.idx, y, gap, i => menuActivate(id, items, i), i => { m.idx = i; }, m.sub < 0, width);
     g.restore();
   }
   const par = items[m.sub >= 0 ? m.sub : m.last];
@@ -107,9 +110,17 @@ function drawMenuStack(g, id, items, y, gap = 40) {
     g.save(); g.globalAlpha = m.t; g.translate((1 - m.t) * 90, 0);
     g.textAlign = 'center'; g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.fillText('‹  ' + par.label.toUpperCase(), W / 2, y - 18);
     if (m.sub >= 0) addRect(W / 2 - 110, y - 36, 220, 26, () => closeSub(id));
-    drawMenuList(g, id + ':s' + m.last, par.sub, m.sidx, y + 14, gap, i => menuActivate(id, items, i), i => { m.sidx = i; }, m.sub >= 0);
+    drawMenuList(g, id + ':s' + m.last, par.sub, m.sidx, y + 14, gap, i => menuActivate(id, items, i), i => { m.sidx = i; }, m.sub >= 0, width);
     g.restore();
   }
+}
+// v9.6.2: a centred pill sized to its text (measured, so the raised phone font fits too), between minW and maxW;
+// text that still doesn't fit is shortened with an ellipsis. Returns the pill's width.
+function textPill(g, cx, y, h, text, font, bg, fg, minW = 0, maxW = 900, pad = 28) {
+  g.font = font; const w = clamp(Math.ceil(g.measureText(text).width) + pad, minW, maxW);
+  g.fillStyle = bg; roundRect(g, cx - w / 2, y, w, h, h / 2); g.fill();
+  g.fillStyle = fg; g.textAlign = 'center'; g.font = font; const px = typeof phoneEffPx === 'function' ? phoneEffPx(g) : h / 2;
+  g.fillText(fitText(g, text, w - pad + 4), cx, y + h / 2 + px * 0.36); return w;
 }
 // ---- shared buttons with hover (mouse) and pressed (touch) states
 function uiButton(g, x, y, w, h, label, fn, primary) {

@@ -1,5 +1,44 @@
 # Changelog
 
+## 9.6.2: career hub declutter, badge pills that fit
+Layout and drawing only. Gameplay, tuning, saves, the calendar and online play are unchanged, and nothing was removed:
+things moved.
+
+- **Badges** on your hub card:
+  - Each pill is sized to the badge's full name ("Floor General", not "FLOOR"), measured so the bigger phone text fits.
+  - The pills flow from the row above them and wrap. If more are earned than fit, a "+N" chip shows the rest.
+  - Tapping any pill opens Goals & badges.
+- **What moved:**
+  - **Stats:** the card shows your three best stats, with the body's bonus or cost in the bar and the real number.
+    The full list (all nine stats and their modifiers) is in My Player → Upgrade stats; "All stats ›" on the card
+    opens it.
+  - **Balances:** Barakah Points and Halal Bucks are two chips at the top of the right column. BP opens My Player and
+    HB opens My Masjid. The menu rows no longer repeat them.
+  - **Trophies:** one compact row of four.
+  - **Gym bests** (free throws, threes, cone run, 1v1 wins): a new page, My Player → Records → Personal bests.
+  - The card also shows your play style.
+- **Fixes on the same screen:**
+  - The weekly goal strip says WEEK GOAL instead of a second NEXT.
+  - The menu has its own panel. The weekly goal is its first row.
+  - Continue fits inside the centre column, with its "Game today" tag inside it.
+  - The gym behind the hub is darker, and its signs, name tags and speech bubbles are hidden while the hub is up.
+  - The hub's panels are 94% opaque, with 12 px gutters.
+  - The calendar strip is unchanged.
+- **Stat bars:** they were correct. They show the level you trained (4 to start, 10 at most). They looked full on a
+  save with every stat at 10 (the test panel's Max stats), next to a separate modifier tag. The new card's bars
+  include the modifier.
+- **The same bug elsewhere** (pills sized to their text, or text fitted to its pill):
+  - The Back / Close / Skip button.
+  - Lobby and mini-game messages, gym and salah toasts, the masjid caption.
+  - The Laylatul Qadr HUD tag, the gym's salah bonus tag, the office labels and the musalla's question rows.
+- **Tests:**
+  - `hub-layout`: the hub at 1920×1080, 1280×720, 1024×768, 844×390 and 667×375, in 13 cases (0, 2, 4 and 8 badges,
+    long names, 3- and 5-digit balances, Friday, Ramadan and Eid, maxed stats, the My Player and Records lists open).
+    It fails on text over text, panel over panel, text outside its container, a badge pill off the card, a gutter
+    under 12 px, or phone text under 11 CSS px.
+  - The phone text audit also covers Personal bests.
+  - The fixtures are in `tests/hub-setup.js`, and `npm run review:hub` screenshots them.
+
 ## 9.6.1: art slice rolled back
 9.6.0 (the art slice: three preview looks for one character and one court) is removed. The game is back to 9.5.0's
 code and art; only the version number moved forward, so installed copies update.

@@ -82,13 +82,13 @@ function hubFirstLabel() {
 const HUB_MENU = () => hubExtra([
   { label: hubFirstLabel(), act: () => hubSelect(0) },
   { label: 'Practice', act: () => enterGym() },
-  { label: 'My Player', badge: C.bp + ' BP', sub: [
-    { label: 'Upgrade stats', badge: C.bp + ' BP', act: () => { Game.screen = 'train'; Game.idx = 0; } },
+  { label: 'My Player', sub: [                                         // v9.6.2: the balances are the chips at the top right
+    { label: 'Upgrade stats', act: () => { Game.screen = 'train'; Game.idx = 0; } },
     { label: 'Customize', act: () => { Game.creator = { idx: 0, isNew: false }; Game.screen = 'creator'; } },
     { label: 'Season summaries', act: () => openSummary(C.stage, 'menu') }] },
-  { label: 'My Masjid', badge: C.hb + ' HB', sub: [
+  { label: 'My Masjid', sub: [
     { label: 'Visit the masjid', act: () => { Game.screen = 'masjid'; Game.masjidView = Game.masjidView || 'ext'; } },
-    { label: 'Projects', badge: C.hb + ' HB', act: () => { Game.screen = 'shop'; Game.idx = 0; Game.shopTab = Game.shopTab || 'masjid'; } }] },
+    { label: 'Projects', act: () => { Game.screen = 'shop'; Game.idx = 0; Game.shopTab = Game.shopTab || 'masjid'; } }] },
   { label: 'Bracket', act: () => { Game.screen = 'cbracket'; } }
 ]);
 const HUB_CORNER = [['Save and load', () => { Game.hubMenu.open = false; Game.screen = 'saves'; Game.idx = 0; Game.saveMsg = ''; Game.confirmNew = false; }],
@@ -331,50 +331,109 @@ function wrapTextLeft(g, text, x, y, maxW, lh) {
   for (const w of words) { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { g.fillText(line, x, yy); line = w; yy += lh; } else line = t; }
   g.fillText(line, x, yy);
 }
+// v9.6.2: the hub in three columns (960x540): your card (left), the next game and the menu (centre), the balances
+// and trophies (right). Everything below a row of variable height is placed from the row above it (HubL), so the
+// raised phone font (phone-pass.js) can never push one thing into another. The full stat list is in
+// My Player > Upgrade stats; the gym bests are in My Player > Records > Personal bests.
+const HubL = { left: { x: 30, y: 84, w: 290, h: 440 }, mid: { x: 336, w: 290 }, right: { x: 642, w: 290 }, pad: 16 };
+const HUB_GOLD_DIM = '#9fb3c8';
+function hubPx(g) { return typeof phoneEffPx === 'function' ? phoneEffPx(g) : +(/([\d.]+)px/.exec(g.font) || [0, 12])[1]; }
+// your three best stats (trained level plus the body's bonus), best first; ties keep the stat order
+function hubTopStats(n = 3) {
+  const m = typeof myMods === 'function' ? myMods() : {};
+  return STAT_ROWS.map(([k, label], i) => { const base = C.lv[k] || 4, mod = m[k] || 0; return { k, label, base, mod, eff: clamp(base + mod, 1, 10), i }; })
+    .sort((a, b) => b.eff - a.eff || a.i - b.i).slice(0, n);
+}
 function drawHub(g) {
   const S = STAGES[C.stage], b = C.bracket, T = amanahTeam(), TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone layout
+  const OP = 0.94, L = HubL.left, pad = HubL.pad, x0 = L.x + pad, x1 = L.x + L.w - pad;
+  g.fillStyle = 'rgba(4,8,14,0.6)'; g.fillRect(-400, 0, W + 800, H);   // the gym behind the hub steps back (its text is hidden: hub-layout.js)
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Masjid Al-Amanah', 104, 36);
-  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(TT && typeof calShown === 'function' && calShown() ? calHubSubtitle(S) : S.title + ', Small division', 104, 58);   // v9.0: phones keep room for the calendar strip
-  // player card
-  panel(g, 30, 84, 290, 440, false);
+  const capX = typeof calShown === 'function' && calShown() ? (typeof calStripGeom === 'function' ? calStripGeom(g).x : 412) - 12 : 932;
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(fitText(g, TT && typeof calShown === 'function' && calShown() ? calHubSubtitle(S) : S.title + ', Small division', capX - 104), 104, 58);   // v9.0: phones keep room for the calendar strip
+  // ---- your card: who you are, your three best stats, the salah bonus, your badges
+  panel(g, L.x, L.y, L.w, L.h, false, OP);
   drawPortrait(g, 110, 262, playerDef(), T, 1.7, 'thobe');
-  g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.fillText(C.name || 'You', 170, 130);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('#' + C.look.num + '  Guard', 170, TT ? 154 : 150);
-  g.fillText('Record ' + C.wins + '\u2013' + C.losses, 170, TT ? 178 : 170);
-  STAT_ROWS.forEach(([k, label], i) => { const y = 292 + i * 22; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(label, 46, y + 8); pips(g, 140, y, C.lv[k]); });
-  if (C.prayBonus) { g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, 46, 432, 256, 26, 13); g.fill(); g.fillStyle = '#f2cf6b'; g.font = `12px ${FONT}`; g.fillText('Salah bonus ready for next game', 60, 450); }
-  // next game
+  g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.fillText(fitText(g, C.name || 'You', x1 - 170), 170, 130);
+  g.fillStyle = HUB_GOLD_DIM; g.font = `13px ${BODY}`; const lh = Math.max(20, hubPx(g) + 6);
+  g.fillText('#' + C.look.num + '  Guard', 170, 130 + lh);
+  g.fillText('Record ' + C.wins + '–' + C.losses, 170, 130 + 2 * lh);
+  g.fillText(fitText(g, PLAY_STYLE_TXT[C.look.style || 0], x1 - 170), 170, 130 + 3 * lh);
+  let y = Math.max(292, 130 + 3 * lh + 30);
+  g.fillStyle = HUB_GOLD_DIM; g.font = `11px ${FONT}`; const hp = hubPx(g); g.fillText('TOP STATS', x0, y);
+  g.textAlign = 'right'; g.fillStyle = '#f2cf6b'; g.fillText('All stats ›', x1, y); g.textAlign = 'left';
+  { g.font = `11px ${FONT}`; const aw = g.measureText('All stats ›').width; addRect(x1 - aw - 6, y - hp - 4, aw + 12, hp + 12, () => { Game.screen = 'train'; Game.idx = 0; }); }
+  y += 10;
+  const rows = HubL.stats = [];
+  for (const st of hubTopStats(3)) {
+    g.font = `13px ${BODY}`; const rh = Math.max(22, hubPx(g) + 8);
+    g.fillStyle = IVORY; g.fillText(fitText(g, st.label, 100), x0, y + rh - 7);
+    buildPips(g, 150, y + rh - 16, st.base, st.mod);
+    g.font = `12px ${FONT}`; g.fillStyle = '#fff'; g.textAlign = 'right'; g.fillText(String(st.eff), x1, y + rh - 7); g.textAlign = 'left';
+    rows.push({ k: st.k, y: y + rh - 7 }); y += rh;
+  }
+  if (C.prayBonus) {
+    g.font = `12px ${FONT}`; const ph = Math.max(26, hubPx(g) + 12); y += 8;
+    g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, x0, y, x1 - x0, ph, ph / 2); g.fill();
+    g.fillStyle = '#f2cf6b'; g.fillText(fitText(g, 'Salah bonus ready for next game', x1 - x0 - 24), x0 + 14, y + ph / 2 + hubPx(g) * 0.36); y += ph;
+  }
+  HubL.badges = { x: x0, y: y + 14, w: x1 - x0, bottom: L.y + L.h - 12 };   // drawn by career-goals.js
+  // ---- the next game
   panel(g, 336, 84, 290, 120, true);
-  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`;
-  if (b.champ) { g.fillStyle = GOLD; g.font = `16px ${FONT}`; g.fillText('World champions', 481, 130); g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Keep practicing, or play the Cup again.', 481, 156); }
-  else if (b.out) { g.fillText('ELIMINATED', 481, 112); g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Sabr. Train up and enter again.', 481, 140); }
+  g.textAlign = 'center'; g.fillStyle = HUB_GOLD_DIM; g.font = `12px ${FONT}`;
+  if (b.champ) { g.fillStyle = GOLD; g.font = `16px ${FONT}`; g.fillText('World champions', 481, 130); g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'Keep practicing, or play the Cup again.', 266), 481, 156); }
+  else if (b.out) { g.fillText('ELIMINATED', 481, 112); g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'Sabr. Train up and enter again.', 266), 481, 140); }
   else {
     const m = ourMatch(), opp = teamOf(C.stage, m.a === 0 ? m.b : m.a);
-    g.fillText('NEXT: ' + roundLabel(b).toUpperCase(), 481, 108);
+    g.fillText(fitText(g, 'NEXT: ' + roundLabel(b).toUpperCase(), 266), 481, 108);
     drawCrest(g, 380, 150, 18, opp);
-    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(fitText(g, opp.name, 210), 408, TT ? 140 : 148);
-    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, opp.place + (opp.rival ? '  (rival)' : ''), 210), 408, TT ? 164 : 166);
+    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(fitText(g, opp.name, 206), 408, TT ? 140 : 148);
+    g.fillStyle = HUB_GOLD_DIM; g.font = `13px ${BODY}`; g.fillText(fitText(g, opp.place + (opp.rival ? '  (rival)' : ''), 206), 408, TT ? 164 : 166);
   }
-  drawMenuStack(g, 'hub', HUB_MENU(), 262, 42);
-  // currencies and trophies
-  panel(g, 642, 84, 290, 440, false);
-  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('BARAKAH POINTS', 662, 116);
-  g.fillStyle = '#f2cf6b'; g.font = `28px ${FONT}`; g.fillText(String(C.bp), 662, 148);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(TT ? 'Spend on training' : 'Spend on training. Earned in practice and games.', 662, TT ? 170 : 166);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('HALAL BUCKS', 662, 204);
-  g.fillStyle = '#9dffb0'; g.font = `28px ${FONT}`; g.fillText(String(C.hb), 662, 236);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(TT ? 'Spend on projects' : 'Spend on masjid and gym projects.', 662, TT ? 258 : 254);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('TROPHIES', 662, 296);
+  // ---- the menu, on its own panel; the weekly goal is its first row (career-goals.js), Continue fits inside it
+  panel(g, 336, 216, 290, 308, false, OP);
+  HubL.goal = { x: 346, y: 224, w: 270, h: 28 };
+  drawMenuStack(g, 'hub', HUB_MENU(), 292, 42, 262);
+  // ---- balances (tap: Barakah Points opens My Player, Halal Bucks opens My Masjid) and trophies
+  const chip = (x, w, val, unit, col, fn) => {
+    const hov = hovering(x, 84, w, 34);
+    g.fillStyle = hov ? 'rgba(40,52,70,0.96)' : 'rgba(10,18,28,0.94)'; roundRect(g, x, 84, w, 34, 17); g.fill(); g.strokeStyle = 'rgba(255,255,255,0.14)'; g.lineWidth = 1; g.stroke();
+    g.textAlign = 'left'; g.font = `16px ${FONT}`; const t = fitText(g, val, w - 70); g.fillStyle = col; g.fillText(t, x + 14, 107);
+    const tw = g.measureText(t).width; g.font = `12px ${FONT}`; g.fillStyle = HUB_GOLD_DIM; g.fillText(unit, x + 20 + tw, 107);
+    g.textAlign = 'right'; g.font = `16px ${FONT}`; g.fillStyle = HUB_GOLD_DIM; g.fillText('›', x + w - 12, 106); g.textAlign = 'left';
+    addRect(x, 84, w, 34, fn);
+  };
+  const openSub = label => { const it = HUB_MENU(), i = it.findIndex(e => e.label === label); if (i >= 0) menuActivate('hub', it, i); };
+  chip(642, 139, String(C.bp), 'BP', '#f2cf6b', () => openSub('My Player'));
+  chip(793, 139, String(C.hb), 'HB', '#9dffb0', () => openSub('My Masjid'));
+  g.font = `12px ${FONT}`; const tp = hubPx(g); g.font = `12px ${BODY}`; const np = hubPx(g);
+  const th = 30 + tp + 34 + np + 14;
+  panel(g, 642, 130, 290, th, false, OP);
+  g.textAlign = 'left'; g.fillStyle = HUB_GOLD_DIM; g.font = `12px ${FONT}`; g.fillText('TROPHIES', 662, 130 + 14 + tp);
+  const iy = 130 + 22 + tp + 17, slot = 250 / 4;
   STAGES.forEach((st, i) => {
-    const x = 690 + i * 66, won = C.trophies.includes(i);
-    g.fillStyle = won ? GOLD : 'rgba(255,255,255,0.12)'; star8(g, x, 330, 18); g.fill();
-    g.textAlign = 'center'; g.fillStyle = won ? '#fff' : '#6d7a8c'; g.font = `12px ${BODY}`; g.fillText(TT && st.name.length > 6 ? st.name.slice(0, 3) + '.' : st.name, x, 368);
+    const x = 662 + slot * (i + 0.5), won = C.trophies.includes(i);
+    g.fillStyle = won ? GOLD : 'rgba(255,255,255,0.14)'; star8(g, x, iy, 14); g.fill();
+    g.textAlign = 'center'; g.fillStyle = won ? '#fff' : '#7d8a9c'; g.font = `12px ${BODY}`; g.fillText(g.measureText(st.name).width <= slot - 4 ? st.name : fitText(g, st.name.slice(0, 3) + '.', slot - 4), x, iy + 20 + np);
   });
-  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
-  const by = TT ? 24 : 20, b0 = TT ? 404 : 410;
-  g.fillText('Best free throws: ' + C.best.ft + '/10', 662, b0); g.fillText('Best three-point: ' + C.best.three + '/20', 662, b0 + by);
-  g.fillText('Best cone run: ' + (C.best.cones ? C.best.cones + 's' : '\u2013'), 662, b0 + 2 * by); g.fillText('1v1 wins vs Nasser: ' + C.best.v1, 662, b0 + 3 * by);
+  g.textAlign = 'left';
   drawHubCorner(g);
+}
+// v9.6.2: My Player > Records > Personal bests (was on the hub)
+function openRecords() { Game.screen = 'crecords'; }
+function drawRecords(g) {
+  dim(g, 0.86); const TT = Input.touchMode && g === ctx;   // Back (top left), a tap anywhere, Enter or Esc all close it
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('Personal bests', W / 2, 60);
+  panel(g, W / 2 - 230, 90, 460, 330, false, 0.94);
+  const rows = [['Free throws', C.best.ft + ' / 10', 'Free-throw drill'], ['Three-point shooting', C.best.three + ' / 20', 'Three-point drill'],
+    ['Cone run', C.best.cones ? C.best.cones + ' s' : '–', 'Fastest time'], ['1v1 against Nasser', String(C.best.v1), 'Games won in the gym']];
+  rows.forEach(([a, v, sub], i) => {
+    const y = 140 + i * 66;
+    g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `17px ${FONT}`; g.fillText(a, W / 2 - 200, y);
+    g.fillStyle = HUB_GOLD_DIM; g.font = `13px ${BODY}`; g.fillText(sub, W / 2 - 200, y + (TT ? 26 : 22));
+    g.textAlign = 'right'; g.fillStyle = '#f2cf6b'; g.font = `22px ${FONT}`; g.fillText(v, W / 2 + 200, y + 6);
+  });
+  addRect(0, 0, W, H, () => careerHub());
 }
 function drawTrain(g) {
   panel(g, W / 2 - 300, 50, 600, 440, true);

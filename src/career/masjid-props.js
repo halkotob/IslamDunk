@@ -224,8 +224,7 @@ function extSpots() {
       if (s.id === 'garden') for (let i = 0; i < 6; i++) { const bx = s.x + t * (60 + i * 18), by = s.y - t * (40 + i * 9) + Math.sin(t * 9 + i) * 3; g.strokeStyle = '#3a3a3a'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(bx - 4, by - 2); g.lineTo(bx, by + 1); g.lineTo(bx + 4, by - 2); g.stroke(); }
       if (s.id === 'fount') for (let i = 0; i < 16; i++) { const k = ((t * 1.3 + i / 16) % 1), a = i * 2.39; g.fillStyle = `rgba(160,215,240,${0.9 * (1 - k)})`; g.beginPath(); g.arc(s.x + Math.cos(a) * k * 50, s.y + 6 - Math.sin(k * Math.PI) * 26 + Math.sin(a) * 6, 2, 0, Math.PI * 2); g.fill(); }
       if (s.id === 'park') { const k = clamp(t / 2.4, 0, 1), cx = lerp(-60, s.x, Math.min(1, k * 1.4)), cy = k < 0.7 ? 494 : lerp(494, s.y + 34, (k - 0.7) / 0.3); g.fillStyle = '#2e86de'; roundRect(g, cx - 17, cy - 10, 34, 18, 5); g.fill(); g.fillStyle = 'rgba(160,200,230,0.9)'; g.fillRect(cx - 9, cy - 7, 18, 6); g.fillStyle = '#1c1c1c'; g.fillRect(cx - 14, cy + 7, 8, 3); g.fillRect(cx + 6, cy + 7, 8, 3); }
-      g.fillStyle = 'rgba(8,16,24,0.82)'; roundRect(g, W / 2 - 290, H - 84, 580, 32, 16); g.fill();
-      g.fillStyle = '#fff'; g.font = `13px ${BODY}`; g.textAlign = 'center'; g.fillText(s.cap, W / 2, H - 63);
+      textPill(g, W / 2, H - 84, 32, s.cap, `13px ${BODY}`, 'rgba(8,16,24,0.82)', '#fff', 580, W - 40);   // v9.6.2: sized to the caption
       if (t > 4) F.id = null;
     }
     for (const sp of S) {                                  // small markers on what you can tap

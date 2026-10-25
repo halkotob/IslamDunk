@@ -51,12 +51,13 @@ roundButton = function (g, cx, cy, r, glyph, fn) {
   g.restore();
   addRect(cx - r - 6, cy - r - 6, r * 2 + 12, r * 2 + 12, fn);
 };
-panel = function (g, x, y, w, h, strong) {
+panel = function (g, x, y, w, h, strong, op) {   // op: v9.6.2, the fill's opacity (the career hub uses 0.94)
   g.save();
   g.shadowColor = 'rgba(0,0,0,0.38)'; g.shadowBlur = 16; g.shadowOffsetY = 5;
   const gr = g.createLinearGradient(0, y, 0, y + h);
-  if (strong) { gr.addColorStop(0, 'rgba(18,58,60,0.96)'); gr.addColorStop(1, 'rgba(8,30,34,0.96)'); }
-  else { gr.addColorStop(0, 'rgba(16,28,42,0.86)'); gr.addColorStop(1, 'rgba(6,12,20,0.86)'); }
+  const a = op || (strong ? 0.96 : 0.86);
+  if (strong) { gr.addColorStop(0, `rgba(18,58,60,${a})`); gr.addColorStop(1, `rgba(8,30,34,${a})`); }
+  else { gr.addColorStop(0, `rgba(16,28,42,${a})`); gr.addColorStop(1, `rgba(6,12,20,${a})`); }
   g.fillStyle = gr; roundRect(g, x, y, w, h, 12); g.fill();
   g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0;
   g.strokeStyle = strong ? GOLD : 'rgba(255,255,255,0.13)'; g.lineWidth = strong ? 2 : 1; g.stroke();

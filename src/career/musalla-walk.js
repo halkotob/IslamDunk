@@ -223,7 +223,7 @@ function drawMusallaScreen(g) {
       [...opts.map(o => o[0]), 'Goodbye'].forEach((q, k) => {
         const y = 404 + k * 31, on = t.idx === k;
         g.fillStyle = on ? 'rgba(232,195,90,0.92)' : 'rgba(255,255,255,0.1)'; roundRect(g, 520, y, 384, 27, 13); g.fill();
-        g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${on ? FONT : BODY}`; g.textAlign = 'left'; g.fillText(q, 534, y + 18);
+        g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${on ? FONT : BODY}`; g.textAlign = 'left'; g.fillText(fitText(g, q, 356), 534, y + 18);   // v9.6.2: fits its row
         addRect(520, y, 384, 27, () => { t.idx = k; talkChoose(k); });
       });
     } else {

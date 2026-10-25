@@ -79,7 +79,7 @@ function drawGymHUD(g) {
     let ix = Math.max(132, 36 + g.measureText('AL-AMANAH GYM').width);
     g.font = `11px ${BODY}`; g.fillStyle = '#f2cf6b'; g.fillText(C.bp + ' BP', ix, iy + 18); ix = Math.max(196, ix + 14 + g.measureText(C.bp + ' BP').width);
     g.fillStyle = '#9dffb0'; g.fillText(C.hb + (Input.touchMode ? ' HB' : ' Halal Bucks'), ix, iy + 18);
-    if (C.prayBonus) { g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, 320, iy, 140, 28, 14); g.fill(); g.fillStyle = '#f2cf6b'; g.font = `10px ${FONT}`; g.fillText('Salah bonus ready', 334, iy + 18); } }
+    if (C.prayBonus) { g.font = `10px ${FONT}`; const bw = Math.max(140, Math.ceil(g.measureText('Salah bonus ready').width) + 28); g.fillStyle = 'rgba(30,90,74,0.9)'; roundRect(g, 320, iy, bw, 28, 14); g.fill(); g.fillStyle = '#f2cf6b'; g.textAlign = 'left'; g.fillText('Salah bonus ready', 334, iy + 18); } }   // v9.6.2: measured
   const d = Gym.drill;
   if (d && d.mini) drawMiniHUD(g);
   else if (d) {
@@ -89,8 +89,7 @@ function drawGymHUD(g) {
     else if (d.kind === 'cones') txt = 'Cone dribble   ' + d.time.toFixed(1) + 's   Cone ' + Math.min(d.idx + 1, CONES.length) + '/' + CONES.length;
     else if (typeof DRILL_HUD !== 'undefined' && DRILL_HUD[d.kind]) txt = DRILL_HUD[d.kind](d);
     else txt = 'You ' + M.teams[0].score + '  \u2013  ' + M.teams[1].score + ' Nasser   (first to 11)';
-    g.fillStyle = 'rgba(8,16,24,0.82)'; roundRect(g, W / 2 - 200, 70, 400, 34, 17); g.fill();
-    g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = `15px ${FONT}`; g.fillText(txt, W / 2, 93);
+    textPill(g, W / 2, 70, 34, txt, `15px ${FONT}`, 'rgba(8,16,24,0.82)', '#fff', 400, W - 40);   // v9.6.2: sized to the text
     if (d.kind === 'three') for (let r = 0; r < 5; r++) for (let b = 0; b < 3; b++) {
       const i = r * 3 + b, x = W / 2 - 110 + r * 46 + b * 12;
       g.fillStyle = i < d.shots ? 'rgba(255,255,255,0.2)' : b === 2 ? '#f2cf6b' : '#e8661c'; g.beginPath(); g.arc(x, 118, 4.5, 0, Math.PI * 2); g.fill();
@@ -124,8 +123,7 @@ function drawGymHUD(g) {
     }
   }
   if (Gym.toastT > 0) {
-    g.globalAlpha = clamp(Gym.toastT, 0, 1); g.fillStyle = 'rgba(8,16,24,0.85)'; roundRect(g, W / 2 - 300, 150, 600, 34, 17); g.fill();
-    g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = `14px ${BODY}`; g.fillText(Gym.toast, W / 2, 172); g.globalAlpha = 1;
+    g.globalAlpha = clamp(Gym.toastT, 0, 1); textPill(g, W / 2, 150, 34, Gym.toast, `14px ${BODY}`, 'rgba(8,16,24,0.85)', '#fff', 600, W - 40); g.globalAlpha = 1;   // v9.6.2
   }
   if (Input.touchMode && !TouchUI.el && !Gym.overlay && !Gym.result && !Gym.fade) drawTouch(g);
   if (Gym.overlay === 'adhan') drawAdhan(g);

@@ -76,6 +76,7 @@ export const SCREEN_OF = {
   "hub calendar: schedule menu": "hub",
   "cstats": "cstats",
   "cgoals": "cgoals",
+  "crecords": "crecords",
   "csummary": "csummary",
   "postgame": "postgame",
   "scout": "scout",

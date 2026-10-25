@@ -71,6 +71,8 @@
 //                reminder traces to a trivia question + explanation, skipping at each point, same talk after a reload,
 //                all studied (2 general reminders, no marks), old saves, Career calendar Off; the walk in and out by keys
 //   jumuah-visual v9.4 the door question, the room, a reminder and the card at 3 sizes against docs/review/img/jumuah-*.png
+//   hub-layout   v9.6.2: the career hub at 5 sizes x 13 cases: no text on text, no panel on panel, no text outside its
+//                container, badge pills inside the card, 12 px gutters, no small text on phones (tests/hub-layout.mjs)
 //   studio, studio-anim, studio-csv, studio-excluded   v9.2.1-9.2.2 Review Studio (tests/studio.mjs; npm test builds dist/review first)
 //   v93          v9.3.0: a team's own court (editor rows, first on the venue screen, built gym and park floors, share
 //                codes, career away games, online lobby), 3 on 3 third-player picks, your players as mini game
@@ -91,6 +93,7 @@ import { CAL_HELPERS } from './calendar-setup.js';
 import { WORLD_HELPERS, WORLD_VIEWS, WORLD_TODS } from './world-setup.js';
 import { PHONES as WORLD_PHONES } from './phone-audit.mjs';
 import { STUDIO_TESTS } from './studio.mjs';
+import { hubTests } from './hub-layout.mjs';
 import { JUMUAH_HELPERS, JUMUAH_STAGES } from './jumuah-setup.js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -2065,6 +2068,7 @@ T['jumuah-visual'] = async ({ browser, base }) => {
   return { ok, detail };
 };
 
+Object.assign(T, hubTests({ newContext, open }));   // v9.6.2 career hub fixtures (tests/hub-layout.mjs)
 Object.assign(T, STUDIO_TESTS);   // the Review Studio (tests/studio.mjs)
 
 // ------------------------------------------------------------------ runner

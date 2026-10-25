@@ -115,6 +115,7 @@ export const SCREENS = [
   ['hub calendar: schedule menu', CAL_HELPERS + ` window.__calState('game'); const it = HUB_MENU(); menuActivate('hub', it, it.findIndex(e => e.label === 'Schedule'));`],
   ['cstats', CAREER + ` careerHub(); openStats();`],
   ['cgoals', CAREER + ` careerHub(); openGoals();`],
+  ['crecords', CAREER + ` careerHub(); openRecords();`],
   ['csummary', CAREER + ` careerHub(); openSummary(C.stage, 'menu');`],
   ['postgame', CAREER + ` careerHub(); Game.screen = 'postgame';`],
   ['scout', CAREER + ` careerHub(); prepCareerVenue(); Game.scout = buildScout(); Game.screen = 'scout';`],

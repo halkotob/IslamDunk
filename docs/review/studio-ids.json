@@ -734,6 +734,9 @@
   "screen/creator/desktop": "9.2.2",
   "screen/creator/phone-667x300": "9.2.2",
   "screen/creator/phone-750x342": "9.2.2",
+  "screen/crecords/desktop": "9.6.2",
+  "screen/crecords/phone-667x300": "9.6.2",
+  "screen/crecords/phone-750x342": "9.6.2",
   "screen/cstats/desktop": "9.2.2",
   "screen/cstats/phone-667x300": "9.2.2",
   "screen/cstats/phone-750x342": "9.2.2",
@@ -1549,6 +1552,7 @@
   "text/career/career-goals/make-30-layups-and-dunks-8cnpup": "8.6.0",
   "text/career/career-goals/mikan-man-ofp62f": "8.6.0",
   "text/career/career-goals/next-game-on61e2": "8.6.0",
+  "text/career/career-goals/none-yet-see-goals-badges-85etk0": "9.6.2",
   "text/career/career-goals/pray-before-a-game-79v6z3": "8.6.0",
   "text/career/career-goals/rookie-checklist-complete-dbbnsd": "8.6.0",
   "text/career/career-goals/rookie-checklist-gx8f76": "8.6.0",
@@ -1562,18 +1566,17 @@
   "text/career/career-goals/storyline-keep-5-intentions-you-hsp75e": "8.6.0",
   "text/career/career-goals/throw-down-89zyvh": "8.6.0",
   "text/career/career-goals/upgrade-a-stat-jnm9p2": "8.6.0",
+  "text/career/career-goals/week-goal-idpsco": "9.6.2",
   "text/career/career-goals/win-a-career-game-ahvwdu": "8.6.0",
   "text/career/career-goals/win-your-aezapk": "8.6.0",
-  "text/career/career-screens/1v1-wins-vs-nasser-1vr8gp": "8.6.2",
+  "text/career/career-screens/1v1-against-nasser-pdtqey": "9.6.2",
+  "text/career/career-screens/all-stats-akdclp": "9.6.2",
   "text/career/career-screens/at-the-masjid-gjlzcv": "8.6.0",
   "text/career/career-screens/barakah-points-each-level-costs-ovpqz8": "8.6.2",
   "text/career/career-screens/barakah-points-we0qim": "8.6.0",
   "text/career/career-screens/beard-length-mqg48v": "8.6.0",
   "text/career/career-screens/beard-style-mqcckw": "8.6.0",
   "text/career/career-screens/because-difficulty-is-set-to-p9geq5": "8.6.2",
-  "text/career/career-screens/best-cone-run-vq1atz": "8.6.2",
-  "text/career/career-screens/best-free-throws-xq9l0m": "8.6.2",
-  "text/career/career-screens/best-three-point-esxq9e": "8.6.2",
   "text/career/career-screens/bp-each-level-costs-more-9ftt89": "8.6.2",
   "text/career/career-screens/bracket-wa2akz": "8.6.0",
   "text/career/career-screens/build-5i6udf": "8.6.0",
@@ -1581,6 +1584,7 @@
   "text/career/career-screens/career-mode-qnoyf2": "8.6.0",
   "text/career/career-screens/choose-change-enter-to-select-d2cbg5": "8.6.0",
   "text/career/career-screens/close-l0xxoj": "8.6.0",
+  "text/career/career-screens/cone-run-9glhmf": "9.6.2",
   "text/career/career-screens/continue-career-clxwg6": "8.6.0",
   "text/career/career-screens/could-not-save-on-this-c0ef5v": "8.6.0",
   "text/career/career-screens/cpu-difficulty-f8b3e8": "8.6.2",
@@ -1593,7 +1597,10 @@
   "text/career/career-screens/enter-or-tap-to-continue-axs44y": "8.6.0",
   "text/career/career-screens/enter-the-us0geq": "8.6.0",
   "text/career/career-screens/esc-to-go-back-6nk2gm": "8.6.0",
+  "text/career/career-screens/fastest-time-18njw2": "9.6.2",
+  "text/career/career-screens/free-throw-drill-boqzun": "9.6.2",
   "text/career/career-screens/game-day-h8maf1": "8.6.0",
+  "text/career/career-screens/games-won-in-the-gym-8dscdv": "9.6.2",
   "text/career/career-screens/hair-and-beard-color-i85iqp": "8.6.0",
   "text/career/career-screens/halal-bucks-jb9hpr": "8.6.0",
   "text/career/career-screens/height-7puwki": "8.6.0",
@@ -1630,10 +1637,6 @@
   "text/career/career-screens/small-division-roiuwh": "8.6.0",
   "text/career/career-screens/small-division-zlp7rn": "9.0.0",
   "text/career/career-screens/sneakers-mx4f31": "8.6.0",
-  "text/career/career-screens/spend-on-masjid-and-gym-wt4mdo": "8.6.2",
-  "text/career/career-screens/spend-on-projects-913fhi": "8.6.2",
-  "text/career/career-screens/spend-on-training-9yc8lm": "8.6.2",
-  "text/career/career-screens/spend-on-training-earned-in-y5uo2t": "8.6.2",
   "text/career/career-screens/stage-one-step-pnfv7n": "8.6.2",
   "text/career/career-screens/stamina-slower-turbo-drain-passi-lqiude": "8.6.2",
   "text/career/career-screens/start-a-new-career-q34850": "8.6.0",
@@ -1642,6 +1645,9 @@
   "text/career/career-screens/tap-to-type-6fdq5l": "8.6.0",
   "text/career/career-screens/thobe-color-gueroo": "8.6.0",
   "text/career/career-screens/thobe-length-sbn8lh": "8.6.0",
+  "text/career/career-screens/three-point-drill-s7jrj1": "9.6.2",
+  "text/career/career-screens/three-point-shooting-s7salx": "9.6.2",
+  "text/career/career-screens/top-stats-4lf5wf": "9.6.2",
   "text/career/career-screens/tournament-again-69rr2m": "8.6.0",
   "text/career/career-screens/tournament-again-from-the-hub-dulims": "8.6.0",
   "text/career/career-screens/train-8cdq15": "8.6.0",
@@ -3903,6 +3909,46 @@
   "trivia/99": "phase1"
  },
  "removed": {
+  "text/career/career-screens/1v1-wins-vs-nasser-1vr8gp": {
+   "reason": "v9.6.2: moved off the career hub (balances are chips, gym bests are on My Player > Records > Personal bests)",
+   "version": "9.6.2",
+   "was": "8.6.2"
+  },
+  "text/career/career-screens/best-cone-run-vq1atz": {
+   "reason": "v9.6.2: moved off the career hub (balances are chips, gym bests are on My Player > Records > Personal bests)",
+   "version": "9.6.2",
+   "was": "8.6.2"
+  },
+  "text/career/career-screens/best-free-throws-xq9l0m": {
+   "reason": "v9.6.2: moved off the career hub (balances are chips, gym bests are on My Player > Records > Personal bests)",
+   "version": "9.6.2",
+   "was": "8.6.2"
+  },
+  "text/career/career-screens/best-three-point-esxq9e": {
+   "reason": "v9.6.2: moved off the career hub (balances are chips, gym bests are on My Player > Records > Personal bests)",
+   "version": "9.6.2",
+   "was": "8.6.2"
+  },
+  "text/career/career-screens/spend-on-masjid-and-gym-wt4mdo": {
+   "reason": "v9.6.2: moved off the career hub (balances are chips, gym bests are on My Player > Records > Personal bests)",
+   "version": "9.6.2",
+   "was": "8.6.2"
+  },
+  "text/career/career-screens/spend-on-projects-913fhi": {
+   "reason": "v9.6.2: moved off the career hub (balances are chips, gym bests are on My Player > Records > Personal bests)",
+   "version": "9.6.2",
+   "was": "8.6.2"
+  },
+  "text/career/career-screens/spend-on-training-9yc8lm": {
+   "reason": "v9.6.2: moved off the career hub (balances are chips, gym bests are on My Player > Records > Personal bests)",
+   "version": "9.6.2",
+   "was": "8.6.2"
+  },
+  "text/career/career-screens/spend-on-training-earned-in-y5uo2t": {
+   "reason": "v9.6.2: moved off the career hub (balances are chips, gym bests are on My Player > Records > Personal bests)",
+   "version": "9.6.2",
+   "was": "8.6.2"
+  },
   "text/screens/creator-suite/enter-edit-c-code-d-w617p3": {
    "reason": "v9.3: Duplicate moved from D to U; the hint text changed",
    "version": "9.3.0",

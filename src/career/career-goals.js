@@ -157,20 +157,57 @@ function nextGoal() {
   if (b && !b.out && !b.champ) { const rn = typeof roundLabel === 'function' ? roundLabel(b) : 'next game'; return { txt: 'Win your ' + rn, pay: 'keeps the run going' }; }
   return { txt: 'All goals done this week. Next week starts in ' + (G.week.start + 3 - (C.gamesPlayed || 0)) + ' game(s)', pay: '' };
 }
+// v9.6.2: earned badges on your hub card. Each pill is sized to its full name (measured, so the raised phone font
+// fits too), they flow left to right from HubL.badges and wrap; what doesn't fit becomes a "+N" chip. Any pill
+// opens Goals & badges, where each badge's description is.
+function hubBadgeLayout(g, got, A) {
+  g.font = `11px ${FONT}`; const px = hubPx(g), h = Math.max(20, Math.ceil(px + 9)), gap = 6, padX = 8;
+  const wOf = t => Math.max(36, Math.ceil(g.measureText(t).width) + padX * 2);
+  const head = Math.ceil(px) + 8, top = A.y + head, rowsMax = Math.max(0, Math.floor((A.bottom - top + gap) / (h + gap)));
+  const out = []; let x = A.x, row = 0;
+  for (let i = 0; i < got.length; i++) {
+    const t = got[i].name, w = Math.min(wOf(t), A.w), more = got.length - i - 1, chipW = more ? wOf('+' + (more + 1)) : 0;
+    let nx = x, nr = row; if (nx + w > A.x + A.w + 0.5) { nx = A.x; nr = row + 1; }
+    const last = nr === rowsMax - 1, fitsHere = nr < rowsMax && (!more || !last || nx + w + gap + chipW <= A.x + A.w + 0.5);
+    if (!fitsHere) {                                                      // the rest is one "+N" chip
+      const n = got.length - i, cw = wOf('+' + n);
+      let cx = x, cr = row; if (cx + cw > A.x + A.w + 0.5) { cx = A.x; cr = row + 1; }
+      if (cr < rowsMax) out.push({ chip: true, t: '+' + n, x: cx, y: top + cr * (h + gap), w: cw, h });
+      else if (out.length) { const p = out.pop(); out.push({ chip: true, t: '+' + (n + 1), x: p.x, y: p.y, w: wOf('+' + (n + 1)), h }); }
+      break;
+    }
+    out.push({ t, x: nx, y: top + nr * (h + gap), w, h, b: got[i] }); x = nx + w + gap; row = nr;
+  }
+  return { pills: out, px, headY: A.y + Math.ceil(px) };
+}
+function drawHubBadges(g) {
+  const A = HubL.badges; if (!A) return;
+  const G = cg(), got = BADGES.filter(b => G.badges[b.id]);
+  g.textAlign = 'left'; g.font = `11px ${FONT}`; g.fillStyle = HUB_GOLD_DIM;
+  if (A.bottom - A.y < hubPx(g) + 8) return;                            // no room at all (never on the stock layout)
+  g.fillText('BADGES', A.x, A.y + Math.ceil(hubPx(g)));
+  if (!got.length) { g.font = `12px ${BODY}`; const t = fitText(g, 'None yet: see Goals & badges', A.w); g.fillStyle = '#7d8a9c'; g.fillText(t, A.x, A.y + Math.ceil(hubPx(g)) * 2 + 10); addRect(A.x, A.y, A.w, 40, () => openGoals()); return; }
+  const Lb = hubBadgeLayout(g, got, A); HubL.badgePills = Lb.pills;
+  for (const p of Lb.pills) {
+    g.fillStyle = p.chip ? 'rgba(255,255,255,0.16)' : 'rgba(232,195,90,0.9)'; roundRect(g, p.x, p.y, p.w, p.h, p.h / 2); g.fill();
+    g.fillStyle = p.chip ? '#fff' : NIGHT; g.font = `11px ${FONT}`; g.textAlign = 'center';
+    g.fillText(fitText(g, p.t, p.w - 12), p.x + p.w / 2, p.y + p.h / 2 + Lb.px * 0.36);
+    addRect(p.x, p.y, p.w, p.h, () => openGoals());
+  }
+  g.textAlign = 'left';
+}
 {
   const _dh = drawHub;
   drawHub = function (g) {
     _dh.apply(this, arguments);
-    const ng = nextGoal(), x = 336, y = 210, w = 290;
-    g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, x, y, w, 24, 12); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.5)'; g.lineWidth = 1; g.stroke();
-    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.fillText('NEXT', x + 10, y + 16);
-    const tx = x + 16 + g.measureText('NEXT').width;                      // v8.6.2: clears the raised phone font
-    g.fillStyle = IVORY; g.font = `11px ${BODY}`; let t = ng.txt + (ng.pay ? '  •  ' + ng.pay : ''); while (g.measureText(t).width > x + w - 10 - tx && t.length > 8) t = t.slice(0, -2);
-    g.fillText(t, tx, y + 16);
-    addRect(x, y, w, 24, () => openGoals());
-    // earned badges on your card
-    const G = cg(), got = BADGES.filter(b => G.badges[b.id]);
-    got.slice(0, 4).forEach((b, i) => { const bx = 46 + i * 62; g.fillStyle = 'rgba(232,195,90,0.85)'; roundRect(g, bx, 476, 58, 18, 9); g.fill(); g.fillStyle = NIGHT; g.font = `9px ${FONT}`; g.textAlign = 'center'; g.fillText(b.name.split(' ')[0].toUpperCase(), bx + 29, 488); });
+    // v9.6.2: the weekly goal is the menu panel's first row (HubL.goal, set by drawHub), labelled WEEK GOAL
+    const ng = nextGoal(), R = HubL.goal || { x: 336, y: 210, w: 290, h: 24 }, x = R.x, y = R.y, w = R.w, h = R.h;
+    g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, x, y, w, h, h / 2); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.5)'; g.lineWidth = 1; g.stroke();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; const by = y + h / 2 + hubPx(g) * 0.36; g.fillText('WEEK GOAL', x + 12, by);
+    const tx = x + 20 + g.measureText('WEEK GOAL').width;
+    g.fillStyle = IVORY; g.font = `11px ${BODY}`; g.fillText(fitText(g, ng.txt + (ng.pay ? '  •  ' + ng.pay : ''), x + w - 12 - tx), tx, by);
+    addRect(x, y, w, h, () => openGoals());
+    drawHubBadges(g);
   };
   const _he = hubExtra;
   hubExtra = function (items) {
