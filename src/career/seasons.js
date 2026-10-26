@@ -110,7 +110,7 @@ function startNewSeason(respec) {
 function hubExtra(items) {
   if (C && C.done && !C.seasonOver) items.unshift({ label: 'Start Season ' + ((C.season || 1) + 1), act: () => { Game.screen = 'newseason'; Game.idx = 0; } });
   const mp = items.find(x => x.label === 'My Player');
-  if (mp && mp.sub && !mp.sub.some(s => s.label === 'Stats & box scores')) mp.sub.splice(1, 0, { label: 'Stats & box scores', act: () => openStats() });
+  if (mp && mp.sub && !mp.sub.some(s => s.label === 'League & stats')) mp.sub.splice(1, 0, { label: 'League & stats', act: () => openStats() });   // v9.7.0: was Stats & box scores
   return items;
 }
 function newSeasonUpdate() {
@@ -218,8 +218,9 @@ function statSeasons() { const set = new Set((C.games || []).map(g => g.s)); set
 function seasonGames(s) { return (C.games || []).filter(g => g.s === s).slice().reverse(); }
 function statsUpdate() {
   const S = Game.stats, list = seasonGames(S.s), seasons = statSeasons();
-  if (S.view === 'box') { if (menuHit('ok') || menuHit('back')) S.view = 'season'; return; }
-  if (Input.pressed.Tab || Input.pressed.KeyT) { S.view = S.view === 'career' ? 'season' : 'career'; SFX.blip(); }
+  if (S.view === 'box') { if (menuHit('ok') || menuHit('back')) S.view = S.boxFrom || 'season'; return; }
+  if (Input.pressed.Tab || Input.pressed.KeyT) { const v = LG_VIEWS.map(x => x[0]), i = v.indexOf(S.view === 'player' ? 'leaders' : S.view); S.view = v[(i + 1) % v.length]; SFX.blip(); }   // v9.7.0: four views
+  if (S.view === 'leaders' || S.view === 'league' || S.view === 'player') { lgStatsUpdate(S); return; }
   if (S.view === 'season') {
     if (menuHit('left') || menuHit('right')) { const i = seasons.indexOf(S.s), j = clamp(i + (menuHit('left') ? -1 : 1), 0, seasons.length - 1); if (j !== i) { S.s = seasons[j]; S.sel = 0; S.scroll = 0; SFX.blip(); } }
     if (menuHit('up')) { S.sel = Math.max(0, S.sel - 1); SFX.blip(); }
@@ -232,13 +233,11 @@ function statsUpdate() {
 function drawStats(g) {
   const S = Game.stats, TT = Input.touchMode && g === ctx;   // v8.6.2: TT = phone layout
   if (S.view === 'box') return drawBoxBook(g, S.box);
-  panel(g, 30, 20, 900, 500, true);
-  g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `24px ${FONT}`; g.fillText('Stats & box scores', 56, 58);
-  [['season', 'Season'], ['career', 'Career']].forEach(([k, l], i) => {
-    const x = 560 + i * 120, on = S.view === k;
-    g.fillStyle = on ? GOLD : 'rgba(255,255,255,0.1)'; roundRect(g, x, 36, 110, 30, 15); g.fill();
-    g.textAlign = 'center'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `13px ${FONT}`; g.fillText(l, x + 55, 56); addRect(x, 36, 110, 30, () => { S.view = k; });
-  });
+  const lgv = S.view === 'leaders' || S.view === 'league' || S.view === 'player';
+  if (lgv && TT) panel(g, 30, 4, 900, 532, true); else panel(g, 30, 20, 900, 500, true);   // v9.7.0: the league views use the full height on phones
+  const tx = lgTabs(g, S);                                            // v9.7.0: My stats / Career / Leaders / Around the league
+  if (lgv) return drawLeague(g, S, tx);
+  g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `24px ${FONT}`; g.fillText(fitText(g, 'League & stats', tx - 14 - lgLeftX(g)), lgLeftX(g), 58);
   if (S.view === 'career') return drawCareerTable(g);
   const list = seasonGames(S.s), mine = list.map(x => x.a[0]), t = statLine(mine), w = list.filter(x => x.w).length;
   const seasons = statSeasons();
@@ -293,7 +292,7 @@ function drawCareerTable(g) {
 function drawBoxBook(g, x) {
   panel(g, 30, 20, 900, 500, true);
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText('BOX SCORE  •  SEASON ' + x.s + '  •  ' + STAGES[x.st].title.toUpperCase() + '  •  ' + x.r.toUpperCase(), W / 2, 50);
-  g.fillStyle = x.w ? GOLD : '#ffb0b0'; g.font = `26px ${FONT}`; g.fillText('Al-Amanah ' + x.us + '  –  ' + x.them + ' ' + x.opp.replace('Masjid ', ''), W / 2, 86);
+  g.fillStyle = x.an ? '#fff' : x.w ? GOLD : '#ffb0b0'; g.font = `26px ${FONT}`; g.fillText(fitText(g, (x.an ? x.an.replace('Masjid ', '') : 'Al-Amanah') + ' ' + x.us + '  –  ' + x.them + ' ' + x.opp.replace('Masjid ', ''), 860), W / 2, 86);   // v9.7.0: any two teams
   if (x.venue) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(x.venue, W / 2, 106); }
   const cols = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'FG', '3P', 'FT', 'TOV', 'PF'], xs = [330, 390, 450, 510, 570, 630, 700, 770, 830, 880];
   const table = (y, title, rows) => {
@@ -307,9 +306,9 @@ function drawBoxBook(g, x) {
       [r.pts, r.reb, r.ast, r.stl, r.blk, r.fgm + '-' + r.fga, r.tpm + '-' + r.tpa, r.ftm + '-' + r.fta, r.tov, r.pf].forEach((v, i) => { g.textAlign = 'center'; g.fillStyle = i === 0 && !last ? '#fff' : IVORY; g.fillText(String(v), xs[i], yy); });
     });
   };
-  table(146, 'MASJID AL-AMANAH', x.a); table(296, x.opp.toUpperCase(), x.o);
+  table(146, (x.an || 'Masjid Al-Amanah').toUpperCase(), x.a); table(296, x.opp.toUpperCase(), x.o);
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Enter or Esc to go back', W / 2, 504);
-  addRect(0, 0, W, H, () => { Game.stats.view = 'season'; });
+  addRect(0, 0, W, H, () => { Game.stats.view = Game.stats.boxFrom || 'season'; });
 }
 
 // ------------------------------------------------------------- pregame: choose your partner

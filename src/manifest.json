@@ -106,6 +106,7 @@
     "screens/v95-series.js",
     "screens/v95-highlights.js",
     "screens/v95-access.js",
+    "career/league.js",
     "career/hub-layout.js",
     "boot.js"
   ]

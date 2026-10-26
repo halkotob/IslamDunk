@@ -37,7 +37,7 @@ function drawBackButton(g) {
   g.fillStyle = pr ? '#c9a24a' : hov ? GOLD : 'rgba(8,16,24,0.85)'; roundRect(g, 8, 8, w, 32, 16); g.fill();
   g.strokeStyle = 'rgba(232,195,90,0.7)'; g.lineWidth = 1.5; g.stroke();
   g.fillStyle = hov || pr ? NIGHT : '#fff'; g.textAlign = 'center'; g.fillText('\u2039 ' + label, 8 + w / 2, 29);
-  addRect(4, 4, w + 10, 42, () => BACK[Game.screen]());
+  addRect(0, 0, w + 20, Input.touchMode ? 66 : 46, () => BACK[Game.screen]());   // v9.7.0: a 44 CSS px tap target on phones
 }
 function drawPauseButton(g) {
   g.fillStyle = 'rgba(8,16,24,0.7)'; roundRect(g, W - 48, 8, 38, 32, 8); g.fill();

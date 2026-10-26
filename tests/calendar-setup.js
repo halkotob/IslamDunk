@@ -3,9 +3,11 @@
 //   __calFresh()            a new career at the hub (intro done), on its first day
 //   __calPlayTo(st, slot)   wins games (a short match flow: start, the result set to a win, careerAfterMatch)
 //                           until our next game is stage st, slot slot
+//   (v9.7.0: evaluating these helpers puts the league in its fallback mode: no engine time for the other games)
 //   __calState(name)        the review states: 'game', 'jumuah', 'ramadan', 'eid', 'break' (returns a short label)
 export const CAL_STATES = ['game', 'jumuah', 'ramadan', 'eid', 'break'];
 export const CAL_HELPERS = `(() => {
+  if (typeof LEAGUE !== 'undefined') LEAGUE.mode = 'fallback';   // v9.7.0: these fixtures only need a bracket; the league tests turn real games on
   window.__calFresh = () => {
     C = freshCareer(); C.name = 'Abdullah'; C.seed = 4242; C.bracket = makeBracket(0);
     Object.assign(C.seen, { intro: true, meetNew: true, stage0: true, stage1: true, stage2: true, stage3: true });

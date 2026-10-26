@@ -76,6 +76,7 @@
 //   jumuah-visual v9.4 the door question, the room, a reminder and the card at 3 sizes against docs/review/img/jumuah-*.png
 //   hub-layout   v9.6.2: the career hub at 5 sizes x 13 cases: no text on text, no panel on panel, no text outside its
 //                container, badge pills inside the card, 12 px gutters, no small text on phones (tests/hub-layout.mjs)
+//   league-*     v9.7.0: real league games, isolation, formats, boards, time, calibration, layout (tests/league.mjs)
 //   studio, studio-anim, studio-csv, studio-excluded   v9.2.1-9.2.2 Review Studio (tests/studio.mjs; npm test builds dist/review first)
 //   v93          v9.3.0: a team's own court (editor rows, first on the venue screen, built gym and park floors, share
 //                codes, career away games, online lobby), 3 on 3 third-player picks, your players as mini game
@@ -97,6 +98,7 @@ import { WORLD_HELPERS, WORLD_VIEWS, WORLD_TODS } from './world-setup.js';
 import { PHONES as WORLD_PHONES } from './phone-audit.mjs';
 import { STUDIO_TESTS } from './studio.mjs';
 import { hubTests } from './hub-layout.mjs';
+import { leagueTests } from './league.mjs';
 import { JUMUAH_HELPERS, JUMUAH_STAGES } from './jumuah-setup.js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -1556,12 +1558,12 @@ T['calendar'] = async ({ browser, base }) => {
       bracket: { round: 1, out: false, rounds: [[{ a: 0, b: 5, sa: 30, sb: 22, w: 0 }, { a: 2, b: 3, sa: 20, sb: 25, w: 3 }, { a: 4, b: 6, sa: 28, sb: 18, w: 4 }, { a: 7, b: 1, sa: 21, sb: 30, w: 1 }], [{ a: 0, b: 3, sa: null, sb: null, w: null }, { a: 4, b: 1, sa: null, sb: null, w: null }]] } };
     localStorage.setItem(SAVE_SLOT, JSON.stringify(v5)); C = null; loadCareer(SAVE_SLOT);
     const c5 = C.cal; o.v5 = { sv: C.sv, d: calText(c5.d) + ' Y' + calDate(c5.d).y, fmt: c5.sched.fmt, slot: calSlot(), next: calText(calGameDay()), log: c5.log.map(x => calText(x.d) + ' ' + (x.w ? 'W' : 'L') + ' ' + x.r) };
-    o.v5ok = C.sv === 4 && c5.sched.fmt === 'ko' && calSlot() === 1 && c5.log.length === 1 && c5.log[0].w === 1 && c5.log[0].d < c5.d && calGameDay() >= c5.d && calDate(c5.d).m >= 4 && calDate(c5.d).m <= 7;
+    o.v5ok = C.sv >= 4 && c5.sched.fmt === 'ko' && calSlot() === 1 && c5.log.length === 1 && c5.log[0].w === 1 && c5.log[0].d < c5.d && calGameDay() >= c5.d && calDate(c5.d).m >= 4 && calDate(c5.d).m <= 7;
     window.__calWin(); o.v5play = C.cal.log.length === 2 && C.bracket.round === 2 && calSlot() === 2 && calGameDay() > C.cal.log[1].d;
     // v6 era: sv 3, group stage in progress (National, after group game 1)
     window.__calFresh(); window.__calPlayTo(2, 1); delete C.cal; C.sv = 3; saveCareer(SAVE_SLOT); C = null; loadCareer(SAVE_SLOT);
     o.v6 = { d: calText(C.cal.d), slot: calSlot(), next: calText(calGameDay()), log: C.cal.log.map(x => calText(x.d) + ' ' + x.r) };
-    o.v6ok = C.sv === 4 && C.cal.sched.fmt === 'pool' && calSlot() === 1 && C.cal.log.length === 1 && C.cal.log[0].d < C.cal.d && calGameDay() >= C.cal.d && calIsRamadan(calGameDay()) === calIsRamadan(calTypicalRun()[2].days[1]);
+    o.v6ok = C.sv >= 4 && C.cal.sched.fmt === 'pool' && calSlot() === 1 && C.cal.log.length === 1 && C.cal.log[0].d < C.cal.d && calGameDay() >= C.cal.d && calIsRamadan(calGameDay()) === calIsRamadan(calTypicalRun()[2].days[1]);
     // finished career (World champions): the next thing is the Cup again after a break
     window.__calFresh(); window.__calPlayTo(3, 4); window.__calWin(); const doneOk1 = C.done && C.bracket.champ;
     delete C.cal; C.sv = 3; saveCareer(SAVE_SLOT); C = null; loadCareer(SAVE_SLOT);
@@ -2115,7 +2117,8 @@ T['jumuah-visual'] = async ({ browser, base }) => {
   return { ok, detail };
 };
 
-Object.assign(T, hubTests({ newContext, open }));   // v9.6.2 career hub fixtures (tests/hub-layout.mjs)
+Object.assign(T, hubTests({ newContext, open }));
+Object.assign(T, leagueTests({ newContext, open }));   // v9.7.0 the league (tests/league.mjs)   // v9.6.2 career hub fixtures (tests/hub-layout.mjs)
 Object.assign(T, STUDIO_TESTS);   // the Review Studio (tests/studio.mjs)
 
 // ------------------------------------------------------------------ runner

@@ -91,8 +91,8 @@ function setGroupItems(gi) {
   hubExtra = function (items) {
     const R = _he.apply(this, arguments), mp = R.find(e => e.label === 'My Player');
     if (mp && mp.sub) {
-      const by = l => mp.sub.find(s => s.label === l), rec = ['Stats & box scores', 'Season summaries', 'Journal'].map(by).filter(Boolean);
-      const keep = ['Upgrade stats', 'Goals & badges', 'Customize'].map(by).filter(Boolean);
+      const by = l => mp.sub.find(s => s.label === l), rec = ['Season summaries', 'Journal'].map(by).filter(Boolean);
+      const keep = ['Upgrade stats', 'League & stats', 'Goals & badges', 'Customize'].map(by).filter(Boolean);   // v9.7.0: League & stats sits on My Player itself
       const rest = mp.sub.filter(s => !keep.includes(s) && !rec.includes(s));
       mp.sub = [...keep, ...rest, ...(rec.length ? [{ label: 'Records', sub: rec }] : [])];
     }

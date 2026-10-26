@@ -132,6 +132,12 @@ from `npm run review:jumuah`, which also refreshes the screenshots `img/jumuah-*
 fit, so the "+N" chip shows). `npm run review:hub` screenshots every case in `tests/hub-setup.js` (badges, long names,
 balances, calendar days, open lists) into `img/`; add `--cases badges-8,friday` for some of them.
 
+## League & stats (v9.7)
+
+`img/league-<size>-<view>.png`: My Player → League & stats with a seeded career's Local stage played for real, at
+1280×720, 844×390 and 667×375. It shows the leaders, a player page, around the league and a box score.
+`npm run review:league` makes them (`--sizes` for others).
+
 ## The older ways (still work)
 
 There are two ways to review, and both work. Use whichever suits you, or mix them.

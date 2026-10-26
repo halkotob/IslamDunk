@@ -9,6 +9,7 @@
 import { CAL_HELPERS, CAL_STATES } from './calendar-setup.js';
 import { WORLD_HELPERS } from './world-setup.js';
 import { JUMUAH_HELPERS } from './jumuah-setup.js';
+import { LEAGUE_HELPERS } from './league-setup.js';
 export const MIN_CSS_PX = 11;
 export const PHONES = [
   ['iPhone 13 landscape', { viewport: { width: 750, height: 342 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }],
@@ -42,6 +43,8 @@ export const AUDIT_INIT = `(() => {
 // [name, setup] - setups run in the page. CAREER builds a save with one played game first.
 const CAREER = `if (!window.__careerReady) { window.__careerReady = 1; C = freshCareer(); C.name = 'Abdullah'; if (!C.bracket) C.bracket = makeBracket(C.stage);
   startCareerMatch(); for (let n = 0; n < 60 * 60 * 20 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; } careerAfterMatch(); saveCareer(); }`;
+// v9.7.0: a career with five game days (league games in the fallback mode: the layout is what's audited)
+const LEAGUE_FIX = CAL_HELPERS + LEAGUE_HELPERS + ` if (!window.__lgReady) { window.__lgReady = 1; window.__lgBuild(5, 'fallback'); }`;
 const SHARE = `if (!window.__shareReady) { window.__shareReady = 1;                       // a CPU game with at least one highlight
   for (let k = 0; k < 4 && !(window.__hl && window.__hl.length); k++) { newMatch(TEAMS[k], TEAMS[k + 1], { humans: [], fmt: { format: 'quarters', len: 30 } });
     for (let n = 0; n < 60 * 60 * 10 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; } window.__hl = M.highlights; } }
@@ -116,6 +119,11 @@ export const SCREENS = [
   ['cstats', CAREER + ` careerHub(); openStats();`],
   ['cgoals', CAREER + ` careerHub(); openGoals();`],
   ['crecords', CAREER + ` careerHub(); openRecords();`],
+  ['career league leaders', LEAGUE_FIX + ` window.__lgOpen('leaders');`],
+  ['career league player', LEAGUE_FIX + ` window.__lgOpen('player', { pid: 'me' });`],
+  ['career league around', LEAGUE_FIX + ` window.__lgOpen('league');`],
+  ['career league box score', LEAGUE_FIX + ` window.__lgOpen('box');`],
+  ['career around the league (waiting)', CAREER + ` LEAGUE.waitMs = 0; Game.lgWait = { won: true, us: 30, them: 20, t0: performance.now() + 1e9, done: 1, total: 3, go: () => {} }; Game.screen = 'cleague';`],
   ['csummary', CAREER + ` careerHub(); openSummary(C.stage, 'menu');`],
   ['postgame', CAREER + ` careerHub(); Game.screen = 'postgame';`],
   ['scout', CAREER + ` careerHub(); prepCareerVenue(); Game.scout = buildScout(); Game.screen = 'scout';`],

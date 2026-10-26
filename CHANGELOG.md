@@ -1,5 +1,61 @@
 # Changelog
 
+## 9.7.0: the league plays its games, and keeps its stats
+- **Every game in the bracket is a real game.**
+  - The other games of each round used to be an invented score. They are now CPU-vs-CPU games on the match engine,
+    run without drawing anything.
+  - They use your Settings format, the 14-second clock, the same teams and CPU levels as your opponents, and the
+    same rules and fouls.
+  - Every player on every team gets a stat line.
+  - This covers the group stage, the semis and the final (including when you're out in the group), the old
+    single-elimination bracket, and every stage.
+- **They never touch your game.**
+  - A league game runs between frames in slices, and only when no match is being played.
+  - Each slice saves everything the engine touches, swaps the league game in, steps it and puts yours back.
+  - While it runs, these are off: sound, particles, replays and clips, achievements, toasts, storage writes, court
+    building and the end-of-match flow.
+  - Its random numbers come from its own generator, seeded from your save, season, stage, attempt, round and game.
+    The same save always gives the same league, and the game you play next is the same with or without it.
+  - A memory in the commentary (it avoids repeating its last line) used to steer the random numbers. It now starts
+    fresh for each league game.
+- **When they're played:**
+  - The round's other games are played in the background on calm screens (the hub, menus, the post-game screen,
+    story scenes).
+  - Whatever is left after your game, plus anything your result decides, is played on a short **Around the league…**
+    screen.
+  - That screen has a hard 20-second cap. A game that throws or runs past it gets a calibrated stand-in result,
+    which is logged and never blocks you.
+  - The hoop nets aren't simulated in these games: no gameplay reads them, and they were 44% of the cost.
+- **Stats** (save version 5, an empty record for old saves):
+  - For every player on every team, per stage run: games, points, assists, rebounds, steals, blocks, charges drawn,
+    turnovers, FG/3P/FT made and attempted, and dunks.
+  - Plus compact box scores for the current stage's games. Your own box scores stay as they are (the last 160).
+  - A retried stage replaces the attempt's league stats.
+  - A full season adds about 10 KB to the save.
+- **My Player → League & stats** (the Stats & box scores screen, extended):
+  - **Leaders:** PPG, APG, RPG, SPG, BPG, FG%, 3P%, FT% and dunks per game, for this stage, this season or your
+    career. Top 10, with you and your teammate highlighted and your ranks shown even outside the top 10.
+    Percentages need 2, 4 or 8 games (stage, season, career) and enough attempts a game.
+  - **Player pages:** averages, totals, stage splits, archetype and team; for your players also your seasons and
+    last 5 games.
+  - **Around the league:** every round's scores; tap one for its box score.
+  - Rank is bragging rights only: no rewards and no streaks.
+- **Box scores add up:** a basket that counted without a credited shooter (a loose ball that drops in) now goes, in
+  league lines only, to the last scorer's teammate who touched it. Live games and rewards are unchanged.
+- **Also:**
+  - The stats screen has a Back button on phones.
+  - The Back button's tap area is 44 CSS px tall on phones.
+  - Charges drawn are counted.
+- **Tests:**
+  - `league-round`, `league-determinism`, `league-headless`, `league-formats`, `league-board` (a brute-force check of
+    810 boards).
+  - `league-time` (ms per game on desktop and a 4×-throttled phone profile, the wait cap, a game that throws).
+  - `league-calibration` (500 real league games against the stand-in, and 200 against CPU-vs-CPU games played
+    normally).
+  - `league-layout` (five sizes).
+  - The new screens are in the phone audit and the Review Studio.
+  - `npm run review:league` takes the screenshots.
+
 ## 9.6.3: a 14-second shot clock, always
 - **The shot clock is 14 seconds in every game:** Quick Play, career, Barakah Run, scenarios, the title demo and
   online. In online games the host runs the clock and the guest sees it.
