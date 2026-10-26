@@ -26,7 +26,7 @@ function startScenario() {
   const S = Game.scen || (Game.scen = scenarioOf(dailyKey()));
   Game.paused = false; Game.trivia = null; Game.finalTab = 0;
   const base = VENUE_LIST.find(v => v.id === S.vid) || VENUE_LIST[0], venue = makeVenue(base, { time: 'night' });
-  newMatch(TEAMS[S.a], TEAMS[S.b], { humans: [{ team: 0, slot: S.slot, pad: 0 }], aiCfg: [diffAt(1.0), diffAt(S.L)], venue, fmt: { format: 'quarters', len: 120, sc: 24 }, fun: null });
+  newMatch(TEAMS[S.a], TEAMS[S.b], { humans: [{ team: 0, slot: S.slot, pad: 0 }], aiCfg: [diffAt(1.0), diffAt(S.L)], venue, fmt: { format: 'quarters', len: 120 }, fun: null });
   M.quarter = 4; M.clock = S.time; M.teams[0].score = S.us; M.teams[1].score = S.them;
   M.teams[0].qs = [Math.floor(S.us / 3), Math.floor(S.us / 3), S.us - 2 * Math.floor(S.us / 3)]; M.teams[1].qs = [Math.floor(S.them / 3), Math.floor(S.them / 3), S.them - 2 * Math.floor(S.them / 3)];
   M.teamFouls = [3, 4]; M.timeouts = [1, 1];

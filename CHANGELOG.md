@@ -1,5 +1,42 @@
 # Changelog
 
+## 9.6.3: a 14-second shot clock, always
+- **The shot clock is 14 seconds in every game:** Quick Play, career, Barakah Run, scenarios, the title demo and
+  online. In online games the host runs the clock and the guest sees it.
+  - Formats that had no clock before (30- and 45-second periods, first to 21) have one now.
+  - It is no longer tied to the period length, and the Settings period labels no longer mention it.
+  - Mini games keep their own rules, and so do King of the Court (pickup rules), the tutorial and Dunk Lab.
+- **Resets:**
+  - On a change of possession and on a shot that touches the rim, as before.
+  - A side-out (out of bounds, a shove foul) or a set play after a timeout keeps the clock, but never under 8 seconds.
+    It was 14 of 24; 8 is the same share of 14.
+- **Barakah Run:**
+  - **Fast Break** is now a 10-second clock for both teams, with the same reward.
+  - **Set the Pace** takes 2 seconds per rank off the CPU's 14: 12, 10, then 8 at most. Before, the CPU always had
+    20 seconds, even at rank 0.
+- **The CPU:**
+  - Its shot timing (when it will settle for a shot, how long it dribbles, when it sets screens) was tuned for
+    24 seconds. It now runs on the clock it actually has, so a 14-second possession gets the same rhythm a 24-second
+    one did.
+  - 200 CPU-vs-CPU games per difficulty, before → after (per team per game):
+
+    | | Shot clock violations | Points | Shot attempts | FG% | Turnovers | Shot quality |
+    |---|---|---|---|---|---|---|
+    | Very easy | 0 → 0.007 | 35.3 → 36.3 | 26.1 → 27.3 | 63.5 → 62.3 | 0.39 → 0.46 | 0.685 → 0.685 |
+    | Easy | 0 → 0.003 | 36.9 → 38.2 | 25.7 → 26.9 | 66.2 → 65.1 | 0.72 → 0.77 | 0.663 → 0.664 |
+    | Medium | 0 → 0.005 | 37.7 → 38.5 | 25.0 → 26.0 | 67.1 → 66.3 | 1.45 → 1.48 | 0.699 → 0.689 |
+    | Hard | 0 → 0 | 42.0 → 43.1 | 24.4 → 25.4 | 73.7 → 72.9 | 2.17 → 2.19 | 0.782 → 0.757 |
+
+    Shot quality is the shooter's make chance times the points, at release.
+  - Without the change, the 14-second clock made the CPU shoot early and badly: medium shot quality 0.619, FG% 57.
+  - `tools/cpu-clock-report.mjs` runs these numbers.
+- **Tests:**
+  - New `shot-clock` test: 14 seconds in every format and period length (first to 21 too), the demo and career; a
+    violation turns the ball over; resets on a steal and a rebound; side-outs keep at least 8; Barakah Run's Set the
+    Pace and Fast Break; an online guest gets the host's clock.
+  - The `formats` test expects 14.
+  - `cpu-parity` outcomes change on purpose: every seeded game now has a shot clock, and the CPU reads it differently.
+
 ## 9.6.2: career hub declutter, badge pills that fit
 Layout and drawing only. Gameplay, tuning, saves, the calendar and online play are unchanged, and nothing was removed:
 things moved.

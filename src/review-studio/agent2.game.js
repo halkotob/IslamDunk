@@ -80,7 +80,7 @@
     const flip = !!o.flip, def = o.who ? RS.defOf(o.who) : null;
     const T0 = Object.assign({}, TEAMS[0]), T1 = Object.assign({}, TEAMS[1]);
     if (def) { if (flip) T1.players = [def, T1.players[1]]; else T0.players = [def, T0.players[1]]; }
-    newMatch(T0, T1, { humans: [], fmt: { format: 'first21', target: 99, len: 120 } });
+    newMatch(T0, T1, { humans: [], fmt: { format: 'first21', target: 99, len: 120, sc: 0 } });
     const team = M.teams[flip ? 1 : 0], other = M.teams[flip ? 0 : 1];
     const c = { me: team.players[0], mate: team.players[1], o1: other.players[0], o2: other.players[1] };
     Object.assign(M, { phase: 'live', inb: null, check: null, bc: null, nextInbound: null, sideOut: null, ft: null, pendingEnd: false, introT: 0 });

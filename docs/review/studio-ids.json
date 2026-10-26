@@ -1356,7 +1356,7 @@
   "text/career/barakah-run/consecutive-wins-wfs2g0": "8.6.0",
   "text/career/barakah-run/cosmetic-only-shown-on-your-rn412t": "8.6.0",
   "text/career/barakah-run/cover-my-back-ytc7vh": "phase1",
-  "text/career/barakah-run/cpu-shot-clock-is-2-oiav4c": "phase1",
+  "text/career/barakah-run/cpu-shot-clock-is-2-99o5b1": "9.6.3",
   "text/career/barakah-run/download-unavailable-here-try-op-1xt6js": "8.6.0",
   "text/career/barakah-run/duo-1vi9ku": "8.6.0",
   "text/career/barakah-run/duo-run-online-host-a-lghr7y": "phase1",
@@ -1444,7 +1444,7 @@
   "text/career/barakah-v2/a-trade-off-that-lasts-nx7oi5": "8.6.0",
   "text/career/barakah-v2/beat-the-champions-59k08m": "8.6.0",
   "text/career/barakah-v2/beat-the-champions-at-the-13dok1": "8.6.0",
-  "text/career/barakah-v2/both-teams-play-a-14-kqrutj": "8.6.0",
+  "text/career/barakah-v2/both-teams-play-a-10-sd2mmz": "9.6.3",
   "text/career/barakah-v2/champion-2oyk7a": "8.6.0",
   "text/career/barakah-v2/choose-enter-confirm-esc-back-tyn2ew": "8.6.0",
   "text/career/barakah-v2/choose-enter-go-esc-ends-vhwkor": "8.6.0",
@@ -2500,12 +2500,12 @@
   "text/career/world/world-scenes/w-a-s-d-to-kd3lyw": "9.2.0",
   "text/career/world/world-scenes/walk-up-to-the-masjid-hzq9f1": "9.2.0",
   "text/career/world/world-scenes/x-bmndle": "9.2.0",
-  "text/core/config/1-minute-15s-shot-clock-vxvaqm": "8.6.0",
+  "text/core/config/1-minute-689684": "9.6.3",
   "text/core/config/2-halves-a1h3r6": "8.6.0",
-  "text/core/config/2-minutes-24s-shot-clock-9wr7h6": "8.6.0",
-  "text/core/config/30-seconds-no-shot-clock-rlxuix": "8.6.0",
+  "text/core/config/2-minutes-mttyn8": "9.6.3",
+  "text/core/config/30-seconds-1eg71j": "9.6.3",
   "text/core/config/4-quarters-uml0ns": "8.6.0",
-  "text/core/config/45-seconds-no-shot-clock-wodq3p": "8.6.0",
+  "text/core/config/45-seconds-jo9xjn": "9.6.3",
   "text/core/config/easy-u0rvp7": "8.6.0",
   "text/core/config/first-to-21-xb6x3f": "8.6.0",
   "text/core/config/hard-s0816k": "8.6.0",
@@ -3651,7 +3651,6 @@
   "text/sim/v86-minis/1-shot-cra710": "8.6.0",
   "text/sim/v86-minis/20-seconds-tqcf6q": "8.6.0",
   "text/sim/v86-minis/3-shots-xa12c7": "8.6.0",
-  "text/sim/v86-minis/30-seconds-1eg71j": "8.6.0",
   "text/sim/v86-minis/5-shots-x1lkah": "8.6.0",
   "text/sim/v86-minis/7-up-w7t0qn": "8.6.0",
   "text/sim/v86-minis/a-turn-lasts-rqlyhe": "8.6.0",
@@ -3909,6 +3908,16 @@
   "trivia/99": "phase1"
  },
  "removed": {
+  "text/career/barakah-run/cpu-shot-clock-is-2-oiav4c": {
+   "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
+   "version": "9.6.3",
+   "was": "phase1"
+  },
+  "text/career/barakah-v2/both-teams-play-a-14-kqrutj": {
+   "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
+   "version": "9.6.3",
+   "was": "8.6.0"
+  },
   "text/career/career-screens/1v1-wins-vs-nasser-1vr8gp": {
    "reason": "v9.6.2: moved off the career hub (balances are chips, gym bests are on My Player > Records > Personal bests)",
    "version": "9.6.2",
@@ -3949,9 +3958,34 @@
    "version": "9.6.2",
    "was": "8.6.2"
   },
+  "text/core/config/1-minute-15s-shot-clock-vxvaqm": {
+   "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
+   "version": "9.6.3",
+   "was": "8.6.0"
+  },
+  "text/core/config/2-minutes-24s-shot-clock-9wr7h6": {
+   "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
+   "version": "9.6.3",
+   "was": "8.6.0"
+  },
+  "text/core/config/30-seconds-no-shot-clock-rlxuix": {
+   "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
+   "version": "9.6.3",
+   "was": "8.6.0"
+  },
+  "text/core/config/45-seconds-no-shot-clock-wodq3p": {
+   "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
+   "version": "9.6.3",
+   "was": "8.6.0"
+  },
   "text/screens/creator-suite/enter-edit-c-code-d-w617p3": {
    "reason": "v9.3: Duplicate moved from D to U; the hint text changed",
    "version": "9.3.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/30-seconds-1eg71j": {
+   "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
+   "version": "9.6.3",
    "was": "8.6.0"
   }
  }

@@ -172,7 +172,7 @@ function frontcourtSetup(team, play) {
   for (const p of T) { p.turbo = Math.min(100, p.turbo + 30); p.fat = Math.max(0, (p.fat || 0) - 0.35); }
   Object.assign(ball, { shot: null, pass: null, vx: 0, vy: 0, vz: 0 });
   M.possTeam = -1; giveBall(hm, 'inbound'); M.phase = 'live';
-  if (M.fmt.sc > 0) M.shotClock = Math.max(M.shotClock, 14);
+  if (M.fmt.sc > 0) M.shotClock = Math.max(M.shotClock, Math.min(SC_MIN_RESET, M.fmt.sc));
   M.play = play && play !== 'run' ? { kind: play, team, t0: M.time } : null;
   if (play && play !== 'run') FX.callout(PLAYS.find(x => x[0] === play)[1].toUpperCase(), '#ffd76a', 'SET PLAY');
   if (play === 'pnr' && mate && mate.human < 0) { const tgt = D[0]; mate.ai.plan = { type: 'screen', target: tgt, u: 1, t0: M.time, called: true, ctx: 'off' }; mate.ai.t = 2.2; }

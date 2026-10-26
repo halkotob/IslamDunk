@@ -4,7 +4,7 @@
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.6.2';
+const VERSION = '9.6.3';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -22,14 +22,17 @@ const RIM_Y = 140, RIM_R = 13, BALL_R = 8;
 const GRAV = 980, THREE_R = 318, APEX_T = 380 / GRAV;
 const JUMP_VY = 380;
 const HOOP_DEFS = [{ x: 72, z: 350, dir: 1 }, { x: 1248, z: 350, dir: -1 }];
-const SETTINGS = { difficulty: 'medium', rubber: true, format: 'halves', periodLen: 120,   // v8.6.5: the default game is 2 halves of 2:00 (shot clock 24, from SHOT_CLOCK_FOR[120])
+const SETTINGS = { difficulty: 'medium', rubber: true, format: 'halves', periodLen: 120,   // v8.6.5: the default game is 2 halves of 2:00
   sound: true, fun: { bigHead: false, uncle: false, lowGrav: false } };
-// ---- game format: periods, period length and the shot clock tied to it
+// ---- game format: periods and period length. v9.6.3: the shot clock is 14 seconds in every game and format (it was
+// tied to the period length: 24, 15 or none). Mini games keep their own (v86-minis.js); a few tools that aren't games
+// (the tutorial, Dunk Lab, King of the Court's pickup rules) pass sc: 0.
 const PERIOD_OPTS = [30, 45, 60, 120];
-const SHOT_CLOCK_FOR = { 30: 0, 45: 0, 60: 15, 120: 24 };      // 0 = no shot clock
+const SHOT_CLOCK = 14;
+const SC_MIN_RESET = 8;          // a side-out or a set play after a timeout keeps the clock, but never under 8 s (was 14 of 24)
 const FORMATS = ['quarters', 'halves', 'first21'];
 const FORMAT_TXT = { quarters: '4 Quarters', halves: '2 Halves', first21: 'First to 21' };
-function periodTxt(len) { return { 30: '30 seconds (no shot clock)', 45: '45 seconds (no shot clock)', 60: '1 minute (15s shot clock)', 120: '2 minutes (24s shot clock)' }[len]; }
+function periodTxt(len) { return { 30: '30 seconds', 45: '45 seconds', 60: '1 minute', 120: '2 minutes' }[len]; }   // v9.6.3: the shot clock is always 14 s
 
 const DIFF_ORDER = ['veryeasy', 'easy', 'medium', 'hard'];
 function diffName(d) { return { veryeasy: 'Very easy', easy: 'Easy', medium: 'Medium', hard: 'Hard' }[d] || d; }

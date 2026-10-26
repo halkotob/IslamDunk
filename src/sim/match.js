@@ -1,5 +1,5 @@
 // ========================================================= MATCH / RULES
-const M = { players: [], teams: null, hifzQueue: [], phase: 'tip', time: 0, possTeam: -1, shotClock: 24, clock: 120, quarter: 1, fmt: { format: 'halves', len: 120, sc: 24, periods: 2, ot: 60 } };
+const M = { players: [], teams: null, hifzQueue: [], phase: 'tip', time: 0, possTeam: -1, shotClock: SHOT_CLOCK, clock: 120, quarter: 1, fmt: { format: 'halves', len: 120, sc: SHOT_CLOCK, periods: 2, ot: 60 } };
 const cam = { x: 180 };
 
 function newMatch(tA, tB, opts = {}) {
@@ -32,10 +32,10 @@ function newMatch(tA, tB, opts = {}) {
 function makeFmt(opts) {
   // Practice (gym drills, mini games, the hub gym) keeps 4 quarters: it has no real periods. v9.0.1: career games follow
   // the Settings format like Quick Play (2 halves of 2:00 by default). Barakah Run and scenarios pass their own fmt.
-  const f = opts.fmt || (opts.attract ? { format: 'quarters', len: 60, sc: 24 } : opts.practice ? { format: 'quarters', len: SETTINGS.periodLen, target: SETTINGS.target }
+  const f = opts.fmt || (opts.attract ? { format: 'quarters', len: 60 } : opts.practice ? { format: 'quarters', len: SETTINGS.periodLen, target: SETTINGS.target }
     : { format: SETTINGS.format, len: SETTINGS.periodLen, target: SETTINGS.target });
   const first21 = f.format === 'first21', len = f.len || 120;
-  const sc = f.sc != null ? f.sc : first21 ? 0 : (SHOT_CLOCK_FOR[len] != null ? SHOT_CLOCK_FOR[len] : 24);
+  const sc = f.sc != null ? f.sc : SHOT_CLOCK;                       // v9.6.3: 14 s everywhere (first to 21 and short periods too)
   return { format: f.format, len, first21, target: clamp(f.target | 0 || 21, 3, 99), sc, periods: first21 ? 1 : f.format === 'halves' ? 2 : 4, ot: Math.max(30, len / 2), shortGame: !first21 && len <= 45 };
 }
 function scReset() { return M.fmt && M.fmt.sc > 0 ? M.fmt.sc : 99; }

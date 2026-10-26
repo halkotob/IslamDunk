@@ -33,7 +33,7 @@ function kotcNext() {
 function kotcBuild(ids, humans) {
   const tA = Object.assign({}, KOTC_KIT[0], { players: [castPlayer(ids[0])] }), tB = Object.assign({}, KOTC_KIT[1], { players: [castPlayer(ids[1])] });
   KOTC.building = true;
-  try { newMatch(tA, tB, { humans, fmt: { format: 'first21', target: KOTC_TO }, venue: kotcVenue() }); } finally { KOTC.building = false; }   // (resets M.kotc, set again below)
+  try { newMatch(tA, tB, { humans, fmt: { format: 'first21', target: KOTC_TO, sc: 0 }, venue: kotcVenue() }); } finally { KOTC.building = false; }   // (resets M.kotc, set again below)
   M.kotc = true; M.halfCourt = true; M.mustClear = [false, false]; M.online = !!KOTC.online; M.kotcIds = ids;
   for (const q of M.players) q.hifzUsed = true;
 }

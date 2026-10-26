@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.6.2';
+const VERSION = '9.6.3';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -90,14 +90,17 @@ const RIM_Y = 140, RIM_R = 13, BALL_R = 8;
 const GRAV = 980, THREE_R = 318, APEX_T = 380 / GRAV;
 const JUMP_VY = 380;
 const HOOP_DEFS = [{ x: 72, z: 350, dir: 1 }, { x: 1248, z: 350, dir: -1 }];
-const SETTINGS = { difficulty: 'medium', rubber: true, format: 'halves', periodLen: 120,   // v8.6.5: the default game is 2 halves of 2:00 (shot clock 24, from SHOT_CLOCK_FOR[120])
+const SETTINGS = { difficulty: 'medium', rubber: true, format: 'halves', periodLen: 120,   // v8.6.5: the default game is 2 halves of 2:00
   sound: true, fun: { bigHead: false, uncle: false, lowGrav: false } };
-// ---- game format: periods, period length and the shot clock tied to it
+// ---- game format: periods and period length. v9.6.3: the shot clock is 14 seconds in every game and format (it was
+// tied to the period length: 24, 15 or none). Mini games keep their own (v86-minis.js); a few tools that aren't games
+// (the tutorial, Dunk Lab, King of the Court's pickup rules) pass sc: 0.
 const PERIOD_OPTS = [30, 45, 60, 120];
-const SHOT_CLOCK_FOR = { 30: 0, 45: 0, 60: 15, 120: 24 };      // 0 = no shot clock
+const SHOT_CLOCK = 14;
+const SC_MIN_RESET = 8;          // a side-out or a set play after a timeout keeps the clock, but never under 8 s (was 14 of 24)
 const FORMATS = ['quarters', 'halves', 'first21'];
 const FORMAT_TXT = { quarters: '4 Quarters', halves: '2 Halves', first21: 'First to 21' };
-function periodTxt(len) { return { 30: '30 seconds (no shot clock)', 45: '45 seconds (no shot clock)', 60: '1 minute (15s shot clock)', 120: '2 minutes (24s shot clock)' }[len]; }
+function periodTxt(len) { return { 30: '30 seconds', 45: '45 seconds', 60: '1 minute', 120: '2 minutes' }[len]; }   // v9.6.3: the shot clock is always 14 s
 
 const DIFF_ORDER = ['veryeasy', 'easy', 'medium', 'hard'];
 function diffName(d) { return { veryeasy: 'Very easy', easy: 'Easy', medium: 'Medium', hard: 'Hard' }[d] || d; }
@@ -1524,6 +1527,10 @@ function perceive(o, cfg) {
   return { x: s.x + s.vx * lag * cfg.antic, z: s.z + s.vz * lag * cfg.antic, vx: s.vx, vz: s.vz, state: o.state };
 }
 
+// v9.6.3: the CPU's shot clock sense. Its shot bar and dribbling were tuned on a 24 s clock; cpuSc24 maps the time left
+// on any clock onto that scale (99 = no clock stays 99). Measured with tools/cpu-clock-report.mjs (see CHANGELOG 9.6.3).
+const CPU_SC = { patient: 16, floor: 4, hold: 0.04, probe: 1 };
+function cpuSc24(sc) { const F = M.fmt && M.fmt.sc > 0 ? M.fmt.sc : 0; return !F || sc >= 90 ? sc : sc * 24 / F; }
 class Brain {
   constructor(p) { this.p = p; this.t = rand(0, 0.2); this.plan = { type: 'idle', ctx: '' }; this.request = null; this.jumpAt = -1; this.relT = APEX_T; this.jukeCd = 0; }
   cfg() { return aiCfg(this.p.team); }
@@ -1584,8 +1591,10 @@ class Brain {
       const r = this.request; this.request = null;
       if (r.to.state !== 'down') { this.plan = { type: r.type === 'alley' && autoAlleyOK(r.to) ? 'alley' : 'pass', to: r.to }; return; }
     }
-    // Required expected points to take a shot: high early, drops as the shot clock dies.
-    const need = Math.max(0, (sc > 16 ? 0.95 : sc > 4 ? 0.35 + (sc - 4) / 12 * 0.6 : 0) - p.holdT * 0.04);
+    // Required expected points to take a shot: high early, drops as the shot clock dies. v9.6.3: the curve was written
+    // for 24 s; it now runs on the clock's own scale (CPU_SC: a 14 s clock is read as 24 s worth of possession).
+    const s24 = cpuSc24(sc);
+    const need = Math.max(0, (s24 > CPU_SC.patient ? 0.95 : s24 > CPU_SC.floor ? 0.35 + (s24 - CPU_SC.floor) / (CPU_SC.patient - CPU_SC.floor) * 0.6 : 0) - p.holdT * CPU_SC.hold);
     const opts = [];
     // 1) SHOOT: expected points from distance, defender proximity and shooting stat
     const pts = isThree(p.x, p.z, h) ? 3 : 2;
@@ -1594,7 +1603,7 @@ class Brain {
     const lane = laneOpen(p, h), laneF = clamp((lane - 18) / 70, 0, 1), pD = dunkEstimate(p) * laneF;
     const range = (p.turbo > 8 || p.fire) ? 245 + p.st.dnk * 3 : 115 + p.st.dnk * 3;
     if (d < range && (p.x - h.x) * h.dir > 5) opts.push({ type: 'dunk', u: 2 * pD - need * 0.5 + 0.25 });
-    else opts.push({ type: 'drive', u: 2 * pD * 0.8 * clamp(1 - (d - range) / 700, 0.2, 1) + (p.st.dnk - 5) * 0.03 - 0.25 + (sc < 5 ? 0.2 : 0) });
+    else opts.push({ type: 'drive', u: 2 * pD * 0.8 * clamp(1 - (d - range) / 700, 0.2, 1) + (p.st.dnk - 5) * 0.03 - 0.25 + (s24 < 5 ? 0.2 : 0) });
     // 3) PASS: teammate's shot value minus interception risk; ALLEY-OOP for a cutting teammate
     if (mate && mate.state !== 'down' && mate.state !== 'dunk') {
       const risk = passRisk(p, mate);
@@ -1608,7 +1617,7 @@ class Brain {
       }
     }
     // 4) PROBE: dribble to a better spot and try to shake the defender
-    opts.push({ type: 'probe', u: 0.25 * clamp(sc / 24, 0, 1) + 0.05, target: this.bestSpot(true) });
+    opts.push({ type: 'probe', u: 0.25 * clamp(s24 / 24, 0, 1) * CPU_SC.probe + 0.05, target: this.bestSpot(true) });
     this.plan = this.choose(opts);
   }
   // Best open spot on the floor for this player (spacing + shot value - travel)
@@ -1642,7 +1651,7 @@ class Brain {
     // SCREEN: body up the handler's defender when he is pressured
     if (bo) {
       const hd = nearestOpp(bo);
-      if (hd && dxz(hd, bo) < 50 && dxz(p, bo) < 340 && M.shotClock > 5) opts.push({ type: 'screen', target: hd, u: 0.55 + rand(0, 0.35), t0: M.time });
+      if (hd && dxz(hd, bo) < 50 && dxz(p, bo) < 340 && cpuSc24(M.shotClock) > 5) opts.push({ type: 'screen', target: hd, u: 0.55 + rand(0, 0.35), t0: M.time });
     }
     this.plan = opts.length ? this.choose(opts) : { type: 'idle' };
   }
@@ -1831,7 +1840,7 @@ function notifyDunk(dk) {
 }
 
 // ========================================================= MATCH / RULES
-const M = { players: [], teams: null, hifzQueue: [], phase: 'tip', time: 0, possTeam: -1, shotClock: 24, clock: 120, quarter: 1, fmt: { format: 'halves', len: 120, sc: 24, periods: 2, ot: 60 } };
+const M = { players: [], teams: null, hifzQueue: [], phase: 'tip', time: 0, possTeam: -1, shotClock: SHOT_CLOCK, clock: 120, quarter: 1, fmt: { format: 'halves', len: 120, sc: SHOT_CLOCK, periods: 2, ot: 60 } };
 const cam = { x: 180 };
 
 function newMatch(tA, tB, opts = {}) {
@@ -1864,10 +1873,10 @@ function newMatch(tA, tB, opts = {}) {
 function makeFmt(opts) {
   // Practice (gym drills, mini games, the hub gym) keeps 4 quarters: it has no real periods. v9.0.1: career games follow
   // the Settings format like Quick Play (2 halves of 2:00 by default). Barakah Run and scenarios pass their own fmt.
-  const f = opts.fmt || (opts.attract ? { format: 'quarters', len: 60, sc: 24 } : opts.practice ? { format: 'quarters', len: SETTINGS.periodLen, target: SETTINGS.target }
+  const f = opts.fmt || (opts.attract ? { format: 'quarters', len: 60 } : opts.practice ? { format: 'quarters', len: SETTINGS.periodLen, target: SETTINGS.target }
     : { format: SETTINGS.format, len: SETTINGS.periodLen, target: SETTINGS.target });
   const first21 = f.format === 'first21', len = f.len || 120;
-  const sc = f.sc != null ? f.sc : first21 ? 0 : (SHOT_CLOCK_FOR[len] != null ? SHOT_CLOCK_FOR[len] : 24);
+  const sc = f.sc != null ? f.sc : SHOT_CLOCK;                       // v9.6.3: 14 s everywhere (first to 21 and short periods too)
   return { format: f.format, len, first21, target: clamp(f.target | 0 || 21, 3, 99), sc, periods: first21 ? 1 : f.format === 'halves' ? 2 : 4, ot: Math.max(30, len / 2), shortGame: !first21 && len <= 45 };
 }
 function scReset() { return M.fmt && M.fmt.sc > 0 ? M.fmt.sc : 99; }
@@ -10555,7 +10564,7 @@ function sideOut(victim, title, sub) {
   if (ball.owner) { const o = ball.owner; ball.owner = null; o.move = null; }
   ball.state = 'loose'; ball.shot = null; ball.pass = null; ball.vx = ball.vz = 0; ball.vy = 0; ball.grabLock = 5;
   for (const q of M.players) { q.mv = null; q.postUp = null; q.passHold = null; }
-  M.sideOut = { team: victim.team, p: victim, x: victim.x, z: victim.z, sc: Math.max(M.shotClock, 14) };
+  M.sideOut = { team: victim.team, p: victim, x: victim.x, z: victim.z, sc: Math.max(M.shotClock, Math.min(SC_MIN_RESET, M.fmt.sc || SC_MIN_RESET)) };
   M.phase = 'dead'; M.deadT = 0.9; M.nextInbound = victim.team;
 }
 function nonShootingFoul(by, victim, title) {
@@ -11108,7 +11117,7 @@ function frontcourtSetup(team, play) {
   for (const p of T) { p.turbo = Math.min(100, p.turbo + 30); p.fat = Math.max(0, (p.fat || 0) - 0.35); }
   Object.assign(ball, { shot: null, pass: null, vx: 0, vy: 0, vz: 0 });
   M.possTeam = -1; giveBall(hm, 'inbound'); M.phase = 'live';
-  if (M.fmt.sc > 0) M.shotClock = Math.max(M.shotClock, 14);
+  if (M.fmt.sc > 0) M.shotClock = Math.max(M.shotClock, Math.min(SC_MIN_RESET, M.fmt.sc));
   M.play = play && play !== 'run' ? { kind: play, team, t0: M.time } : null;
   if (play && play !== 'run') FX.callout(PLAYS.find(x => x[0] === play)[1].toUpperCase(), '#ffd76a', 'SET PLAY');
   if (play === 'pnr' && mate && mate.human < 0) { const tgt = D[0]; mate.ai.plan = { type: 'screen', target: tgt, u: 1, t0: M.time, called: true, ctx: 'off' }; mate.ai.t = 2.2; }
@@ -11710,7 +11719,7 @@ function startScenario() {
   const S = Game.scen || (Game.scen = scenarioOf(dailyKey()));
   Game.paused = false; Game.trivia = null; Game.finalTab = 0;
   const base = VENUE_LIST.find(v => v.id === S.vid) || VENUE_LIST[0], venue = makeVenue(base, { time: 'night' });
-  newMatch(TEAMS[S.a], TEAMS[S.b], { humans: [{ team: 0, slot: S.slot, pad: 0 }], aiCfg: [diffAt(1.0), diffAt(S.L)], venue, fmt: { format: 'quarters', len: 120, sc: 24 }, fun: null });
+  newMatch(TEAMS[S.a], TEAMS[S.b], { humans: [{ team: 0, slot: S.slot, pad: 0 }], aiCfg: [diffAt(1.0), diffAt(S.L)], venue, fmt: { format: 'quarters', len: 120 }, fun: null });
   M.quarter = 4; M.clock = S.time; M.teams[0].score = S.us; M.teams[1].score = S.them;
   M.teams[0].qs = [Math.floor(S.us / 3), Math.floor(S.us / 3), S.us - 2 * Math.floor(S.us / 3)]; M.teams[1].qs = [Math.floor(S.them / 3), Math.floor(S.them / 3), S.them - 2 * Math.floor(S.them / 3)];
   M.teamFouls = [3, 4]; M.timeouts = [1, 1];
@@ -11877,7 +11886,7 @@ const RUN_POWERS = [
   { id:'fire', name:'Keep It Warm', desc:'Earned on-fire time drains 15% slower per rank.', max:3 },
   { id:'sig', name:'Practice Pays', desc:'Signature cooldown recovers 15% faster per rank.', max:3 },
   { id:'greenPoint', name:'Pure Reward', desc:'A made green jumper earns one extra point.', max:1 },
-  { id:'clock', name:'Set the Pace', desc:'CPU shot clock is 2 seconds shorter per rank (min 12).', max:3 },
+  { id:'clock', name:'Set the Pace', desc:'CPU shot clock is 2 seconds shorter per rank (14 s at the start, min 8).', max:3 },
   { id:'shield', name:'One More Chance', desc:'Cancel the next CPU field goal. Once per run.', max:1 }
 ];
 const RUN_BADGES = [
@@ -12076,9 +12085,10 @@ for(const a of [
     if(p.cd.sig>0)p.cd.sig=Math.max(0,p.cd.sig-.15*runRank('sig')*dt);
   };
   const originalInbound=inbound;
-  inbound=function(team){originalInbound(team);if(M.barakah&&team===1)M.shotClock=Math.max(12,20-2*runRank('clock'));};
+  const cpuClock=()=>Math.max(8,(M.fmt.sc>0?M.fmt.sc:SHOT_CLOCK)-2*runRank('clock'));   // v9.6.3: from the 14 s clock (or Fast Break's 10), min 8
+  inbound=function(team){originalInbound(team);if(M.barakah&&team===1&&M.fmt.sc>0)M.shotClock=Math.min(M.shotClock,cpuClock());};
   const originalGive=giveBall;
-  giveBall=function(p,how){const change=M.possTeam!==p.team;originalGive(p,how);if(change&&M.barakah&&p.team===1)M.shotClock=Math.max(12,20-2*runRank('clock'));};
+  giveBall=function(p,how){const change=M.possTeam!==p.team;originalGive(p,how);if(change&&M.barakah&&p.team===1&&M.fmt.sc>0)M.shotClock=Math.min(M.shotClock,cpuClock());};
   const originalScore=onScore;
   onScore=function(h){
     if(!M.barakah||!Run.active||M.phase==='ft')return originalScore(h);
@@ -14421,7 +14431,7 @@ function watchdog(dt) {
     const p = T.slice().sort((a, b) => Math.hypot(a.x - sx, a.z - sz) - Math.hypot(b.x - sx, b.z - sz))[0];
     Object.assign(ball, { x: sx, y: 40, z: sz, vx: 0, vy: 0, vz: 0, state: 'loose', shot: null, pass: null, grabLock: 0 });
     FX.callout('OUT OF BOUNDS', '#ffffff', M.teamDefs[team].name.toUpperCase() + ' BALL');
-    M.sideOut = { team, p, x: sx, z: sz, sc: Math.max(M.shotClock, 14) };
+    M.sideOut = { team, p, x: sx, z: sz, sc: Math.max(M.shotClock, Math.min(SC_MIN_RESET, M.fmt.sc || SC_MIN_RESET)) };
     M.phase = 'dead'; M.deadT = 0.9; M.nextInbound = team;
     return;
   }
@@ -14785,7 +14795,7 @@ function kotcNext() {
 function kotcBuild(ids, humans) {
   const tA = Object.assign({}, KOTC_KIT[0], { players: [castPlayer(ids[0])] }), tB = Object.assign({}, KOTC_KIT[1], { players: [castPlayer(ids[1])] });
   KOTC.building = true;
-  try { newMatch(tA, tB, { humans, fmt: { format: 'first21', target: KOTC_TO }, venue: kotcVenue() }); } finally { KOTC.building = false; }   // (resets M.kotc, set again below)
+  try { newMatch(tA, tB, { humans, fmt: { format: 'first21', target: KOTC_TO, sc: 0 }, venue: kotcVenue() }); } finally { KOTC.building = false; }   // (resets M.kotc, set again below)
   M.kotc = true; M.halfCourt = true; M.mustClear = [false, false]; M.online = !!KOTC.online; M.kotcIds = ids;
   for (const q of M.players) q.hifzUsed = true;
 }
@@ -15897,7 +15907,7 @@ function tutPlace(o) {
 }
 function startTutorial() {
   goTitle(); Game.paused = false; Game.trivia = null;
-  newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'first21', target: 99, len: 120 } });
+  newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'first21', target: 99, len: 120, sc: 0 } });
   for (const q of M.players) q.hifzUsed = true;                        // no Noor questions in the middle of a lesson
   M.introT = 0; Game.screen = 'play'; TUT.on = true; tutGo(0);
 }
@@ -16234,7 +16244,7 @@ function profileUpdate() {
 const RUN_STOPS = 9;
 const RUN_VOWS = [
   { id: 'none', name: 'No vow', desc: 'The run as it comes.' },
-  { id: 'pace', name: 'Fast Break', desc: 'Both teams play a 14-second shot clock. Every win pays 20 extra XP.' },
+  { id: 'pace', name: 'Fast Break', desc: 'Both teams play a 10-second shot clock. Every win pays 20 extra XP.' },
   { id: 'focus', name: 'Quiet Focus, Loud Gym', desc: 'Your green window is 20% bigger, but the CPU defends a step tighter.' },
   { id: 'iron', name: 'Iron Lungs', desc: 'Your team’s stamina comes back much faster, but every opponent starts up 4.' }
 ];
@@ -16278,7 +16288,7 @@ function runApplyNode() {
     FX.callout(n === 'boss' ? 'THE CHAMPIONS' : 'ELITE RIVAL', n === 'boss' ? '#ffd76a' : '#ff9a8a', n === 'boss' ? 'THE FINAL OF YOUR RUN' : 'WIN FOR TWO UPGRADES', true);
   }
   const v = Run.vow;
-  if (v === 'pace') { M.fmt.sc = 14; M.shotClock = 14; }
+  if (v === 'pace') { M.fmt.sc = 10; M.shotClock = 10; }   // v9.6.3: 14 s is everyone's clock now; Fast Break is 10
   if (v === 'focus') M.aiCfg[1] = Object.assign({}, M.aiCfg[1], { contest: Math.max(0, M.aiCfg[1].contest - 0.04), antic: Math.min(1, M.aiCfg[1].antic + 0.2) });
   if (v === 'iron') M.teams[1].score = 4;
 }
@@ -20079,7 +20089,7 @@ function dlDunk() {
 }
 function startDunkLab() {
   goTitle(); Game.paused = false; Game.trivia = null;
-  newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'first21', target: 99, len: 120 } });
+  newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'first21', target: 99, len: 120, sc: 0 } });
   for (const q of M.players) q.hifzUsed = true;
   M.introT = 0; Game.screen = 'play'; DL.on = true; DL.slow = false; DL.n = 0; DL.prev = {}; M.cmdHook = dlCmd; dlReset();
 }

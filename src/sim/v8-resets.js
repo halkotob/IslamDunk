@@ -149,7 +149,7 @@ function watchdog(dt) {
     const p = T.slice().sort((a, b) => Math.hypot(a.x - sx, a.z - sz) - Math.hypot(b.x - sx, b.z - sz))[0];
     Object.assign(ball, { x: sx, y: 40, z: sz, vx: 0, vy: 0, vz: 0, state: 'loose', shot: null, pass: null, grabLock: 0 });
     FX.callout('OUT OF BOUNDS', '#ffffff', M.teamDefs[team].name.toUpperCase() + ' BALL');
-    M.sideOut = { team, p, x: sx, z: sz, sc: Math.max(M.shotClock, 14) };
+    M.sideOut = { team, p, x: sx, z: sz, sc: Math.max(M.shotClock, Math.min(SC_MIN_RESET, M.fmt.sc || SC_MIN_RESET)) };
     M.phase = 'dead'; M.deadT = 0.9; M.nextInbound = team;
     return;
   }

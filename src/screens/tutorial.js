@@ -38,7 +38,7 @@ function tutPlace(o) {
 }
 function startTutorial() {
   goTitle(); Game.paused = false; Game.trivia = null;
-  newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'first21', target: 99, len: 120 } });
+  newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'first21', target: 99, len: 120, sc: 0 } });
   for (const q of M.players) q.hifzUsed = true;                        // no Noor questions in the middle of a lesson
   M.introT = 0; Game.screen = 'play'; TUT.on = true; tutGo(0);
 }

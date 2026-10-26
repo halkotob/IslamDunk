@@ -15,7 +15,7 @@ function sideOut(victim, title, sub) {
   if (ball.owner) { const o = ball.owner; ball.owner = null; o.move = null; }
   ball.state = 'loose'; ball.shot = null; ball.pass = null; ball.vx = ball.vz = 0; ball.vy = 0; ball.grabLock = 5;
   for (const q of M.players) { q.mv = null; q.postUp = null; q.passHold = null; }
-  M.sideOut = { team: victim.team, p: victim, x: victim.x, z: victim.z, sc: Math.max(M.shotClock, 14) };
+  M.sideOut = { team: victim.team, p: victim, x: victim.x, z: victim.z, sc: Math.max(M.shotClock, Math.min(SC_MIN_RESET, M.fmt.sc || SC_MIN_RESET)) };
   M.phase = 'dead'; M.deadT = 0.9; M.nextInbound = victim.team;
 }
 function nonShootingFoul(by, victim, title) {

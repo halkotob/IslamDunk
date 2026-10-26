@@ -18,7 +18,7 @@ const RUN_POWERS = [
   { id:'fire', name:'Keep It Warm', desc:'Earned on-fire time drains 15% slower per rank.', max:3 },
   { id:'sig', name:'Practice Pays', desc:'Signature cooldown recovers 15% faster per rank.', max:3 },
   { id:'greenPoint', name:'Pure Reward', desc:'A made green jumper earns one extra point.', max:1 },
-  { id:'clock', name:'Set the Pace', desc:'CPU shot clock is 2 seconds shorter per rank (min 12).', max:3 },
+  { id:'clock', name:'Set the Pace', desc:'CPU shot clock is 2 seconds shorter per rank (14 s at the start, min 8).', max:3 },
   { id:'shield', name:'One More Chance', desc:'Cancel the next CPU field goal. Once per run.', max:1 }
 ];
 const RUN_BADGES = [
@@ -217,9 +217,10 @@ for(const a of [
     if(p.cd.sig>0)p.cd.sig=Math.max(0,p.cd.sig-.15*runRank('sig')*dt);
   };
   const originalInbound=inbound;
-  inbound=function(team){originalInbound(team);if(M.barakah&&team===1)M.shotClock=Math.max(12,20-2*runRank('clock'));};
+  const cpuClock=()=>Math.max(8,(M.fmt.sc>0?M.fmt.sc:SHOT_CLOCK)-2*runRank('clock'));   // v9.6.3: from the 14 s clock (or Fast Break's 10), min 8
+  inbound=function(team){originalInbound(team);if(M.barakah&&team===1&&M.fmt.sc>0)M.shotClock=Math.min(M.shotClock,cpuClock());};
   const originalGive=giveBall;
-  giveBall=function(p,how){const change=M.possTeam!==p.team;originalGive(p,how);if(change&&M.barakah&&p.team===1)M.shotClock=Math.max(12,20-2*runRank('clock'));};
+  giveBall=function(p,how){const change=M.possTeam!==p.team;originalGive(p,how);if(change&&M.barakah&&p.team===1&&M.fmt.sc>0)M.shotClock=Math.min(M.shotClock,cpuClock());};
   const originalScore=onScore;
   onScore=function(h){
     if(!M.barakah||!Run.active||M.phase==='ft')return originalScore(h);

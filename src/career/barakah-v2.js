@@ -11,7 +11,7 @@
 const RUN_STOPS = 9;
 const RUN_VOWS = [
   { id: 'none', name: 'No vow', desc: 'The run as it comes.' },
-  { id: 'pace', name: 'Fast Break', desc: 'Both teams play a 14-second shot clock. Every win pays 20 extra XP.' },
+  { id: 'pace', name: 'Fast Break', desc: 'Both teams play a 10-second shot clock. Every win pays 20 extra XP.' },
   { id: 'focus', name: 'Quiet Focus, Loud Gym', desc: 'Your green window is 20% bigger, but the CPU defends a step tighter.' },
   { id: 'iron', name: 'Iron Lungs', desc: 'Your team’s stamina comes back much faster, but every opponent starts up 4.' }
 ];
@@ -55,7 +55,7 @@ function runApplyNode() {
     FX.callout(n === 'boss' ? 'THE CHAMPIONS' : 'ELITE RIVAL', n === 'boss' ? '#ffd76a' : '#ff9a8a', n === 'boss' ? 'THE FINAL OF YOUR RUN' : 'WIN FOR TWO UPGRADES', true);
   }
   const v = Run.vow;
-  if (v === 'pace') { M.fmt.sc = 14; M.shotClock = 14; }
+  if (v === 'pace') { M.fmt.sc = 10; M.shotClock = 10; }   // v9.6.3: 14 s is everyone's clock now; Fast Break is 10
   if (v === 'focus') M.aiCfg[1] = Object.assign({}, M.aiCfg[1], { contest: Math.max(0, M.aiCfg[1].contest - 0.04), antic: Math.min(1, M.aiCfg[1].antic + 0.2) });
   if (v === 'iron') M.teams[1].score = 4;
 }

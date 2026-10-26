@@ -60,6 +60,10 @@ function perceive(o, cfg) {
   return { x: s.x + s.vx * lag * cfg.antic, z: s.z + s.vz * lag * cfg.antic, vx: s.vx, vz: s.vz, state: o.state };
 }
 
+// v9.6.3: the CPU's shot clock sense. Its shot bar and dribbling were tuned on a 24 s clock; cpuSc24 maps the time left
+// on any clock onto that scale (99 = no clock stays 99). Measured with tools/cpu-clock-report.mjs (see CHANGELOG 9.6.3).
+const CPU_SC = { patient: 16, floor: 4, hold: 0.04, probe: 1 };
+function cpuSc24(sc) { const F = M.fmt && M.fmt.sc > 0 ? M.fmt.sc : 0; return !F || sc >= 90 ? sc : sc * 24 / F; }
 class Brain {
   constructor(p) { this.p = p; this.t = rand(0, 0.2); this.plan = { type: 'idle', ctx: '' }; this.request = null; this.jumpAt = -1; this.relT = APEX_T; this.jukeCd = 0; }
   cfg() { return aiCfg(this.p.team); }
@@ -120,8 +124,10 @@ class Brain {
       const r = this.request; this.request = null;
       if (r.to.state !== 'down') { this.plan = { type: r.type === 'alley' && autoAlleyOK(r.to) ? 'alley' : 'pass', to: r.to }; return; }
     }
-    // Required expected points to take a shot: high early, drops as the shot clock dies.
-    const need = Math.max(0, (sc > 16 ? 0.95 : sc > 4 ? 0.35 + (sc - 4) / 12 * 0.6 : 0) - p.holdT * 0.04);
+    // Required expected points to take a shot: high early, drops as the shot clock dies. v9.6.3: the curve was written
+    // for 24 s; it now runs on the clock's own scale (CPU_SC: a 14 s clock is read as 24 s worth of possession).
+    const s24 = cpuSc24(sc);
+    const need = Math.max(0, (s24 > CPU_SC.patient ? 0.95 : s24 > CPU_SC.floor ? 0.35 + (s24 - CPU_SC.floor) / (CPU_SC.patient - CPU_SC.floor) * 0.6 : 0) - p.holdT * CPU_SC.hold);
     const opts = [];
     // 1) SHOOT: expected points from distance, defender proximity and shooting stat
     const pts = isThree(p.x, p.z, h) ? 3 : 2;
@@ -130,7 +136,7 @@ class Brain {
     const lane = laneOpen(p, h), laneF = clamp((lane - 18) / 70, 0, 1), pD = dunkEstimate(p) * laneF;
     const range = (p.turbo > 8 || p.fire) ? 245 + p.st.dnk * 3 : 115 + p.st.dnk * 3;
     if (d < range && (p.x - h.x) * h.dir > 5) opts.push({ type: 'dunk', u: 2 * pD - need * 0.5 + 0.25 });
-    else opts.push({ type: 'drive', u: 2 * pD * 0.8 * clamp(1 - (d - range) / 700, 0.2, 1) + (p.st.dnk - 5) * 0.03 - 0.25 + (sc < 5 ? 0.2 : 0) });
+    else opts.push({ type: 'drive', u: 2 * pD * 0.8 * clamp(1 - (d - range) / 700, 0.2, 1) + (p.st.dnk - 5) * 0.03 - 0.25 + (s24 < 5 ? 0.2 : 0) });
     // 3) PASS: teammate's shot value minus interception risk; ALLEY-OOP for a cutting teammate
     if (mate && mate.state !== 'down' && mate.state !== 'dunk') {
       const risk = passRisk(p, mate);
@@ -144,7 +150,7 @@ class Brain {
       }
     }
     // 4) PROBE: dribble to a better spot and try to shake the defender
-    opts.push({ type: 'probe', u: 0.25 * clamp(sc / 24, 0, 1) + 0.05, target: this.bestSpot(true) });
+    opts.push({ type: 'probe', u: 0.25 * clamp(s24 / 24, 0, 1) * CPU_SC.probe + 0.05, target: this.bestSpot(true) });
     this.plan = this.choose(opts);
   }
   // Best open spot on the floor for this player (spacing + shot value - travel)
@@ -178,7 +184,7 @@ class Brain {
     // SCREEN: body up the handler's defender when he is pressured
     if (bo) {
       const hd = nearestOpp(bo);
-      if (hd && dxz(hd, bo) < 50 && dxz(p, bo) < 340 && M.shotClock > 5) opts.push({ type: 'screen', target: hd, u: 0.55 + rand(0, 0.35), t0: M.time });
+      if (hd && dxz(hd, bo) < 50 && dxz(p, bo) < 340 && cpuSc24(M.shotClock) > 5) opts.push({ type: 'screen', target: hd, u: 0.55 + rand(0, 0.35), t0: M.time });
     }
     this.plan = opts.length ? this.choose(opts) : { type: 'idle' };
   }

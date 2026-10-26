@@ -56,6 +56,9 @@
 //   world-save   v9.2 save in every scene and time of day, reload, same place; the hub comes back; old saves start at home
 //   world-visual v9.2 visual regression: every view x time of day x 3 sizes against docs/review/img/world-*.png
 //   world-pad    v9.2 the stick walks, A talks, B leaves, Start opens the menu
+//   shot-clock   v9.6.3: 14 s in every format and period length (first to 21 too), the title demo and career; a violation
+//                turns the ball over; resets on a steal and a rebound; side-outs keep at least 8; Barakah Run texts; the
+//                online guest shows the host's clock
 //   formats      v8.6.5: the default game is 2 halves of 2:00 (label, halftime, end, shot clock, overtime); career and
 //                practice keeps 4 quarters (v9.0.1: career follows the Settings format); explicit formats and a picked 4 quarters are unchanged
 //   career-format v9.0.1: career games follow Settings: the default is 2 halves (1ST HALF, one halftime, ends, same rewards as
@@ -172,6 +175,50 @@ T['cpu-parity'] = async ({ browser, base }) => {
   const b = await run(base + '/ref/');
   const same = JSON.stringify(a.out) === JSON.stringify(b.out) && !b.errs.length;
   return { ok: same, detail: same ? lines.concat(`identical to reference across ${a.out.length} seeded games (scores + full box scores)`) : ['DIFFERS from reference', ...lines, '--- ref', ...b.out.map(r => `${r.label}: ${r.score} (${r.steps})`), ...b.errs] };
+};
+
+// v9.6.3: the 14-second shot clock, everywhere
+T['shot-clock'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'shot-clock');
+  const r = await p.evaluate(() => {
+    const out = {};
+    // every format and period length, the default game, the title demo, scenarios, career, online lobby defaults
+    const fm = []; for (const format of ['quarters', 'halves', 'first21']) for (const len of [30, 45, 60, 120]) { newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format, len } }); fm.push(format + len + ':' + M.fmt.sc + '/' + Math.round(M.shotClock)); }
+    out.formats = fm;
+    for (const len of PERIOD_OPTS) { SETTINGS.periodLen = len; newMatch(TEAMS[0], TEAMS[1], { humans: [] }); fm.push('settings' + len + ':' + M.fmt.sc); } SETTINGS.periodLen = 120;
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], attract: true }); out.attract = M.fmt.sc;
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], career: true }); out.career = M.fmt.sc;
+    out.periodTxt = PERIOD_OPTS.map(periodTxt).join('|');
+    out.noClock = { practice: (newMatch(TEAMS[0], TEAMS[1], { humans: [], practice: 'ft' }), M.practice ? 'practice' : '?'), kotc: makeFmt({ fmt: { format: 'first21', target: 3, sc: 0 } }).sc };
+    // a violation turns the ball over
+    const live = () => { newMatch(TEAMS[0], TEAMS[1], { humans: [] }); for (let i = 0; i < 600 && M.phase !== 'live'; i++) updateMatch(STEP); const a = M.players[0]; M.phase = 'live'; ball.shot = null; ball.pass = null; M.possTeam = -1; giveBall(a, 'inbound'); a.state = 'free'; return a; };
+    { const a = live(), sc0 = M.shotClock, t0 = a.stats.tov || 0; M.shotClock = 0.02; for (const q of M.players) q.ai.t = 9;
+      let n = 0; for (; n < 60 * 4 && !(ball.owner && ball.owner.team === 1 && M.phase === 'live'); n++) updateMatch(STEP);
+      out.violation = { startedAt: sc0, ballTo: ball.owner ? ball.owner.team : null, tov: (a.stats.tov || 0) - t0, newClock: Math.round(M.shotClock) }; }
+    // resets: a change of possession (steal) and a rebound off the rim (offensive)
+    { const a = live(); M.shotClock = 5; const b = M.players.find(q => q.team === 1); giveBall(b, 'steal'); out.resetSteal = M.shotClock;
+      const c = live(); M.shotClock = 3; ball.shot = { hoop: attackHoop(c.team), team: c.team, pts: 2, shooter: c }; ball.owner = null; ball.state = 'loose';
+      giveBall(c.mate, 'reb'); out.resetReb = M.shotClock; }
+    // a side-out keeps the clock, but never under 8
+    { live(); M.shotClock = 3; const sc = Math.max(M.shotClock, Math.min(SC_MIN_RESET, M.fmt.sc || SC_MIN_RESET)); out.sideOutMin = sc; }
+    // Barakah Run: Fast Break is 10 s for both teams; Set the Pace: 14 - 2 per rank, min 8
+    { const vows = (typeof RUN_VOWS !== 'undefined' ? RUN_VOWS : []).map(v => v.desc).join('|'); out.fastBreakText = /10-second/.test(vows);
+      out.paceText = RUN_POWERS.map(u => u.desc || '').join('|').includes('min 8');
+      const pace = rank => { const keep = [Run.active, Run.upgrades]; live(); Run.active = true; Run.upgrades = { clock: rank }; M.barakah = true; M.possTeam = 0; giveBall(M.players.find(q => q.team === 1), 'steal'); const v = Math.round(M.shotClock); M.barakah = false; [Run.active, Run.upgrades] = keep; return v; };
+      out.pace = [0, 1, 2, 3].map(pace).join('/'); }
+    return out;
+  });
+  // online: the guest takes the host's clock (host-authoritative)
+  const host = await open(ctx, base + '/', errs, 'shot-clock host'), guest = await open(ctx, base + '/', errs, 'shot-clock guest');
+  const snap = await host.evaluate(() => { Net.role = 'host'; Net.mid = 7; Net.mode = 'vs'; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); M.online = true; Game.screen = 'play';
+    for (let i = 0; i < 1200 && !(M.phase === 'live' && ball.owner && M.shotClock < 12); i++) updateMatch(STEP); return Net.snapshot(); });
+  const g = await guest.evaluate(s => { Net.role = 'guest'; Net.snaps = [{ t: nowMs() - 2000, s }, { t: nowMs() - 1990, s }]; Net.guestFrame(STEP); return { sc: M.fmt.sc, shotClock: M.shotClock }; }, snap);
+  await ctx.close();
+  const all14 = r.formats.every(f => f.endsWith(':14/14') || f.endsWith(':14'));
+  const ok = all14 && r.attract === 14 && r.career === 14 && !/shot clock/.test(r.periodTxt) && r.noClock.kotc === 0
+    && r.violation.ballTo === 1 && r.violation.tov === 1 && r.violation.newClock === 14 && r.resetSteal === 14 && r.resetReb === 14 && r.sideOutMin === 8
+    && r.fastBreakText && r.paceText && r.pace === '14/12/10/8' && g.sc === 14 && Math.abs(g.shotClock - snap.m[2]) < 1e-9 && snap.fx && snap.fx.sc === 14 && !errs.length;
+  return { ok, detail: [JSON.stringify(r), 'online guest: ' + JSON.stringify(g) + ' host clock ' + (snap.m && snap.m[2]), ...errs] };
 };
 
 T['controls'] = async ({ browser, base }) => {
@@ -1173,7 +1220,7 @@ T['formats'] = async ({ browser, base }) => {
       if (M.quarter === 2 && !label2) label2 = periodLabel(2);
       qMax = Math.max(qMax, M.quarter);
     }
-    out.game = { over: M.phase === 'over', halftime, quarters: qMax, label2, shotClockRan: minSc < 23, winner: M.teams[0].score !== M.teams[1].score };
+    out.game = { over: M.phase === 'over', halftime, quarters: qMax, label2, shotClockRan: minSc < 13, winner: M.teams[0].score !== M.teams[1].score };
     // overtime: tied at the end of the second half
     window.__seed(78); newMatch(TEAMS[2], TEAMS[3], { humans: [] }); for (let i = 0; i < 2000 && M.phase !== 'live'; i++) updateMatch(STEP);
     M.quarter = 2; M.clock = 0.5; M.teams[0].score = M.teams[1].score = 30; ball.shot = null;
@@ -1190,9 +1237,9 @@ T['formats'] = async ({ browser, base }) => {
   });
   await ctx.close();
   const g = r.game;
-  const ok = r.settings === 'halves/120/2 Halves/halves' && r.fmt === 'halves/2/120/24/60' && r.label && r.breakText === 'HALFTIME'
+  const ok = r.settings === 'halves/120/2 Halves/halves' && r.fmt === 'halves/2/120/14/60' && r.label && r.breakText === 'HALFTIME'
     && g.over && g.halftime === 1 && g.label2 === '2ND HALF' && g.shotClockRan && g.winner && (g.quarters === 2 || g.quarters > 2)
-    && r.ot.startsWith('3/OVERTIME/') && r.career === 'halves/2' && r.careerQ === 'quarters/4' && r.practice === 'quarters/4' && r.explicit === 'quarters/4/60/15' && r.picked === 'quarters/4/QUARTER 1' && !errs.length;
+    && r.ot.startsWith('3/OVERTIME/') && r.career === 'halves/2' && r.careerQ === 'quarters/4' && r.practice === 'quarters/4' && r.explicit === 'quarters/4/60/14' && r.picked === 'quarters/4/QUARTER 1' && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
