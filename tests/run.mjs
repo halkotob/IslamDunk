@@ -885,6 +885,61 @@ T['v98'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
+T['v99'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'v99');
+  const r = await p.evaluate(() => {
+    window.__seed(99); const out = {};
+    const live = () => { for (let n = 0; n < 60 * 4 && M.phase !== 'live'; n++) updateMatch(STEP); };
+    const B = Object.assign({}, BINDS[0], { t: ['ShiftLeft'] }), key = (k, on) => B[k].forEach(x => { Input.down[x] = on; });   // turbo is Shift
+    const press = k => B[k].forEach(x => { Input.pressed[x] = true; }), clearP = () => { for (const k in Input.pressed) Input.pressed[k] = false; };
+    let me, hp;
+    const setup = (ax, az, fire) => {
+      newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); live(); me = M.players[0]; hp = attackHoop(0);
+      giveBall(me, 'inbound'); M.players.slice(1).forEach((q, i) => place(q, hp.x + hp.dir * 700, 60 + i * 120));
+      place(me, hp.x + hp.dir * ax, hp.z + az); me.vx = me.vz = 0; me.fire = !!fire; me.fireT = 40; M.phase = 'live';
+    };
+    // hold the stick at the rim and tap MOVE (optionally with turbo); watch what happens
+    const drive = (keys, frames = 150, btn = 'x') => {
+      const res = { kinds: new Set(), types: new Set(), shot: false, dunk: false, oop: false, glass: false, made: false, s0: M.teams[0].score };
+      const dx = hp.x - me.x, dz = hp.z - me.z;
+      key('right', dx > 1); key('left', dx < -1); key('down', dz > 20); key('up', dz < -20); keys.forEach(k => key(k, true));
+      for (let n = 0; n < frames; n++) {
+        if (n === 1) press(btn); if (btn === 'b') key('b', n < 25);
+        updateMatch(STEP); clearP();
+        if (me.layKind) res.kinds.add(me.layKind); if (me.shotType) res.types.add(me.shotType);
+        if (me.state === 'dunk') res.dunk = true; if (ball.state === 'shot') res.shot = true;
+        if (ball.pass && ball.pass.self) res.oop = true;
+        if (ball.state === 'shot' && Math.abs(ball.x - (hp.bbx + hp.dir * BALL_R)) < 6 && Math.abs(ball.z - hp.z) < 46) res.glass = true;
+      }
+      ['right', 'left', 'up', 'down', 't', 'b'].forEach(k => key(k, false));
+      res.made = M.teams[0].score > res.s0; res.kinds = [...res.kinds].join(); res.types = [...res.types].join(); return res;
+    };
+    setup(120, 0); out.roll = drive([]);
+    setup(70, 120); out.bank = drive([]);
+    setup(-10, 60); out.reverse = drive([]);
+    setup(210, 0); out.euro = drive([]);
+    setup(120, 0); M.players[2].x = hp.x + hp.dir * 70; M.players[2].z = hp.z; out.jelly = drive([]);
+    const run = () => { me.vx = -hp.dir * 220; };                                  // already driving at the rim
+    setup(230, 0); run(); out.oopCold = drive(['t'], 20);
+    setup(230, 0, true); run(); out.oopFire = drive(['t'], 20);
+    setup(90, 0); out.dunk = drive([], 60, 'b');
+    setup(130, 0); run(); me.st.dnk = 1; out.floater = drive([], 90, 'b');
+    // bank layups that go in drop off the glass: over many tries most of them touch the board
+    let g = 0, mk = 0; for (let i = 0; i < 30; i++) { setup(70 + (i % 3) * 15, (i % 2 ? 1 : -1) * 115); const d = drive([]); if (d.made) { mk++; if (d.glass) g++; } }
+    out.bankMakes = mk; out.bankGlass = g;
+    // make rates: open layups mostly go in, a defender on the hip takes a lot off (no automatic GREEN)
+    const rate = def => { let m = 0; for (let i = 0; i < 40; i++) { setup(120, (i % 5 - 2) * 10); if (def) place(M.players[2], hp.x + hp.dir * 125, hp.z + 22); const d = drive([]); if (d.made) m++; } return m / 40; };
+    out.openRate = rate(false); out.guardedRate = rate(true); out.greens = M.players[0].stats.grn || 0;
+    return out;
+  });
+  await ctx.close();
+  const lay = (o, k, t) => o.kinds === k && o.types === t && o.shot && !o.dunk && !o.oop;
+  const ok = lay(r.roll, 'roll', 'layup') && lay(r.bank, 'bank', 'layup') && r.bank.glass && lay(r.reverse, 'reverse', 'reverse') && lay(r.euro, 'euro', 'euro') && lay(r.jelly, 'jelly', 'layup')
+    && !r.oopCold.oop && r.oopCold.kinds === 'euro' && r.oopFire.oop && r.dunk.dunk && !r.dunk.kinds && r.floater.types === 'floater' && !r.floater.kinds
+    && r.bankMakes >= 15 && r.bankGlass >= r.bankMakes * 0.8 && r.openRate >= 0.7 && r.guardedRate < r.openRate - 0.1 && !r.greens && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
 T['career-intro'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'career-intro');
   const st = () => p.evaluate(() => ({ scr: Game.screen, scene: typeof INTRO !== 'undefined' && INTRO ? INTRO.scene : null, x: INTRO && Math.round(INTRO.x || 0), talk: INTRO && INTRO.talk ? INTRO.talk.lines[INTRO.talk.i][0] : null, met: INTRO && INTRO.met ? Object.keys(INTRO.met).length : 0 }));

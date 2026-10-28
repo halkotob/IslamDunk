@@ -54,7 +54,7 @@ function transActive(team) {
     if (ahead > 110 && passRisk(p, mate) < 0.38 && laneOpen(mate, h) > 35 && !chance(aiCfg(p.team).noise * 0.6)) { this.plan = { type: 'pass', to: mate, ahead: true }; return; }
     // nobody to hit: push the pace; once in a while, a breakaway lob off the glass to himself
     const d = dxz(p, h);
-    if (d < 330 && d > 150 && laneOpen(p, h) > 90 && (p.x - h.x) * h.dir > 60 && chance(0.02 + (p.fire ? 0.04 : 0))) { this.plan = { type: 'selfoop' }; return; }
+    if (p.fire && d < 330 && d > 150 && laneOpen(p, h) > 90 && (p.x - h.x) * h.dir > 60 && chance(0.06)) { this.plan = { type: 'selfoop' }; return; }   // v9.9: on fire only
     if (this.plan.type === 'probe' || this.plan.type === 'shoot') this.plan = { type: 'drive' };
   };
   const _bu = Brain.prototype.update;
@@ -318,9 +318,9 @@ function doTaunt(p, id) {
     const r = _hc.apply(this, arguments);
     const T = M.taunt;
     if (T && !T.used && M.time <= T.until && T.p && T.p.human === pad && c.x && ball.owner !== T.p && !M.mini) { doTaunt(T.p, myTaunt()); c.x = false; c.xHeld = false; }
-    // Turbo + MOVE on an open run straight at the rim: lob it off the glass to yourself
+    // Turbo + MOVE on an open run straight at the rim: lob it off the glass to yourself (v9.9: on fire only)
     const bo = ball.owner;
-    if (c.x && c.turbo && bo && bo.human === pad && !M.mini && selfOopOK(bo) && laneOpen(bo, attackHoop(bo.team)) > 90) { bo.wantOop = true; c.x = false; c.xHeld = false; }
+    if (c.x && c.turbo && bo && bo.human === pad && bo.fire && !M.mini && selfOopOK(bo) && laneOpen(bo, attackHoop(bo.team)) > 90) { bo.wantOop = true; c.x = false; c.xHeld = false; }
     return r;
   };
   // big dunks and clutch buckets open the window too, and get a celebration

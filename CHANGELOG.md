@@ -1,5 +1,26 @@
 # Changelog
 
+## 9.9.0: layups on Move
+- **Move is the layup button.** With the ball, push the stick toward the rim (inside about the free-throw line) and
+  tap Move: a layup. Shoot is unchanged for dunks; near the rim without a dunk, Shoot is now a short floater.
+  Putbacks and up-and-unders stay on Shoot.
+- **The kind of layup still comes from where you are:**
+  - under or behind the rim: a reverse layup, finished on the far side;
+  - from the wing: off the glass, banked in (made banks now really drop in off the board);
+  - straight on: a finger roll, or a jelly when a defender is in your path;
+  - from farther out: a euro step into the layup (it stays a layup, never a dunk).
+- **Layups release on their own** at the top of the jump, with a glide toward the rim. They aren't timing shots
+  (no meter, GREEN or EARLY/LATE). The make chance comes from Shooting and Dunking, the kind of layup and how close
+  the defense is: open layups almost always go in, a defender on your hip takes about a third off.
+- **Animations.** Each finish has its own pose: the finger roll goes up tall on a straight arm, the bank reaches
+  forward at the glass, the jelly is a wide one-hand scoop, the reverse leans back and flips it, the euro lands a
+  long split step. The ball moves from both hands into the shooting hand during the jump, and the springs are
+  softer, so it reads smoother.
+- **Self alley-oop is for when you're on fire.** Sprint + Move on an open run at the rim only lobs it to yourself
+  while you're on fire; otherwise it's a layup. The CPU follows the same rule.
+- On touch, the Move button says LAYUP (or OOP) when that's what it will do. How to play and the Mikan drill say
+  how layups work now.
+
 ## 9.8.0: the play-test review
 From the team's feel checklist and line marks (Review Studio export). Lowest ratings first.
 

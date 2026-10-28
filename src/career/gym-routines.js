@@ -56,7 +56,7 @@ function passSpots() { const h = gymHoop(), o = -h.dir; return [{ x: h.x - o * 6
     if (kind === 'passing') setupPassing(); else setupPractice(kind);
     const d = Gym.drill = { kind, shots: 0, made: 0, score: 0, phase: 'ready', t: 0, time: 0, idx: 0, started: false, reps: 0 };
     const me = M.players[0], h = gymHoop();
-    if (kind === 'mikan') { d.left = 40; d.side = 0; place(me, h.x + h.dir * 80, h.z - 70); giveBall(me, 'inbound'); gymToast('Finish at the rim, then go up on the other side. Only layups and dunks count.', 4); }
+    if (kind === 'mikan') { d.left = 40; d.side = 0; place(me, h.x + h.dir * 80, h.z - 70); giveBall(me, 'inbound'); gymToast('Move toward the rim for a layup (Sprint + Shoot dunks), then go up on the other side.', 4); }
     if (kind === 'slides') { d.left = 30; d.in = 0; d.seg = 0; d.segIn = 0; d.mk = { x: 1000, z: 350, tz: 350, sp: 150, t: 0 }; place(me, 1000, 400); me.face = -1; parkBall(); gymToast('Stay in front of the marker. Hold Defend to slide: it counts full.', 4); }
     if (kind === 'passing') { d.left = 40; d.spot = -1; d.open = 0; d.back = 0; d.miss = 0; gymToast('Pass when Khalil lights up. The quicker, the better.', 4); }
     if (kind === 'cond') { d.idx = 0; place(me, 1290, 350); me.face = -1; parkBall(); gymToast('Touch each line and come back. Use turbo, but watch your legs.', 4); }

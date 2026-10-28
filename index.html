@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.8.0';
+const VERSION = '9.9.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -2558,7 +2558,7 @@ function drawPlayer(g, p) {
     g.fillStyle = col; g.beginPath(); g.moveTo(tx - 6, ty); g.lineTo(tx + 6, ty); g.lineTo(tx, ty + 7); g.fill();
     const mine = (Net.role === 'host' && p.human === 0) || (Net.role === 'guest' && p.human === 1);
     drawTextSprite(g, textSprite(mine || M.career || M.gym ? 'YOU' : Net.role ? 'FRIEND' : 'P' + (p.human + 1), 11, col, 'rgba(0,0,0,0)', 0), tx, ty - 3);
-    if (p.state === 'windup' || p.state === 'shoot') {
+    if ((p.state === 'windup' || p.state === 'shoot') && !p.layAuto) {   // (v9.9: not on a MOVE layup, it releases itself)
       // Shot meter: fills toward the release point (jump apex); the green zone
       // is drawn at its real size for this shot (rating, distance, difficulty),
       // with the wider GOOD band around it.
@@ -12574,8 +12574,8 @@ drawHowTo = function (g) {
   g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; g.fillText(pad ? 'PAD 1' : 'P1', 610, 72); g.fillText(pad ? 'PAD 2' : 'P2', 800, 72);
   keys.forEach((r, i) => { const y = 92 + i * 21; g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(r[0], 150, y); g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.fillText(r[1], 610, y); g.fillText(r[2], 800, y); });
   const col = (x, title, lines) => { g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText(title, x, 222); g.font = `12px ${BODY}`; lines.forEach((t, i) => { g.fillStyle = t.startsWith('\u2022') ? '#9fb3c8' : IVORY; g.fillText(t, x, 242 + i * 18); }); };
-  col(60, 'OFFENSE', ['Shoot: hold and release at the top  \u2022  tap: pump fake, then shoot or pass', 'Sprint + Shoot in range: dunk', 'Pass: tap  \u2022  type is automatic (bounce, lob, alley-oop)', 'Hold Pass: call a screen  \u2022  hold Pass + tap Move: pass fake',
-    'Move + direction: crossover, behind the back, spin, step-back', 'Tap Move: hesitation  \u2022  double-tap: signature move', 'Hold Move near the paint: post up', '\u2022 Without the ball: Shoot calls for it (give-and-go,',
+  col(60, 'OFFENSE', ['Shoot: hold and release at the top  \u2022  tap: pump fake, then shoot or pass', 'Sprint + Shoot in range: dunk  \u2022  Move at the rim: layup', 'Pass: tap  \u2022  type is automatic (bounce, lob, alley-oop)', 'Hold Pass: call a screen  \u2022  hold Pass + tap Move: pass fake',
+    'Move + direction: crossover, behind the back, spin, step-back', 'Tap Move: hesitation  \u2022  double-tap: signature move', '\u2022 On fire: Sprint + Move at the rim: self alley-oop', 'Hold Move near the paint: post up', '\u2022 Without the ball: Shoot calls for it (give-and-go,',
     '\u2022   or alley-oop while sprinting at the rim)', '\u2022 Without the ball: Pass sets a screen for your partner']);
   col(500, 'DEFENSE', ['Hold Defend (Move button or L): guard your man.', '\u2022   You slide with him, between him and the rim', '\u2022   Feet set in his path: he charges into you', 'Hold Defend on a shot: box out',
     'Pass: tap to steal  \u2022  hold: partner doubles the ball', 'Sprint + Pass: shove (hard foul)', 'Shoot: jump, block, contest  \u2022  sprint + Shoot: swipe', '\u2022 Reach across his body and it\u2019s a foul',
@@ -16825,7 +16825,7 @@ function passSpots() { const h = gymHoop(), o = -h.dir; return [{ x: h.x - o * 6
     if (kind === 'passing') setupPassing(); else setupPractice(kind);
     const d = Gym.drill = { kind, shots: 0, made: 0, score: 0, phase: 'ready', t: 0, time: 0, idx: 0, started: false, reps: 0 };
     const me = M.players[0], h = gymHoop();
-    if (kind === 'mikan') { d.left = 40; d.side = 0; place(me, h.x + h.dir * 80, h.z - 70); giveBall(me, 'inbound'); gymToast('Finish at the rim, then go up on the other side. Only layups and dunks count.', 4); }
+    if (kind === 'mikan') { d.left = 40; d.side = 0; place(me, h.x + h.dir * 80, h.z - 70); giveBall(me, 'inbound'); gymToast('Move toward the rim for a layup (Sprint + Shoot dunks), then go up on the other side.', 4); }
     if (kind === 'slides') { d.left = 30; d.in = 0; d.seg = 0; d.segIn = 0; d.mk = { x: 1000, z: 350, tz: 350, sp: 150, t: 0 }; place(me, 1000, 400); me.face = -1; parkBall(); gymToast('Stay in front of the marker. Hold Defend to slide: it counts full.', 4); }
     if (kind === 'passing') { d.left = 40; d.spot = -1; d.open = 0; d.back = 0; d.miss = 0; gymToast('Pass when Khalil lights up. The quicker, the better.', 4); }
     if (kind === 'cond') { d.idx = 0; place(me, 1290, 350); me.face = -1; parkBall(); gymToast('Touch each line and come back. Use turbo, but watch your legs.', 4); }
@@ -18322,7 +18322,7 @@ function transActive(team) {
     if (ahead > 110 && passRisk(p, mate) < 0.38 && laneOpen(mate, h) > 35 && !chance(aiCfg(p.team).noise * 0.6)) { this.plan = { type: 'pass', to: mate, ahead: true }; return; }
     // nobody to hit: push the pace; once in a while, a breakaway lob off the glass to himself
     const d = dxz(p, h);
-    if (d < 330 && d > 150 && laneOpen(p, h) > 90 && (p.x - h.x) * h.dir > 60 && chance(0.02 + (p.fire ? 0.04 : 0))) { this.plan = { type: 'selfoop' }; return; }
+    if (p.fire && d < 330 && d > 150 && laneOpen(p, h) > 90 && (p.x - h.x) * h.dir > 60 && chance(0.06)) { this.plan = { type: 'selfoop' }; return; }   // v9.9: on fire only
     if (this.plan.type === 'probe' || this.plan.type === 'shoot') this.plan = { type: 'drive' };
   };
   const _bu = Brain.prototype.update;
@@ -18586,9 +18586,9 @@ function doTaunt(p, id) {
     const r = _hc.apply(this, arguments);
     const T = M.taunt;
     if (T && !T.used && M.time <= T.until && T.p && T.p.human === pad && c.x && ball.owner !== T.p && !M.mini) { doTaunt(T.p, myTaunt()); c.x = false; c.xHeld = false; }
-    // Turbo + MOVE on an open run straight at the rim: lob it off the glass to yourself
+    // Turbo + MOVE on an open run straight at the rim: lob it off the glass to yourself (v9.9: on fire only)
     const bo = ball.owner;
-    if (c.x && c.turbo && bo && bo.human === pad && !M.mini && selfOopOK(bo) && laneOpen(bo, attackHoop(bo.team)) > 90) { bo.wantOop = true; c.x = false; c.xHeld = false; }
+    if (c.x && c.turbo && bo && bo.human === pad && bo.fire && !M.mini && selfOopOK(bo) && laneOpen(bo, attackHoop(bo.team)) > 90) { bo.wantOop = true; c.x = false; c.xHeld = false; }
     return r;
   };
   // big dunks and clutch buckets open the window too, and get a celebration
@@ -23601,14 +23601,18 @@ dunkContest = function (o, p) {
 //   reverse (arm up on the far side of the rim), up and under (low scoop) and putback (both hands up);
 // and the follow-through holds the finish for a moment.
 const LAY_POSE = {
-  gather: { nk: 1.5, fk: 0.35, nh: 1.15, fh: -0.15, ns: 1.4, fs: 1.2, ne: 1.3, fe: 1.3, lean: 0.25, K: 1100 },
-  roll: { ns: 3.05, ne: 0.12, fs: 1.1, fe: 1.0, nk: 1.55, fk: 0.2, nh: 1.15, fh: -0.15, lean: 0.12, K: 900 },
-  jelly: { ns: 2.35, ne: 0.15, fs: 1.7, fe: 0.6, nk: 1.2, fk: 0.5, nh: 0.9, fh: 0.1, lean: 0.32, K: 900 },
-  reverse: { ns: 3.0, ne: 0.5, fs: 0.9, fe: 1.3, nk: 1.4, fk: 0.3, nh: 1.0, fh: -0.2, lean: -0.12, K: 900 },
+  gather: { nk: 1.5, fk: 0.35, nh: 1.15, fh: -0.15, ns: 1.4, fs: 1.2, ne: 1.3, fe: 1.3, lean: 0.25, K: 750 },
+  // v9.9: softer springs (smoother), and each finish reads differently
+  roll: { ns: 3.1, ne: 0.08, fs: 1.0, fe: 1.1, nk: 1.7, fk: 0.15, nh: 1.3, fh: -0.2, lean: 0.08, K: 620 },        // tall: arm straight up, knee high
+  bank: { ns: 2.55, ne: 0.3, fs: 1.6, fe: 0.9, nk: 1.45, fk: 0.3, nh: 1.1, fh: -0.1, lean: 0.24, K: 620 },        // arm reaching forward at the glass
+  jelly: { ns: 2.1, ne: 0.1, fs: 1.9, fe: 0.5, nk: 1.1, fk: 0.6, nh: 0.85, fh: 0.15, lean: 0.4, K: 600 },          // wide one-hand scoop, body leaning in
+  reverse: { ns: 3.15, ne: 0.7, fs: 0.8, fe: 1.4, nk: 1.35, fk: 0.35, nh: 1.0, fh: -0.25, lean: -0.22, K: 620 },  // leaning back, wrist flipping it behind
+  euro: { ns: 2.8, ne: 0.25, fs: 1.3, fe: 1.0, nk: 1.25, fk: 0.9, nh: 0.95, fh: 0.35, lean: 0.3, K: 600 },         // long last step, legs split
   upunder: { ns: 2.6, ne: 0.45, fs: 1.4, fe: 1.1, nk: 1.2, fk: 0.6, nh: 0.8, fh: 0.2, lean: 0.28, K: 900 },
   putback: { ns: 3.2, fs: 3.1, ne: 0.2, fe: 0.2, nk: 0.5, fk: 0.4, nh: 0.3, fh: 0.1, lean: 0.05, K: 1000 }
 };
 function layVariant(p) {
+  if (p.layKind) return p.layKind;                                              // v9.9: MOVE layups know their kind
   const k = p.sigShot ? null : p.shotType;
   if (k === 'layup' || k === 'gg') return (p.opps || []).some(o => dxz(o, p) < 75) ? 'jelly' : 'roll';
   if (k === 'reverse' || k === 'upunder' || k === 'putback') return k;
@@ -23630,7 +23634,7 @@ function layVariant(p) {
   const _rs = releaseShot;
   releaseShot = function (p) {
     const v = p.layV || layVariant(p); p.layV = v;
-    if (v && p.human >= 0 && !M.mini && (v === 'roll' || v === 'jelly')) popOnce(p, 'lay', v === 'roll' ? 'FINGER ROLL' : 'JELLY', '#fff', 0.6);
+    if (v && p.human >= 0 && !M.mini && !p.layKind && (v === 'roll' || v === 'jelly')) popOnce(p, 'lay', v === 'roll' ? 'FINGER ROLL' : 'JELLY', '#fff', 0.6);
     return _rs.apply(this, arguments);
   };
 }
@@ -23677,6 +23681,156 @@ const ONLINE_TURN = null;   // e.g. [{ urls: ['turn:turn.example.com:3478'], use
     this.snapAcc = (this.snapAcc || 0) + rdt;
     if (this.snapAcc < 1 / 60) return false;
     this.snapAcc = Math.min(this.snapAcc - 1 / 60, 1 / 60); return true;
+  };
+}
+// ================================================= v9.9: LAYUPS ON MOVE
+// Layups were hard to get on purpose: SHOOT near the rim is a dunk, and the layup zone was a thin ring outside dunk
+// range. Now:
+//   * MOVE toward the basket with the ball (stick at the rim, inside about the free-throw line) is a layup. The kind
+//     comes from where you are:
+//       - under or behind the rim: a REVERSE layup, finishing on the far side;
+//       - from the wing (a steep angle to the rim): OFF THE GLASS, banked in;
+//       - straight on: a FINGER ROLL; with a defender right in your path: a JELLY (one-hand finesse scoop);
+//       - from farther out (past about 165): a EURO STEP into the layup.
+//     Layups release on their own near the top of the jump (no timing), and you glide toward the rim while you rise.
+//   * SHOOT is unchanged for dunks. When you can't dunk, SHOOT near the rim is a short floater, not a layup.
+//     Putbacks and up-and-unders (after a pump fake) stay on SHOOT.
+//   * The self alley-oop (Turbo + MOVE on an open run) is now for when you're on fire only.
+//   * CPU layups use the same kinds (so they bank from the wings too).
+const LAY_LABEL = { roll: 'FINGER ROLL', jelly: 'JELLY', bank: 'OFF THE GLASS', reverse: 'REVERSE LAYUP' };
+function layupKind(p) {
+  const H = hoopDir(p), h = H.h, d = H.d;
+  if ((p.x - h.x) * h.dir < 25) return 'reverse';
+  if (d > 165) return 'euro';
+  const inPath = (p.opps || []).some(o => { const dx = o.x - p.x, dz = o.z - p.z, along = dx * H.fx + dz * H.fz; return along > 0 && along < 80 && Math.abs(dx * H.px + dz * H.pz) < 34; });
+  if (inPath) return 'jelly';
+  if (Math.abs(p.z - h.z) > Math.max(55, d * 0.5)) return 'bank';
+  return 'roll';
+}
+function layupOK(p, c) {
+  if (ball.owner !== p || p.state !== 'free' || p.postUp || p.y > 1 || M.phase !== 'live' || M.mini) return false;
+  const H = hoopDir(p); if (H.d > 240) return false;
+  const mL = Math.hypot(c.mx || 0, c.mz || 0); if (mL < 0.3) return false;
+  return ((c.mx || 0) * H.fx + (c.mz || 0) * H.fz) / mL > 0.3;
+}
+// the glide: where the layup goes up toward, and how fast to get there during the jump
+function layPrep(p) {
+  const H = hoopDir(p), h = H.h, k = p.layKind;
+  p.fakeOK = false; p.layAuto = true;
+  p.layRel = apexT(p) * (k === 'bank' ? 0.88 : 0.95) + gauss() * 0.02;
+  let tx, tz;
+  if (k === 'reverse') { tx = h.x + h.dir * 6; tz = h.z - (sgn(p.z - h.z) || 1) * 34; }          // under the rim to the far side
+  else { const r = Math.min(H.d, 52); tx = h.x - H.fx * r; tz = h.z - H.fz * r; }                 // up toward a spot in front of the rim
+  const air = Math.max(0.3, apexT(p) * 1.6), dx = tx - p.x, dz = tz - p.z, L = Math.hypot(dx, dz), v = Math.min(L / air, 260);
+  if (L > 1) { p.fadeVx = dx / L * v; p.fadeVz = dz / L * v; }
+  p.face = sgn(h.x - p.x) || p.face;
+}
+function startLayup(p, kind) {
+  p.layKind = kind; p.sigShot = null; p.passHold = null; p.postUp = null;
+  if (kind === 'euro') { p.layPend = true; startEuro(p); return; }
+  p._layGo = true;
+  try { applyShotType(p, kind === 'reverse' ? 'reverse' : 'layup'); startShot(p); } finally { p._layGo = false; }
+  if (p.state === 'windup') { layPrep(p); if (LAY_LABEL[kind] && !M.attract) FX.pop(p.x, p.y + 132, p.z, LAY_LABEL[kind], '#ffffff'); }
+}
+{
+  // SHOOT no longer makes a layup for you (MOVE does): near the rim without a dunk it's a floater
+  const _cs = classifyShot;
+  classifyShot = function (p) {
+    const k = _cs.apply(this, arguments);
+    if (p.human >= 0 && !p._layGo && (k === 'layup' || k === 'reverse' || k === 'euro' || k === 'gg')) return 'floater';
+    return k;
+  };
+  const _ss = startShot;
+  startShot = function (p) {
+    const r = _ss.apply(this, arguments);
+    if (p.layPend) { p.layPend = false; if (p.state === 'windup') layPrep(p); }                     // the euro step's finish
+    else if (p.human < 0 && !p.layKind && (p.shotType === 'layup' || p.shotType === 'reverse')) p.layKind = p.shotType === 'reverse' ? 'reverse' : layupKind(p);
+    return r;
+  };
+  // MOVE toward the rim: a layup (Turbo + MOVE on fire stays the self-oop, handled in v86-play)
+  const take = (p, c) => {
+    if (!p) return;
+    if (p.layAuto && (p.state === 'windup' || p.state === 'shoot')) { c.bHeld = true; return; }
+    if (c.x && !(p.fire && c.turbo) && layupOK(p, c)) { p.wantLay = layupKind(p); c.x = false; c.xHeld = false; }
+  };
+  const _hc = humanCmd;
+  humanCmd = function (pad, c) { const r = _hc.apply(this, arguments); if (M.players) take(M.players.find(q => q.human === pad), c); return r; };
+  const _rc = Net.remoteCmd;
+  Net.remoteCmd = function (c) { const r = _rc.apply(this, arguments); if (M.players) take(M.players.find(q => q.human === 1), c); return r; };
+  const _up = updatePlayer;
+  updatePlayer = function (p, dt) {
+    if (p.wantLay) { const k = p.wantLay; p.wantLay = null; if (ball.owner === p && p.state === 'free') startLayup(p, k); }
+    const r = _up.apply(this, arguments);
+    if (p.layAuto) {
+      if (p.state === 'shoot' && ball.owner === p && p.st_t >= p.layRel) releaseShot(p);
+      if (!['windup', 'shoot', 'sig'].includes(p.state)) p.layAuto = false;
+    }
+    if (p.layKind && !p.layAuto && p.state !== 'post' && p.state !== 'sig' && p.state !== 'windup' && p.state !== 'shoot') p.layKind = null;
+    return r;
+  };
+  // a MOVE euro step finishes as a layup, not a dunk (SHOOT is the dunk button)
+  const _cd = canDunk;
+  canDunk = function (p) { return p && p.layPend ? false : _cd.apply(this, arguments); };
+  // off the glass: a made bank layup is aimed at the board so it drops in off it
+  const _ls = launchShot;
+  launchShot = function (p, h, make, pts) {
+    const r = _ls.apply(this, arguments);
+    if (p.layKind !== 'bank' || !make) return r;
+    const s1 = (ball.x - (h.bbx + h.dir * BALL_R)) * h.dir, s2 = Math.abs(h.x - h.bbx) - BALL_R;
+    if (s1 < 20) return r;
+    const T = 0.5 + Math.hypot(h.x - ball.x, h.z - ball.z) / 700, v = (s1 + s2 / 0.55) / T;
+    ball.vx = -h.dir * v; ball.vz = (h.z - ball.z) / T; ball.vy = (RIM_Y + 2 - ball.y + 0.5 * grav() * T * T) / T;
+    return r;
+  };
+}
+// MOVE layups release themselves, so they aren't a timing shot (no GREEN, no EARLY/LATE): the make chance comes from
+// finishing (Shooting and Dunking), the kind of layup, and how close the defense is (Defense and difficulty count)
+const LAY_K = { roll: 1, bank: 1.02, reverse: 0.95, euro: 0.97, jelly: 0.96 };
+function layupProb(p) {
+  const fin = ((p.st.sht || 5) + (p.st.dnk || 5)) / 2;
+  let pr = (0.78 + fin * 0.018) * (LAY_K[p.layKind] || 1);
+  const od = nearestOppDist(p.x, p.z, p.team) + (p.layKind === 'euro' ? 18 : p.layKind === 'jelly' ? 10 : 0);
+  pr *= od < 25 ? 0.55 : od < 60 ? 0.55 + (od - 25) / 35 * 0.25 : od < 110 ? 0.8 + (od - 60) / 50 * 0.2 : 1;
+  let best = null, bd = 1e9; for (const o of p.opps || []) { const d = dxz(o, p); if (d < bd) { bd = d; best = o; } }
+  if (best && bd < 120) pr *= 1 + (1 - defK(best)) * 0.3 * clamp((120 - bd) / 80, 0, 1);
+  return clamp(pr, 0.05, 0.95);
+}
+{
+  const _sw = shotWindow;
+  shotWindow = function (p) { return p && p._layR ? 0 : _sw.apply(this, arguments); };
+  const _sp = shotProbability;
+  shotProbability = function (p) { return p && p._layR ? layupProb(p) / 1.06 : _sp.apply(this, arguments); };   // (the release divides back out its small off-timing bonus)
+  const _rs = releaseShot;
+  releaseShot = function (p) {
+    if (!p || !p.layAuto || ball.owner !== p) return _rs.apply(this, arguments);
+    const pop = FX.pop, note = typeof coachNote === 'function' ? coachNote : null;
+    FX.pop = function (x, y, z, txt) { if (txt === 'EARLY' || txt === 'LATE') return; return pop.apply(this, arguments); };
+    if (note) coachNote = () => {};
+    p._layR = true;
+    try { return _rs.apply(this, arguments); } finally { p._layR = false; FX.pop = pop; if (note) coachNote = note; }
+  };
+}
+// the finish is one-handed: the ball moves from the gather (both hands) up into the shooting hand, over a moment
+{
+  const _ab = attachBall;
+  attachBall = function (p) {
+    const r = _ab.apply(this, arguments);
+    if (p.state !== 'shoot' || ball.owner !== p || !p.layV || p.layV === 'putback') return r;
+    const hd = p.hands.n, m = handsMid(p), k = clamp(p.st_t / 0.14, 0, 1), e = k * k * (3 - 2 * k);
+    ball.x = lerp(ball.x, hd.x + p.face * 2, e); ball.y = Math.max(BALL_R, lerp(ball.y, hd.y + 6, e)); ball.z = lerp(ball.z, hd.z + 2, e);
+    return r;
+  };
+}
+// touch: the MOVE button says LAYUP (or OOP on fire while sprinting) when that's what it would do
+{
+  const _tu = TouchUI.update;
+  TouchUI.update = function () {
+    const r = _tu.apply(this, arguments);
+    if (!this.shown || !this.btns || !this.btns.cross || !M.players) return r;
+    const me = M.players.find(p => p.human === 0); if (!me || ball.owner !== me || me.postUp) return r;
+    const c = me.cmd || {}, t = me.fire && c.turbo && selfOopOK(me) ? 'OOP' : layupOK(me, c) ? 'LAYUP' : 'MOVE';
+    if (this.v99last !== t || this.btns.cross.firstChild.textContent !== t) { this.v99last = t; this.btns.cross.firstChild.textContent = t; }
+    return r;
   };
 }
 

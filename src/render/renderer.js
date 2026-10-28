@@ -412,7 +412,7 @@ function drawPlayer(g, p) {
     g.fillStyle = col; g.beginPath(); g.moveTo(tx - 6, ty); g.lineTo(tx + 6, ty); g.lineTo(tx, ty + 7); g.fill();
     const mine = (Net.role === 'host' && p.human === 0) || (Net.role === 'guest' && p.human === 1);
     drawTextSprite(g, textSprite(mine || M.career || M.gym ? 'YOU' : Net.role ? 'FRIEND' : 'P' + (p.human + 1), 11, col, 'rgba(0,0,0,0)', 0), tx, ty - 3);
-    if (p.state === 'windup' || p.state === 'shoot') {
+    if ((p.state === 'windup' || p.state === 'shoot') && !p.layAuto) {   // (v9.9: not on a MOVE layup, it releases itself)
       // Shot meter: fills toward the release point (jump apex); the green zone
       // is drawn at its real size for this shot (rating, distance, difficulty),
       // with the wider GOOD band around it.

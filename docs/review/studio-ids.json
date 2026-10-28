@@ -1965,7 +1965,6 @@
   "text/career/gym-routines/conditioning-45jub6": "8.6.0",
   "text/career/gym-routines/defensive-slides-6hmons": "8.6.0",
   "text/career/gym-routines/far-side-0eikq1": "8.6.0",
-  "text/career/gym-routines/finish-at-the-rim-then-k8o04k": "8.6.0",
   "text/career/gym-routines/finishes-at-the-rim-0a73bc": "8.6.0",
   "text/career/gym-routines/good-passes-201veb": "8.6.0",
   "text/career/gym-routines/hit-khalil-when-he-lights-85dx27": "8.6.0",
@@ -1977,6 +1976,7 @@
   "text/career/gym-routines/locked-in-stretches-0n7wuw": "8.6.0",
   "text/career/gym-routines/mikan-drill-xndz06": "8.6.0",
   "text/career/gym-routines/move-to-start-pckwpx": "8.6.0",
+  "text/career/gym-routines/move-toward-the-rim-for-vxixbm": "9.9.0",
   "text/career/gym-routines/near-side-g2tmpy": "8.6.0",
   "text/career/gym-routines/next-t8i01i": "8.6.0",
   "text/career/gym-routines/of-3-done-c885sf": "8.6.0",
@@ -3644,6 +3644,7 @@
   "text/sim/v7-controls/no-legs-left-1j3x18": "8.6.0",
   "text/sim/v7-controls/no-screen-yet-rbi5gk": "8.6.0",
   "text/sim/v7-controls/num0-m-num3-kxr3ct": "8.7.0",
+  "text/sim/v7-controls/on-fire-sprint-move-at-vcgipq": "9.9.0",
   "text/sim/v7-controls/or-alley-oop-while-sprinting-hdldq0": "8.6.0",
   "text/sim/v7-controls/pad-1-8mh6v1": "8.7.0",
   "text/sim/v7-controls/pad-2-7sids4": "8.7.0",
@@ -3659,7 +3660,7 @@
   "text/sim/v7-controls/shoot-jump-block-contest-sprint-fsuqz9": "8.6.0",
   "text/sim/v7-controls/shoot-ox5hcg": "8.7.0",
   "text/sim/v7-controls/sprint-pass-shove-hard-foul-imw32c": "8.6.0",
-  "text/sim/v7-controls/sprint-shoot-in-range-dunk-ks689l": "8.6.4",
+  "text/sim/v7-controls/sprint-shoot-in-range-dunk-777maj": "9.9.0",
   "text/sim/v7-controls/sprint-sq0prp": "8.7.0",
   "text/sim/v7-controls/tap-move-hesitation-double-tap-r81cq3": "8.6.0",
   "text/sim/v7-controls/touch-push-the-stick-past-bir6qb": "8.7.0",
@@ -3719,6 +3720,7 @@
   "text/sim/v98-review/finger-roll-cljton": "9.8.0",
   "text/sim/v98-review/just-missed-ifat94": "9.8.0",
   "text/sim/v98-review/no-angle-6vi2tx": "9.8.0",
+  "text/sim/v99-layups/reverse-layup-6c50o6": "9.9.0",
   "text/taunt/brush": "8.6.0",
   "text/taunt/chest": "8.6.0",
   "text/taunt/dua": "8.6.0",
@@ -4002,6 +4004,11 @@
    "version": "9.6.2",
    "was": "8.6.2"
   },
+  "text/career/gym-routines/finish-at-the-rim-then-k8o04k": {
+   "reason": "9.9: layups moved to Move; help lines reworded",
+   "version": "9.9.0",
+   "was": "8.6.0"
+  },
   "text/career/seasons/stats-box-scores-drg63e": {
    "reason": "v9.7.0: the screen and its menu entry are now League & stats (leaders, around the league, player pages)",
    "version": "9.6.3",
@@ -4096,6 +4103,11 @@
    "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
    "version": "9.8.0",
    "was": "9.5.0"
+  },
+  "text/sim/v7-controls/sprint-shoot-in-range-dunk-ks689l": {
+   "reason": "9.9: layups moved to Move; help lines reworded",
+   "version": "9.9.0",
+   "was": "8.6.4"
   },
   "text/sim/v8-3v3/3-on-3-beta-6v5cff": {
    "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",

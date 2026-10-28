@@ -110,14 +110,18 @@ dunkContest = function (o, p) {
 //   reverse (arm up on the far side of the rim), up and under (low scoop) and putback (both hands up);
 // and the follow-through holds the finish for a moment.
 const LAY_POSE = {
-  gather: { nk: 1.5, fk: 0.35, nh: 1.15, fh: -0.15, ns: 1.4, fs: 1.2, ne: 1.3, fe: 1.3, lean: 0.25, K: 1100 },
-  roll: { ns: 3.05, ne: 0.12, fs: 1.1, fe: 1.0, nk: 1.55, fk: 0.2, nh: 1.15, fh: -0.15, lean: 0.12, K: 900 },
-  jelly: { ns: 2.35, ne: 0.15, fs: 1.7, fe: 0.6, nk: 1.2, fk: 0.5, nh: 0.9, fh: 0.1, lean: 0.32, K: 900 },
-  reverse: { ns: 3.0, ne: 0.5, fs: 0.9, fe: 1.3, nk: 1.4, fk: 0.3, nh: 1.0, fh: -0.2, lean: -0.12, K: 900 },
+  gather: { nk: 1.5, fk: 0.35, nh: 1.15, fh: -0.15, ns: 1.4, fs: 1.2, ne: 1.3, fe: 1.3, lean: 0.25, K: 750 },
+  // v9.9: softer springs (smoother), and each finish reads differently
+  roll: { ns: 3.1, ne: 0.08, fs: 1.0, fe: 1.1, nk: 1.7, fk: 0.15, nh: 1.3, fh: -0.2, lean: 0.08, K: 620 },        // tall: arm straight up, knee high
+  bank: { ns: 2.55, ne: 0.3, fs: 1.6, fe: 0.9, nk: 1.45, fk: 0.3, nh: 1.1, fh: -0.1, lean: 0.24, K: 620 },        // arm reaching forward at the glass
+  jelly: { ns: 2.1, ne: 0.1, fs: 1.9, fe: 0.5, nk: 1.1, fk: 0.6, nh: 0.85, fh: 0.15, lean: 0.4, K: 600 },          // wide one-hand scoop, body leaning in
+  reverse: { ns: 3.15, ne: 0.7, fs: 0.8, fe: 1.4, nk: 1.35, fk: 0.35, nh: 1.0, fh: -0.25, lean: -0.22, K: 620 },  // leaning back, wrist flipping it behind
+  euro: { ns: 2.8, ne: 0.25, fs: 1.3, fe: 1.0, nk: 1.25, fk: 0.9, nh: 0.95, fh: 0.35, lean: 0.3, K: 600 },         // long last step, legs split
   upunder: { ns: 2.6, ne: 0.45, fs: 1.4, fe: 1.1, nk: 1.2, fk: 0.6, nh: 0.8, fh: 0.2, lean: 0.28, K: 900 },
   putback: { ns: 3.2, fs: 3.1, ne: 0.2, fe: 0.2, nk: 0.5, fk: 0.4, nh: 0.3, fh: 0.1, lean: 0.05, K: 1000 }
 };
 function layVariant(p) {
+  if (p.layKind) return p.layKind;                                              // v9.9: MOVE layups know their kind
   const k = p.sigShot ? null : p.shotType;
   if (k === 'layup' || k === 'gg') return (p.opps || []).some(o => dxz(o, p) < 75) ? 'jelly' : 'roll';
   if (k === 'reverse' || k === 'upunder' || k === 'putback') return k;
@@ -139,7 +143,7 @@ function layVariant(p) {
   const _rs = releaseShot;
   releaseShot = function (p) {
     const v = p.layV || layVariant(p); p.layV = v;
-    if (v && p.human >= 0 && !M.mini && (v === 'roll' || v === 'jelly')) popOnce(p, 'lay', v === 'roll' ? 'FINGER ROLL' : 'JELLY', '#fff', 0.6);
+    if (v && p.human >= 0 && !M.mini && !p.layKind && (v === 'roll' || v === 'jelly')) popOnce(p, 'lay', v === 'roll' ? 'FINGER ROLL' : 'JELLY', '#fff', 0.6);
     return _rs.apply(this, arguments);
   };
 }
