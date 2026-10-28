@@ -140,10 +140,11 @@ function lgCollect(job) { return { sa: M.teams[0].score, sb: M.teams[1].score, r
 // length; the league-calibration test checks it against 500 more): points per team per minute by period length, the
 // score's spread, and for each stat a rate per team point, split between the two players. Shooting follows each
 // player's points; rebounds, assists, steals, blocks, turnovers and charges are split on their own.
+// v9.8: steals, blocks and turnovers recalibrated (positional steals and blocks; 500 real games: 1.26 / 1.65 / 1.27 a player).
 const LG_CAL = {
   ppm: { 30: 10.8, 45: 9.67, 60: 9.33, 120: 9.1 }, rel: { 30: 0.3, 45: 0.29, 60: 0.22, 120: 0.19 }, quartersK: 0.98,
   first21: { lose: 0.77, loseSd: 0.17, over: 0.3 }, share: 0.5, shareSd: 0.14, dunkShare: 0.92,
-  rate: { fga: 0.689, tpa: 0.189, fta: 0.064, reb: 0.0994, ast: 0.1456, stl: 0.0466, blk: 0.0557, tov: 0.0467, dnk: 0.347, chg: 0.0142 },
+  rate: { fga: 0.689, tpa: 0.189, fta: 0.064, reb: 0.0994, ast: 0.1456, stl: 0.0691, blk: 0.0892, tov: 0.0682, dnk: 0.347, chg: 0.0142 },
   pct: { fg: 0.644, tp: 0.343, ft: 0.764 }
 };
 function lgFallback(job, why) {

@@ -87,8 +87,6 @@
   "dialogue/intro/gym/mahmoud/0": "phase1",
   "dialogue/intro/gym/mahmoud/1": "phase1",
   "dialogue/intro/gym/nasser/0": "phase1",
-  "dialogue/intro/gym/siddiq/0": "phase1",
-  "dialogue/intro/gym/tariq/0": "phase1",
   "dialogue/intro/outside/0": "phase1",
   "dialogue/intro/outside/1": "phase1",
   "dialogue/intro/outside/2": "phase1",
@@ -870,12 +868,6 @@
   "screen/match-pause/desktop": "9.2.2",
   "screen/match-pause/phone-667x300": "9.2.2",
   "screen/match-pause/phone-750x342": "9.2.2",
-  "screen/mini-game-room-import/desktop": "9.2.2",
-  "screen/mini-game-room-import/phone-667x300": "9.2.2",
-  "screen/mini-game-room-import/phone-750x342": "9.2.2",
-  "screen/mini-game-room/desktop": "9.2.2",
-  "screen/mini-game-room/phone-667x300": "9.2.2",
-  "screen/mini-game-room/phone-750x342": "9.2.2",
   "screen/minis/desktop": "9.2.2",
   "screen/minis/phone-667x300": "9.2.2",
   "screen/minis/phone-750x342": "9.2.2",
@@ -2845,6 +2837,7 @@
   "text/screens/clip-video/making-your-clip-n7drw7": "8.7.1",
   "text/screens/clip-video/mb-no-sound-t7ghro": "8.7.1",
   "text/screens/clip-video/recording-in-real-time-about-mea4bx": "8.7.1",
+  "text/screens/clip-video/save-lewgh4": "9.8.0",
   "text/screens/clip-video/saving-isn-t-available-here-wcq3dn": "8.7.1",
   "text/screens/clip-video/share-a-highlight-l3fit7": "8.7.1",
   "text/screens/clip-video/share-m2bcgo": "8.7.1",
@@ -2870,7 +2863,6 @@
   "text/screens/creator-suite/home-140gdm": "8.6.0",
   "text/screens/creator-suite/home-court-o6xeel": "8.6.0",
   "text/screens/creator-suite/i-import-w6b2qz": "8.6.0",
-  "text/screens/creator-suite/import-a-code-pkewl0": "8.6.0",
   "text/screens/creator-suite/imported-masjid-p2oy9h": "8.6.0",
   "text/screens/creator-suite/imported-player-hz28to": "8.6.0",
   "text/screens/creator-suite/imported-player-ykex0e": "8.6.0",
@@ -2893,7 +2885,6 @@
   "text/screens/creator-suite/outfit-9j49gm": "8.6.0",
   "text/screens/creator-suite/paste-dqva14": "8.6.0",
   "text/screens/creator-suite/player-name-vcnxj7": "8.6.0",
-  "text/screens/creator-suite/players-6wczhl": "8.6.0",
   "text/screens/creator-suite/press-ctrl-v-or-v-vvv0tq": "8.6.0",
   "text/screens/creator-suite/press-delete-again-to-remove-cglu5g": "8.6.0",
   "text/screens/creator-suite/preview-yfnwtz": "8.6.0",
@@ -2910,8 +2901,6 @@
   "text/screens/creator-suite/short-name-6-letters-555h6i": "8.6.0",
   "text/screens/creator-suite/tab-look-outfit-skills-879hxw": "8.6.0",
   "text/screens/creator-suite/team-name-dzgu1r": "8.6.0",
-  "text/screens/creator-suite/teams-fjpthp": "8.6.0",
-  "text/screens/creator-suite/teams-players-4gobsl": "8.6.0",
   "text/screens/creator-suite/that-code-isn-t-a-9wfmmp": "8.6.0",
   "text/screens/creator-suite/that-doesn-t-look-like-mlxxe0": "8.6.0",
   "text/screens/creator-suite/the-code-is-cut-off-ph2vaq": "8.6.0",
@@ -2957,14 +2946,15 @@
   "text/screens/flow/subtle-vjmc48": "8.6.0",
   "text/screens/flow/untimed-win-by-2-eh49qs": "8.6.0",
   "text/screens/menus-v85/controls-camera-d5rusc": "8.6.0",
-  "text/screens/menus-v85/daily-challenges-3ey660": "8.6.0",
-  "text/screens/menus-v85/extras-kft85q": "8.6.0",
-  "text/screens/menus-v85/play-a-game-q5uubu": "8.6.0",
   "text/screens/menus-v85/records-orgbil": "8.6.0",
   "text/screens/menus-v85/review-tnr3lt": "8.6.0",
   "text/screens/menus-v85/settings-iup475": "8.6.0",
   "text/screens/menus-v85/sound-display-1xokuo": "8.6.0",
   "text/screens/menus/1-player-vs-cpu-fsfvxa": "8.6.0",
+  "text/screens/menus/3-on-3-beta-6v5cff": "9.8.0",
+  "text/screens/menus/a-knockout-bracket-of-4-q5zgmy": "9.8.0",
+  "text/screens/menus/a-new-scenario-and-a-e0ljzb": "9.8.0",
+  "text/screens/menus/a-run-of-games-against-88nd0r": "9.8.0",
   "text/screens/menus/can-earn-a-noor-power-y4kvil": "8.6.1",
   "text/screens/menus/captain-208ih7": "8.6.0",
   "text/screens/menus/change-direction-while-dribbling-cikmiz": "8.6.0",
@@ -2977,24 +2967,41 @@
   "text/screens/menus/correct-choose-your-noor-next-nfqutj": "8.6.1",
   "text/screens/menus/cpu-demo-in-progress-vt9j18": "8.6.0",
   "text/screens/menus/crossover-jk09s9": "8.6.0",
+  "text/screens/menus/daily-challenges-3ey660": "9.8.0",
   "text/screens/menus/difficulty-changes-cpu-reaction--j33fce": "8.6.0",
   "text/screens/menus/esc-or-p-pauses-on-16yzys": "8.6.0",
+  "text/screens/menus/every-button-and-what-it-9sez4j": "9.8.0",
+  "text/screens/menus/extras-kft85q": "9.8.0",
   "text/screens/menus/final-fz95qv": "8.6.0",
+  "text/screens/menus/fun-modes-achievements-personal--2ei1gz": "9.8.0",
+  "text/screens/menus/game-controls-accessibility-soun-xbdvot": "9.8.0",
   "text/screens/menus/get-join-code-g40pde": "8.6.0",
   "text/screens/menus/guard-m575se": "8.6.0",
+  "text/screens/menus/import-a-code-pkewl0": "9.8.0",
+  "text/screens/menus/jump-into-a-game-a-9ekxnf": "9.8.0",
   "text/screens/menus/k-hold-release-at-the-h9azng": "8.6.0",
   "text/screens/menus/keep-playing-l4wvuu": "8.6.0",
+  "text/screens/menus/league-q7f3ao": "9.8.0",
   "text/screens/menus/leave-game-no-result-o9eznl": "8.6.0",
   "text/screens/menus/leave-online-game-tkl143": "8.6.0",
+  "text/screens/menus/lightning-horse-and-king-of-gatkun": "9.8.0",
+  "text/screens/menus/make-your-own-players-and-3padx3": "9.8.0",
+  "text/screens/menus/mini-games-3x9kc5": "9.8.0",
   "text/screens/menus/move-zaagxg": "8.6.0",
   "text/screens/menus/noor-challenge-0kuuym": "8.6.0",
   "text/screens/menus/noor-challenge-qsjmta": "8.6.1",
+  "text/screens/menus/one-game-alone-with-a-llxcei": "9.8.0",
   "text/screens/menus/online-head-to-head-you-nssa7l": "8.6.0",
   "text/screens/menus/online-same-team-you-play-remfq2": "8.6.0",
   "text/screens/menus/pass-steal-on-defense-vuo8a2": "8.6.0",
+  "text/screens/menus/paste-a-team-or-player-mj0q5g": "9.8.0",
   "text/screens/menus/paused-pn27zf": "8.6.0",
+  "text/screens/menus/play-a-game-q5uubu": "9.8.0",
+  "text/screens/menus/play-everyone-then-the-top-2obdze": "9.8.0",
+  "text/screens/menus/play-with-a-friend-on-fbfbmo": "9.8.0",
   "text/screens/menus/player-1-hocb2b": "8.6.0",
   "text/screens/menus/player-2-hybwra": "8.6.0",
+  "text/screens/menus/players-6wczhl": "9.8.0",
   "text/screens/menus/pointer-coarse-h39xuy": "8.6.0",
   "text/screens/menus/press-1-to-4-or-ifegic": "8.6.0",
   "text/screens/menus/press-enter-or-tap-for-y9i3nb": "8.6.0",
@@ -3007,17 +3014,30 @@
   "text/screens/menus/shoot-block-on-defense-9p2w1o": "8.6.0",
   "text/screens/menus/stretch-hydrate-and-catch-your-mxskt6": "8.6.0",
   "text/screens/menus/studied-gsj2an": "8.6.0",
+  "text/screens/menus/teams-fjpthp": "9.8.0",
+  "text/screens/menus/teams-players-4gobsl": "9.8.0",
   "text/screens/menus/the-answer-ia8pas": "8.6.1",
+  "text/screens/menus/the-controls-one-step-at-r7clev": "9.8.0",
+  "text/screens/menus/three-a-side-with-a-ysbhd8": "9.8.0",
   "text/screens/menus/three-baskets-in-a-row-2gxvv2": "8.6.1",
   "text/screens/menus/tip-off-qhwdsr": "8.6.0",
   "text/screens/menus/to-change-enter-to-confirm-sj6zui": "8.6.0",
+  "text/screens/menus/tournament-x41ccy": "9.8.0",
   "text/screens/menus/turbo-pass-on-defense-is-hnn4b5": "8.6.0",
   "text/screens/menus/turbo-pfrdsr": "8.6.0",
   "text/screens/menus/turbo-shoot-near-the-rim-8vphqp": "8.6.0",
+  "text/screens/menus/tutorial-learn-to-play-j4lcaw": "9.8.0",
+  "text/screens/menus/two-players-on-this-device-oh1uez": "9.8.0",
   "text/screens/menus/waiting-for-your-friend-to-hxbyr1": "8.6.0",
   "text/screens/menus/waiting-for-your-friend-to-q7dc0i": "8.6.0",
+  "text/screens/menus/who-made-islam-dunk-o0u04o": "9.8.0",
   "text/screens/menus/without-the-ball-pass-calls-cftt9e": "8.6.0",
+  "text/screens/menus/you-and-a-cpu-teammate-6fzbrp": "9.8.0",
   "text/screens/menus/your-friend-is-answering-a-4ktzfk": "8.6.1",
+  "text/screens/menus/your-players-looks-and-skills-g7a4vn": "9.8.0",
+  "text/screens/menus/your-profile-settings-extras-and-ltbwcn": "9.8.0",
+  "text/screens/menus/your-story-at-masjid-al-bipp6h": "9.8.0",
+  "text/screens/menus/your-teams-colors-crest-players-ygijbm": "9.8.0",
   "text/screens/minis-menu/1-on-1-half-court-43m7i3": "8.6.0",
   "text/screens/minis-menu/first-to-make-the-last-kn5uhc": "8.6.0",
   "text/screens/minis-menu/five-players-line-up-behind-8w53se": "8.6.0",
@@ -3025,7 +3045,6 @@
   "text/screens/minis-menu/hold-the-court-for-3-fmulwy": "8.6.0",
   "text/screens/minis-menu/if-the-player-behind-you-afd5wb": "8.6.0",
   "text/screens/minis-menu/make-a-shot-and-your-xdgff1": "8.6.0",
-  "text/screens/minis-menu/mini-games-3x9kc5": "8.6.0",
   "text/screens/minis-menu/miss-a-match-and-you-a8d4y5": "8.6.0",
   "text/screens/minis-menu/miss-and-you-chase-your-eyl35j": "8.6.0",
   "text/screens/minis-menu/miss-and-your-turn-is-r5nie5": "8.6.0",
@@ -3041,6 +3060,7 @@
   "text/screens/phone-pass/button-opacity-s0pqyg": "8.6.2",
   "text/screens/phone-pass/button-size-37xjqa": "8.6.2",
   "text/screens/phone-pass/camera-s6dmy6": "8.7.1",
+  "text/screens/phone-pass/choose-change-p-play-c-yd2jws": "9.8.0",
   "text/screens/phone-pass/defense-block-v04zxi": "8.6.2",
   "text/screens/phone-pass/defense-guard-9s36fe": "8.6.2",
   "text/screens/phone-pass/defense-steal-granz0": "8.6.2",
@@ -3060,6 +3080,7 @@
   "text/screens/phone-pass/push-to-the-edge-dqcs82": "8.6.2",
   "text/screens/phone-pass/random-venue-tctzkl": "8.6.2",
   "text/screens/phone-pass/save-image-shdgxx": "8.7.1",
+  "text/screens/phone-pass/small-k474fg": "9.8.0",
   "text/screens/phone-pass/stick-to-walk-talk-to-vhi5ei": "8.6.2",
   "text/screens/phone-pass/tab-look-outfit-skills-choose-1khb4q": "8.6.2",
   "text/screens/phone-pass/tap-a-card-to-choose-t41mj7": "8.6.2",
@@ -3079,7 +3100,6 @@
   "text/screens/phone-pass/win-world-cup-iki2ul": "8.6.2",
   "text/screens/phone-pass/world-cup-hjyg43": "8.6.2",
   "text/screens/profile/arm-raised-vumy5z": "8.6.0",
-  "text/screens/profile/around-the-world-wins-7tndg2": "8.6.2",
   "text/screens/profile/ball-74mq2s": "8.6.0",
   "text/screens/profile/ball-skin-drkdzx": "8.6.0",
   "text/screens/profile/both-arms-up-1m6ldy": "8.6.0",
@@ -3109,6 +3129,7 @@
   "text/screens/profile/horse-wins-4gnad1": "8.6.2",
   "text/screens/profile/indigo-kufi-mu8gis": "8.6.0",
   "text/screens/profile/king-of-the-court-crowns-2ubnjh": "8.6.2",
+  "text/screens/profile/king-of-the-court-wins-uakhgq": "9.8.0",
   "text/screens/profile/kufi-colour-career-creator-r6i37h": "8.6.0",
   "text/screens/profile/level-i4lhtp": "8.6.0",
   "text/screens/profile/lightning-wins-uexovg": "8.6.2",
@@ -3246,7 +3267,6 @@
   "text/screens/tutorial/tap-pass-to-throw-it-cr325z": "8.7.0",
   "text/screens/tutorial/tap-x-to-pass-to-vbnl0p": "8.7.0",
   "text/screens/tutorial/that-s-the-whole-game-2n5m72": "8.6.0",
-  "text/screens/tutorial/tutorial-learn-to-play-j4lcaw": "8.6.0",
   "text/screens/tutorial/you-re-ready-l9ozvt": "8.6.0",
   "text/screens/v6-ui/call-a-play-the-ball-bwfwea": "8.6.0",
   "text/screens/v6-ui/call-timeout-6vd34u": "8.6.0",
@@ -3357,14 +3377,12 @@
   "text/screens/v95-series/enter-70frud": "9.5.0",
   "text/screens/v95-series/final-ns32jb": "9.5.0",
   "text/screens/v95-series/leaders-bqg3th": "9.5.0",
-  "text/screens/v95-series/league-q7f3ao": "9.5.0",
   "text/screens/v95-series/leave-saved-vq04xq": "9.5.0",
   "text/screens/v95-series/matchday-71odok": "9.5.0",
   "text/screens/v95-series/my-teams-first-knbadz": "9.5.0",
   "text/screens/v95-series/once-4wvbok": "9.5.0",
   "text/screens/v95-series/per-game-vcfq2u": "9.5.0",
   "text/screens/v95-series/play-each-team-vrthod": "9.5.0",
-  "text/screens/v95-series/play-everyone-then-the-top-2obdze": "9.5.0",
   "text/screens/v95-series/play-out-the-rest-unhdl2": "9.5.0",
   "text/screens/v95-series/play-your-game-r63oxk": "9.5.0",
   "text/screens/v95-series/press-n-again-to-end-4iq6n6": "9.5.0",
@@ -3377,7 +3395,6 @@
   "text/screens/v95-series/start-the-tournament-6hyj0f": "9.5.0",
   "text/screens/v95-series/tabs-n-end-and-start-zbfzkr": "9.5.0",
   "text/screens/v95-series/the-top-two-highlighted-play-a6krvs": "9.5.0",
-  "text/screens/v95-series/tournament-x41ccy": "9.5.0",
   "text/screens/v95-series/twice-p2uwsz": "9.5.0",
   "text/screens/v95-series/you-are-the-champions-7b575u": "9.5.0",
   "text/screens/v95-series/you-need-at-least-4-0kyj0a": "9.5.0",
@@ -3649,7 +3666,6 @@
   "text/sim/v7-controls/without-the-ball-pass-sets-1huev2": "8.6.0",
   "text/sim/v7-controls/without-the-ball-shoot-calls-jah7hl": "8.6.0",
   "text/sim/v7-controls/you-slide-with-him-between-kudwdp": "8.6.0",
-  "text/sim/v8-3v3/3-on-3-beta-6v5cff": "8.6.0",
   "text/sim/v8-3v3/3-on-3-fbuxzu": "8.6.0",
   "text/sim/v8-atw/around-the-world-8egrab": "8.6.0",
   "text/sim/v8-atw/around-the-world-we-go-gzmaix": "8.6.0",
@@ -3672,7 +3688,6 @@
   "text/sim/v8-guards/owner-not-in-game-ithnvy": "8.6.0",
   "text/sim/v8-guards/pass-without-pass-d02ath": "8.6.0",
   "text/sim/v8-guards/shot-without-shot-l4xsdn": "8.6.0",
-  "text/sim/v8-kotc/around-the-world-8w4ppf": "8.6.0",
   "text/sim/v8-kotc/challenger-8zls5g": "8.6.0",
   "text/sim/v8-kotc/first-to-w6e7k0": "8.6.0",
   "text/sim/v8-kotc/hold-the-court-qq30la": "8.6.0",
@@ -3693,65 +3708,6 @@
   "text/sim/v8-resets/out-of-bounds-s5o1a9": "8.6.0",
   "text/sim/v8-team-control/team-control-sjlk49": "8.6.0",
   "text/sim/v8-team-control/whole-team-56sah9": "8.6.0",
-  "text/sim/v86-minis/1-shot-cra710": "8.6.0",
-  "text/sim/v86-minis/20-seconds-tqcf6q": "8.6.0",
-  "text/sim/v86-minis/3-shots-xa12c7": "8.6.0",
-  "text/sim/v86-minis/5-shots-x1lkah": "8.6.0",
-  "text/sim/v86-minis/7-up-w7t0qn": "8.6.0",
-  "text/sim/v86-minis/a-turn-lasts-rqlyhe": "8.6.0",
-  "text/sim/v86-minis/back-to-9q57zv": "8.6.0",
-  "text/sim/v86-minis/beat-the-clock-1nbtkw": "8.6.0",
-  "text/sim/v86-minis/best-of-9s9xt4": "8.6.0",
-  "text/sim/v86-minis/best-of-lrvu70": "8.6.0",
-  "text/sim/v86-minis/choose-change-p-play-c-yd2jws": "8.6.0",
-  "text/sim/v86-minis/copy-a-custom-game-code-p6izu9": "8.6.0",
-  "text/sim/v86-minis/custom-game-3d4xt4": "8.6.0",
-  "text/sim/v86-minis/custom-game-room-ia3gq3": "8.6.0",
-  "text/sim/v86-minis/every-make-is-1-a9mt6x": "8.6.0",
-  "text/sim/v86-minis/exact-finish-4fvs6z": "8.6.0",
-  "text/sim/v86-minis/first-to-exactly-7-wins-qq549e": "8.6.0",
-  "text/sim/v86-minis/first-to-k8hula": "8.6.0",
-  "text/sim/v86-minis/fixed-spots-in-order-42kk9r": "8.6.0",
-  "text/sim/v86-minis/game-h2aiut": "8.6.0",
-  "text/sim/v86-minis/game-name-3l0tgm": "8.6.0",
-  "text/sim/v86-minis/go-over-and-you-bust-i1cy6g": "8.6.0",
-  "text/sim/v86-minis/hot-hand-t2hu7x": "8.6.0",
-  "text/sim/v86-minis/how-it-plays-q2ivrt": "8.6.0",
-  "text/sim/v86-minis/import-a-game-atfi4n": "8.6.0",
-  "text/sim/v86-minis/imported-game-3grzed": "8.6.0",
-  "text/sim/v86-minis/imported-game-xmnsnx": "8.6.0",
-  "text/sim/v86-minis/inside-1-three-2-2kr008": "8.6.0",
-  "text/sim/v86-minis/keep-shooting-1f6pqn": "8.6.0",
-  "text/sim/v86-minis/keep-shooting-until-you-miss-rjtuar": "8.6.0",
-  "text/sim/v86-minis/make-or-edit-rules-x60vjr": "8.6.0",
-  "text/sim/v86-minis/makes-in-a-row-t5yvak": "8.6.0",
-  "text/sim/v86-minis/no-layups-circle-1lldaq": "8.6.0",
-  "text/sim/v86-minis/no-layups-or-dunks-step-r0f86f": "8.6.0",
-  "text/sim/v86-minis/no-layups-shoot-from-outside-ioyyrb": "8.6.0",
-  "text/sim/v86-minis/no-limit-uhtk71": "8.6.0",
-  "text/sim/v86-minis/on-bust-to-half-jrg61k": "8.6.0",
-  "text/sim/v86-minis/one-game-iwhx7z": "8.6.0",
-  "text/sim/v86-minis/pick-any-spot-and-shoot-0wedfr": "8.6.0",
-  "text/sim/v86-minis/pick-your-spot-53169d": "8.6.0",
-  "text/sim/v86-minis/pick-your-spot-and-shoot-edi9ut": "8.6.0",
-  "text/sim/v86-minis/random-spot-each-shot-3urv7x": "8.6.0",
-  "text/sim/v86-minis/rules-igop6o": "8.6.0",
-  "text/sim/v86-minis/save-lewgh4": "8.6.0",
-  "text/sim/v86-minis/saved-hu8goq": "8.6.0",
-  "text/sim/v86-minis/scoring-z3u3se": "8.6.0",
-  "text/sim/v86-minis/seconds-per-shot-7aivpn": "8.6.0",
-  "text/sim/v86-minis/shoot-from-the-glowing-spot-skipei": "8.6.0",
-  "text/sim/v86-minis/small-k474fg": "8.6.0",
-  "text/sim/v86-minis/spot-up-k3qrrm": "8.6.0",
-  "text/sim/v86-minis/spots-cleared-etbl9q": "8.6.0",
-  "text/sim/v86-minis/streak-over-xmsqyj": "8.6.0",
-  "text/sim/v86-minis/that-code-is-a-team-rludx0": "8.6.0",
-  "text/sim/v86-minis/the-code-is-cut-off-lca1ju": "8.6.0",
-  "text/sim/v86-minis/time-per-shot-hlm0yh": "8.6.0",
-  "text/sim/v86-minis/to-win-u3v6g2": "8.6.0",
-  "text/sim/v86-minis/until-you-miss-9ej0n0": "8.6.0",
-  "text/sim/v86-minis/where-you-shoot-pjz7is": "8.6.0",
-  "text/sim/v86-minis/you-and-qz9ny3": "8.6.0",
   "text/sim/v86-play/ankles-broken-kheb1p": "8.6.0",
   "text/sim/v86-play/dribbling-73z2yu": "8.6.0",
   "text/sim/v86-play/fast-break-lp724j": "8.6.0",
@@ -3760,6 +3716,9 @@
   "text/sim/v86-play/taunt-7vuvuj": "8.6.0",
   "text/sim/v86-play/taunt-kydatf": "8.6.0",
   "text/sim/v86-play/taunt-v4dl59": "8.6.0",
+  "text/sim/v98-review/finger-roll-cljton": "9.8.0",
+  "text/sim/v98-review/just-missed-ifat94": "9.8.0",
+  "text/sim/v98-review/no-angle-6vi2tx": "9.8.0",
   "text/taunt/brush": "8.6.0",
   "text/taunt/chest": "8.6.0",
   "text/taunt/dua": "8.6.0",
@@ -3953,6 +3912,46 @@
   "trivia/99": "phase1"
  },
  "removed": {
+  "dialogue/intro/gym/siddiq/0": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "phase1"
+  },
+  "dialogue/intro/gym/tariq/0": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "phase1"
+  },
+  "screen/mini-game-room-import/desktop": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "9.2.2"
+  },
+  "screen/mini-game-room-import/phone-667x300": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "9.2.2"
+  },
+  "screen/mini-game-room-import/phone-750x342": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "9.2.2"
+  },
+  "screen/mini-game-room/desktop": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "9.2.2"
+  },
+  "screen/mini-game-room/phone-667x300": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "9.2.2"
+  },
+  "screen/mini-game-room/phone-750x342": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "9.2.2"
+  },
   "text/career/barakah-run/cpu-shot-clock-is-2-oiav4c": {
    "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
    "version": "9.6.3",
@@ -4033,9 +4032,379 @@
    "version": "9.3.0",
    "was": "8.6.0"
   },
+  "text/screens/creator-suite/import-a-code-pkewl0": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/screens/creator-suite/players-6wczhl": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/screens/creator-suite/teams-fjpthp": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/screens/creator-suite/teams-players-4gobsl": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/screens/menus-v85/daily-challenges-3ey660": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/screens/menus-v85/extras-kft85q": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/screens/menus-v85/play-a-game-q5uubu": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/screens/minis-menu/mini-games-3x9kc5": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/screens/profile/around-the-world-wins-7tndg2": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.2"
+  },
+  "text/screens/tutorial/tutorial-learn-to-play-j4lcaw": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/screens/v95-series/league-q7f3ao": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "9.5.0"
+  },
+  "text/screens/v95-series/play-everyone-then-the-top-2obdze": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "9.5.0"
+  },
+  "text/screens/v95-series/tournament-x41ccy": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "9.5.0"
+  },
+  "text/sim/v8-3v3/3-on-3-beta-6v5cff": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v8-kotc/around-the-world-8w4ppf": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/1-shot-cra710": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/20-seconds-tqcf6q": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/3-shots-xa12c7": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
   "text/sim/v86-minis/30-seconds-1eg71j": {
    "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
    "version": "9.6.3",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/5-shots-x1lkah": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/7-up-w7t0qn": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/a-turn-lasts-rqlyhe": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/back-to-9q57zv": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/beat-the-clock-1nbtkw": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/best-of-9s9xt4": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/best-of-lrvu70": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/choose-change-p-play-c-yd2jws": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/copy-a-custom-game-code-p6izu9": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/custom-game-3d4xt4": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/custom-game-room-ia3gq3": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/every-make-is-1-a9mt6x": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/exact-finish-4fvs6z": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/first-to-exactly-7-wins-qq549e": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/first-to-k8hula": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/fixed-spots-in-order-42kk9r": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/game-h2aiut": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/game-name-3l0tgm": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/go-over-and-you-bust-i1cy6g": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/hot-hand-t2hu7x": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/how-it-plays-q2ivrt": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/import-a-game-atfi4n": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/imported-game-3grzed": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/imported-game-xmnsnx": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/inside-1-three-2-2kr008": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/keep-shooting-1f6pqn": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/keep-shooting-until-you-miss-rjtuar": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/make-or-edit-rules-x60vjr": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/makes-in-a-row-t5yvak": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/no-layups-circle-1lldaq": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/no-layups-or-dunks-step-r0f86f": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/no-layups-shoot-from-outside-ioyyrb": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/no-limit-uhtk71": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/on-bust-to-half-jrg61k": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/one-game-iwhx7z": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/pick-any-spot-and-shoot-0wedfr": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/pick-your-spot-53169d": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/pick-your-spot-and-shoot-edi9ut": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/random-spot-each-shot-3urv7x": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/rules-igop6o": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/save-lewgh4": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/saved-hu8goq": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/scoring-z3u3se": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/seconds-per-shot-7aivpn": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/shoot-from-the-glowing-spot-skipei": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/small-k474fg": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/spot-up-k3qrrm": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/spots-cleared-etbl9q": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/streak-over-xmsqyj": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/that-code-is-a-team-rludx0": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/the-code-is-cut-off-lca1ju": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/time-per-shot-hlm0yh": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/to-win-u3v6g2": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/until-you-miss-9ej0n0": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/where-you-shoot-pjz7is": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/sim/v86-minis/you-and-qz9ny3": {
+   "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
+   "version": "9.8.0",
    "was": "8.6.0"
   }
  }

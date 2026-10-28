@@ -428,11 +428,13 @@ function trySteal(p) {
   if (!h || h.team === p.team) { SFX.swipe(); return; }
   p.face = sgn(h.x - p.x);
   if (dxz(p, h) < 54 && h.y < 10 && (h.state === 'free' || h.state === 'pass' || h.state === 'land')) {
-    let pr = 0.02 + p.st.stl * 0.025 - h.st.spd * 0.012;
-    if (h.move) pr += 0.14;                       // ball in transit between hands
-    if (ballExposed(p, h)) pr += 0.08;
+    // v9.8: position decides. Reaching at an exposed ball (on your side of his body) or a ball in transit between
+    // his hands is a real chance that grows with Steals; reaching across his body almost never works (and risks a
+    // reach-in). CPU defenders scale with difficulty (defK).
+    const open = ballExposed(p, h) || !!h.move;
+    let pr = open ? 0.06 + p.st.stl * 0.04 - (h.st.spd - 5) * 0.01 + (h.move ? 0.1 : 0) : 0.005 + p.st.stl * 0.008;
     if (M.phase === 'live' && trailing(p.team)) pr += 0.02;
-    if (chance(pr)) {
+    if (chance(clamp(pr * defK(p), 0, 0.75))) {
       const clean = chance(0.55);
       if (clean) giveBall(p, 'steal');
       else { fumble(h); ball.vx = (p.x - h.x) * 3; ball.vz = (p.z - h.z) * 3; ball.vy = 160; p.stats.stl++; addHifz(p, 20); }
@@ -442,6 +444,8 @@ function trySteal(p) {
   }
   SFX.swipe();
 }
+// v9.8: how strong this defender's defense is for the difficulty: humans, and CPU teammates of a human, play at 1
+function defK(p) { if (!p || p.human >= 0 || !M.players || M.players.some(q => q.team === p.team && q.human >= 0)) return 1; return (aiCfg(p.team) || DIFF.medium).dk || 1; }
 function ballExposed(p, h) { return Math.hypot(ball.x - p.x, ball.z - p.z) < dxz(h, p) - 4; }
 function tryShove(p) {
   if (p.cd.shove > 0) return;

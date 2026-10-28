@@ -73,8 +73,6 @@ export const SCREENS = [
   ['custom teams: share', `goTitle(); openCS(0); CSUI.share = csShareCode('team', { name: 'Masjid Al-Noor', short: 'NOOR', c1: TEAMS[0].c1, c2: TEAMS[0].c2, crest: TEAMS[0].crest, roster: [{ k: 'team', t: 0, i: 0 }, { k: 'team', t: 0, i: 1 }] }); Game.screen = 'csshare';`],
   ['custom teams: edit a team', `goTitle(); openCS(0); openCSEdit(csNewTeam());`],
   ['custom teams: edit a player', `goTitle(); openCS(1); openCSEdit(csNewPlayer());`],
-  ['mini game room', `goTitle(); openMinis(); openRoom();`],
-  ['mini game room: import', `goTitle(); openMinis(); openRoom(); Game.screen = 'mrimport'; MR.msg = '';`],
   ['custom teams: edit a team (own court)', `goTitle(); openCS(0); const d = csLoad(), t = csNewTeam(); t.name = 'Masjid Al-Noor'; t.short = 'NOOR'; t.venue = 'own'; t.court = { b: 0, w: 0, p: 0, m: 2, n: 1 }; d.teams.push(t); csSave(); openCSEdit(t);`],
   ['3 on 3: third players', `goTitle(); startSelect('1p'); Game.sel.three = true; Game.sel.a = 0; Game.sel.b = 1; selectOK(); selectOK();`],
   ['venue: your own court', `goTitle(); const d = csLoad(), t = csNewTeam(); t.name = 'Masjid Al-Noor'; t.short = 'NOOR'; t.venue = 'own'; t.court = { b: 0, w: 0, p: 0, m: 2, n: 1 }; d.teams.push(t); csSave(); startSelect('1p'); Game.sel.a = teamPool().findIndex(x => x.court); Game.sel.b = 1; openVenueSelect(() => {});`],

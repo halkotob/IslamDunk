@@ -81,6 +81,8 @@
 //   v93          v9.3.0: a team's own court (editor rows, first on the venue screen, built gym and park floors, share
 //                codes, career away games, online lobby), 3 on 3 third-player picks, your players as mini game
 //                opponents (HORSE, Lightning and King of the Court line-ups), Teams & Players: right no longer duplicates
+//   v98          v9.8.0: play-test review: foul/timeout restarts walk and check, blocks by position and Defense, difficulty scales
+//                the CPU defense, niyyah on big games only, story choices fit and Skip, layup poses, menu help, 3 mini games
 //   v95          v9.5.0: a tournament (bracket, a real game to the post-game screen, knocked out, played out, saved), a
 //                league (schedule, standings, final, leaders), the Quick Play entries, colorblind-safe kits, larger
 //                text on a computer, automatic shot release, Settings → Accessibility, the top plays reel, My clips
@@ -330,6 +332,7 @@ T['feel'] = async ({ browser, base }) => {
     for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);
     const v = M.players[0], d = M.players[2]; place(v, 600, 300); place(d, 620, 305); giveBall(v, 'inbound');
     sideOut(v, 'REACH-IN!', ''); M.deadT = 0; updateMatch(STEP);
+    for (let n = 0; n < 60 * 6 && M.phase !== 'live'; n++) updateMatch(STEP);   // v9.8: everyone walks to the spot, then the check
     out.sideOutGap = Math.round(Math.min(...M.players.filter(q => q.team !== v.team).map(q => dxz(q, v)))); out.sideOutBall = ball.owner === v;
     return out;
   });
@@ -694,13 +697,11 @@ T['v86'] = async ({ browser, base }) => {
       if (KOTC.overT > 0) continue;
       for (const q of M.players) { const inC = (q.x - hh.x) * hh.dir < 140 && Math.abs(q.z - hh.z) > 200, t = inC ? (ct.get(q) || 0) + STEP : 0; ct.set(q, t); sam++; if (t > 2.5) stuck++; } }
     out.kotcCorners = stuck / sam < 0.005; out.kotcWinnerBall = firsts.length > 0 && firsts.every(Boolean); KOTC.on = false;
-    // 7 Up and every custom preset play to a winner; codes round-trip
-    out.minis = MR_PRESETS.every(set => { setupMini('custom', { set, rules: set.r, roster: ['saleem', 'nasser', 'khalil'].slice(0, set.r.players), humans: [] }); const mg = M.mini; for (let n = 0; n < 60 * 900 && !mg.done; n++) miniStep(STEP); return mg.done && mg.winner != null; });
-    out.code = !!mrImport(mrCode(MR_PRESETS[1])).ok && !!mrImport('ID1-zzz-abc').err;
+    // v9.8: 7 Up and custom games were removed; the mini games list is Lightning, HORSE, King of the Court
+    out.minis = MINI_GAMES.map(x => x[0]).join() === 'lightning,horse,kotc' && !LOBBY_GAMES.some(g => ['atw', 'sevenup', 'custom'].includes(g.id));
     return out;
   });
-  await p.evaluate(() => { goTitle(); MiniMenu.kind = 'custom'; openMinis(); }); await sleep(300);
-  await p.evaluate(() => openRoom()); await sleep(300);
+  await p.evaluate(() => { goTitle(); openMinis(); }); await sleep(300);
   await p.evaluate(() => { Game.screen = 'profile'; }); await sleep(300);
   await ctx.close();
   const ok = Object.values(r).every(v => v === true) && !errs.length;
@@ -832,6 +833,58 @@ T['v95'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
+// v9.8: play-test review fixes: foul and timeout restarts walk and check, blocks/steals by position, difficulty scales
+// the CPU defense, niyyah on big games only, story choices fit and can be skipped, layup poses, menu help
+T['v98'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'v98');
+  const r = await p.evaluate(() => {
+    window.__seed(98); const out = {};
+    const live = () => { for (let n = 0; n < 60 * 4 && M.phase !== 'live'; n++) updateMatch(STEP); };
+    // a reach-in: the fouled player walks to the spot, CHECK, then BALL IN; nothing is live in between
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'halves', len: 120 } }); live();
+    let h = ball.owner || M.players[0]; if (!ball.owner) giveBall(h, 'inbound');
+    const d = M.players.find(q => q.team !== h.team), sx = h.x, sz = h.z;
+    place(d, h.x + 200, h.z); nonShootingFoul(d, h, 'REACH-IN!');
+    let sawCheck = false, liveEarly = false, walked = 0, t = 0;
+    for (let n = 0; n < 60 * 8 && !(sawCheck && M.phase === 'live'); n++) { updateMatch(STEP); t += STEP; if (M.check && M.check.full) { sawCheck = true; walked = Math.max(walked, ...[...M.check.S.keys()].map(q => Math.hypot(q.vx, q.vz))); } else if (!sawCheck && M.phase === 'live' && t > 0.2 && t < 0.85) liveEarly = true; }
+    out.foulCheck = sawCheck && !liveEarly && M.phase === 'live' && walked > 20 && ball.owner === h;
+    // a timeout: walk into the set play, then the check
+    newMatch(TEAMS[2], TEAMS[3], { humans: [], fmt: { format: 'halves', len: 120 } }); live();
+    if (!ball.owner) giveBall(M.players[0], 'inbound');
+    const tm = ball.owner.team; callTimeout(tm, false); endTimeout('pnr');
+    sawCheck = false; for (let n = 0; n < 60 * 8 && !(sawCheck && M.phase === 'live'); n++) { updateMatch(STEP); if (M.check && M.check.full) sawCheck = true; }
+    out.timeoutCheck = sawCheck && M.phase === 'live' && !!ball.owner && ball.owner.team === tm;
+    // blocks: Defense matters when you're in the lane early; steals: an exposed ball is a real chance
+    newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'halves', len: 120 } }); live();
+    const sh = M.players[0], o = M.players[2], hp = attackHoop(0), tries = def => { let b = 0; for (let i = 0; i < 400; i++) {
+      place(sh, hp.x - hp.dir * 200, hp.z); place(o, hp.x - hp.dir * 150, hp.z); o.st.def = def; o.face = -hp.dir; o.y = 60; o.swipe = false;
+      ball.state = 'shot'; ball.shot = { t: 0.15, tried: new Set(), shooter: sh, hoop: hp, team: 0, pts: 2 }; ball.x = o.x + o.face * 6; ball.y = o.y + 104; ball.z = o.z;
+      const was = blockBall; let hit = false; blockBall = () => { hit = true; }; try { checkBlockJump(o); } finally { blockBall = was; } if (hit) b++; } return b / 400; };
+    const b3 = tries(3), b10 = tries(10); out.blocks = b10 > b3 + 0.2 && b10 > 0.45 && b3 < 0.4;
+    out.defK = defK(M.players[2]) === 1 && DIFF.veryeasy.dk < DIFF.easy.dk && DIFF.easy.dk < DIFF.medium.dk && DIFF.medium.dk < DIFF.hard.dk;
+    // niyyah: asked before the first game, the first group game, semis and finals, not group games 2 and 3
+    if (!C) { C = freshCareer(); C.name = 'T'; C.bracket = makeBracket(0); }
+    C.gamesPlayed = 0; const a0 = niyyahBigGame(); C.gamesPlayed = 4; C.bracket.round = 0; C.bracket.md = 1; const a1 = niyyahBigGame(); C.bracket.md = 0; const a2 = niyyahBigGame(); C.bracket.round = 1; const a3 = niyyahBigGame();
+    out.niyyah = a0 && !a1 && a2 && a3;
+    // story: four long choices fit their buttons; Skip ends the scene
+    let done = false; playStory([['saleem', 'Hello.'], ['choice', [['Just let me play today.', [['saleem', 'Ok.']]], ['Make the extra pass. Get my brothers involved.', [['saleem', 'Ok.']]], ['Defend every possession like it matters.', [['saleem', 'Ok.']]], ['Knock down my free throws when it counts.', [['saleem', 'Ok.']]]]]], () => { done = true; }, 'Test');
+    Game.story.i = 1; storySkip(Game.story); out.skip = done;
+    // menus: the highlighted title entry is explained; mini games are the three keepers
+    goTitle(); out.help = !!titleMenuHelp(TITLE_MENU());
+    out.minis = MINI_GAMES.map(x => x[0]).join() === 'lightning,horse,kotc';
+    // layups: a layup shot gets a layup pose
+    newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); live(); const me = M.players[0]; giveBall(me, 'inbound'); M.players.slice(1).forEach((q, i) => place(q, me.x + 400 + i * 50, 100 + i * 150));
+    me.shotType = 'layup'; me.sigShot = null; me.state = 'shoot'; me.layV = null; const pt = poseTargets(me, 0);
+    out.layup = me.layV === 'roll' && pt.ns > 2.9 && pt.ne < 0.2;
+    return out;
+  });
+  // the story bar with four long choices draws without errors, and the Skip button is on screen
+  await p.evaluate(() => { playStory([['choice', [['Just let me play today.', []], ['Make the extra pass. Get my brothers involved.', []], ['Defend every possession like it matters.', []], ['Knock down my free throws when it counts.', []]]]], () => goTitle(), 'Before the game'); }); await sleep(500);
+  await ctx.close();
+  const ok = Object.values(r).every(v => v === true) && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
 T['career-intro'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'career-intro');
   const st = () => p.evaluate(() => ({ scr: Game.screen, scene: typeof INTRO !== 'undefined' && INTRO ? INTRO.scene : null, x: INTRO && Math.round(INTRO.x || 0), talk: INTRO && INTRO.talk ? INTRO.talk.lines[INTRO.talk.i][0] : null, met: INTRO && INTRO.met ? Object.keys(INTRO.met).length : 0 }));
@@ -859,7 +912,7 @@ T['career-intro'] = async ({ browser, base }) => {
   }
   await sleep(1800); const s1 = await st();
   for (let i = 0; i < 4 && (await st()).talk; i++) await press('Enter');
-  for (const id of ['khalil', 'nasser', 'mahmoud', 'tariq', 'siddiq']) {
+  for (const id of ['khalil', 'nasser', 'mahmoud']) {             // v9.8: Tariq and Siddiq left the intro
     await p.evaluate(id => { const s = INTRO_CAST[id], me = M.players[0]; me.x = s.x + (s.x > 900 ? -70 : 70); me.z = s.z; }, id);
     await sleep(350); await press('KeyE');
     for (let k = 0; k < 4 && (await st()).talk; k++) await press('Enter');
@@ -872,7 +925,7 @@ T['career-intro'] = async ({ browser, base }) => {
   const end = await p.evaluate(() => ({ scr: Game.screen, seen: C.seen.intro && C.seen.meetNew, saved: !!readSave(SAVE_AUTO) }));
   await ctx.close();
   const tiersOk = checks.tiers.every(c => c['-1'] === 2 && c['0'] === 3 && c['1'] === 2);
-  const ok = checks.zero && checks.maxAbs <= 3 && tiersOk && checks.bodies && s0.scr === 'introout' && greeted === 'saleem' && s1.scr === 'gym' && s1.scene === 'gym' && s2.met === 5 && end.scr === 'hub' && end.seen && end.saved && !errs.length;
+  const ok = checks.zero && checks.maxAbs <= 3 && tiersOk && checks.bodies && s0.scr === 'introout' && greeted === 'saleem' && s1.scr === 'gym' && s1.scene === 'gym' && s2.met === 3 && end.scr === 'hub' && end.seen && end.saved && !errs.length;
   return { ok, detail: [JSON.stringify(checks), 'start: ' + JSON.stringify(s0), 'greeted by ' + greeted, 'gym: ' + JSON.stringify(s1), 'met: ' + JSON.stringify(s2), 'end: ' + JSON.stringify(end), ...errs] };
 };
 
@@ -1076,7 +1129,7 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
   await ctx.close();
   return { ok: ok && !errs.length, detail: log.concat(errs) };
 }
-T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'co', 'lightning', 'horse', 'atw', 'kotc', 'sevenup', 'custom'], dropP2P: true, noor: true });
+T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'co', 'lightning', 'horse', 'kotc'], dropP2P: true, noor: true });
 T['online-room'] = ({ browser, base }) => onlineFlow(browser, base, { room: true, games: ['vs', 'one'] });
 T['online-fb'] = ({ browser, base }) => onlineFlow(browser, base, { games: ['vs', 'co'] });
 T['online-custom'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=30&jit=5&room=c', games: ['vs', 'co', 'one'], custom: true });

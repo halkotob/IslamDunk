@@ -99,7 +99,7 @@ const P2P = {
       if (!gp) { if (this.pc) this.close('guest-gone'); return; }
       if (this.remote && this.remote !== gp) this.close('new-guest');
       const g = Net.peers().find(p => p.peer === gp), pres = g && g.presence;
-      if (!this.pc && pres && pres.p2p && this.tries < 4 && nowMs() > this.nextTry) this.offer(gp).catch(() => this.close('offer-fail'));
+      if (!this.pc && pres && pres.p2p && this.tries < 6 && nowMs() > this.nextTry) this.offer(gp).catch(() => this.close('offer-fail'));
       const a = pres && pres.rtc;
       if (this.pc && a && a.t === 'a' && a.id === this.id && !this.pc.remoteDescription) this.pc.setRemoteDescription({ type: 'answer', sdp: a.sdp }).catch(() => this.close('answer-fail'));
     } else {

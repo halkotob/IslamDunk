@@ -108,6 +108,8 @@
     "screens/v95-access.js",
     "career/league.js",
     "career/hub-layout.js",
+    "sim/v98-review.js",
+    "online/v98-net.js",
     "boot.js"
   ]
 }

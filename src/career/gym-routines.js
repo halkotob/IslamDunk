@@ -258,7 +258,6 @@ function gymDrillMenu() {
     { label: 'Pickup games', sub: [
       { label: 'Lightning', act: () => startMini('lightning') },
       { label: 'HORSE', sub: opps.map(([id, name]) => ({ label: 'vs ' + name, act: () => startMini('horse', id) })) },
-      { label: 'Around the World', sub: opps.map(([id, name]) => ({ label: 'vs ' + name, act: () => startMini('atw', id) })) },
       { label: 'King of the Court', act: () => startGymKotc() }] },
     { label: 'Back', act: () => { Gym.overlay = null; } }
   ];

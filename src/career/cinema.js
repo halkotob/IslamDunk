@@ -38,6 +38,8 @@ function storyNext(s) {
   if (s.t * 55 < full) { s.t = full / 55; return; }
   s.i++; s.t = 0; s.pick = 0; if (s.i >= s.lines.length) s.then();
 }
+// skipping a scene: a choice still on screen takes its first answer (so its effect, if any, is the "no" one)
+function storySkip(s) { if (!s || Game.story !== s) return; const line = storyLine(s); if (line[0] === 'choice') storyChoose(s, 0); s.then(); }
 function storyChoose(s, k) {
   const line = storyLine(s), opt = line[1][k]; if (!opt) return;
   s.lines.splice(s.i, 1, ['you', opt[0]], ...opt[1]); s.t = 0; s.pick = 0;   // you say it, then the reply
@@ -68,18 +70,29 @@ drawStory = function (g) {
   }
   g.restore();
   // letterbox and subtitles
-  const top = 46 * CINE.lb, bot = 112 * CINE.lb;
+  // v9.8: choice buttons size to their text (two per row when there are more than three), and the bottom bar grows to fit
+  let cl = null;
+  if (choice) {
+    const n = line[1].length, cols = n > 3 ? 2 : n, w = Math.min(n > 3 ? 389 : 256, (790 - (cols - 1) * 12) / cols);
+    g.font = `14px ${BODY}`;
+    const lh = Math.max(17, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 14) * 1.2);
+    const rowsOf = t => { let l = '', r = 1; for (const wd of t.split(' ')) { const tt = l ? l + ' ' + wd : wd; if (g.measureText(tt).width > w - 20 && l) { r++; l = wd; } else l = tt; } return r; };
+    const hs = line[1].map(o => rowsOf(o[0]) * lh + 16), rowH = []; for (let k = 0; k < n; k++) { const r = Math.floor(k / cols); rowH[r] = Math.max(rowH[r] || 0, hs[k]); }
+    cl = { n, cols, w, lh, rowH, need: 30 + 12 + rowH.reduce((a, b) => a + b + 8, 0) + 14 };
+  }
+  const top = 46 * CINE.lb, bot = Math.max(112, cl ? cl.need : 0) * CINE.lb;
   g.fillStyle = '#05080c'; g.fillRect(-400, 0, W + 800, top); g.fillRect(-400, H - bot, W + 800, bot);
   if (s.title) { g.textAlign = 'center'; g.fillStyle = 'rgba(232,195,90,0.85)'; g.font = `13px ${FONT}`; g.fillText(s.title.toUpperCase(), W / 2, 30); }
   const y0 = H - bot + 30;
   if (choice) {
     g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `14px ${FONT}`; g.fillText(C.name || 'You', 90, y0);
-    const n = line[1].length, w = Math.min(256, (790 - (n - 1) * 12) / n);
+    let yy = y0 + 12;
     line[1].forEach((opt, k) => {
-      const x = 90 + k * (w + 12), sel = (s.pick | 0) === k;
-      g.fillStyle = sel ? 'rgba(232,195,90,0.9)' : 'rgba(255,255,255,0.08)'; roundRect(g, x, y0 + 12, w, 44, 10); g.fill();
-      g.fillStyle = sel ? NIGHT : IVORY; g.font = `${n > 3 ? 13 : 14}px ${BODY}`; wrapTextLeft(g, opt[0], x + 10, y0 + 30, w - 20, 16);
-      addRect(x, y0 + 12, w, 44, () => storyChoose(s, k));
+      const r = Math.floor(k / cl.cols), c = k % cl.cols, x = 90 + c * (cl.w + 12), sel = (s.pick | 0) === k, h = cl.rowH[r];
+      const y = y0 + 12 + cl.rowH.slice(0, r).reduce((a, b) => a + b + 8, 0);
+      g.fillStyle = sel ? 'rgba(232,195,90,0.9)' : 'rgba(255,255,255,0.08)'; roundRect(g, x, y, cl.w, h, 10); g.fill();
+      g.fillStyle = sel ? NIGHT : IVORY; g.font = `14px ${BODY}`; wrapTextLeft(g, opt[0], x + 10, y + 8 + cl.lh * 0.8, cl.w - 20, cl.lh);
+      addRect(x, y, cl.w, h, () => storyChoose(s, k));
     });
   } else {
     const who = speakerId === 'you' ? (C.name || 'You') : castDef(speakerId).name;
@@ -103,12 +116,12 @@ drawStory = function (g) {
         if (menuHit('left') || menuHit('up')) s.pick = ((s.pick | 0) + n - 1) % n;
         if (menuHit('right') || menuHit('down')) s.pick = ((s.pick | 0) + 1) % n;
         if (menuHit('ok') || Input.pressed.KeyJ) storyChoose(s, s.pick | 0);
-        else if (menuHit('back')) { storyChoose(s, 0); s.then(); }
+        else if (menuHit('back')) storySkip(s);
         return;
       }
       s.t += rdt;
       if (menuHit('ok') || Input.pressed.KeyJ) storyNext(s);
-      else if (menuHit('back')) s.then();
+      else if (menuHit('back')) storySkip(s);
       return;
     }
     return _cu.apply(this, arguments);

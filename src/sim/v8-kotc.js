@@ -159,5 +159,5 @@ function kotcLeave() {
   const _isM = Net.isMini;
   Net.isMini = function (m = this.mode) { return m === 'atw' || _isM.call(this, m); };
   MINI_ONLINE.atw = ['khalil', 'nasser'];
-  LOBBY_GAMES.splice(LOBBY_GAMES.findIndex(g => g.id === 'brun'), 0, { id: 'atw', name: 'Around the World' }, { id: 'kotc', name: 'King of the Court' });
+  LOBBY_GAMES.splice(LOBBY_GAMES.findIndex(g => g.id === 'brun'), 0, { id: 'kotc', name: 'King of the Court' });   // v9.8: Around the World removed
 }

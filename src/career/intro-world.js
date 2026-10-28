@@ -15,13 +15,11 @@ const INTRO_OUT = [
 ];
 // v7.9: everyone is busy with something when you walk in (act), and stops to talk when you come over:
 //   Khalil shoots around at the far hoop, Nasser stretches, Uncle Mahmoud sits on a folding chair by
-//   the wall, Tariq keeps the stat sheet on a clipboard, Uncle Siddiq pours chai at a little table.
+//   the wall. (v9.8: Tariq and Uncle Siddiq are no longer in the intro; you meet them in the musalla.)
 const INTRO_CAST = {   // gym spots (world x, z), what they're doing, what they say when you walk up
-  khalil: { x: 1120, z: 430, act: 'shoot', face: 1, lines: [['khalil', 'Welcome! Gym, overflow musalla, potluck hall. Mind the folding chairs.']] },
-  nasser: { x: 980, z: 600, act: 'stretch', face: -1, lines: [['nasser', 'Shooting tip: let it go at the top of your jump. Green on the meter is money.']] },
-  mahmoud: { x: 720, z: 140, act: 'sit', face: 1, lines: [['mahmoud', 'In 1987 I scored forty points in this gym, beta.'], ['mahmoud', 'Nobody kept score. But I know.']] },
-  tariq: { x: 700, z: 500, act: 'clip', face: 1, lines: [['tariq', 'I’m Tariq. I keep the stat sheet now. Every shot, every assist.']] },
-  siddiq: { x: 1200, z: 140, act: 'chai', face: 1, lines: [['siddiq', 'Chai after Isha, brother. The chalkboard by the door keeps our streak.']] }
+  khalil: { x: 1120, z: 430, act: 'shoot', face: 1, lines: [['khalil', 'Welcome, brother! Sunday school in the morning, basketball after Asr. Grab a ball.']] },
+  nasser: { x: 980, z: 600, act: 'stretch', face: -1, lines: [['nasser', 'Nasser. Good to have you, akhi. We’ve needed another guard.']] },
+  mahmoud: { x: 720, z: 140, act: 'sit', face: 1, lines: [['mahmoud', 'In 1987 I scored forty points in this gym.'], ['mahmoud', 'Nobody kept score. But I know.']] }
 };
 const INTRO_SALEEM = { x: 860, z: 300 };
 const INTRO_WRAP = [

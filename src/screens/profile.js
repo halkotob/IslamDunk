@@ -186,7 +186,7 @@ function drawProfileCard(g, x, y) {
   const mw = k => (s.minis[k] || { w: 0 }).w;
   const TT = Input.touchMode && g === ctx;                             // v8.6.2: phones get fewer, larger lines (not the saved card image)
   const lines = TT ? ['Games ' + s.games + '   Wins ' + s.wins, 'Mini-game wins ' + (mw('horse') + mw('lightning') + mw('atw')), 'Crowns ' + s.crowns]
-    : ['Games ' + s.games + '   Wins ' + s.wins, 'HORSE wins ' + mw('horse') + '   Lightning wins ' + mw('lightning'), 'Around the World wins ' + mw('atw'), 'King of the Court crowns ' + s.crowns];
+    : ['Games ' + s.games + '   Wins ' + s.wins, 'HORSE wins ' + mw('horse') + '   Lightning wins ' + mw('lightning'), 'King of the Court wins ' + mw('kotc'), 'King of the Court crowns ' + s.crowns];
   g.fillStyle = IVORY; g.font = `13px ${BODY}`; lines.forEach((t, i) => g.fillText(fitText(g, t, 228), x + 160, y + 176 + i * (TT ? 28 : 20)));
   g.fillStyle = '#9fb3c8'; g.font = `10px ${FONT}`; g.fillText('ISLAM DUNK', x + 160, y + 282);
 }

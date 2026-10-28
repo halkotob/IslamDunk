@@ -171,7 +171,7 @@ const Net = {
     let mx = clamp(+i.mx || 0, -1, 1), mz = clamp(+i.mz || 0, -1, 1); const L = Math.hypot(mx, mz); if (L > 1) { mx /= L; mz /= L; }
     const ac = i.ac | 0, bc = i.bc | 0, xc = i.xc | 0, sc = i.sc | 0;
     if (i.q) this.guestQ = +i.q;
-    if ((i.rc | 0) > (this.lastRc || 0)) { this.lastRc = i.rc | 0; this.pendRel = { rt: +i.rt || 0 }; }   // guest released Shoot at this shot time (its view)
+    if ((i.rc | 0) > (this.lastRc || 0)) { this.lastRc = i.rc | 0; this.pendRel = { rt: +i.rt || 0, at: nowMs() }; }   // guest released Shoot at this shot time (its view)
     this.guestLag = clamp(+i.lg || 0, 0, 300) / 1000;                          // newest guest input the host has applied (for guest prediction)
     c.mx = mx; c.mz = mz; c.turbo = !!i.t; c.bHeld = !!i.bh; c.bRel = false; c.xHeld = !!i.xh; c.aRel = !!this._ah && !i.ah; c.aHeld = !!i.ah; this._ah = !!i.ah;
     c.a = ac > this.lastAc; c.b = bc > this.lastBc; this.lastAc = Math.max(this.lastAc, ac); this.lastBc = Math.max(this.lastBc, bc);

@@ -86,6 +86,22 @@ function menuStackUpdate(id, items, onRootBack) {
   if (menuHit('ok') || (list[m[key]] && list[m[key]].sub && menuHit('right'))) menuActivate(id, items, m[key]);
   else if (menuHit('back')) { if (!closeSub(id) && onRootBack) onRootBack(); }
 }
+// v9.8: one line under the title menu saying what the highlighted entry is for (play-testers found the menus hard to find
+// their way around)
+const MENU_HELP = {
+  'Career': 'Your story at Masjid Al-Amanah: the league, the masjid, the brothers.', 'Quick Play': 'Jump into a game, a tournament, a league or a mini game.',
+  'Online': 'Play with a friend on another device.', 'Teams & Players': 'Make your own players and teams, and share them with codes.', 'Options': 'Your profile, settings, extras and how to play.',
+  'Play a game': 'One game: alone, with a friend on this device, or 3 on 3.', 'Barakah Run': 'A run of games against tougher and tougher teams, with power-ups.',
+  'Mini games': 'Lightning, HORSE and King of the Court.', 'Daily challenges': 'A new scenario and a new spot pattern every day.', 'Tutorial: learn to play': 'The controls, one step at a time.',
+  '1 player': 'You and a CPU teammate against two.', '2 players co-op': 'Two players on this device, on the same team.', '3 on 3 (beta)': 'Three a side, with a third player you pick.',
+  'Tournament': 'A knockout bracket of 4 or 8 teams.', 'League': 'Play everyone, then the top two meet in the final.', 'Settings': 'Game, controls, accessibility, sound and display.',
+  'Extras': 'Fun modes, achievements, personal bests and your saved clips.', 'How to play': 'Every button and what it does.', 'About': 'Who made Islam Dunk.',
+  'Teams': 'Your teams: colors, crest, players and home court.', 'Players': 'Your players: looks and skills.', 'Import a code': 'Paste a team or player code from a friend.'
+};
+function titleMenuHelp(items) {
+  const m = menuState('title'); if (!m) return ''; const list = m.path.length ? menuListAt(items, m.path) : items, i = m.path.length ? m.sidx : m.idx, it = list && list[i];
+  return it ? MENU_HELP[String(it.label).replace(/\s*\(.*\)$/, '').trim()] || MENU_HELP[it.label] || '' : '';
+}
 function drawMenuStack(g, id, items, y, gap = 40, width = 320) {   // v9.6.2: width (the career hub fits its column)
   const m = menuState(id); menuSync(m);
   if (m.path.length && !menuListAt(items, m.path)) { m.path.length = 0; m.sub = -1; }
@@ -363,9 +379,9 @@ function render(g) {
     g.save(); g.shadowColor = 'rgba(0,0,0,0.5)'; g.shadowBlur = 30; g.fillStyle = pg; roundRect(g, px, py, pw, ph, 18); g.fill(); g.restore();
     g.strokeStyle = 'rgba(232,195,90,0.25)'; g.lineWidth = 1; roundRect(g, px, py, pw, ph, 18); g.stroke();
     drawLogo(g, 150);
-    drawMenuStack(g, 'title', TITLE_MENU(), 284, 42);
+    const TM = TITLE_MENU(); drawMenuStack(g, 'title', TM, 284, 42);
     g.textAlign = 'center'; g.fillStyle = 'rgba(246,236,210,0.7)'; g.font = `13px ${BODY}`;
-    g.fillText('CPU demo in progress: ' + M.teamDefs[0].name + ' vs ' + M.teamDefs[1].name, W / 2, 522);
+    g.fillText(fitText(g, titleMenuHelp(TM) || 'CPU demo in progress: ' + M.teamDefs[0].name + ' vs ' + M.teamDefs[1].name, W - 60), W / 2, 522);
     g.textAlign = 'right'; g.fillStyle = 'rgba(246,236,210,0.55)'; g.font = `12px ${FONT}`; g.fillText('v' + VERSION, W - 14, 530);
   } else if (s === 'select') drawSelect(g);
   else if (s === 'venue') drawVenueSelect(g);

@@ -22,7 +22,7 @@ function minisRows() {
   R.push({ label: 'Back', back: true, step: () => goTitle() });
   return R;
 }
-const MINI_GAMES = [['lightning', 'Lightning'], ['horse', 'HORSE'], ['atw', 'Around the World'], ['kotc', 'King of the Court']];
+const MINI_GAMES = [['lightning', 'Lightning'], ['horse', 'HORSE'], ['kotc', 'King of the Court']];   // v9.8: Around the World removed (play-test review)
 function minisHelp() {
   if (MiniMenu.kind === 'atw') return ['Seven spots around the key, baseline to baseline. Make it and move to the next spot, and keep shooting.', 'Miss and your turn is over. Miss twice in a row on the same spot and you go back one.', 'First to make the last spot wins.'];
   if (MiniMenu.kind === 'kotc') return ['1 on 1, half court, check-up at the top. Ones and twos: a basket is 1, a three is 2. First to 3.', 'Winner stays on the court, loser goes to the back of the line, next challenger steps up.', 'Hold the court for 3 games in a row to be crowned King. Use DEFEND, it matters here.'];

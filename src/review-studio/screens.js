@@ -112,8 +112,6 @@ export const SCREEN_OF = {
   "custom teams: share": "csshare",
   "custom teams: edit a team": "csedit",
   "custom teams: edit a player": "csedit",
-  "mini game room": "miniroom",
-  "mini game room: import": "mrimport",
   "custom teams: edit a team (own court)": "csedit",
   "3 on 3: third players": "pick3",
   "venue: your own court": "venue",

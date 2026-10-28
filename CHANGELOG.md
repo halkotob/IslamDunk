@@ -1,5 +1,68 @@
 # Changelog
 
+## 9.8.0: the play-test review
+From the team's feel checklist and line marks (Review Studio export). Lowest ratings first.
+
+- **Online lag (rated 1).** Players on different networks rarely got the direct link (only STUN was tried) and fell
+  back to the Firebase server, which queued every snapshot in order, so delays piled up.
+  - On the server path, snapshots and inputs no longer queue. While one write is in flight, only the newest waits.
+  - On the direct link, snapshots go at 60 Hz (was 30).
+  - The host tries the direct link 6 times (was 4).
+  - A guest's shot release that arrived together with the press was lost; it is kept now.
+  - A relay (TURN) server can be set in `ONLINE_TURN` (`src/online/v98-net.js`) or `window.ISLAMDUNK_TURN`, so
+    players the direct link can't reach still get the fast lane. None is set by default: it needs the team's own
+    TURN service (for example Cloudflare Calls).
+- **Restarts after fouls and timeouts (rated 2).** A foul side-out or a set play out of a timeout handed the ball over in
+  place and went live the same frame.
+  - Now everyone walks from where they stood to their spots: the fouled player to the spot of the foul, or the set
+    play's formation.
+  - The ball is checked (CHECK), then BALL IN. The clocks wait. Half court already worked this way.
+- **Steals and blocks (rated 2: "feels more random").**
+  - **Blocks:**
+    - A jump that meets the ball early, from between the shooter and the rim, is a real block chance, and Defense
+      decides how likely: about 25% at Defense 3, 57% at 10. It was a roll capped at 30% for everyone, so Defense
+      stopped mattering above 7.
+    - From the side or behind, it stays a long shot.
+    - Defense also reaches a little farther.
+    - A missed block says why: LATE, NO ANGLE, JUST MISSED.
+  - **Dunk contests** weigh Defense against Dunking, and a set rim protector stops more.
+  - **Steals:**
+    - Reaching at an exposed ball (on your side of his body) or a ball between his hands is a real chance that grows
+      with Steals. Reaching across his body almost never works.
+    - A gold ring under the ball shows when it's exposed and in reach.
+  - Measured over CPU games, blocks are 10% of Medium shots (was 9%).
+  - The league's stand-in result (used when a background game times out) is recalibrated to the new steal, block
+    and turnover rates.
+- **Niyyah (rated 2).** Asked before big games only: your first career game, the first game of each stage entry,
+  semifinals and finals. The choice buttons size to their text (two per row), so long intentions no longer run off them.
+- **Difficulty (rated 3: "scalable across all difficulties").** Difficulty only changed the CPU's offense; its defense
+  was the same at every level.
+  - Each level now also sets the CPU's defense (`DIFF.dk`: blocks, steals, and how much a close defender lowers
+    your shot at release), and Very easy's CPU shoots a little worse. The CPU's shot choices are unchanged.
+  - A medium-AI stand-in now wins 87% / 77% / 50% / 13% from Very easy to Hard (was 90 / 67 / 47 / 13). Easier
+    levels also widen your own release window, which the stand-in doesn't use.
+- **Layups (rated 3: "no layup animations").** Shots were already classified, but only signature moves had a pose.
+  Layups now have:
+  - a gather step;
+  - a **finger roll** (ball up on a straight arm, knee drive), the normal layup;
+  - a **jelly** (one-hand finesse scoop, leaning in) when a defender is close;
+  - poses for reverses, up-and-unders and putbacks;
+  - a held follow-through.
+- **Mini games (rated 3).** Around the World, 7 Up and the custom game room are removed (menus, the gym and online).
+  Lightning, HORSE and King of the Court stay.
+- **Menus (rated 3).** The title menu explains the highlighted entry in one line under the panel.
+- **Cutscenes.** The Skip button (top left, since 9.6.2) now answers a choice that is still on screen with its first
+  option, the same way Esc does.
+- **Lines:**
+  - Tariq's and Uncle Siddiq's intro lines are cut, along with them in the intro (you meet them in the musalla).
+  - Nasser's shooting tip is replaced with a welcome.
+  - "beta" is out of Uncle Mahmoud's line.
+  - Khalil's gym welcome is rewritten.
+- **Tests:** the new `v98` test covers restarts, blocks, steals, the difficulty settings, niyyah, story Skip, the menu
+  help, the mini games list and the layup poses. `career-intro` meets three brothers. The `v86` and `online-loop`
+  tests drop the removed games. `feel` measures the side-out spacing after the check. 82 Review Studio IDs are listed
+  as removed.
+
 ## 9.7.0: the league plays its games, and keeps its stats
 - **Every game in the bracket is a real game.**
   - The other games of each round used to be an invented score. They are now CPU-vs-CPU games on the match engine,

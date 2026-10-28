@@ -49,6 +49,13 @@ function pickNiyyah() {
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
   return pool.slice(0, 3);
 }
+// v9.8: asked before big games only (play-testers found it repetitive every game): your first career game, the first
+// game of each stage entry, semifinals and finals
+function niyyahBigGame() {
+  const b = C.bracket; if (!C.gamesPlayed) return true; if (!b) return false;
+  if (b.fmt === 'pool') return b.round > 0 || (b.md | 0) === 0;
+  return b.round > 0 || !(b.games || []).length;
+}
 function openNiyyah(go) {
   const opts = pickNiyyah(), first = !(C.niyyahAsked);
   const lines = [['saleem', first ? 'Before you walk out there. Every game, I ask the brothers one thing: what is your intention today?' : pick(['Bismillah. What is your intention today?', 'Before we go out: what’s the intention?', 'Same question as always. What do you intend today?'])],
@@ -62,7 +69,8 @@ function openNiyyah(go) {
 {
   const _scm = startCareerMatch;
   startCareerMatch = function () {
-    if (Game.screen === 'pregame' && C && !C.inBarakah) { openNiyyah(() => _scm.call(this)); return; }
+    if (Game.screen === 'pregame' && C && !C.inBarakah && niyyahBigGame()) { openNiyyah(() => _scm.call(this)); return; }
+    if (C) C.niyyah = null;
     return _scm.apply(this, arguments);
   };
 }

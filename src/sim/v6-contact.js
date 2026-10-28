@@ -380,7 +380,7 @@ function postStep2(p, dt) {
       p.st_t += dt; p.x += p.vx * dt; p.z += p.vz * dt; p.x = clamp(p.x, -20, COURT.L + 20); p.z = clamp(p.z, 20, COURT.D - 20);
       diveStep(p, dt); p.hist.push({ x: p.x, z: p.z, vx: p.vx, vz: p.vz }); if (p.hist.length > 40) p.hist.shift(); animate(p, dt); return;
     }
-    if (p.state === 'windup' && p.human === 1 && Net.role === 'host' && p.st_t === 0) Net.pendRel = null;
+    if (p.state === 'windup' && p.human === 1 && Net.role === 'host' && p.st_t === 0 && Net.pendRel && nowMs() - (Net.pendRel.at || 0) > 1200) Net.pendRel = null;   // v9.8: only drop a stale release (one that came with the press was lost before)
     if (p.state === 'windup' && p.human >= 0 && p.fakeOK && M.phase !== 'ft' && p.st_t + dt < (p.windT || 0.13) && !p.cmd.bHeld && ball.owner === p) {
       p.fakeOK = false; startFake(p); p.shotType = null; p.sigShot = null; p.fadeVx = p.fadeVz = 0;   // tap SHOOT: pump fake
     }

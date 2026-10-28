@@ -12,7 +12,7 @@ const BACK = {
   funmodes: () => goTitle(), settings: () => goTitle(), howto: () => goTitle(), online: () => goTitle(),
   joincode: () => goTitle(), hostlobby: () => goTitle(), netwait: () => goTitle(), bracket: () => goTitle(),
   cmenu: () => goTitle(), creator: () => { if (Game.creator.isNew) { Game.screen = 'cmenu'; Game.idx = 0; } else careerHub(); },
-  namekeys: () => { Game.screen = 'creator'; }, story: () => Game.story.then(),
+  namekeys: () => { Game.screen = 'creator'; }, story: () => (typeof storySkip === 'function' ? storySkip(Game.story) : Game.story.then()),
   train: () => careerHub(), pregame: () => careerHub(), cbracket: () => careerHub(),
   saves: () => careerHub(), shop: () => careerHub(), masjid: () => careerHub(),
   office: () => { if (Game.office && Game.office.panel) Game.office.panel = null; else leaveOffice(); },
