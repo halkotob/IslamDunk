@@ -111,7 +111,9 @@
     "sim/v98-review.js",
     "online/v98-net.js",
     "sim/v99-layups.js",
+    "sim/v911-cpu-style.js",
     "online/net-diag.js",
+    "online/v911-predict.js",
     "boot.js"
   ]
 }

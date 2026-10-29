@@ -73,7 +73,7 @@ function updatePlayer(p, dt) {
       if (ball.owner !== p) { p.state = 'post'; break; }
       if (p.human === 1 && Net.role === 'host') {                          // remote shooter: lag-compensated release
         const R = Net.pendRel;
-        if (R) { Net.pendRel = null; if (R.rt > 0 && R.rt <= p.st_t + 0.02 && R.rt >= p.st_t - 0.35) p.st_t = R.rt; releaseShot(p); break; }
+        if (R) { Net.pendRel = null; if (typeof hostApplyRel === 'function') hostApplyRel(p, R); else if (R.rt > 0 && R.rt <= p.st_t + 0.02 && R.rt >= p.st_t - 0.35) p.st_t = R.rt; releaseShot(p); break; }
         if (p.st_t > 0.72 + Math.min(0.3, Net.guestLag || 0) || (!c.bHeld && p.st_t > 0.72)) releaseShot(p);
         break;
       }

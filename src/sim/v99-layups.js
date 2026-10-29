@@ -69,7 +69,7 @@ function startLayup(p, kind) {
     if (c.x && !(p.fire && c.turbo) && layupOK(p, c)) { p.wantLay = layupKind(p); c.x = false; c.xHeld = false; }
   };
   const _hc = humanCmd;
-  humanCmd = function (pad, c) { const r = _hc.apply(this, arguments); if (M.players) take(M.players.find(q => q.human === pad), c); return r; };
+  humanCmd = function (pad, c) { const r = _hc.apply(this, arguments); if (M.players && Net.role !== 'guest') take(M.players.find(q => q.human === pad), c); return r; };   // (an online guest's layups: v911-predict.js)
   const _rc = Net.remoteCmd;
   Net.remoteCmd = function (c) { const r = _rc.apply(this, arguments); if (M.players) take(M.players.find(q => q.human === 1), c); return r; };
   const _up = updatePlayer;

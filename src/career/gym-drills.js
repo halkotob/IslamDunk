@@ -305,3 +305,6 @@ function bankPractice(bp, hb) {
   saveCareer();
 }
 
+// v9.11: the gym backdrop's writing (flyers, the whiteboard play, nameplates) is scenery, not UI: marked so the
+// layout checks that read every text drawn on screen skip it
+{ const _dg = drawGymBack; drawGymBack = function (g) { const was = g.__deco; g.__deco = true; try { return _dg.apply(this, arguments); } finally { g.__deco = was; } }; }

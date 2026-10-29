@@ -1193,6 +1193,203 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
   await ctx.close();
   return { ok: ok && !errs.length, detail: log.concat(errs) };
 }
+// v9.11: what the guest sees, and how late, under a simulated connection (no direct link, so the delay applies).
+// Each action is pressed on the guest page; the guest's own frames are logged; delays are from the press.
+async function lagRun(browser, base, lat, jit) {
+  const out = {};
+  const errs = [], ctx = await newContext(browser, {});
+  const q = `/?net=loop&lat=${lat}&jit=${jit}&room=lag${lat}&p2p=0`;
+  const H = await open(ctx, base + q, errs, 'host'), G = await open(ctx, base + q, errs, 'guest');
+  const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
+  await G.evaluate(c => Lobby.join(c), code);
+  await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 10000 }).catch(() => {});
+  await H.evaluate(() => { const o = Lobby.opts(); o.game = 'vs'; Net.mode = 'vs'; Lobby.changed(); });
+  await G.evaluate(() => Lobby.setReady(1)); await sleep(600);
+  await H.evaluate(() => Lobby.start());
+  await G.waitForFunction(() => Game.screen === 'netplay' && M.players && M.players.length > 0, null, { timeout: 10000 }).catch(() => {});
+  await sleep(1500);
+  // guest instrumentation: every frame, and every pop shown
+  await G.evaluate(() => {
+    window.__lg = []; window.__pops = [];
+    const _gf = Net.guestFrame; Net.guestFrame = function () { const r = _gf.apply(this, arguments); const me = M.players && M.players.find(p => p.human === 1);
+      if (me) window.__lg.push({ gb: GP.ball ? GP.ball.ph + (GP.ball.ph === 'host' ? Math.round((nowMs() - GP.ball.ts)) + '/' + Math.round(GP.ball.T * 1000) : '') : GP.bOff ? 'boff' : '-', ph: (GP.act ? 'A' : GP.hold ? 'H' + (GP.hold.seen ? 's' : '') : GP.off ? 'O' : '-'), t: Date.now(), st: me.state, x: me.x, z: me.z, y: me.y, own: ball.owner === me, by: ball.y, bx: ball.x, mv: !!me.move, st_t: me.st_t }); if (window.__lg.length > 4000) window.__lg.shift(); return r; };
+    const _pop = FX.pop; FX.pop = function (x, y, z, txt) { window.__pops.push({ t: Date.now(), txt }); return _pop.apply(this, arguments); };
+  });
+  await Promise.all([H, G].map(pg => pg.evaluate(() => { Replay.schedule = () => {}; })));   // no instant replays (they pause play)
+  await H.evaluate(() => { window.__hp = []; const _pop = FX.pop; FX.pop = function (x, y, z, txt) { window.__hp.push({ t: Date.now(), txt }); return _pop.apply(this, arguments); }; });
+  const B = (k, on) => G.evaluate(([k, on]) => { for (const x of BINDS[0][k]) { Input.down[x] = on; if (on) Input.pressed[x] = true; else Input.released[x] = true; } return Date.now(); }, [k, on]);
+  const SH = on => G.evaluate(on => { Input.down.ShiftLeft = on; }, on);
+  // host: set a scene (guest with the ball at a spot, everyone else frozen far away)
+  const scene = (ax, az, fire) => H.evaluate(([ax, az, fire]) => {
+    M.introT = 0; M.check = null; M.phase = 'live'; M.shotClock = 24; M.clock = 100; M.nextInbound = null; M.deadT = 0; M.sideOut = null; M.frontIn = null; M.inb = null; M.pendingEnd = false; Game.trivia = null; for (const q of M.players) { q.hifz = 0; q.buf = null; } Net.pendRel = null; Net.gIntent = null;   // (no Noor trivia: it pauses input)
+    const g = M.players.find(p => p.human === 1), h = attackHoop(g.team);
+    M.cmdHook = q => (q.human === 1 ? false : (zeroCmd(q.cmd), true));
+    M.players.forEach((q, i) => { if (q !== g) { place(q, h.x + h.dir * 900, 80 + i * 90); q.state = 'free'; } });
+    place(g, h.x + h.dir * ax, h.z + az); g.vx = g.vz = 0; g.state = 'free'; g.fire = !!fire; g.fireT = fire ? 40 : 0; g.turbo = 100;
+    giveBall(g, 'inbound'); ball.state = 'held';
+    return [h.x > g.x ? 'right' : 'left'];
+  }, [ax, az, fire]);
+  const mark = () => G.evaluate(() => Date.now());
+  const guard = () => G.evaluate(() => { const me = M.players.find(p => p.human === 1); return [me.state, Math.round(me.y), ball.owner === me, ball.state, M.phase, !!GP.act, !!GP.hold, !!Pred.act, !!me.postUp, Math.round(dxz(me, attackHoop(me.team))), Game.trivia ? 'TRIVIA' : '', Game.paused ? 'PAUSED' : ''].join(','); });
+  out.dbg = [];
+  const hguard = () => H.evaluate(() => { const g = M.players.find(p => p.human === 1); return [g.state, Math.round(g.y), ball.owner === g, ball.state, M.phase, g.shotType, g.sigShot, Net.gIntent && Net.gIntent.k, !!Net.pendRel, Replay.active ? 'replay' : '', Game.screen, g.buf ? JSON.stringify(g.buf) : '', Game.trivia ? 'TRIVIA' : '', Game.paused ? 'PAUSED' : ''].join(','); });
+  const log = () => G.evaluate(() => window.__lg.slice());
+  const first = (L, t0, f) => { const e = L.find(e => e.t >= t0 && f(e)); return e ? e.t - t0 : null; };
+  // 1. movement
+  let [dir] = await scene(400, 0); await sleep(500);
+  let L0 = await log(); const x0 = L0[L0.length - 1].x;
+  let t0 = await B(dir, true); await sleep(400); await B(dir, false);
+  out.move = first(await log(), t0, e => Math.abs(e.x - x0) > 1.5);
+  // 2. jump shot: press, hold to near the top, release
+  [dir] = await scene(260, 0); await sleep(500);
+  // the guest's grade is the host's grade: on time, a little early, way early, late
+  const grades = [];
+  for (const [i, off] of [0, -0.07, -0.2, 0.09].entries()) {
+    [dir] = await scene(260, (i - 1.5) * 30); await sleep(500);
+    const gd = await guard(); t0 = await B('b', true);
+    await G.waitForFunction(off => { const me = M.players.find(p => p.human === 1); return me.state === 'shoot' && me.st_t >= apexT(me) + off; }, off, { timeout: 3000, polling: 'raf' }).catch(() => {});
+    const t1 = await B('b', false);
+    await sleep(1600);
+    const L = await log();
+    if (i === 0) { out.shotStart = first(L, t0, e => e.st === 'windup' || e.st === 'shoot'); out.ballLeaves = first(L, t1, e => !e.own); }
+    const F = L.filter(e => e.t >= t1 && e.t <= t1 + 850);   let jump = 0;   // the flight, up to the rim
+    for (let k = 1; k < F.length; k++) jump = Math.max(jump, Math.hypot(F[k].bx - F[k - 1].bx, F[k].by - F[k - 1].by) / Math.max(1, (F[k].t - F[k - 1].t) / 16.7));   // per 60 Hz frame (a slow frame moves the ball further)
+    let hops = 0, up = false; for (const e of L.filter(e => e.t >= t0)) { if (e.y > 3 && !up) { hops++; up = true; } else if (e.y < 1) up = false; }
+    const gp = (await G.evaluate(() => window.__pops.slice())).filter(p => p.t >= t1 - 30 && /^(GREEN|GOOD|EARLY|LATE)$/.test(p.txt));
+    const hp = (await H.evaluate(() => window.__hp.slice())).filter(p => p.t >= t0 && /^(GREEN|GOOD|EARLY|LATE)$/.test(p.txt));
+    if (hops > 1) out.dbg.push('hops ' + off + ': ' + L.filter(e => e.t >= t0).map(e => Math.round(e.t - t0) + ' ' + Math.round(e.y) + ' ' + e.st + ' ' + e.ph).filter((x, k, A) => k === 0 || x.split(' ').slice(1).join() !== A[k - 1].split(' ').slice(1).join()).join(' | '));
+    if (!gp.length) out.dbg.push('shot ' + off + ': ' + gd + ' | host ' + (await hguard()));
+    grades.push({ g: gp.map(p => p.txt).join('/'), h: hp.map(p => p.txt).join('/'), shown: gp.length ? gp[0].t - t1 : null, ballStep: Math.round(jump), hops });
+    await H.evaluate(() => { window.__hp.length = 0; });
+  }
+  out.grades = grades;
+  // the shot type: a drive at the rim without a dunk is a floater on both screens
+  [dir] = await scene(230, 0); await H.evaluate(() => { const g = M.players.find(p => p.human === 1); g.st.dnk = 1; }); await sleep(400);
+  await B(dir, true); await sleep(350); await B('b', true); await sleep(80);
+  const gk = await G.evaluate(() => { const me = M.players.find(p => p.human === 1); return me.shotType || me.sigShot; });
+  await H.waitForFunction(() => { const g = M.players.find(p => p.human === 1); return g.state === 'windup' || g.state === 'shoot'; }, null, { timeout: 1500, polling: 'raf' }).catch(() => {});
+  const hk = await H.evaluate(() => { const g = M.players.find(p => p.human === 1); return g.shotType || g.sigShot; }); if (!hk) out.dbg.push('kind: host ' + (await hguard()));
+  await B('b', false); await B(dir, false); await sleep(1400);
+  out.kind = gk + '/' + hk;
+  // 3. layup on Move
+  [dir] = await scene(110, 0); await sleep(500);
+  const dbgL = await G.evaluate(() => { const me = M.players.find(p => p.human === 1); return [me.state, Math.round(me.y), ball.owner === me, M.phase, !!GP.act, !!GP.hold, !!Pred.act, !!me.postUp, Math.round(dxz(me, attackHoop(me.team)))].join(','); });
+  await B(dir, true); t0 = await B('x', true); await sleep(60); await B('x', false); await sleep(900); await B(dir, false);
+  let L = await log(); out.layupStart = first(L, t0, e => e.st === 'windup' || e.st === 'shoot'); out.layupBall = first(L, t0, e => !e.own); if (out.layupStart == null || out.layupStart > 35) out.dbg.push('layup: ' + dbgL + ' | host ' + (await hguard()));
+  // 4. dunk: sprint + shoot at the rim
+  [dir] = await scene(150, 0); await sleep(500);
+  await SH(true); await B(dir, true); await sleep(200);
+  t0 = await B('b', true); await sleep(80); await B('b', false); await sleep(900); await B(dir, false); await SH(false);
+  L = await log(); out.dunkStart = first(L, t0, e => e.st === 'dunk' || e.st === 'hang' || e.y > 10); if (out.dunkStart == null) out.dbg.push('dunk: host ' + (await hguard()));
+  // 5. crossover (Move with the stick sideways, far from the rim)
+  [dir] = await scene(500, 0); await sleep(500);
+  const gx = await guard(); await B('up', true); t0 = await B('x', true); await sleep(60); await B('x', false); await sleep(600); await B('up', false);
+  L = await log(); out.cross = first(L, t0, e => e.mv); if (out.cross == null) out.dbg.push('cross: ' + gx);
+  // 6. pass (tap)
+  [dir] = await scene(400, 0); await H.evaluate(() => { const g = M.players.find(p => p.human === 1), m = g.mate; place(m, g.x, g.z + 120); }); await sleep(500);
+  const ga = await guard(); await B('a', true); await sleep(60); t0 = await B('a', false); await sleep(700);
+  L = await log(); out.pass = first(L, t0, e => !e.own); if (out.pass == null) out.dbg.push('pass: ' + ga);
+  await ctx.close();
+  return { out, errs };
+}
+T['online-lag'] = async ({ browser, base }) => {
+  const detail = []; let ok = true;
+  // a press shows on the guest's own screen within two frames (35 ms), whatever the connection; the timing grade the
+  // guest sees is the one the host scores; one jump per shot; the ball's flight has no jumps
+  for (const [lat, jit] of [[40, 10], [90, 25], [150, 40]]) {
+    const { out, errs } = await lagRun(browser, base, lat, jit);
+    detail.push(`one-way ${lat}±${jit} ms: ` + JSON.stringify(out)); detail.push(...errs);
+    const fast = v => v != null && v <= 35;
+    ok = ok && !errs.length && out.move != null && out.move <= 50 && fast(out.shotStart) && fast(out.ballLeaves) && fast(out.layupStart) && fast(out.dunkStart) && fast(out.cross) && fast(out.pass)
+      && out.grades.every(g => g.g && g.g === g.h && fast(g.shown) && g.hops === 1 && g.ballStep <= 16) && /^(\w+)\/\1$/.test(out.kind);
+  }
+  return { ok, detail };
+};
+
+// v9.11: Barakah Run duos keep going after a win (online it went back to the lobby after one game), and the CPU gets
+// tougher each game; a loss ends the run. Local duos the same way.
+T['duo-run'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, {}), q = '/?net=loop&lat=30&jit=5&room=duo';
+  const H = await open(ctx, base + q, errs, 'host'), G = await open(ctx, base + q, errs, 'guest');
+  const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
+  await G.evaluate(c => Lobby.join(c), code);
+  await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 10000 }).catch(() => {});
+  await H.evaluate(() => { const o = Lobby.opts(); o.game = 'brun'; Net.mode = 'brun'; Lobby.changed(); });
+  await G.evaluate(() => Lobby.setReady(1)); await sleep(600);
+  await H.evaluate(() => Lobby.start());
+  await G.waitForFunction(() => Game.screen === 'netplay' && M.players && M.players.length > 2, null, { timeout: 10000 }).catch(() => {});
+  const rounds = [];
+  const finish = win => H.evaluate(win => { Replay.schedule = () => {}; M.introT = 0; M.teams[0].score = win ? 30 : 0; M.teams[1].score = win ? 0 : 30; M.clock = 0.05; M.phase = 'live'; }, win);
+  for (let r = 0; r < 3; r++) {
+    await sleep(800); await finish(true);
+    await H.waitForFunction(() => M.phase === 'over', null, { timeout: 8000 }).catch(() => {});
+    await sleep(300);
+    const st = await H.evaluate(() => { finalContinue(); const opp = M.teams[1].players; return { scr: Game.screen, active: Run.active, wins: Run.wins, turn: Run.turn, lvl: Run.levelNow }; });
+    await G.waitForFunction(() => Game.brun && Game.brun.scr === 'runchoice', null, { timeout: 5000 }).catch(() => {});
+    const gsee = await G.evaluate(() => Game.brun && Game.brun.scr);
+    if (st.turn === 1) await G.evaluate(() => { Net.rp = (Net.rp || 0) + 1; Net.rpI = 0; });   // the guest's pick
+    else await H.evaluate(() => pickRunPower(0));
+    await H.waitForFunction(() => Game.screen === 'play', null, { timeout: 5000 }).catch(() => {});
+    await G.waitForFunction(() => Game.screen === 'netplay' && !(Game.brun && Game.brun.scr), null, { timeout: 5000 }).catch(() => {});
+    const nx = await H.evaluate(() => ({ scr: Game.screen, round: M.barakahRound, online: !!M.online }));
+    rounds.push(Object.assign(st, { guestSaw: gsee, next: nx.scr, round: nx.round, online: nx.online }));
+  }
+  // a loss ends it, on both screens
+  await sleep(800); await finish(false);
+  await H.waitForFunction(() => M.phase === 'over', null, { timeout: 8000 }).catch(() => {});
+  await sleep(300);
+  const end = await H.evaluate(() => { finalContinue(); return { scr: Game.screen, active: Run.active, wins: Run.wins }; });
+  await G.waitForFunction(() => Game.brun && Game.brun.scr === 'runend', null, { timeout: 5000 }).catch(() => {});
+  const gend = await G.evaluate(() => Game.brun && Game.brun.scr);
+  await ctx.close();
+  // local duos
+  const ctx2 = await newContext(browser, { seed: true }), P = await open(ctx2, base + '/', errs, 'local');
+  const local = await P.evaluate(() => {
+    window.__seed(7); Replay.schedule = () => {}; const out = [];
+    openBarakah(); runHomeSelect(1);
+    for (let g = 0; g < 3; g++) {
+      for (let i = 0; i < 120; i++) updateMatch(STEP);
+      M.teams[0].score = 30; M.teams[1].score = 0; M.clock = 0.05;
+      for (let i = 0; i < 600 && M.phase !== 'over'; i++) updateMatch(STEP);
+      finalContinue(); out.push(Game.screen + ':' + Run.wins); if (Game.screen === 'runchoice') pickRunPower(0);
+    }
+    return { steps: out, round: M.barakahRound, active: Run.active };
+  });
+  await ctx2.close();
+  const ok = rounds.every((r, i) => r.scr === 'runchoice' && r.active && r.wins === i + 1 && r.guestSaw === 'runchoice' && r.next === 'play' && r.round === i + 2 && r.online)
+    && rounds[0].lvl < rounds[1].lvl && rounds[1].lvl < rounds[2].lvl && end.scr === 'runend' && !end.active && end.wins === 3 && gend === 'runend'
+    && local.steps.join() === 'runchoice:1,runchoice:2,runchoice:3' && local.round === 4 && local.active && !errs.length;
+  return { ok, detail: ['online: ' + JSON.stringify(rounds), 'loss: ' + JSON.stringify(end) + ' guest ' + gend, 'local: ' + JSON.stringify(local), ...errs] };
+};
+
+// v9.11: CPU players play to their ratings and play style: shooters take threes, rim runners attack the rim, pass-first
+// players move the ball, stoppers block and steal more (CPU vs CPU, by style)
+T['cpu-variety'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'cpu-variety');
+  const r = await p.evaluate(() => {
+    const by = {}, add = (q, k, v) => { const a = cpuArch(q), A = by[a] || (by[a] = { n: 0, fga: 0, tpa: 0, dnk: 0, pass: 0, stl: 0, blk: 0 }); A[k] += v; };
+    const _dp = doPass; doPass = function (q) { q._np = (q._np || 0) + 1; return _dp.apply(this, arguments); };
+    const _lp = lobPass; lobPass = function (q) { q._np = (q._np || 0) + 1; return _lp.apply(this, arguments); };
+    const _ts = trySteal; trySteal = function (q) { if (q.human < 0) q._ns = (q._ns || 0) + 1; return _ts.apply(this, arguments); };
+    const _ns = notifyShot; notifyShot = function (sh) { const r = _ns.apply(this, arguments); for (const o of sh.opps) if (o.human < 0 && o.ai && o.ai.jumpAt > 0) o._nb = (o._nb || 0) + 1; return r; };
+    for (let g = 0; g < 16; g++) {
+      window.__seed(500 + g * 7919);
+      const a = g % TEAMS.length, b = (g * 3 + 1) % TEAMS.length === a ? (a + 1) % TEAMS.length : (g * 3 + 1) % TEAMS.length;
+      newMatch(TEAMS[a], TEAMS[b], { humans: [], fmt: { format: 'halves', len: 120 } });
+      for (let n = 0; n < 60 * 60 * 12 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; }
+      for (const q of M.players) { const s = q.stats; add(q, 'n', 1); add(q, 'fga', s.fga); add(q, 'tpa', s.tpa || 0); add(q, 'dnk', s.dnk || 0); add(q, 'pass', q._np || 0); add(q, 'stl', q._ns || 0); add(q, 'blk', q._nb || 0); }
+    }
+    doPass = _dp; lobPass = _lp; trySteal = _ts; notifyShot = _ns;
+    const o = {}; for (const [k, A] of Object.entries(by)) o[k] = { n: A.n, three: +(A.tpa / Math.max(1, A.fga)).toFixed(2), rim: +(A.dnk / Math.max(1, A.fga)).toFixed(2), pass: +(A.pass / A.n).toFixed(1), reach: +(A.stl / A.n).toFixed(1), contest: +(A.blk / A.n).toFixed(1) };   // steal tries and shot contests a game
+    return o;
+  });
+  await ctx.close();
+  const S = r.sharpshooter, R = r.rimrunner, P = r.playmaker, L = r.lockdown;
+  const ok = !!(S && R && P && L) && S.three > 0.45 && R.three < 0.08 && R.rim > S.rim + 0.3 && P.pass > R.pass + 2 && P.pass > S.pass + 2
+    && L.reach > S.reach * 1.2 && L.reach > R.reach * 1.2 && L.contest > P.contest * 1.1 && R.contest > S.contest && !errs.length;
+  return { ok, detail: [JSON.stringify(r), ...errs] };
+};
+
 T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'co', 'lightning', 'horse', 'kotc'], dropP2P: true, noor: true });
 T['online-room'] = ({ browser, base }) => onlineFlow(browser, base, { room: true, games: ['vs', 'one'] });
 T['online-fb'] = ({ browser, base }) => onlineFlow(browser, base, { games: ['vs', 'co'] });

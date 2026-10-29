@@ -1,5 +1,56 @@
 # Changelog
 
+## 9.11.0: the guest plays in real time, Barakah Run duos keep going, every CPU player plays his own game
+- **Online: the guest's own actions show at once.** 9.10.0 made the connection faster; this removes the wait that
+  was left. The guest plays its own shots, layups, dunks, crossovers and passes on its screen the moment the button
+  goes down, and the host takes the guest's decisions so both screens agree:
+  - **Shots:** the guest picks the shot type (jumper, floater, fadeaway, putback...), shows its label, and judges
+    the timing on its own meter. GREEN / GOOD / EARLY / LATE appears at once, and the host scores the same grade.
+    The ball leaves the hands at once.
+  - **Layups on Move, dunks** (style and length chosen on the guest), **crossovers and passes** start at once, with
+    the same kind on the host.
+  - **The ball in flight** after the guest's shot or pass follows the host's exact launch, drawn from the guest's
+    own release and slowed slightly so it reaches the rim, the glass or the receiver just as the host's does. Makes,
+    misses and blocks stay the host's.
+  - Once an action is over on the guest's screen, the host's later copy isn't shown a second time (no double jump).
+  - Measured on the 9.10.0 lag harness, now pressing real keys so the guest's prediction sees the press:
+
+    | Profile | Jump | Shot release | Pass | 9.9.1 (jump / shot / pass) |
+    |---|---|---|---|---|
+    | Direct, 30 ms RTT | 8 ms | 5 ms | 8 ms | 133 / 134 / 124 ms |
+    | Relay, 90 ms RTT | 8 ms | 5 ms | 7 ms | 187 / 236 / 226 ms |
+    | Server, 250 ms RTT, 3% loss | 6 ms | 5 ms | 6 ms | 766 / 655 / 616 ms |
+    | Bad mobile, 400 ms RTT, 10% loss | 5 ms | 3 ms | 5 ms | 542 / 553 / 545 ms |
+
+  - The extra data is a few bytes: player flags packed into one number, the ball's launch only while it flies, and
+    the guest's decisions only for a second after each press. The snapshot interpolation leaves a little more room
+    for jitter.
+  - New `online-lag` test: every action at three connection qualities. The guest's own press shows within 35 ms,
+    its timing grade matches the host's, there is one jump per shot, and the ball's flight has no jumps.
+- **Barakah Run duos keep going.** Online, every game went back to the lobby when it ended, so a duo run stopped
+  after one game even when you won. Now a win goes to the upgrade pick (picks alternate; the guest picks from their
+  own screen) and on to the next game; a loss ends the run on both screens.
+  - Duos climb a steeper ladder than solo (two humans), and every third game is an elite rival (+1 ratings, smarter).
+  - New `duo-run` test, online and local.
+- **Every CPU player plays his own game.** Each CPU player, opponent or teammate, now has tendencies from his
+  ratings and play style, plus a small quirk of his own:
+  - Shooting and sharpshooters hunt threes; glue guys and stoppers take the open mid-range; Dunking and rim runners
+    attack the rim.
+  - Passing, playmakers and glue guys move the ball; scorers look for their own shot.
+  - Off the ball, shooters spot up behind the arc, rim runners cut, glue guys and stoppers set screens.
+  - On defense, Defense, height, stoppers and rim runners contest more shots; Steal, stoppers and playmakers reach
+    more; stoppers guard tighter (and draw more charges); shooters save their legs.
+  - CPU vs CPU, by style:
+    - three-point attempts: sharpshooters 69% of their shots, rim runners 2%;
+    - shots at the rim: rim runners 83%;
+    - passes a game: playmakers 18, glue 23, scorers 12;
+    - steal tries: stoppers and playmakers about twice the shooters'.
+
+    Before, playmakers took the most shots and made the fewest assists. League scoring stays where it was. The
+    simulated league's three-point and charge rates follow the new play (`league-calibration`).
+  - New `cpu-variety` test.
+- The layout checks skip the gym backdrop's scenery writing (flyers, the whiteboard play).
+
 ## 9.10.0: online latency: relay (TURN), connection diagnostics, lag harness
 - **Relay (TURN) for players the direct link can't reach.** When you host or join, the game asks a small Cloudflare
   Worker (`worker/ice`, new) for 1-hour TURN credentials and adds them to the direct link, including the TCP and TLS

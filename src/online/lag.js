@@ -55,14 +55,14 @@ function predStart(type) { const me = predOwn(); if (!me) return; Pred.act = { t
     const me = predOwn(); if (!me || Pred.act) { if (Pred.act && Pred.act.type === 'shot' && !c.bHeld) Pred.act.rel = true; return; }
     const mine = ball.owner === me, bo = ball.owner, onD = bo && bo.team !== me.team, ground = me.state === 'free' && me.y < 1;
     if (c.b && ground) {
-      if (mine) { const h = attackHoop(me.team); if (!(c.turbo && dxz(me, h) < 170)) predStart('shot'); }   // (dunks stay host-driven)
+      if (mine) { const h = attackHoop(me.team); if (!Net.predV2 && !(c.turbo && dxz(me, h) < 170)) predStart('shot'); }   // (v9.11: v911-predict.js plays shots, layups and dunks)
       else if (!bo || onD) predStart('jump');
     }
     if (c.a) { Pred.aT0 = nowMs(); Pred.aCtx = mine ? 'ball' : onD ? 'def' : null; }
     if (!c.aHeld && Pred.aT0) {
       const held = nowMs() - Pred.aT0; Pred.aT0 = 0;
       if (ground && Pred.aCtx === 'def' && held < STEAL_TAP * 1000 && !c.turbo) predStart('steal');
-      else if (ground && Pred.aCtx === 'ball' && mine && held < PASS_HOLD * 1000) predStart('pass');
+      else if (ground && Pred.aCtx === 'ball' && mine && held < PASS_HOLD * 1000 && !Net.predV2) predStart('pass');
     }
   };
   const _gf = Net.guestFrame;

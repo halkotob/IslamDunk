@@ -78,7 +78,7 @@ export function netTests({ newContext, open }) {
       newMatch(TEAMS[0], TEAMS[1], { humans: [] }); M.online = true; Game.screen = 'play';
       const res = { n: 0, got: 0, bad: [], v1: 0, v2: 0, keys: 0, unresolved: 0 };
       let rnd = 7; const rand = () => (rnd = (rnd * 16807) % 2147483647) / 2147483647;
-      const Q = [1, 1, 1, 1, 1, 1, 1, 100, 100, 100, 1, 1, 100, 1, 100, 1, 1, 1, 10, 1], BQ = [1, 1, 1, 1, 1, 10, 1];
+      const Q = [1, 1, 1, 1, 1, 1, 1, 100, 100, 100, 1, 1, 100, 1, 100, 1, 1, 1, 10, 1], BQ = [1, 1, 1, 1, 1, 10, 1, 1, 1, 1, 10, 10, 10];
       const near = (a, b, q) => Math.abs(a - b) <= 0.5 / q + 1e-9;
       for (let n = 0; n < 60 * 120; n++) {
         updateMatch(STEP); fake += 1000 / 60; if (Game.screen !== 'play') Game.screen = 'play';

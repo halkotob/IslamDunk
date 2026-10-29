@@ -154,7 +154,7 @@ joinTyped = function () { if (Net.typed.length === 4) Lobby.join(Net.typed); };
   const _do = drawOnline; drawOnline = function (g) { refreshOnlineItems(); _do(g); };
   // finished games come back to the lobby
   const _fc = finalContinue;
-  finalContinue = function () { if (Net.role === 'host' && !M.career) { Lobby.back(); return; } return _fc.apply(this, arguments); };
+  finalContinue = function () { if (Net.role === 'host' && !M.career && !(M.barakah && Run.duo === 'online' && Run.active)) { Lobby.back(); return; } return _fc.apply(this, arguments); };   // (v9.11: a duo run goes on to the next game; it ends on a loss)
   const _mr = miniResultContinue;
   miniResultContinue = function () { if (Net.role === 'host') { Lobby.back(); return; } if (Net.role === 'guest') return; return _mr.apply(this, arguments); };
   // the host's snapshot reports the lobby while we're in it

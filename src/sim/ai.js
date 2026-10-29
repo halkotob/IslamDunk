@@ -295,7 +295,7 @@ class Brain {
         const h = defendHoop(p.team), m = bo || pl.man;
         if (m.state === 'dunk') { this.moveTo(h.x + h.dir * 28, h.z + (m.z - h.z) * 0.3, true); break; }
         // stay between man and basket; sag off when he is far from the rim
-        const pm = perceive(m, cfg), hd = dxz(pm, h), gap = 34 + Math.max(0, hd - 420) * 0.3;
+        const pm = perceive(m, cfg), hd = dxz(pm, h), gap = 34 + Math.max(0, hd - 420) * 0.3 - (typeof cpuPress === 'function' ? cpuPress(p) : 0);   // v9.11: stoppers guard tighter
         const mx = pm.x, mz = pm.z;
         const ux = h.x - mx, uz = h.z - mz, L = Math.hypot(ux, uz) || 1;
         const dist = this.moveTo(mx + ux / L * Math.min(gap, 140), mz + uz / L * Math.min(gap, 140), dxz(p, m) > 150);
@@ -304,7 +304,7 @@ class Brain {
         // steal timing: go for it when the ball is exposed (crossover / on my side)
         if (bo && dd < 50 && p.cd.steal <= 0 && p.state === 'free') {
           const exposed = bo.move ? 1 : ballExposed(p, bo) ? 0.6 : 0.2;
-          if (chance(cfg.steal * exposed * (0.3 + p.st.stl * 0.07) * 0.9 * STEP)) c.a = true;
+          if (chance(cfg.steal * exposed * (0.3 + p.st.stl * 0.07) * 0.9 * STEP * (typeof cpuStealK === 'function' ? cpuStealK(p) : 1))) c.a = true;   // v9.11: his own reach rate
         }
         // shove only when a score is imminent (driving to dunk / gathering near rim)
         if (bo && dd < 44 && p.turboOK() && p.turbo > 25 && hd < 240 && (bo.cmd.turbo || bo.state === 'windup') && chance(cfg.shove * 1.5 * STEP * shoveRiskK(p))) { c.turbo = true; c.a = true; }

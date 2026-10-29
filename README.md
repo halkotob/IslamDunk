@@ -111,6 +111,10 @@ Edit `src/`, run `npm run publish:web`, and commit both.
 Two players, host + guest. Transports: the claude.ai room (inside claude.ai), Firebase Realtime Database
 (standalone web and desktop), and a loopback transport for tests (`?net=loop`). Once both are in a lobby, a
 direct WebRTC link carries the game when the network allows, with Firebase as the fallback.
+The host runs the match. The guest plays its own actions locally the moment a button goes down
+(`src/online/v911-predict.js`): shots (type and timing grade), layups, dunks, crossovers and passes, plus the ball's
+flight drawn from the host's exact launch. The guest's decisions travel with its input (`in.ia`, `in.rg`) and the
+host uses them, so both screens agree. `node tests/run.mjs --only online-lag,lag-profiles` measures it.
 Firebase runs on the free Spark plan (no billing account, so it can never charge):
 - Players sign in anonymously when they first host or join, and connect to the database only while in a room.
 - `database.rules.json` is the security: signed-in players read a room and write only `rooms/<code>/peers/<their

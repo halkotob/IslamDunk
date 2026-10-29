@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.10.0';
+const VERSION = '9.11.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -909,7 +909,7 @@ function updatePlayer(p, dt) {
       if (ball.owner !== p) { p.state = 'post'; break; }
       if (p.human === 1 && Net.role === 'host') {                          // remote shooter: lag-compensated release
         const R = Net.pendRel;
-        if (R) { Net.pendRel = null; if (R.rt > 0 && R.rt <= p.st_t + 0.02 && R.rt >= p.st_t - 0.35) p.st_t = R.rt; releaseShot(p); break; }
+        if (R) { Net.pendRel = null; if (typeof hostApplyRel === 'function') hostApplyRel(p, R); else if (R.rt > 0 && R.rt <= p.st_t + 0.02 && R.rt >= p.st_t - 0.35) p.st_t = R.rt; releaseShot(p); break; }
         if (p.st_t > 0.72 + Math.min(0.3, Net.guestLag || 0) || (!c.bHeld && p.st_t > 0.72)) releaseShot(p);
         break;
       }
@@ -1767,7 +1767,7 @@ class Brain {
         const h = defendHoop(p.team), m = bo || pl.man;
         if (m.state === 'dunk') { this.moveTo(h.x + h.dir * 28, h.z + (m.z - h.z) * 0.3, true); break; }
         // stay between man and basket; sag off when he is far from the rim
-        const pm = perceive(m, cfg), hd = dxz(pm, h), gap = 34 + Math.max(0, hd - 420) * 0.3;
+        const pm = perceive(m, cfg), hd = dxz(pm, h), gap = 34 + Math.max(0, hd - 420) * 0.3 - (typeof cpuPress === 'function' ? cpuPress(p) : 0);   // v9.11: stoppers guard tighter
         const mx = pm.x, mz = pm.z;
         const ux = h.x - mx, uz = h.z - mz, L = Math.hypot(ux, uz) || 1;
         const dist = this.moveTo(mx + ux / L * Math.min(gap, 140), mz + uz / L * Math.min(gap, 140), dxz(p, m) > 150);
@@ -1776,7 +1776,7 @@ class Brain {
         // steal timing: go for it when the ball is exposed (crossover / on my side)
         if (bo && dd < 50 && p.cd.steal <= 0 && p.state === 'free') {
           const exposed = bo.move ? 1 : ballExposed(p, bo) ? 0.6 : 0.2;
-          if (chance(cfg.steal * exposed * (0.3 + p.st.stl * 0.07) * 0.9 * STEP)) c.a = true;
+          if (chance(cfg.steal * exposed * (0.3 + p.st.stl * 0.07) * 0.9 * STEP * (typeof cpuStealK === 'function' ? cpuStealK(p) : 1))) c.a = true;   // v9.11: his own reach rate
         }
         // shove only when a score is imminent (driving to dunk / gathering near rim)
         if (bo && dd < 44 && p.turboOK() && p.turbo > 25 && hd < 240 && (bo.cmd.turbo || bo.state === 'windup') && chance(cfg.shove * 1.5 * STEP * shoveRiskK(p))) { c.turbo = true; c.a = true; }
@@ -3685,7 +3685,7 @@ const ND = ['tomahawk', 'windmill', '360', 'twohand', 'alley'];   // append only
 const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
 // Online mini games: host is Khalil, the guest is Nasser; Lightning adds 3 CPU masjid members.
 const MINI_ONLINE = { lightning: ['khalil', 'nasser', 'saleem', 'mahmoud', 'hamid'], horse: ['khalil', 'nasser'] };
-const ballArr = b => [r1(b.x), r1(b.y), r1(b.z), b.owner ? M.players.indexOf(b.owner) : -1, NB.indexOf(b.state), r1(b.rot), b.fire ? 1 : 0];
+const ballArr = b => { const a = [r1(b.x), r1(b.y), r1(b.z), b.owner ? M.players.indexOf(b.owner) : -1, NB.indexOf(b.state), r1(b.rot), b.fire ? 1 : 0]; if (!b.owner && b === ball && (b.state === 'shot' || b.state === 'pass') && typeof Net !== 'undefined' && Net.blaunch) a.push(...Net.blaunch.slice(1)); return a; };   // v9.11: + the launch while in flight (the guest's time-shifted ball)
 
 const Net = {
   room: null, avail: 'checking', role: null, code: '', mode: 'co', sel: null,
@@ -3910,7 +3910,8 @@ const Net = {
     while (hist.length > 1 && hist[0].q <= ak - 500) hist.shift();
     x = clamp(x, -20, COURT.L + 20); z = clamp(z, 20, COURT.D - 20);
     const d = me._pd;
-    if (!d || Math.hypot(d.x - x, d.z - z) > 90) me._pd = { x, z };              // far off (collision/knockdown on the host): take it
+    const gap = d ? Math.hypot(d.x - x, d.z - z) : 1e9;
+    if (gap > 90 || gap < 3) me._pd = { x, z };                                  // far off (collision/knockdown on the host), or close (v9.11: no easing lag): take it
     else { const k = Math.min(1, rdt * 18); d.x += (x - d.x) * k; d.z += (z - d.z) * k; }
     me.x = me._pd.x; me.z = me._pd.z; me.vx = vx; me.vz = vz;
   },
@@ -3918,7 +3919,7 @@ const Net = {
     const buf = this.snaps; if (!buf.length) return;
     // render slightly in the past (about 1.6 snapshot intervals plus jitter) so
     // there are almost always two snapshots to blend between
-    const delay = this.rdelay = clamp((this.avgInt || 33) * 1.25 + (this.jit || 8) * 1.5, 40, 140), now = nowMs() - delay;
+    const delay = this.rdelay = clamp((this.avgInt || 33) * 1.25 + (this.jit || 8) * 2.5, 40, 160), now = nowMs() - delay;   // (v9.11: more room for jitter)
     while (buf.length > 2 && buf[1].t <= now) buf.shift();
     const A = buf[0], B = buf[1] || buf[0], SB = B.s;
     const ext = B === buf[buf.length - 1] && now > B.t ? clamp((now - B.t) / 1000, 0, 0.06) : 0;   // brief extrapolation if a snapshot is late
@@ -3954,7 +3955,7 @@ const Net = {
       if (SB.st) { const t = SB.st[i]; Object.assign(p.stats, { pts: t[0], reb: t[1], ast: t[2], stl: t[3], blk: t[4], dnk: t[5], fgm: t[6], fga: t[7], pf: t[8] || 0, ftm: t[9] || 0, fta: t[10] || 0, tov: t[11] || 0 }); }
     });
     const setB = (o, bb, ba) => {
-      o.owner = bb[3] >= 0 ? M.players[bb[3]] : null; o.state = NB[bb[4]] || 'loose'; o.fire = !!bb[6];
+      o.owner = bb[3] >= 0 ? M.players[bb[3]] : null; o.state = NB[bb[4]] || 'loose'; o.fire = !!bb[6]; o.nl = bb.length > 12 ? bb.slice(7, 13) : null;
       if (!o.owner) { o.x = L(ba[0], bb[0]); o.y = L(ba[1], bb[1]); o.z = L(ba[2], bb[2]); o.rot = bb[5]; }
     };
     this.predictOwn(rdt);
@@ -4792,6 +4793,9 @@ function bankPractice(bp, hb) {
   saveCareer();
 }
 
+// v9.11: the gym backdrop's writing (flyers, the whiteboard play, nameplates) is scenery, not UI: marked so the
+// layout checks that read every text drawn on screen skip it
+{ const _dg = drawGymBack; drawGymBack = function (g) { const was = g.__deco; g.__deco = true; try { return _dg.apply(this, arguments); } finally { g.__deco = was; } }; }
 // ================================================================= SALAH
 // The adhan comes at random intervals, never less than 10 real minutes
 // apart, and only while practicing. Praying grants a bonus for the next game.
@@ -10815,6 +10819,11 @@ function tipStep(p) {                                                // offensiv
 
 // ------------------------------------------------------------- contact on drives
 function bumpStep(dt) {
+  if (M.players) for (const q of M.players) {                              // a knock-back plays out over a few frames
+    const K = q.knock; if (!K) continue;
+    const f = Math.min(1, dt / K.left); q.x += K.dx * f; q.z = clamp(q.z + K.dz * f, 8, COURT.D - 8); K.dx -= K.dx * f; K.dz -= K.dz * f; K.left -= dt;
+    if (K.left <= 0) q.knock = null;
+  }
   if (!liveGame()) return;
   const h = ball.owner; if (!h || h.y > 1 || (h.state !== 'free' && h.state !== 'windup')) return;
   const sp = Math.hypot(h.vx, h.vz); if (sp < 200 || (h.bumpCd || 0) > M.time) return;
@@ -10833,7 +10842,7 @@ function bumpStep(dt) {
       return;
     }
     const s = strOf(h) + sp / 125 - strOf(o) - (o.stance ? 1.5 : 0) - (o.setT > 0.2 ? 0.8 : 0);
-    if (s > 1.5) { o.stumble = Math.max(o.stumble || 0, 0.35); o.x += tx / d * 18; o.z = clamp(o.z + tz / d * 18, 8, COURT.D - 8); h.vx *= 0.75; h.vz *= 0.75; if (humanIn(h, o)) popOnce(o, 'bump', 'BUMPED', '#ffffff'); }
+    if (s > 1.5) { o.stumble = Math.max(o.stumble || 0, 0.35); o.knock = { dx: tx / d * 18, dz: tz / d * 18, left: 0.12 }; /* v9.11: knocked back over 0.12 s (was 18 units in one frame) */ h.vx *= 0.75; h.vz *= 0.75; if (humanIn(h, o)) popOnce(o, 'bump', 'BUMPED', '#ffffff'); }
     else if (s < -1) { const side = sgn(-tz * h.vx + tx * h.vz) || 1; const vx = h.vx, vz = h.vz; h.vx = (vx * 0.3 - vz * 0.5 * side) * 0.6; h.vz = (vz * 0.3 + vx * 0.5 * side) * 0.6; h.stumble = Math.max(h.stumble || 0, 0.15); if (humanIn(h, o)) popOnce(h, 'bump', 'KNOCKED OFF HIS LINE', '#ffd76a'); }
     else { h.vx *= 0.6; h.vz *= 0.6; o.vx *= 0.5; o.vz *= 0.5; if (humanIn(h, o)) popOnce(h, 'bump', 'CONTACT', '#ffffff'); }
     SFX.thud && SFX.thud(0.4); FX.dust((h.x + o.x) / 2, (h.z + o.z) / 2, 2); react(h, 'fist', 0.4);
@@ -11948,9 +11957,12 @@ function startBarakah() {
 function nextBarakahGame() {
   const clone=T=>Object.assign({},T,{players:T.players.map(p=>Object.assign({},p,{stats:Object.assign({},p.stats)}))});
   const a=clone(TEAMS[Run.team]), b=clone(TEAMS[(Run.team+1+Run.wins%(TEAMS.length-1))%TEAMS.length]);
-  const level=Math.min(2.5,0.65+Run.wins*.17);
-  // Existing easy-to-very-hard AI ladder; rating growth remains bounded at +2.
-  for(const p of b.players) for(const k of Object.keys(p.stats)) p.stats[k]=Math.min(10,p.stats[k]+Math.min(2,Run.wins*.18));
+  // v9.11: duos (two humans) climb a steeper ladder, and every third game is an elite rival (+1, smarter)
+  const duo=!!Run.duo, elite=duo&&Run.wins>0&&(Run.wins+1)%3===0;
+  const level=Math.min(2.5,(duo?0.8+Run.wins*.22:0.65+Run.wins*.17)+(elite?0.4:0));
+  // Existing easy-to-very-hard AI ladder; rating growth remains bounded (+2 solo, +3 duos).
+  for(const p of b.players) for(const k of Object.keys(p.stats)) p.stats[k]=Math.min(10,p.stats[k]+Math.min(duo?3:2,Run.wins*(duo?.25:.18))+(elite?1:0));
+  Run.levelNow=level; Run.eliteNow=elite;
   newMatch(a,b,{barakah:true,humans:runHumans(),aiCfg:[diffAt(1),diffAt(level)],fmt:{format:'quarters',len:45,sc:20},fun:null});
   if(Run.duo==='online'){M.online=true;Net.mid++;Net.evs=[];Net.syncCounters();}
   M.barakah=true; M.barakahRound=Run.wins+1; M.fmt.periods=1; M.fmt.ot=30; M.timeouts=[1,1]; M.dmOverride=1; M._runCounted=false;
@@ -11958,7 +11970,7 @@ function nextBarakahGame() {
     const p=M.teams[0].players[u.mate?1:0],base=p.st[u.stat] == null ? (u.stat==='hus'||u.stat==='clu'?st7(p,u.stat):5) : p.st[u.stat]; p.st[u.stat]=Math.min(10,base+(u.amount||1)*Run.upgrades[u.id]);
   }
   Game.lastMatch=null; Game.finalTab=0; Game.paused=false; Game.trivia=null; Game.screen='play';
-  FX.callout('BARAKAH RUN · GAME '+(Run.wins+1),GOLD,'ONE 45-SECOND QUARTER · TIES GO TO OVERTIME',true);
+  FX.callout('BARAKAH RUN · GAME '+(Run.wins+1),Run.eliteNow?'#ff9a8a':GOLD,Run.eliteNow?'ELITE RIVAL · TOUGHER AND SMARTER':'ONE 45-SECOND QUARTER · TIES GO TO OVERTIME',true);
 }
 function recordBarakahGame() {
   if(!M.barakah || M._runCounted) return;
@@ -13081,7 +13093,7 @@ joinTyped = function () { if (Net.typed.length === 4) Lobby.join(Net.typed); };
   const _do = drawOnline; drawOnline = function (g) { refreshOnlineItems(); _do(g); };
   // finished games come back to the lobby
   const _fc = finalContinue;
-  finalContinue = function () { if (Net.role === 'host' && !M.career) { Lobby.back(); return; } return _fc.apply(this, arguments); };
+  finalContinue = function () { if (Net.role === 'host' && !M.career && !(M.barakah && Run.duo === 'online' && Run.active)) { Lobby.back(); return; } return _fc.apply(this, arguments); };   // (v9.11: a duo run goes on to the next game; it ends on a loss)
   const _mr = miniResultContinue;
   miniResultContinue = function () { if (Net.role === 'host') { Lobby.back(); return; } if (Net.role === 'guest') return; return _mr.apply(this, arguments); };
   // the host's snapshot reports the lobby while we're in it
@@ -13295,14 +13307,14 @@ function predStart(type) { const me = predOwn(); if (!me) return; Pred.act = { t
     const me = predOwn(); if (!me || Pred.act) { if (Pred.act && Pred.act.type === 'shot' && !c.bHeld) Pred.act.rel = true; return; }
     const mine = ball.owner === me, bo = ball.owner, onD = bo && bo.team !== me.team, ground = me.state === 'free' && me.y < 1;
     if (c.b && ground) {
-      if (mine) { const h = attackHoop(me.team); if (!(c.turbo && dxz(me, h) < 170)) predStart('shot'); }   // (dunks stay host-driven)
+      if (mine) { const h = attackHoop(me.team); if (!Net.predV2 && !(c.turbo && dxz(me, h) < 170)) predStart('shot'); }   // (v9.11: v911-predict.js plays shots, layups and dunks)
       else if (!bo || onD) predStart('jump');
     }
     if (c.a) { Pred.aT0 = nowMs(); Pred.aCtx = mine ? 'ball' : onD ? 'def' : null; }
     if (!c.aHeld && Pred.aT0) {
       const held = nowMs() - Pred.aT0; Pred.aT0 = 0;
       if (ground && Pred.aCtx === 'def' && held < STEAL_TAP * 1000 && !c.turbo) predStart('steal');
-      else if (ground && Pred.aCtx === 'ball' && mine && held < PASS_HOLD * 1000) predStart('pass');
+      else if (ground && Pred.aCtx === 'ball' && mine && held < PASS_HOLD * 1000 && !Net.predV2) predStart('pass');
     }
   };
   const _gf = Net.guestFrame;
@@ -18665,6 +18677,7 @@ function doTaunt(p, id) {
   const _hc = humanCmd;
   humanCmd = function (pad, c) {
     const r = _hc.apply(this, arguments);
+    if (Net.role === 'guest') return r;                                   // the host judges these for an online guest
     const T = M.taunt;
     if (T && !T.used && M.time <= T.until && T.p && T.p.human === pad && c.x && ball.owner !== T.p && !M.mini) { doTaunt(T.p, myTaunt()); c.x = false; c.xHeld = false; }
     // Turbo + MOVE on an open run straight at the rim: lob it off the glass to yourself (v9.9: on fire only)
@@ -23101,9 +23114,12 @@ function lgCollect(job) { return { sa: M.teams[0].score, sb: M.teams[1].score, r
 const LG_CAL = {
   ppm: { 30: 10.8, 45: 9.67, 60: 9.33, 120: 9.1 }, rel: { 30: 0.3, 45: 0.29, 60: 0.22, 120: 0.19 }, quartersK: 0.98,
   first21: { lose: 0.77, loseSd: 0.17, over: 0.3 }, share: 0.5, shareSd: 0.14, dunkShare: 0.92,
-  rate: { fga: 0.689, tpa: 0.189, fta: 0.064, reb: 0.0994, ast: 0.1456, stl: 0.0691, blk: 0.0892, tov: 0.0682, dnk: 0.347, chg: 0.0142 },
+  rate: { fga: 0.689, tpa: 0.189, fta: 0.064, reb: 0.0994, ast: 0.1456, stl: 0.0691, blk: 0.0892, tov: 0.0682, dnk: 0.347, chg: 0.0192 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more)
   pct: { fg: 0.644, tp: 0.343, ft: 0.764 }
 };
+// v9.11: how much of his game is threes, by play style (as the CPU plays them now: v911-cpu-style.js)
+const LG_THREE_K = { sharpshooter: 2.5, playmaker: 0.9, lockdown: 0.85, glue: 0.7, rimrunner: 0.1 };
+function lgThreeK(pd) { const a = pd && (pd.arch || (pd.stats && typeof archetypeOf === 'function' ? archetypeOf(pd.stats) : null)); return LG_THREE_K[a] || 1; }
 function lgFallback(job, why) {
   const R = lgRng(lgHash(job.key + '|fb')), gauss = () => { let u = 0; for (let i = 0; i < 12; i++) u += R(); return u - 6; };   // unit variance
   const F = makeFmt({}), d = (teamPower(job.stage, job.a) - teamPower(job.stage, job.b)) * 0.012;
@@ -23126,7 +23142,7 @@ function lgFallback(job, why) {
     const ps = split(); let left = pts;
     out.forEach((o, i) => {
       const p = i === n - 1 ? left : Math.round(pts * ps[i]); left -= p;
-      o.tpa = pois(p * LG_CAL.rate.tpa); o.tpm = Math.min(Math.floor(p / 3), binom(o.tpa, LG_CAL.pct.tp));
+      o.tpa = pois(p * LG_CAL.rate.tpa * lgThreeK(P[i])); o.tpm = Math.min(Math.floor(p / 3), binom(o.tpa, LG_CAL.pct.tp));
       o.fta = pois(p * LG_CAL.rate.fta); o.ftm = Math.min(p - 3 * o.tpm, binom(o.fta, LG_CAL.pct.ft));
       let rem = p - 3 * o.tpm - o.ftm;
       if (rem % 2) { if (o.tpm > 0) { o.tpm--; rem += 3; } else if (rem >= 3) { o.tpm++; o.tpa = Math.max(o.tpa, o.tpm); rem -= 3; } else { o.ftm++; rem--; } }   // odd: a three more or less, rarely a free throw
@@ -23835,7 +23851,7 @@ function startLayup(p, kind) {
     if (c.x && !(p.fire && c.turbo) && layupOK(p, c)) { p.wantLay = layupKind(p); c.x = false; c.xHeld = false; }
   };
   const _hc = humanCmd;
-  humanCmd = function (pad, c) { const r = _hc.apply(this, arguments); if (M.players) take(M.players.find(q => q.human === pad), c); return r; };
+  humanCmd = function (pad, c) { const r = _hc.apply(this, arguments); if (M.players && Net.role !== 'guest') take(M.players.find(q => q.human === pad), c); return r; };   // (an online guest's layups: v911-predict.js)
   const _rc = Net.remoteCmd;
   Net.remoteCmd = function (c) { const r = _rc.apply(this, arguments); if (M.players) take(M.players.find(q => q.human === 1), c); return r; };
   const _up = updatePlayer;
@@ -23914,6 +23930,99 @@ function layupProb(p) {
     return r;
   };
 }
+// ================================================= v9.11: EVERY CPU PLAYER PLAYS HIS OWN GAME
+// Play-test: "CPU opponents and teammates need more variety ... all based on stats and archetypes so each is unique".
+// The CPU already chose between shooting, driving, passing and probing by expected points, so players with the same
+// numbers looked alike (and playmakers, who drive well, ended up taking the most shots and making the fewest
+// assists). Now each CPU player has tendencies, from his ratings and his play style, plus a small quirk of his own:
+//   * passing: Passing and the playmaker / glue styles move the ball (more assists); scorers look for their own shot;
+//   * shot diet: Shooting and the sharpshooter style hunt threes; glue guys and lockdowns take the open mid-range;
+//     Dunking, Speed and rim runners attack the rim (drives, cuts, dunks, layups);
+//   * off the ball: shooters spot up behind the arc, rim runners cut, glue guys and lockdowns set screens;
+//   * defense: Defense, height and the lockdown / rim-runner styles go up for blocks more often; Steal and the
+//     lockdown / playmaker styles reach for steals more; shooters and scorers save their legs.
+// The average over the league stays about where it was (league rates are calibrated), the spread between players grows.
+const CPU_ARCH_T = {   // per style: three, mid, rim, pass, probe, screen, block, steal
+  sharpshooter: { t3: 0.2, mid: 0.06, rim: -0.14, pass: -0.1, probe: 0.04, scr: -0.15, blk: -0.24, stl: -0.3, press: -6 },
+  playmaker: { t3: 0.02, mid: 0.04, rim: -0.14, pass: 0.4, probe: -0.05, scr: -0.05, blk: -0.18, stl: 0.3, press: 2 },
+  rimrunner: { t3: -0.2, mid: -0.08, rim: 0.26, pass: -0.12, probe: -0.04, scr: 0.1, blk: 0.12, stl: -0.3, press: -2 },
+  lockdown: { t3: -0.08, mid: 0.06, rim: 0, pass: 0.06, probe: -0.08, scr: 0.22, blk: 0.12, stl: 0.5, press: 5 },
+  glue: { t3: -0.02, mid: 0.1, rim: 0.02, pass: 0.16, probe: -0.04, scr: 0.25, blk: 0.04, stl: 0.12, press: 2 }
+};
+function cpuArch(p) {
+  const d = p.def || {};
+  if (d.look && typeof lookArch === 'function') { const a = lookArch(d.look); if (a) return a; }
+  return d.arch || (typeof archetypeOf === 'function' ? archetypeOf(p.st) : 'glue');
+}
+function cpuTend(p) {
+  const s = p.st, key = [s.sht, s.dnk, s.pas, s.spd, s.def, s.stl, p.def && p.def.name].join(',');
+  if (p._tnd && p._tndK === key) return p._tnd;
+  const A = CPU_ARCH_T[cpuArch(p)] || CPU_ARCH_T.glue, R = seededRng(hash32('style|' + ((p.def && p.def.name) || p.slot)));
+  const q = () => (R() * 2 - 1) * 0.07;                                    // his own quirk
+  const v = k => (s[k] == null ? 5 : s[k]), tall = ((p.def && p.def.bh) != null ? p.def.bh : 1) - 1;
+  const T = {
+    t3: A.t3 + (v('sht') - 6) * 0.05 + q(),
+    mid: A.mid + (v('sht') - 5) * 0.025 + q(),
+    rim: A.rim + (v('dnk') - 5) * 0.045 + q(),
+    pass: A.pass + (v('pas') - 5) * 0.06 + q(),
+    probe: A.probe + (v('spd') - 5) * 0.02 + q() * 0.5,
+    scr: A.scr + q(),
+    blk: clamp(0.9 + A.blk + (v('def') - 5) * 0.05 + tall * 0.08 + q(), 0.4, 1),
+    press: A.press + (v('def') - 5) * 0.5,
+    stl: clamp(0.9 + A.stl + (v('stl') - 5) * 0.1 + q() * 2, 0.45, 1.9)
+  };
+  p._tnd = T; p._tndK = key; return T;
+}
+{
+  // offense: weigh each choice by his tendencies
+  const _ch = Brain.prototype.choose;
+  Brain.prototype.choose = function (opts) {
+    const p = this.p;
+    if (p.human < 0 && opts && opts.length && !M.mini) {
+      const T = cpuTend(p), h = attackHoop(p.team), bias = o => {
+        if (o.type === 'shoot') { const d = dxz(p, h); return isThree(p.x, p.z, h) ? T.t3 : d < 150 ? T.rim * 0.5 : T.mid; }
+        if (o.type === 'dunk' || o.type === 'drive') return T.rim;
+        if (o.type === 'pass' || o.type === 'alley') return T.pass * 1.8;   // (a pass competes with the patience of the possession too)
+        if (o.type === 'probe') return T.probe;
+        if (o.type === 'spot' && o.x != null) return (isThree(o.x, o.z, h) ? T.t3 : T.mid) * 0.8;
+        if (o.type === 'cut') return T.rim * 0.8;
+        if (o.type === 'screen') return T.scr;
+        return 0;
+      };
+      // relative to his own options (a pass-first player passes instead of shooting, not instead of waiting), so the
+      // pace of the game and the league's averages stay where they were
+      const B = opts.map(bias), mean = B.reduce((a, b) => a + b, 0) / B.length;
+      opts.forEach((o, i) => { o.u += B[i] - mean; });
+    }
+    return _ch.apply(this, arguments);
+  };
+  // where he spots up: shooters behind the arc, others where they like to score
+  const _bs = Brain.prototype.bestSpot;
+  Brain.prototype.bestSpot = function (forHandler) {
+    const p = this.p; if (p.human >= 0 || M.mini) return _bs.apply(this, arguments);
+    const T = cpuTend(p), h = attackHoop(p.team), bo = ball.owner;
+    let best = null, bu = -1e9;
+    for (const s of offSpots(h)) {
+      if (!forHandler && bo && Math.hypot(s.x - bo.x, s.z - bo.z) < 160) continue;
+      const open = nearestOppDist(s.x, s.z, p.team), three = isThree(s.x, s.z, h);
+      const ev = shotProbability(p, s.x, s.z, open) * (three ? 3 : 2);
+      const u = ev + (three ? T.t3 : T.mid) * 0.6 - Math.hypot(s.x - p.x, s.z - p.z) / 700 + rand(0, 0.05);
+      if (u > bu) { bu = u; best = s; }
+    }
+    return best || _bs.apply(this, arguments);
+  };
+  // defense: who goes up to contest a shot
+  const _ns = notifyShot;
+  notifyShot = function (sh) {
+    const r = _ns.apply(this, arguments);
+    for (const o of sh.opps) if (o.human < 0 && o.ai && o.ai.jumpAt > 0 && !M.mini && !chance(cpuTend(o).blk)) o.ai.jumpAt = -1;
+    return r;
+  };
+}
+// steals: the reach rate per player (ai.js reads cpuStealK)
+function cpuStealK(p) { return p && p.human < 0 && !M.mini ? cpuTend(p).stl : 1; }
+// on the ball: how much tighter (+) or looser (-) than usual he guards, in units
+function cpuPress(p) { return p && p.human < 0 && !M.mini ? clamp(cpuTend(p).press, -8, 6) : 0; }   // (tighter than ~28 and the bodies collide)
 // ================================================= v9.10: ONLINE LATENCY: RELAY (TURN), DIAGNOSTICS, SMALLER SNAPSHOTS
 // Online play has three paths, tried in this order: Direct (a peer-to-peer WebRTC data channel, p2p.js), Relay (the
 // same data channel through a TURN server, for carrier and strict NATs) and Server (Firebase relays every message).
@@ -24078,7 +24187,7 @@ SET_ITEMS.splice(SET_ITEMS.length - 1, 0, { label: 'Show network info', get: () 
 
 // ---------------------------------------------------------------- compact snapshots (server path)
 const SNAP_Q = [1, 1, 1, 1, 1, 1, 1, 100, 100, 100, 1, 1, 100, 1, 100, 1, 1, 1, 10, 1];   // per player value: x 1 = whole units
-const BALL_Q = [1, 1, 1, 1, 1, 10, 1];
+const BALL_Q = [1, 1, 1, 1, 1, 10, 1, 1, 1, 1, 10, 10, 10];   // (v9.11: + the launch in flight, for the guest's time-shifted ball)
 const SNAP_HDR = [], SNAP_PASS = ['e', 'vn', 'ak', 'ct'];   // header keys (g, mode, mid, sc) go like the rest: only when changed. PASS: sent as they are, never kept in a key
 const SNAP_EV = ['s:bounce', 's:swish', 's:clank', 's:board', 's:slam', 's:squeak', 's:swipe', 's:thud', 's:buzzer', 's:cheer', 's:good', 's:bad',
   'f:callout', 'f:pop', 'f:burst', 'f:shake', 'f:hype', 'f:dust', 'f:replay', 'f:highlight', 'f:cue'];   // append only
@@ -24346,6 +24455,306 @@ const NQ_TXT = { good: ['Good', '#57e389'], ok: ['OK', '#ffd76a'], poor: ['Poor'
     _r(g);
     if (!SETTINGS.netInfo || !Net.role) return;
     if (Game.screen === 'netplay' || (Game.screen === 'play' && Net.role === 'host' && M.online)) netInfoBox(g);
+  };
+}
+// ================================================= v9.11: THE GUEST PLAYS IN REAL TIME
+// Play-test: "still some lag". Measured on a simulated 80 ms round trip, the guest waited for the host before seeing
+// its own ball leave the hands (170 ms), its timing grade, a layup (150 ms), a dunk, a crossover or a pass (200 ms).
+// Now the guest plays its own actions on its own screen the moment the button goes down, and the host takes the
+// guest's decisions, so both screens agree:
+//   * shots: the guest picks the shot (jumper, floater, fadeaway, putback...) and its release height, shows the
+//     label, and judges the timing on its own meter (GREEN / GOOD / EARLY / LATE right away). The host uses the
+//     guest's shot type and timing grade. The ball leaves the hands at once on the guest's screen.
+//   * layups on MOVE, dunks (the dunk style and length come from the guest), crossovers, passes: started on the
+//     guest at once, the same kind on the host.
+//   * the ball in flight after the guest's shot or pass: the guest sees it from its own release; the host's flight
+//     (it starts one trip later) is shown that much further along, and the gap closes over the flight, so the ball
+//     meets the rim or the receiver exactly when the host says it does. Make or miss and blocks stay the host's.
+//   * once the guest's action is over on its screen, the host's (later) copy of it isn't shown a second time.
+// The host stays in charge of everything else: other players, contact, blocks, steals, makes and misses, the score.
+Net.predV2 = true;
+const GP = { n: 0, ia: null, act: null, hold: null, off: null, ball: null, mv: null, mvHold: null, pass: null, pops: {}, rg: null, re: 0, aT0: 0, mvT: 0 };
+const gpMe = () => M.players && M.players.find(p => p.human === 1);
+const gpOn = () => Net.role === 'guest' && Game.screen === 'netplay' && !Net.reconnecting && !Net.noPredict && !Net.noPredV2 && !M.balls;
+const gpWait = () => ((Net.rtt || 120) + (Net.rdelay || 60) + 300) / 1000;   // how long the host's copy can take to show up
+function gpIntent(k, a, b) { GP.n++; GP.ia = [GP.n, k, a == null ? 0 : a, b == null ? 0 : b]; GP.iaT = nowMs(); }
+function gpPop(p, txt, col, dy) { if (!txt) return; GP.pops[txt] = nowMs(); FX.pop(p.x, p.y + (dy || 132), p.z, txt, col || '#ffffff'); }
+// run a sim function on the guest's copy of the ball and keep only the launch it computes
+const GP_BALL = ['owner', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'state', 'shot', 'pass', 'lastTouch', 'spin', 'fire'];
+function gpLaunch(fn) {
+  const sv = {}; for (const k of GP_BALL) sv[k] = ball[k];
+  let out = null;
+  try { fn(); if (!ball.owner) out = { x: ball.x, y: ball.y, z: ball.z, vx: ball.vx, vy: ball.vy, vz: ball.vz }; } catch (e) {}
+  for (const k of GP_BALL) ball[k] = sv[k];
+  return out;
+}
+const gpAt = (L, t) => ({ x: L.x + L.vx * t, y: Math.max(BALL_R, L.y + L.vy * t - 0.5 * grav() * t * t), z: L.z + L.vz * t });
+
+// ---------------------------------------------------------------- guest: start actions on the press
+function gpShot(me, kind, lk) {
+  const sig = !lk && kind === sigKind(me.def), H = attackHoop(me.team);
+  me.jumpVy = sig ? (SIG_JUMP[kind] || JUMP_VY) : (TYPE_JUMP[kind] || JUMP_VY);
+  me.shotType = sig ? null : kind; me.sigShot = sig ? kind : null; me.layKind = lk || null; me.layV = null;
+  const A = { k: 'shot', kind, lay: !!lk, t: 0, st: 'windup', st_t: 0, y: 0, yv: 0, x: me.x, z: me.z, vx: (me.vx || 0) * 0.2, vz: (me.vz || 0) * 0.2, fvx: 0, fvz: 0, rel: false, ok: false };
+  if (lk) {
+    const keep = [me.fadeVx, me.fadeVz, me.layAuto, me.layRel, me.fakeOK];
+    layPrep(me); A.fvx = me.fadeVx || 0; A.fvz = me.fadeVz || 0; A.relAt = apexT(me) * (lk === 'bank' ? 0.88 : 0.95);
+    [me.fadeVx, me.fadeVz, me.layAuto, me.layRel, me.fakeOK] = keep;
+    gpIntent('lay', lk, Math.round(A.relAt * 1000) / 1000);
+    gpPop(me, LAY_LABEL[lk]); if (lk === 'reverse') GP.pops.REVERSE = nowMs();
+  } else {
+    if (kind === 'fade' || kind === 'bake') { const D = hoopDir(me); A.fvx = -D.fx * 115; A.fvz = -D.fz * 40; }
+    gpIntent('shot', kind);
+    if (!['jumper', 'layup', 'pullup'].includes(kind)) gpPop(me, sig ? '★ ' + SIG_NAMES[kind] : MOVE_LABEL[kind], sig ? '#ffd76a' : '#ffffff');
+  }
+  me.face = sgn(H.x - me.x) || me.face;
+  GP.act = A; GP.hold = null; GP.off = null; GP.rg = null;
+}
+function gpDunk(me) {
+  const h = attackHoop(me.team), d = dxz(me, h);
+  const types = d > 180 ? ['360', 'windmill', 'tomahawk'] : d > 100 ? ['tomahawk', 'windmill', 'twohand'] : ['twohand', 'tomahawk'];
+  const type = pick(types), baseD = clamp(0.6 + d / 450, 0.62, 1.15);
+  const D = baseD * (type === 'windmill' ? 1.08 : type === '360' ? 1.12 : type === 'twohand' ? 0.94 : 1);
+  const a = { type, D, s: 0, sx: me.x, sz: me.z, tx: h.x + h.dir * 20, tz: h.z + (me.z - h.z) * 0.12, peak: 64 + (D - 0.7) * 30 + (type === '360' ? 8 : 0), hoop: h, tried: new Set() };
+  gpIntent('dunk', type, Math.round(D * 1000) / 1000);
+  me.face = sgn(h.x - me.x) || me.face; SFX.squeak();
+  GP.act = { k: 'dunk', a, t: 0, ok: false }; GP.hold = null; GP.off = null;
+}
+function gpRelease(me, A) {
+  A.rel = true;
+  if (!A.lay) {                                                            // the timing grade, on our own meter
+    const ap = apexT(me), e = A.st_t - ap, win = shotWindow(me);
+    const tier = win > 0 && Math.abs(e) <= win ? 'green' : win > 0 && Math.abs(e) <= win * 3 ? 'good' : 'off';
+    GP.rg = tier; GP.re = Math.round(e * 1000) / 1000; GP.iaT = nowMs();
+    if (tier === 'green') {
+      gpPop(me, 'GREEN', '#57e389', 126); SFX.green(); SFX.cheer(0.3, 0.1);
+      const hm = handsMid(me); FX.burst(hm.x, hm.y + 8, hm.z, REDUCED_MOTION ? 1 : 3, 'spark', ['#57e389', '#d9ffe6']); me.greenFlash = 0.45;
+    } else if (tier === 'good') gpPop(me, 'GOOD', '#ffd84d', 122);
+    else gpPop(me, e < 0 ? 'EARLY' : 'LATE', '#ff6b6b', 122);
+  }
+  const L = gpLaunch(() => launchShot(me, attackHoop(me.team), true, 2));
+  if (L) { const h = attackHoop(me.team); GP.ball = { ph: 'local', t0: nowMs(), L, kind: 'shot', tx: h.x, tz: h.z }; }
+}
+function gpMove(me, m) {
+  GP.mvT = nowMs();
+  gpPop(me, MOVE_LABEL[m.kind]);
+  if (m.kind === 'cross' || m.kind === 'btb') { GP.mv = { type: m.kind === 'btb' ? 'btb' : 'xover', t: 0, dur: 0.3, from: me.dh, to: me.dh === 'n' ? 'f' : 'n' }; GP.mvHold = null; SFX.squeak(); }
+}
+function gpPass(me) {
+  const to = me.mate; if (!to || to.state === 'down') return;
+  const L = gpLaunch(() => passAuto(me));
+  if (!L) return;
+  GP.ball = { ph: 'local', t0: nowMs(), L, kind: 'pass', to }; GP.pass = { t: 0 };
+}
+{
+  const _hc = humanCmd;
+  humanCmd = function (pad, c) {
+    const r = _hc.apply(this, arguments);
+    if (pad !== 0 || !gpOn()) return r;
+    const me = gpMe(); if (!me) return r;
+    const A = GP.act, now = nowMs();
+    if (A && A.k === 'shot' && !A.lay && !A.rel && !c.bHeld) {
+      if (A.st === 'windup') { GP.act = null; me.state = 'free'; me.y = 0; }   // a tap: pump fake (the host plays it)
+      else gpRelease(me, A);
+    }
+    if (c.b) GP.rg = null;
+    if (GP.act || Pred.act) return r;
+    const mine = ball.owner === me, ground = me.state === 'free' && me.y < 1;
+    me.cmd.mx = c.mx; me.cmd.mz = c.mz; me.cmd.turbo = c.turbo;
+    if (c.a && mine) GP.aT0 = now;
+    if (!c.aHeld && GP.aT0) { const held = now - GP.aT0; GP.aT0 = 0; if (mine && ground && held < PASS_HOLD * 1000 && !c.x) gpPass(me); }
+    if (!mine || !ground || me.postUp || M.phase !== 'live') return r;
+    if (c.b) {
+      if (canDunk(me)) gpDunk(me);
+      else if (!(c.turbo && me._sigR)) gpShot(me, classifyShot(me));     // (a signature move with turbo: the host plays it)
+    } else if (c.x && !(me.fire && c.turbo)) {
+      if (layupOK(me, c)) { const k = layupKind(me); if (k === 'euro') gpIntent('lay', 'euro', 0); else gpShot(me, k === 'reverse' ? 'reverse' : 'layup', k); }
+      else if (Math.hypot(c.mx, c.mz) >= 0.3 && now - GP.mvT > 450) { const m = classifyMove(me, c.mx, c.mz); gpIntent('mv', m.kind, m.side); gpMove(me, m); }
+    }
+    return r;
+  };
+  // the guest's decisions travel with its input
+  const _sp = Net.setP;
+  Net.setP = function (patch) {
+    if (this.role === 'guest' && patch && patch.in && GP.ia && nowMs() - GP.iaT < 1000) { patch.in.ia = GP.ia; if (GP.rg) { patch.in.rg = GP.rg; patch.in.re = GP.re; } }   // for a second (in case one is lost), then off the wire
+    return _sp.call(this, patch);
+  };
+}
+
+// ---------------------------------------------------------------- guest: each frame
+const GP_FAM = { shot: ['windup', 'shoot', 'post'], dunk: ['dunk'] };
+function gpFlags(me) {                                    // what the host knows about our player that the snapshot doesn't carry
+  const f = (Net.lastS && Net.lastS.gf) | 0, at = b => (f & b ? M.time : null);   // bits, so it's a few bytes and rarely changes
+  me.orebT = at(1); me.fakeBit = !!(f & 2); me.fakeT = at(2); me.ggRecv = at(4); me.stepT = at(8);
+  me.postUp = f & 16 ? (me.postUp || {}) : null; me._sigR = !!(f & 32);
+}
+function gpActFrame(me, rdt) {
+  const hs = me.state, hx = me.x, hz = me.z, hy = me.y, A = GP.act;
+  if (A) {
+    A.t += rdt;
+    if (GP_FAM[A.k].includes(hs)) A.ok = true;
+    let done = false;
+    if (A.k === 'shot') {
+      if (A.st === 'windup') {
+        A.st_t += rdt; const k = Math.min(1, rdt * 6); A.vx -= A.vx * k; A.vz -= A.vz * k;
+        if (A.st_t >= 0.1) { A.st = 'shoot'; A.st_t = 0; A.yv = me.jumpVy || JUMP_VY; if (A.fvx || A.fvz) { A.vx = A.fvx; A.vz = A.fvz; } }
+      } else {
+        A.st_t += rdt; A.yv -= grav() * rdt; const f = Math.pow(0.985, rdt * 60); A.vx *= f; A.vz *= f; A.y += A.yv * rdt;
+        if (A.lay && !A.rel && A.st_t >= A.relAt) gpRelease(me, A);
+        if (A.y <= 0) { A.y = 0; if (!A.rel) gpRelease(me, A); done = true; }
+      }
+      A.x = clamp(A.x + A.vx * rdt, -20, COURT.L + 20); A.z = clamp(A.z + A.vz * rdt, 20, COURT.D - 20);
+      me.x = A.x; me.z = A.z; me.y = A.y; me.vx = A.vx; me.vz = A.vz;
+      me.state = A.st === 'windup' ? 'windup' : A.rel ? 'post' : 'shoot'; me.st_t = A.st_t; me.layAuto = A.lay; me.face = sgn(attackHoop(me.team).x - me.x) || me.face;
+    } else {
+      const a = A.a; a.s += rdt / a.D; const q = dunkPath(a, a.s);
+      me.x = q.x; me.z = q.z; me.y = q.y; me.state = 'dunk'; me.act = a; me.st_t = A.t; me.vx = me.vz = 0;
+      const su = clamp((a.s - 0.14) / 0.52, 0, 1); me.spin = a.type === '360' ? su * Math.PI * 2 : a.type === 'windmill' ? Math.sin(su * Math.PI) * 0.2 : 0;
+      if (a.s >= 1) { done = true; me.spin = 0; }
+    }
+    if (!A.ok && A.t > gpWait()) { GP.act = null; GP.off = { x: me.x - hx, z: me.z - hz, y: me.y - hy }; me.x = hx; me.z = hz; me.y = hy; return; }   // the host never played it
+    if (done) { me.layAuto = false; GP.act = null; GP.hold = { k: A.k, t: 0, x: me.x, z: me.z, y: me.y, seen: A.ok }; }
+    animate(me, rdt);
+    return;
+  }
+  const Hd = GP.hold;
+  if (Hd) {                                                   // ours is over; the host's copy is still playing: don't show it twice
+    Hd.t += rdt; const busy = GP_FAM[Hd.k].includes(hs); if (busy) Hd.seen = true;
+    if ((busy || (Hd.k === 'shot' && hy > 1) || (!Hd.seen && Hd.t < gpWait())) && Hd.t < 1.6) {   // until the host's copy has come and gone (and is back on the floor)
+      me.x = Hd.x; me.z = Hd.z;
+      if (Hd.k === 'dunk') { Hd.y = lerp(Hd.y, 42, Math.min(1, rdt * 10)); me.y = Hd.y; me.state = 'hang'; } else { me.y = 0; me.state = 'free'; }
+      animate(me, rdt);
+      return;
+    }
+    GP.hold = null; GP.off = { x: Hd.x - hx, z: Hd.z - hz, y: (Hd.k === 'dunk' ? Hd.y : 0) - hy };
+  }
+  if (GP.off) {                                              // then ease into the host's view (~100 ms)
+    const k = Math.exp(-rdt / 0.05), O = GP.off; O.x *= k; O.z *= k; O.y *= k;
+    me.x += O.x; me.z += O.z; me.y = Math.max(0, me.y + O.y);
+    if (Math.abs(O.x) + Math.abs(O.z) + Math.abs(O.y) < 0.5) GP.off = null;
+  }
+}
+function gpMoveFrame(me, rdt) {
+  const V = GP.mv;
+  if (V) { V.t += rdt; if (V.t >= V.dur) { GP.mv = null; me.dh = V.to; me.move = null; GP.mvHold = { dh: V.to, t: 0 }; } else { me.move = V; me.dh = V.from; } return; }
+  const Hd = GP.mvHold;
+  if (Hd) { Hd.t += rdt; if (me.move && Hd.t < 0.8) { me.move = null; me.dh = Hd.dh; } else if (!me.move || Hd.t >= 0.8) GP.mvHold = null; }
+  const P = GP.pass;
+  if (P) { P.t += rdt; if (P.t < 0.2) { me.state = 'pass'; me.st_t = P.t; animate(me, rdt); } else if (P.t < 0.7) { if (me.state === 'pass') me.state = 'free'; } else GP.pass = null; }   // our pass pose, then not the host's copy
+}
+function gpBallFrame(me, rdt) {
+  const B = GP.ball, now = nowMs();
+  if (B) {
+    const tau = (now - B.t0) / 1000;
+    let q = null;
+    if (B.ph === 'local') {
+      if (ball.owner === me) {                               // the host hasn't let go yet (in what we're shown): our own launch
+        if (tau > Math.min(1.6, gpWait() + 0.3)) { GP.ball = null; gpBallOff(gpAt(B.L, tau)); return; }   // never let go on the host (or a new possession): the host's view
+        q = gpAt(B.L, tau); ball.owner = null; ball.state = B.kind;
+      } else {
+        const bl = ball.nl;
+        if (ball.owner || !bl || !(ball.state === 'shot' || ball.state === 'pass')) { GP.ball = null; gpBallOff(gpAt(B.L, tau)); return; }   // stolen, blocked...: the host's view
+        // the host's launch has reached us: draw its exact flight from our own release, a little slower, so it gets
+        // to the rim (or the board, or the receiver) just as the host's does
+        const H = { x: bl[0], y: bl[1], z: bl[2], vx: bl[3], vy: bl[4], vz: bl[5] }, hsp = Math.hypot(H.vx, H.vz) || 1, h = attackHoop(me.team);
+        let T = B.kind === 'pass' ? Math.hypot(B.to.x - H.x, B.to.z - H.z) / hsp : Math.hypot(h.x - H.x, h.z - H.z) / hsp;
+        if (B.kind === 'shot' && H.vx * h.dir < -1) { const tb = (H.x - (h.bbx + h.dir * BALL_R)) / (-H.vx); if (tb > 0) T = Math.min(T, tb); }   // off the glass: up to the board
+        const ql = gpAt(B.L, tau), qh = gpAt(H, tau);
+        Object.assign(B, { ph: 'host', H, T: Math.max(0.1, T), d0: tau, ts: now, rate: Math.max(0.25, 1 - tau / Math.max(0.1, T)), off: { x: ql.x - qh.x, y: ql.y - qh.y, z: ql.z - qh.z } });
+      }
+    }
+    if (B.ph === 'host') {
+      const sT = B.d0 + (now - B.ts) / 1000 * B.rate;
+      if (ball.owner || !(ball.state === 'shot' || ball.state === 'pass') || sT >= B.T) { GP.ball = null; gpBallOff(gpAt(B.H, Math.min(sT, B.T))); return; }
+      const k = Math.exp(-rdt / 0.06), O = B.off; O.x *= k; O.y *= k; O.z *= k;
+      const p = gpAt(B.H, sT); q = { x: p.x + O.x, y: p.y + O.y, z: p.z + O.z };
+    }
+    if (q) { ball.x = q.x; ball.y = Math.max(BALL_R, q.y); ball.z = q.z; }
+    return;
+  }
+  const O = GP.bOff;                                         // after: ease from where we drew it into the host's ball
+  if (O) { if (ball.owner) { GP.bOff = null; return; } const k = Math.exp(-rdt / 0.07); O.x *= k; O.y *= k; O.z *= k; ball.x += O.x; ball.y = Math.max(BALL_R, ball.y + O.y); ball.z += O.z; if (Math.abs(O.x) + Math.abs(O.y) + Math.abs(O.z) < 0.5) GP.bOff = null; }
+}
+function gpBallOff(q) { if (ball.owner) return; GP.bOff = { x: q.x - ball.x, y: q.y - ball.y, z: q.z - ball.z }; ball.x = q.x; ball.y = Math.max(BALL_R, q.y); ball.z = q.z; }
+{
+  const _gf = Net.guestFrame;
+  Net.guestFrame = function (rdt) {
+    const r = _gf.apply(this, arguments);
+    const me = gpMe();
+    if (!me || !gpOn()) { GP.act = GP.hold = GP.off = GP.ball = GP.bOff = GP.mv = GP.mvHold = GP.pass = null; return r; }
+    gpFlags(me); gpActFrame(me, rdt); gpMoveFrame(me, rdt); gpBallFrame(me, rdt);
+    return r;
+  };
+  // the host's copy of a label or grade we already showed isn't shown again
+  const _ae = Net.applyEv;
+  Net.applyEv = function (e) {
+    if (this.role === 'guest' && e && e[1] === 'f' && e[2] === 'pop') { const t = GP.pops[e[6]]; if (t && nowMs() - t < 1500) { delete GP.pops[e[6]]; return; } }
+    return _ae.apply(this, arguments);
+  };
+}
+
+// ---------------------------------------------------------------- host: take the guest's decisions
+function gpTake(p, k) {
+  if (Net.role !== 'host' || !p || p.human !== 1 || !M.online) return null;
+  const I = Net.gIntent; return I && I.k === k && M.time - I.at < 1.2 ? I : null;
+}
+function hostApplyRel(p, R) {                    // the guest's release: judged on the guest's own meter
+  const ap = apexT(p), win = shotWindow(p);
+  if (R.rg && win > 0) {
+    const sg = (+R.re || 0) < 0 ? -1 : 1;
+    p.st_t = R.rg === 'green' ? ap : R.rg === 'good' ? ap + sg * win * 2 : ap + sg * Math.max(win * 3.3, Math.abs(+R.re || 0));
+  } else if (R.rt > 0 && R.rt <= p.st_t + 0.35 && R.rt >= p.st_t - 0.35) p.st_t = R.rt;
+}
+{
+  const _rc = Net.remoteCmd;
+  Net.remoteCmd = function (c) {
+    const g = this.guestPeer && this.peers().find(p => p.peer === this.guestPeer), i = (g && g.presence && g.presence.in) || {};
+    if (Array.isArray(i.ia) && (i.ia[0] | 0) > (this.lastIa || 0)) { this.lastIa = i.ia[0] | 0; this.gIntent = { k: i.ia[1], a: i.ia[2], b: +i.ia[3] || 0, at: M.time }; }   // before the press is read (layups are decided in there)
+    const before = this.lastRc || 0, r = _rc.apply(this, arguments);
+    if ((this.lastRc || 0) > before && this.pendRel && i.rg) { this.pendRel.rg = i.rg; this.pendRel.re = +i.re || 0; }
+    return r;
+  };
+  const _cd = canDunk;
+  canDunk = function (p) { const I = gpTake(p, 'dunk') || gpTake(p, 'shot'); if (I && ball.owner === p && p.state === 'free') return I.k === 'dunk'; return _cd.apply(this, arguments); };
+  const _sd = startDunk;
+  startDunk = function (p, opts) {
+    const I = opts && opts.alley ? null : gpTake(p, 'dunk');
+    const r = _sd.apply(this, arguments);
+    if (I && p.act && p.state === 'dunk' && ['twohand', 'tomahawk', 'windmill', '360'].includes(I.a) && I.b > 0.3) {
+      p.act.type = I.a; p.act.D = I.b; p.act.peak = 64 + (I.b - 0.7) * 30 + (I.a === '360' ? 8 : 0); Net.gIntent = null;
+    }
+    return r;
+  };
+  const _cs = classifyShot;
+  classifyShot = function (p) { const I = gpTake(p, 'shot'); if (I && MOVE_LABEL[I.a] && I.a !== 'euro') { Net.gIntent = null; return I.a; } return _cs.apply(this, arguments); };
+  const _lo = layupOK;
+  layupOK = function (p, c) { if (gpTake(p, 'lay')) return ball.owner === p && p.state === 'free' && p.y <= 1 && M.phase === 'live' && !M.mini; return _lo.apply(this, arguments); };
+  const _lk = layupKind;
+  layupKind = function (p) { const I = gpTake(p, 'lay'); if (I && (LAY_LABEL[I.a] || I.a === 'euro')) return I.a; return _lk.apply(this, arguments); };
+  const _sl = startLayup;
+  startLayup = function (p, kind) { const I = gpTake(p, 'lay'); const r = _sl.apply(this, arguments); if (I) { if (I.b > 0.1 && p.layAuto) p.layRel = I.b; Net.gIntent = null; } return r; };
+  const _cm = classifyMove;
+  classifyMove = function (p, mx, mz) { const I = gpTake(p, 'mv'); if (I && MOVE_INFO[I.a]) { Net.gIntent = null; return { kind: I.a, side: I.b || 1 }; } return _cm.apply(this, arguments); };
+  // the launch of every shot and pass (after every rule that shapes it: bank shots, bounce passes), for the guest
+  const rec = () => { if (!ball.owner && (ball.state === 'shot' || ball.state === 'pass')) Net.blaunch = [((Net.blaunch && Net.blaunch[0]) || 0) + 1, r1(ball.x), r1(ball.y), r1(ball.z), r1(ball.vx), r1(ball.vy), r1(ball.vz)]; };
+  for (const fn of ['launchShot', 'doPass', 'lobPass']) {
+    const f = globalThis[fn]; if (typeof f !== 'function') continue;
+    const w = function () { const r = f.apply(this, arguments); if (Net.role === 'host') rec(); return r; };
+    if (fn === 'launchShot') launchShot = w; else if (fn === 'doPass') doPass = w; else lobPass = w;
+  }
+  // what the guest's copy of its own player needs for its decisions (rebound, pump fake, give-and-go, step-back,
+  // post-up, signature ready), as times the guest can compare with its clock
+  const _sn = Net.snapshot;
+  Net.snapshot = function () {
+    const s = _sn.apply(this, arguments);
+    if (s && s.mid != null && M.players) {
+      const g = M.players.find(p => p.human === 1);
+      if (g) {
+        const rec = (v, w) => v != null && M.time - v < w, f = (rec(g.orebT, 0.8) ? 1 : 0) | (g.fakeBit && rec(g.fakeT, 0.9) ? 2 : 0) | (rec(g.ggRecv, 1.4) ? 4 : 0) | (rec(g.stepT, 0.6) ? 8 : 0) | (g.postUp ? 16 : 0) | (typeof sigReady === 'function' && sigReady(g) ? 32 : 0);
+        if (f) s.gf = f;
+      }
+    }
+    return s;
   };
 }
 

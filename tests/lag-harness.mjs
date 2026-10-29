@@ -18,9 +18,12 @@ const pct = (a, p) => { const s = a.slice().sort((x, y) => x - y); return s.leng
 
 // guest side: scripted controller input and a frame-by-frame watch
 const GUEST_INIT = () => {
-  const L = window.__lag = { cmd: {}, once: {}, stale: [] };
-  const _hc = humanCmd;
-  humanCmd = function (pad, c) { const r = _hc.apply(this, arguments); Object.assign(c, L.cmd, L.once); L.once = {}; return r; };
+  Replay.schedule = () => {};
+  // v9.11: presses go in as keys (the way a player's do), so everything that reads the controller sees them,
+  // including the guest's own prediction of its shots and passes
+  const L = window.__lag = { stale: [] };
+  const K = k => BINDS[0][k][0], down = (k, on) => { Input.down[K(k)] = on; if (on) Input.pressed[K(k)] = true; else Input.released[K(k)] = true; };
+  const clear = () => { for (const k of ['right', 'b', 'a']) Input.down[K(k)] = false; };
   const me = () => M.players && M.players.find(q => q.human === 1);
   const watch = () => {
     const n = Net.snaps && Net.snaps[Net.snaps.length - 1];
@@ -32,29 +35,31 @@ const GUEST_INIT = () => {
   L.trial = kind => new Promise(res => {
     const p = me(); if (!p) return res(3000);
     const x0 = p.x, t0 = Date.now();
-    if (kind === 'move') L.cmd = { mx: 1, mz: 0 };
-    else if (kind === 'jump') { L.once = { b: true }; L.cmd = { bHeld: true }; }
-    else if (kind === 'pass') L.once = { a: true };
-    else if (kind === 'shot') { L.cmd = { bHeld: false }; L.once = { bRel: true }; }
+    if (kind === 'move') down('right', true);
+    else if (kind === 'jump') down('b', true);
+    else if (kind === 'pass') { Input.pressed[K('a')] = true; Input.down[K('a')] = false; }   // a tap
+    else if (kind === 'shot') down('b', false);
     const seen = () => { const q = me(); if (!q) return false;
       if (kind === 'move') return Math.abs(q.x - x0) > 4;
       if (kind === 'jump') return q.y > 3;
       if (kind === 'pass') return ball.state === 'pass';
       if (kind === 'shot') return ball.state === 'shot'; };
-    const tick = () => { if (seen()) { L.cmd = {}; res(Date.now() - t0); return; } if (Date.now() - t0 > 3000) { L.cmd = {}; res(3000); return; } requestAnimationFrame(tick); };
+    const tick = () => { if (seen()) { clear(); res(Date.now() - t0); return; } if (Date.now() - t0 > 3000) { clear(); res(3000); return; } requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
   });
-  L.hold = () => { L.once = { b: true }; L.cmd = { bHeld: true }; };
+  L.hold = () => down('b', true);
 };
 // host side: the CPU stands still; each try starts from a set position
 const HOST_INIT = () => {
+  Replay.schedule = () => {};   // instant replays pause play
   const _sn = Net.snapshot; Net.snapshot = function () { const s = _sn.apply(this, arguments); s.__t = Date.now(); return s; };
   const T = Net.room; if (T.stats) { T.stats.byKey = {}; T.stats.nByKey = {}; }
   window.__lagSetup = kind => {
     const g = M.players.find(q => q.human === 1), o = g.opps[0];
     M.cmdHook = q => { if (q.human === 1) return false; zeroCmd(q.cmd); return true; };
     M.phase = 'live'; M.clock = 999; M.shotClock = 99; ball.shot = null; ball.pass = null; M.inb = null; M.sideOut = null; M.ft = null;
-    for (const q of M.players) { q.state = 'free'; q.vx = q.vz = 0; q.move = null; q.act = null; q.pick = null; }
+    M.nextInbound = null; M.deadT = 0; M.check = null; M.frontIn = null; M.pendingEnd = false; Game.trivia = null; Net.pendRel = null; Net.gIntent = null;   // v9.11: no inbound left over from the last try's basket
+    for (const q of M.players) { q.state = 'free'; q.vx = q.vz = 0; q.move = null; q.act = null; q.pick = null; q.hifz = 0; q.buf = null; q.y = 0; }
     const h = attackHoop(g.team);
     place(g, h.x + h.dir * 360, 330); place(g.mate, h.x + h.dir * 380, 560);
     place(o, h.x + h.dir * 600, 200); place(o.mate, h.x + h.dir * 620, 600);
@@ -92,7 +97,7 @@ export async function lagRun(browser, base, name, prof, opts = {}) {
         await sleep(prof.lat * 4 + 500);                                       // the guest sees the set position
         if (kind === 'shot') { await G.evaluate(() => window.__lag.hold()); await G.waitForFunction(() => { const q = M.players.find(x => x.human === 1); return q && q.state === 'shoot'; }, null, { timeout: 4000 }).catch(() => {}); await sleep(60); }   // in the shooting motion on his screen
         t.push(await G.evaluate(k => window.__lag.trial(k), kind));
-        await sleep(150);
+        await sleep(prof.lat * 4 + 400);                                       // v9.11: the guest sees its own action at once now; let the host's copy play out before the next try
       }
       res[kind] = med(t); res[kind + 'All'] = t;
     }

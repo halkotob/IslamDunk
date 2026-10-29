@@ -108,7 +108,7 @@ const ND = ['tomahawk', 'windmill', '360', 'twohand', 'alley'];   // append only
 const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
 // Online mini games: host is Khalil, the guest is Nasser; Lightning adds 3 CPU masjid members.
 const MINI_ONLINE = { lightning: ['khalil', 'nasser', 'saleem', 'mahmoud', 'hamid'], horse: ['khalil', 'nasser'] };
-const ballArr = b => [r1(b.x), r1(b.y), r1(b.z), b.owner ? M.players.indexOf(b.owner) : -1, NB.indexOf(b.state), r1(b.rot), b.fire ? 1 : 0];
+const ballArr = b => { const a = [r1(b.x), r1(b.y), r1(b.z), b.owner ? M.players.indexOf(b.owner) : -1, NB.indexOf(b.state), r1(b.rot), b.fire ? 1 : 0]; if (!b.owner && b === ball && (b.state === 'shot' || b.state === 'pass') && typeof Net !== 'undefined' && Net.blaunch) a.push(...Net.blaunch.slice(1)); return a; };   // v9.11: + the launch while in flight (the guest's time-shifted ball)
 
 const Net = {
   room: null, avail: 'checking', role: null, code: '', mode: 'co', sel: null,
@@ -333,7 +333,8 @@ const Net = {
     while (hist.length > 1 && hist[0].q <= ak - 500) hist.shift();
     x = clamp(x, -20, COURT.L + 20); z = clamp(z, 20, COURT.D - 20);
     const d = me._pd;
-    if (!d || Math.hypot(d.x - x, d.z - z) > 90) me._pd = { x, z };              // far off (collision/knockdown on the host): take it
+    const gap = d ? Math.hypot(d.x - x, d.z - z) : 1e9;
+    if (gap > 90 || gap < 3) me._pd = { x, z };                                  // far off (collision/knockdown on the host), or close (v9.11: no easing lag): take it
     else { const k = Math.min(1, rdt * 18); d.x += (x - d.x) * k; d.z += (z - d.z) * k; }
     me.x = me._pd.x; me.z = me._pd.z; me.vx = vx; me.vz = vz;
   },
@@ -341,7 +342,7 @@ const Net = {
     const buf = this.snaps; if (!buf.length) return;
     // render slightly in the past (about 1.6 snapshot intervals plus jitter) so
     // there are almost always two snapshots to blend between
-    const delay = this.rdelay = clamp((this.avgInt || 33) * 1.25 + (this.jit || 8) * 1.5, 40, 140), now = nowMs() - delay;
+    const delay = this.rdelay = clamp((this.avgInt || 33) * 1.25 + (this.jit || 8) * 2.5, 40, 160), now = nowMs() - delay;   // (v9.11: more room for jitter)
     while (buf.length > 2 && buf[1].t <= now) buf.shift();
     const A = buf[0], B = buf[1] || buf[0], SB = B.s;
     const ext = B === buf[buf.length - 1] && now > B.t ? clamp((now - B.t) / 1000, 0, 0.06) : 0;   // brief extrapolation if a snapshot is late
@@ -377,7 +378,7 @@ const Net = {
       if (SB.st) { const t = SB.st[i]; Object.assign(p.stats, { pts: t[0], reb: t[1], ast: t[2], stl: t[3], blk: t[4], dnk: t[5], fgm: t[6], fga: t[7], pf: t[8] || 0, ftm: t[9] || 0, fta: t[10] || 0, tov: t[11] || 0 }); }
     });
     const setB = (o, bb, ba) => {
-      o.owner = bb[3] >= 0 ? M.players[bb[3]] : null; o.state = NB[bb[4]] || 'loose'; o.fire = !!bb[6];
+      o.owner = bb[3] >= 0 ? M.players[bb[3]] : null; o.state = NB[bb[4]] || 'loose'; o.fire = !!bb[6]; o.nl = bb.length > 12 ? bb.slice(7, 13) : null;
       if (!o.owner) { o.x = L(ba[0], bb[0]); o.y = L(ba[1], bb[1]); o.z = L(ba[2], bb[2]); o.rot = bb[5]; }
     };
     this.predictOwn(rdt);

@@ -316,6 +316,7 @@ function doTaunt(p, id) {
   const _hc = humanCmd;
   humanCmd = function (pad, c) {
     const r = _hc.apply(this, arguments);
+    if (Net.role === 'guest') return r;                                   // the host judges these for an online guest
     const T = M.taunt;
     if (T && !T.used && M.time <= T.until && T.p && T.p.human === pad && c.x && ball.owner !== T.p && !M.mini) { doTaunt(T.p, myTaunt()); c.x = false; c.xHeld = false; }
     // Turbo + MOVE on an open run straight at the rim: lob it off the glass to yourself (v9.9: on fire only)

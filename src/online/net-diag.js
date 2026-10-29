@@ -162,7 +162,7 @@ SET_ITEMS.splice(SET_ITEMS.length - 1, 0, { label: 'Show network info', get: () 
 
 // ---------------------------------------------------------------- compact snapshots (server path)
 const SNAP_Q = [1, 1, 1, 1, 1, 1, 1, 100, 100, 100, 1, 1, 100, 1, 100, 1, 1, 1, 10, 1];   // per player value: x 1 = whole units
-const BALL_Q = [1, 1, 1, 1, 1, 10, 1];
+const BALL_Q = [1, 1, 1, 1, 1, 10, 1, 1, 1, 1, 10, 10, 10];   // (v9.11: + the launch in flight, for the guest's time-shifted ball)
 const SNAP_HDR = [], SNAP_PASS = ['e', 'vn', 'ak', 'ct'];   // header keys (g, mode, mid, sc) go like the rest: only when changed. PASS: sent as they are, never kept in a key
 const SNAP_EV = ['s:bounce', 's:swish', 's:clank', 's:board', 's:slam', 's:squeak', 's:swipe', 's:thud', 's:buzzer', 's:cheer', 's:good', 's:bad',
   'f:callout', 'f:pop', 'f:burst', 'f:shake', 'f:hype', 'f:dust', 'f:replay', 'f:highlight', 'f:cue'];   // append only

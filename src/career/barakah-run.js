@@ -38,9 +38,12 @@ function startBarakah() {
 function nextBarakahGame() {
   const clone=T=>Object.assign({},T,{players:T.players.map(p=>Object.assign({},p,{stats:Object.assign({},p.stats)}))});
   const a=clone(TEAMS[Run.team]), b=clone(TEAMS[(Run.team+1+Run.wins%(TEAMS.length-1))%TEAMS.length]);
-  const level=Math.min(2.5,0.65+Run.wins*.17);
-  // Existing easy-to-very-hard AI ladder; rating growth remains bounded at +2.
-  for(const p of b.players) for(const k of Object.keys(p.stats)) p.stats[k]=Math.min(10,p.stats[k]+Math.min(2,Run.wins*.18));
+  // v9.11: duos (two humans) climb a steeper ladder, and every third game is an elite rival (+1, smarter)
+  const duo=!!Run.duo, elite=duo&&Run.wins>0&&(Run.wins+1)%3===0;
+  const level=Math.min(2.5,(duo?0.8+Run.wins*.22:0.65+Run.wins*.17)+(elite?0.4:0));
+  // Existing easy-to-very-hard AI ladder; rating growth remains bounded (+2 solo, +3 duos).
+  for(const p of b.players) for(const k of Object.keys(p.stats)) p.stats[k]=Math.min(10,p.stats[k]+Math.min(duo?3:2,Run.wins*(duo?.25:.18))+(elite?1:0));
+  Run.levelNow=level; Run.eliteNow=elite;
   newMatch(a,b,{barakah:true,humans:runHumans(),aiCfg:[diffAt(1),diffAt(level)],fmt:{format:'quarters',len:45,sc:20},fun:null});
   if(Run.duo==='online'){M.online=true;Net.mid++;Net.evs=[];Net.syncCounters();}
   M.barakah=true; M.barakahRound=Run.wins+1; M.fmt.periods=1; M.fmt.ot=30; M.timeouts=[1,1]; M.dmOverride=1; M._runCounted=false;
@@ -48,7 +51,7 @@ function nextBarakahGame() {
     const p=M.teams[0].players[u.mate?1:0],base=p.st[u.stat] == null ? (u.stat==='hus'||u.stat==='clu'?st7(p,u.stat):5) : p.st[u.stat]; p.st[u.stat]=Math.min(10,base+(u.amount||1)*Run.upgrades[u.id]);
   }
   Game.lastMatch=null; Game.finalTab=0; Game.paused=false; Game.trivia=null; Game.screen='play';
-  FX.callout('BARAKAH RUN · GAME '+(Run.wins+1),GOLD,'ONE 45-SECOND QUARTER · TIES GO TO OVERTIME',true);
+  FX.callout('BARAKAH RUN · GAME '+(Run.wins+1),Run.eliteNow?'#ff9a8a':GOLD,Run.eliteNow?'ELITE RIVAL · TOUGHER AND SMARTER':'ONE 45-SECOND QUARTER · TIES GO TO OVERTIME',true);
 }
 function recordBarakahGame() {
   if(!M.barakah || M._runCounted) return;

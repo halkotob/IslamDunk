@@ -223,6 +223,11 @@ function tipStep(p) {                                                // offensiv
 
 // ------------------------------------------------------------- contact on drives
 function bumpStep(dt) {
+  if (M.players) for (const q of M.players) {                              // a knock-back plays out over a few frames
+    const K = q.knock; if (!K) continue;
+    const f = Math.min(1, dt / K.left); q.x += K.dx * f; q.z = clamp(q.z + K.dz * f, 8, COURT.D - 8); K.dx -= K.dx * f; K.dz -= K.dz * f; K.left -= dt;
+    if (K.left <= 0) q.knock = null;
+  }
   if (!liveGame()) return;
   const h = ball.owner; if (!h || h.y > 1 || (h.state !== 'free' && h.state !== 'windup')) return;
   const sp = Math.hypot(h.vx, h.vz); if (sp < 200 || (h.bumpCd || 0) > M.time) return;
@@ -241,7 +246,7 @@ function bumpStep(dt) {
       return;
     }
     const s = strOf(h) + sp / 125 - strOf(o) - (o.stance ? 1.5 : 0) - (o.setT > 0.2 ? 0.8 : 0);
-    if (s > 1.5) { o.stumble = Math.max(o.stumble || 0, 0.35); o.x += tx / d * 18; o.z = clamp(o.z + tz / d * 18, 8, COURT.D - 8); h.vx *= 0.75; h.vz *= 0.75; if (humanIn(h, o)) popOnce(o, 'bump', 'BUMPED', '#ffffff'); }
+    if (s > 1.5) { o.stumble = Math.max(o.stumble || 0, 0.35); o.knock = { dx: tx / d * 18, dz: tz / d * 18, left: 0.12 }; /* v9.11: knocked back over 0.12 s (was 18 units in one frame) */ h.vx *= 0.75; h.vz *= 0.75; if (humanIn(h, o)) popOnce(o, 'bump', 'BUMPED', '#ffffff'); }
     else if (s < -1) { const side = sgn(-tz * h.vx + tx * h.vz) || 1; const vx = h.vx, vz = h.vz; h.vx = (vx * 0.3 - vz * 0.5 * side) * 0.6; h.vz = (vz * 0.3 + vx * 0.5 * side) * 0.6; h.stumble = Math.max(h.stumble || 0, 0.15); if (humanIn(h, o)) popOnce(h, 'bump', 'KNOCKED OFF HIS LINE', '#ffd76a'); }
     else { h.vx *= 0.6; h.vz *= 0.6; o.vx *= 0.5; o.vz *= 0.5; if (humanIn(h, o)) popOnce(h, 'bump', 'CONTACT', '#ffffff'); }
     SFX.thud && SFX.thud(0.4); FX.dust((h.x + o.x) / 2, (h.z + o.z) / 2, 2); react(h, 'fist', 0.4);

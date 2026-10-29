@@ -19,7 +19,7 @@ export const HUB_RECORD_INIT = `(() => {
   for (const name of ['fillText', 'strokeText']) { const f = P[name]; P[name] = function (text, x, y, maxW) {
     const R = window.__hubRec;
     try {
-      if (R.on && this.canvas && this.canvas.id === 'game' && this.globalAlpha > 0.05 && String(text).trim()) {
+      if (R.on && !this.__deco && this.canvas && this.canvas.id === 'game' && this.globalAlpha > 0.05 && String(text).trim()) {   // (__deco: scenery text, v9.11)
         const t = String(text), mm = mt.call(this, t), w = mm.width, al = this.textAlign;
         const L = al === 'center' ? x - w / 2 : (al === 'right' || al === 'end') ? x - w : x;
         const bx = box(this, L, y - mm.actualBoundingBoxAscent, w, mm.actualBoundingBoxAscent + mm.actualBoundingBoxDescent);
