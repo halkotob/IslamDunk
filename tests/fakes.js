@@ -17,6 +17,8 @@ function fire() { const t = tree(); for (const s of subs) { if (s.path === '.inf
 function writeNode(path, fn) { const k = nodeKey(path), rest = parts(path).slice(4); let node = readNode(k); node = fn(node, rest); if (node == null || (typeof node === 'object' && !Object.keys(node).length)) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(node)); fire(); }
 addEventListener('storage', e => { if (e.key && e.key.startsWith(PFX)) fire(); });
 export function getDatabase() { return {}; }
+export function goOffline() { window.__fbOnline = false; }
+export function goOnline() { window.__fbOnline = true; }
 export function ref(db, path) { return { path }; }
 export function onValue(r, cb) { const s = { path: r.path, cb, last: undefined }; subs.push(s); setTimeout(() => (r.path === '.info/connected' ? cb({ val: () => true }) : fire()), 0); return () => { const i = subs.indexOf(s); if (i >= 0) subs.splice(i, 1); }; }
 export async function set(r, v) { writeNode(r.path, (n, rest) => { if (!rest.length) return v; n = n || {}; n[rest[0]] = v; return n; }); }
@@ -25,6 +27,13 @@ export async function remove(r) { writeNode(r.path, () => null); }
 const disc = new Set();
 export function onDisconnect(r) { return { remove: async () => { disc.add(r.path); }, cancel: async () => { disc.delete(r.path); } }; }
 addEventListener('pagehide', () => { try { for (const p of disc) localStorage.removeItem(nodeKey(p)); } catch (e) {} });
+`;
+
+// Fake Firebase Auth: anonymous sign-in returns a fresh id per tab (like browserSessionPersistence).
+export const FAKE_FIREBASE_AUTH = `
+export const browserSessionPersistence = { type: 'SESSION' };
+export function initializeAuth(app, opts) { return { app, opts }; }
+export async function signInAnonymously() { return { user: { uid: 'u' + Math.random().toString(36).slice(2, 14) } }; }
 `;
 
 // Fake claude.ai "room" capability (window.claude.use('room')), injected before the game loads.

@@ -111,5 +111,12 @@ Edit `src/`, run `npm run publish:web`, and commit both.
 Two players, host + guest. Transports: the claude.ai room (inside claude.ai), Firebase Realtime Database
 (standalone web and desktop), and a loopback transport for tests (`?net=loop`). Once both are in a lobby, a
 direct WebRTC link carries the game when the network allows, with Firebase as the fallback.
-Firebase security depends on the Realtime Database rules: writes only to `rooms/<code>/peers/<id>`, with size
-limits (allow about 6 KB per peer node).
+Firebase runs on the free Spark plan (no billing account, so it can never charge):
+- Players sign in anonymously when they first host or join, and connect to the database only while in a room.
+- `database.rules.json` is the security: signed-in players read a room and write only `rooms/<code>/peers/<their
+  user id>`; codes are four letters; values are strings up to 64,000 characters. Deploy it with
+  `npx firebase-tools login` then `npx firebase-tools deploy --only database` (or paste it into the console under
+  Realtime Database → Rules).
+- One-time console setup: Authentication → Sign-in method → enable **Anonymous**.
+- Free-plan limits: 100 connections at once, 1 GB stored, 10 GB downloaded a month. Games on the direct (P2P) link
+  use almost none of it; games that fall back to the server use roughly 10–30 MB each.

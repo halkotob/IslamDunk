@@ -15,6 +15,7 @@ const P2P = {
   wrap(base) {
     this.base = base;
     const H = { kind: base.kind, p2p: true, ready: base.ready };
+    Object.defineProperty(H, 'busy', { get: () => !!base.busy });              // v9.9.1: the free-plan connection limit, for the screens
     H.presence = patch => {
       if (!this.open) return base.presence(patch);
       const fast = {}, slow = {}; let nf = 0, ns = 0;

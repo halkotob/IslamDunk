@@ -1,5 +1,16 @@
 # Changelog
 
+## 9.9.1: online on Firebase's free plan
+- **Sign-in and locked rules.** Each player signs in anonymously (no account, nothing to type) the first time they
+  open or join a room. New database rules (`database.rules.json`) only let a signed-in player read a room and write
+  their own spot in it (`rooms/<code>/peers/<their id>`): no reading the whole database, no writing someone
+  else's data, room codes must be four letters, and every value has a size cap.
+- **Connects only while in a room.** The free plan allows 100 connections at once. Menus, single player and career
+  no longer hold one; the game connects when you host or join and lets go 15 seconds after you leave.
+- **"Online is full" message.** If the free limit is reached, joining says so instead of "no game with that code",
+  and the host's lobby shows a note.
+- `firebase.json` and `.firebaserc` so the rules deploy with one command (see README).
+
 ## 9.9.0: layups on Move
 - **Move is the layup button.** With the ball, push the stick toward the rim (inside about the free-throw line) and
   tap Move: a layup. Shoot is unchanged for dunks; near the rim without a dunk, Shoot is now a short floater.

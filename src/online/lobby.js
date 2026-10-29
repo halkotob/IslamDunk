@@ -223,6 +223,7 @@ function drawLobby(g) {
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Online lobby', W / 2, 40);
   // code, big, with copy / share
   g.fillStyle = '#fff'; g.font = `44px ${FONT}`; g.fillText(Net.code || '----', W / 2, 92);
+  if (host && Net.room && Net.room.busy) { g.fillStyle = '#ffb36b'; g.font = `13px ${BODY}`; g.fillText('Online is full right now (free server limit). Your friend may not be able to join for a few minutes.', W / 2, 112); }
   g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(host ? (Input.touchMode ? 'Your friend joins with this code' : 'Your friend opens the game, picks Online → Join with a code, and types this') : 'You joined lobby ' + Net.code, W / 2, Input.touchMode ? 120 : 112);
   if (host) { uiButton(g, W / 2 + 96, 58, 96, 32, 'Copy code', () => Lobby.copyCode()); uiButton(g, W / 2 + 200, 58, 96, 32, 'Share link', () => Lobby.share()); }
   // players

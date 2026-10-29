@@ -91,7 +91,7 @@ import { chromium, devices } from 'playwright';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { FAKE_FIREBASE_APP, FAKE_FIREBASE_DB, FAKE_ROOM_INIT } from './fakes.js';
+import { FAKE_FIREBASE_APP, FAKE_FIREBASE_DB, FAKE_FIREBASE_AUTH, FAKE_ROOM_INIT } from './fakes.js';
 import { PHONES, auditPhone, MIN_CSS_PX } from './phone-audit.mjs';
 import { TOMAHAWK_REC } from './tomahawk-rec.mjs';
 import { FAKE_PAD_INIT } from './fake-pad.js';
@@ -133,6 +133,7 @@ async function newContext(browser, opts = {}) {
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());                       // system font, no network
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE_FIREBASE_APP }));
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-database\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE_FIREBASE_DB }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-auth\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE_FIREBASE_AUTH }));
   if (opts.seed) await ctx.addInitScript(SEED_INIT);
   if (opts.room) await ctx.addInitScript(FAKE_ROOM_INIT);
   if (opts.pad) await ctx.addInitScript(FAKE_PAD_INIT);
@@ -1088,11 +1089,18 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
   const avail = await H.evaluate(() => [Net.avail, Net.transport]);
   log.push('transport: ' + avail.join(' '));
   if (avail[0] !== 'yes') { await ctx.close(); return { ok: false, detail: log.concat(errs) }; }
+  const idle = avail[1] === 'firebase' ? await H.evaluate(() => window.__fbOnline) : false;   // v9.9.1: no database connection until a room is opened
   const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
   await G.evaluate(c => Lobby.join(c), code);
   await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 10000 }).catch(() => {});
   let ok = (await G.evaluate(() => Game.screen)) === 'lobby' && await H.evaluate(() => !!Net.guestPeer);
   log.push('guest in lobby: ' + ok);
+  if (avail[1] === 'firebase') {                  // v9.9.1: both signed in anonymously, each writes only rooms/<code>/peers/<its user id>
+    const a = await Promise.all([H, G].map(pg => pg.evaluate(() => { const T = (typeof P2P !== 'undefined' && P2P.base) || Net.room; return { authed: !!T.authed, me: T.me, node: T.meRef && T.meRef.path, busy: Net.room.busy }; })));
+    const fine = a.every(x => x.authed && x.busy === false && /^u/.test(x.me) && x.node === 'rooms/' + code + '/peers/' + x.me) && a[0].me !== a[1].me;
+    log.push('signed in: ' + fine + ' (' + a.map(x => x.node).join(', ') + ')'); ok = ok && fine;
+    const on = await H.evaluate(() => window.__fbOnline); log.push(`connected only in a room: before ${idle}, after ${on}`); ok = ok && idle === false && on === true;
+  }
   await sleep(3500);
   const p2p = await H.evaluate(() => (typeof P2P !== 'undefined' ? P2P.open : null));
   log.push('direct (P2P) link: ' + p2p);

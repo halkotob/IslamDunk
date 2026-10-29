@@ -27,9 +27,14 @@ function firebaseConfigured() { return !!(FIREBASE_CONFIG.apiKey && FIREBASE_CON
 // and nulls round-trip exactly. The room is chosen from our own presence (code when hosting, join
 // when joining), so nothing above this layer changes. onDisconnect removes a closed tab; on reconnect
 // the full presence is written again, which Net already treats as a rejoin.
+// v9.9.1 (free Spark plan): each tab signs in anonymously and uses its user id as its peer id, so the database
+// rules (database.rules.json) can let a player write only their own node. The tab connects to the database only
+// while it's in a room (the free plan allows 100 connections at once; menus and single player use none) and drops
+// the connection 15 s after leaving. If the connection can't be made (the free limit is full), the room says so.
+const withTimeout = (pr, ms) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 function makeFirebaseTransport(cfg) {
-  const me = 'p' + Math.random().toString(36).slice(2, 12);
-  const T = { kind: 'firebase', me, room: null, pres: {}, raw: {}, cache: {}, list: [], subs: [], D: null, db: null, meRef: null, unsub: null };
+  let me = 'p' + Math.random().toString(36).slice(2, 12);
+  const T = { kind: 'firebase', me, connected: false, busy: false, room: null, pres: {}, raw: {}, cache: {}, list: [], subs: [], D: null, db: null, meRef: null, unsub: null };
   const self = () => ({ peer: me, by: null, isMe: true, sameTab: true, kind: 'viewer', guest: false, presence: T.pres, updatedAt: Date.now() });
   const parse = (id, fields) => {
     const c = T.cache[id] || (T.cache[id] = {}), out = {};
@@ -45,6 +50,11 @@ function makeFirebaseTransport(cfg) {
   const full = () => { const o = {}; for (const k in T.pres) o[k] = JSON.stringify(T.pres[k]); return o; };
   const switchRoom = async code => {
     const D = T.D;
+    if (code) {
+      clearTimeout(T.offT); if (D.goOnline) D.goOnline(T.db);
+      if (T.signIn) await T.signIn();                                      // the rules need the signed-in id
+      clearTimeout(T.busyT); T.busyT = setTimeout(() => { if (T.room && !T.connected) T.busy = true; }, 10000);
+    } else { clearTimeout(T.offT); clearTimeout(T.busyT); T.busy = false; T.offT = setTimeout(() => { if (!T.room && D.goOffline) D.goOffline(T.db); }, 15000); }
     if (T.unsub) { T.unsub(); T.unsub = null; }
     if (T.meRef) { try { await D.onDisconnect(T.meRef).cancel(); await D.remove(T.meRef); } catch (e) {} T.meRef = null; }
     T.room = code; T.raw = {}; T.cache = {};
@@ -56,8 +66,19 @@ function makeFirebaseTransport(cfg) {
   };
   T.ready = (async () => {
     const [A, D] = await Promise.all([import(FIREBASE_SDK + 'firebase-app.js'), import(FIREBASE_SDK + 'firebase-database.js')]);
-    T.D = D; T.db = D.getDatabase(A.initializeApp(cfg, 'islamdunk'));
+    const app = A.initializeApp(cfg, 'islamdunk');
+    T.D = D; T.db = D.getDatabase(app);
+    if (D.goOffline) D.goOffline(T.db);                                      // no connection until a room is joined
+    T.signIn = () => T.authP || (T.authP = (async () => {                    // anonymous sign-in, the first time a room is joined
+      try {
+        const Au = await withTimeout(import(FIREBASE_SDK + 'firebase-auth.js'), 8000);
+        const auth = Au.initializeAuth(app, { persistence: Au.browserSessionPersistence });
+        const cred = await withTimeout(Au.signInAnonymously(auth), 8000);
+        if (cred && cred.user && cred.user.uid) { me = cred.user.uid; T.me = me; T.authed = true; }
+      } catch (e) { T.authErr = String((e && (e.code || e.message)) || e); }
+    })());
     D.onValue(D.ref(T.db, '.info/connected'), snap => {                     // reconnected: re-assert presence + cleanup hook
+      T.connected = !!snap.val(); if (T.connected) T.busy = false;
       if (snap.val() && T.meRef) { D.onDisconnect(T.meRef).remove().catch(() => {}); D.set(T.meRef, full()).catch(() => {}); }
     });
   })();
@@ -269,7 +290,7 @@ const Net = {
     const h = this.hostPeer(), s = this.lastS, me = this.myPeer();
     if (Game.screen === 'netwait') {
       this.waitT += rdt;
-      if (!h) this.status = this.waitT > 6 ? 'notfound' : 'searching';
+      if (!h) this.status = this.room && this.room.busy ? 'busy' : this.waitT > 6 ? 'notfound' : 'searching';
       else if (s && s.g && s.g !== me) this.status = 'full';
       else if (s && s.g === me) { this.status = s.sc === 'lobby' ? 'lobby' : 'play'; if (s.sc !== 'lobby') Game.screen = 'netplay'; else Game.screen = 'lobby'; }
       else this.status = 'knocking';
@@ -500,13 +521,14 @@ function drawNetWait(g) {
     searching: 'Looking for the game' + '.'.repeat(1 + (Game.t * 2 | 0) % 3),
     knocking: 'Found it. Waiting for the host to let you in...',
     lobby: 'Connected! Waiting for your friend to tip off.',
+    busy: 'Online is full right now (the free server allows a limited number of players at once). Try again in a few minutes.',
     notfound: 'No game with that code is open right now. Check the code and that your friend is still on the host screen.',
     full: 'That game already has two players.',
     hostleft: 'The host left the game.'
   };
   g.fillStyle = Net.status === 'lobby' ? '#9dffb0' : IVORY; g.font = `17px ${BODY}`;
   wrapText(g, msgs[Net.status] || '', W / 2, 210, 640, 26);
-  const end = Net.status === 'notfound' || Net.status === 'full' || Net.status === 'hostleft';
+  const end = Net.status === 'notfound' || Net.status === 'full' || Net.status === 'hostleft' || Net.status === 'busy';
   g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, W / 2 - 80, 300, 160, 40, 20); g.fill();
   g.fillStyle = '#fff'; g.font = `16px ${FONT}`; g.fillText(end ? 'Back to title' : 'Cancel', W / 2, 326);
   addRect(W / 2 - 80, 300, 160, 40, goTitle);
