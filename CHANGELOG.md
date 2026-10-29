@@ -1,5 +1,38 @@
 # Changelog
 
+## 9.10.0: online latency: relay (TURN), connection diagnostics, lag harness
+- **Relay (TURN) for players the direct link can't reach.** When you host or join, the game asks a small Cloudflare
+  Worker (`worker/ice`, new) for 1-hour TURN credentials and adds them to the direct link, including the TCP and TLS
+  port 443 options for restrictive networks. The browser still prefers a direct path and uses the relay only when it
+  must. If the Worker doesn't answer within 2 seconds the game carries on with STUN only, as before. The TURN key
+  and API token live only as Worker secrets; the Worker allows only our origins and 20 requests a minute per IP.
+  Off until the Worker is deployed and its URL is set in `ONLINE_ICE_URL` (`src/online/net-diag.js`).
+- **Network changes recover without ending the match.** If the direct or relay link stalls (wifi to cellular, a
+  drop), it is closed after 3 seconds instead of ~30, play continues on the server path, and the host offers a new
+  link right away (the existing reconnect, not an ICE restart).
+- **Smaller snapshots on the server path.** Values are rounded to whole units and only what changed since a key
+  snapshot the guest has confirmed is sent (format v2; the guest rebuilds the full snapshot). About 440 → 270 bytes
+  a snapshot in the lag harness. The direct link keeps full snapshots.
+- **Version check.** Players now also publish a network protocol number. The lobby no longer starts a game when the
+  other player's version is missing or different, a guest on another version isn't handed a player when rejoining
+  mid-game, and a guest refuses a host on another version (or a newer snapshot format) with a clear message instead of
+  playing out of sync.
+- **Network info (Settings → Sound & display → Show network info, off by default).** A small box at the top right
+  shows Direct / Relay / Server, ping, jitter, loss, snapshots a second, render delay and how often the guest's own
+  player is pulled back by more than 3 ft. Kept clear of the scoreboard, shot clock and buttons on phones.
+- **Lobby connection rating.** After a 5 second probe each player is rated Good, OK or Poor, and when the host's
+  connection is Poor the lobby suggests the other player may host better. The lobby line now says Direct, Relay or
+  Server.
+- **Copy network report** (lobby and pause menu): mode, ping, jitter, loss, ICE candidate types, the selected pair,
+  time to connect, direct-link attempts and drops, browser, platform, network type and app version. No names, codes,
+  addresses or other personal data, and nothing is sent anywhere.
+- The guest's pause menu works from the keyboard and pad for every item (it only knew two).
+- **Tests.** A network conditioner (delay, jitter, loss, bandwidth; direct-style or Firebase-style delivery) on the
+  loopback transport and a lag harness (`tests/lag-harness.mjs`, `tools/lag-report.mjs`) measuring the guest's
+  movement, jump, shot release and pass latency and snapshot staleness on four profiles, checked against the 9.9.1
+  numbers (`lag-profiles`). New: `net-ice`, `net-compact`, `net-modes`, `net-report`, `net-version`, `net-overlay`,
+  `online-server` (every game on the server path), and a Worker test.
+
 ## 9.9.1: online on Firebase's free plan
 - **Sign-in and locked rules.** Each player signs in anonymously (no account, nothing to type) the first time they
   open or join a room. New database rules (`database.rules.json`) only let a signed-in player read a room and write

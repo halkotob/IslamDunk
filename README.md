@@ -120,3 +120,11 @@ Firebase runs on the free Spark plan (no billing account, so it can never charge
 - One-time console setup: Authentication → Sign-in method → enable **Anonymous**.
 - Free-plan limits: 100 connections at once, 1 GB stored, 10 GB downloaded a month. Games on the direct (P2P) link
   use almost none of it; games that fall back to the server use roughly 10–30 MB each.
+
+Connection paths, fastest first: **Direct** (peer to peer), **Relay** (TURN, for carrier and strict NATs) and
+**Server** (Firebase). The relay needs the small Cloudflare Worker in `worker/ice` (see its README): it hands out
+1-hour TURN credentials, and its URL goes in `ONLINE_ICE_URL` in `src/online/net-diag.js`. Without it the game uses
+STUN only, as before. Settings → Sound & display → **Show network info** shows the mode, ping, jitter, loss and
+snapshot rate in a match; the lobby rates each player's connection and has **Copy network report** (also in the
+pause menu). Nothing is sent anywhere. `node tools/lag-report.mjs` measures input-to-screen latency under four
+simulated networks (`tests/lag-harness.mjs`).

@@ -98,9 +98,64 @@ function soloMatch() { return !!(M.teams && !M.practice && !M.mini && M.teams.so
 //   bus: optional ws:// relay URL, for tests that need each player in its own (foreground) browser window.
 // Delivery stays in order (like Firebase/WebSocket). A peer that goes quiet for 4 s is dropped
 // (like onDisconnect). Not reachable from the game's menus.
+// v9.10: a network conditioner for the lag harness (tests/lag-harness.mjs), off unless `mode` is given:
+//   mode=udp     each message on its own (the direct or relay link: unordered, a lost message is gone, newest wins per key)
+//   mode=server  in order over one connection (the Firebase path: a lost packet is resent after a timeout and holds up
+//                everything behind it), and the fast keys (s, in, pg) go one write at a time, the newest waiting, like
+//                the real Firebase transport (v98-net.js)
+//   loss: % of messages lost; bw: bytes per second each way (0 = unlimited). lat and jit stay one-way.
+// In these modes a message carries only the keys that changed (like Firebase field updates), so byte counts are real.
 function loopFlags() {
   try { const q = new URLSearchParams(location.search); if (q.get('net') !== 'loop') return null;
-    return { lat: +q.get('lat') || 0, jit: +q.get('jit') || 0, co: +q.get('co') || 0, room: q.get('room') || 'x', bus: q.get('bus') || '' }; } catch (e) { return null; }
+    return { lat: +q.get('lat') || 0, jit: +q.get('jit') || 0, co: +q.get('co') || 0, room: q.get('room') || 'x', bus: q.get('bus') || '',
+      mode: q.get('mode') || '', loss: +q.get('loss') || 0, bw: +q.get('bw') || 0 }; } catch (e) { return null; }
+}
+const LOOP_FAST = new Set(['s', 'in', 'pg']);
+function makeCondLoop(o, T, ch, me, rebuild) {
+  let s = (me.charCodeAt(1) * 7919) | 0; T._rng = () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  let q = 0, wireFree = 0, lastAt = 0;
+  const sent = {}; T.stats.byKey = {}; T.stats.nByKey = {};
+  const oneWay = () => o.lat + (o.jit ? (T._rng() * 2 - 1) * o.jit : 0);
+  // put a message on the wire: bandwidth (serialised), loss, delay; ordered (server) or not (udp)
+  const wire = (patch, full) => {
+    const m = JSON.stringify({ id: me, q: ++q, p: patch, full: full ? 1 : 0 }), now = performance.now();
+    T.stats.sent++; T.stats.bytes += m.length;
+    for (const k in patch) { T.stats.byKey[k] = (T.stats.byKey[k] || 0) + JSON.stringify(patch[k] === undefined ? null : patch[k]).length; T.stats.nByKey[k] = (T.stats.nByKey[k] || 0) + 1; }
+    let at = now;
+    if (o.bw > 0) { wireFree = Math.max(wireFree, now) + m.length / o.bw * 1000; at = wireFree; }
+    const lost = T._rng() * 100 < o.loss;
+    if (o.mode === 'udp') { if (lost) { T.stats.lost = (T.stats.lost || 0) + 1; return; } at += oneWay(); }
+    else { at += oneWay() + (lost ? Math.max(200, 2 * o.lat + 4 * o.jit) : 0); at = Math.max(at, lastAt); lastAt = at; if (lost) T.stats.resent = (T.stats.resent || 0) + 1; }
+    setTimeout(() => { if (!T.dropped) ch.postMessage(m); }, Math.max(0, at - now));
+    return at - now;
+  };
+  // the keys that changed since the last send
+  const diff = keys => { const p = {}; let n = 0; for (const k of keys) { const v = T.pres[k], js = v === undefined ? 'null' : JSON.stringify(v); if (sent[k] !== js) { sent[k] = js; p[k] = v === undefined ? null : v; n++; } } return n ? p : null; };
+  // the server path's fast keys: one write in flight until the server acks it (a round trip), the newest waiting
+  let flying = false, pend = null;
+  const fastSend = p => {
+    flying = true; const d = wire(p, false), ack = (d || 0) + Math.max(0, oneWay());
+    setTimeout(() => { flying = false; if (pend) { const x = pend; pend = null; fastSend(x); } }, ack);
+  };
+  T.send = (keys, full) => {
+    if (T.dropped) return;
+    if (full) { const p = {}; for (const k in T.pres) p[k] = T.pres[k]; for (const k in sent) if (!(k in T.pres)) p[k] = null; for (const k in p) sent[k] = JSON.stringify(p[k]); wire(p, true); return; }
+    const p = diff(keys || Object.keys(Object.assign({}, T.pres, sent))); if (!p) return;
+    if (o.mode !== 'server') { wire(p, false); return; }
+    const fast = {}, slow = {}; let nf = 0, ns = 0;
+    for (const k in p) { if (LOOP_FAST.has(k)) { fast[k] = p[k]; nf++; } else { slow[k] = p[k]; ns++; } }
+    if (ns) wire(slow, false);
+    if (nf) { if (flying) pend = Object.assign(pend || {}, fast); else fastSend(fast); }
+  };
+  // receiving: in order (server) or newest wins per key (udp)
+  const seen = {};
+  T.recv = m => {
+    if (m.bye) { delete T.others[m.id]; delete T.seen[m.id]; rebuild(); return; }
+    const P = T.others[m.id] || (T.others[m.id] = {}), S = seen[m.id] || (seen[m.id] = {});
+    if (m.full) { for (const k of Object.keys(P)) if (!(k in m.p)) delete P[k]; }
+    for (const k in m.p) { if (o.mode === 'udp' && (S[k] || 0) > m.q) continue; S[k] = m.q; if (m.p[k] === null) delete P[k]; else P[k] = m.p[k]; }
+    T.seen[m.id] = performance.now(); rebuild();
+  };
 }
 function makeLoopTransport(o) {
   const me = 'p' + Math.random().toString(36).slice(2, 12);
@@ -116,9 +171,11 @@ function makeLoopTransport(o) {
     const L = [self()]; for (const id in T.others) L.push({ peer: id, by: null, isMe: false, sameTab: false, kind: 'viewer', guest: false, presence: T.others[id], updatedAt: T.seen[id] });
     T.list = L; for (const f of T.subs) { try { f(L); } catch (e) {} }
   };
-  const send = () => { if (T.dropped) return; const msg = JSON.stringify({ id: me, p: T.pres }); T.stats.sent++; T.stats.bytes += msg.length; ch.postMessage(msg); T.dirty = false; };
+  const send = () => { if (T.dropped) return; if (T.send) { T.send(null, false); T.dirty = false; return; } const msg = JSON.stringify({ id: me, p: T.pres }); T.stats.sent++; T.stats.bytes += msg.length; ch.postMessage(msg); T.dirty = false; };
+  if (o.mode) makeCondLoop(o, T, ch, me, rebuild);
   ch.onmessage = e => {
     if (T.dropped) return;
+    if (T.recv) { const m = JSON.parse(e.data); if (m.id !== me) T.recv(m); return; }   // conditioned: the sender already delayed it
     const m = JSON.parse(e.data), now = performance.now();
     const at = Math.max(T.lastDeliver, now + o.lat + (o.jit ? (Math.random() * 2 - 1) * o.jit : 0)); T.lastDeliver = at;   // in order
     setTimeout(() => {
@@ -128,7 +185,7 @@ function makeLoopTransport(o) {
     }, at - now);
   };
   if (o.co > 0) setInterval(() => { if (T.dirty) send(); }, o.co);                       // coalesced sends
-  setInterval(() => { if (!T.dropped) send(); }, 1000);                                     // heartbeat
+  setInterval(() => { if (!T.dropped) { if (T.send) T.send(null, true); else send(); } }, 1000);   // heartbeat (conditioned: the full presence)
   setInterval(() => { const now = performance.now(); let ch2 = false; for (const id in T.seen) if (now - T.seen[id] > 4000) { delete T.others[id]; delete T.seen[id]; ch2 = true; } if (ch2) rebuild(); }, 500);
   addEventListener('pagehide', () => ch.postMessage(JSON.stringify({ id: me, bye: 1 })));
   T.presence = async patch => {

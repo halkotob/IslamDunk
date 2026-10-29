@@ -101,6 +101,7 @@ import { PHONES as WORLD_PHONES } from './phone-audit.mjs';
 import { STUDIO_TESTS } from './studio.mjs';
 import { hubTests } from './hub-layout.mjs';
 import { leagueTests } from './league.mjs';
+import { netTests } from './net.mjs';
 import { JUMUAH_HELPERS, JUMUAH_STAGES } from './jumuah-setup.js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -1196,6 +1197,7 @@ T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?n
 T['online-room'] = ({ browser, base }) => onlineFlow(browser, base, { room: true, games: ['vs', 'one'] });
 T['online-fb'] = ({ browser, base }) => onlineFlow(browser, base, { games: ['vs', 'co'] });
 T['online-custom'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=30&jit=5&room=c', games: ['vs', 'co', 'one'], custom: true });
+T['online-server'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&p2p=0&lat=60&jit=15&room=srv', games: ['vs', 'one', 'co', 'lightning', 'horse', 'kotc'], noor: true });   // v9.10: every game on the server path (compact snapshots)
 
 T['mobile'] = async ({ browser, base }) => {
   const detail = []; let ok = true;
@@ -2235,6 +2237,7 @@ T['jumuah-visual'] = async ({ browser, base }) => {
 
 Object.assign(T, hubTests({ newContext, open }));
 Object.assign(T, leagueTests({ newContext, open }));   // v9.7.0 the league (tests/league.mjs)   // v9.6.2 career hub fixtures (tests/hub-layout.mjs)
+Object.assign(T, netTests({ newContext, open }));   // v9.10 online latency (tests/net.mjs)
 Object.assign(T, STUDIO_TESTS);   // the Review Studio (tests/studio.mjs)
 
 // ------------------------------------------------------------------ runner

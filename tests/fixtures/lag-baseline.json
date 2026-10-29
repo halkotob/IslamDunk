@@ -1,0 +1,41 @@
+{
+ "note": "v9.9.1 (before v9.10), tools/lag-report.mjs: medians of 6 tries (ms); staleness median/p95 (ms); bytes per snapshot on the wire",
+ "profiles": {
+  "Direct, 30 ms RTT": {
+   "move": 48,
+   "jump": 133,
+   "shot": 134,
+   "pass": 124,
+   "staleMed": 74,
+   "staleP95": 99,
+   "snapBytes": 451
+  },
+  "Relay, 90 ms RTT, 20 ms jitter": {
+   "move": 51,
+   "jump": 187,
+   "shot": 236,
+   "pass": 226,
+   "staleMed": 105,
+   "staleP95": 142,
+   "snapBytes": 447
+  },
+  "Server, 250 ms RTT, 40 ms jitter, 3% loss": {
+   "move": 71,
+   "jump": 766,
+   "shot": 655,
+   "pass": 616,
+   "staleMed": 327,
+   "staleP95": 374,
+   "snapBytes": 443
+  },
+  "Bad mobile, 400 ms RTT, 10% loss": {
+   "move": 58,
+   "jump": 542,
+   "shot": 553,
+   "pass": 545,
+   "staleMed": 292,
+   "staleP95": 1224,
+   "snapBytes": 435
+  }
+ }
+}

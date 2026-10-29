@@ -1,0 +1,19 @@
+# Islam Dunk ICE worker: short-lived TURN credentials for the online direct link (see README.md).
+# Secrets are NOT here: set them with `wrangler secret put TURN_KEY_ID` and `wrangler secret put TURN_KEY_API_TOKEN`.
+name = "islamdunk-ice"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+# Pages that may ask for credentials (exact origins, comma separated). Add your own domain here if the game moves.
+ALLOWED_ORIGINS = "https://halkotob.github.io,http://localhost:5173,http://127.0.0.1:5173"
+TTL = "3600"
+
+# Per-IP limit: 20 requests a minute (needs wrangler 4.36 or later). namespace_id is any number unique in your account.
+[[ratelimits]]
+name = "ICE_LIMIT"
+namespace_id = "7301"
+
+  [ratelimits.simple]
+  limit = 20
+  period = 60
