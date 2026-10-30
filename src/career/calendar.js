@@ -171,11 +171,12 @@ function calNextDay() {
   calSetDay(C.cal.d + 1); saveCareer();
   if (calGameToday()) calPlay(); else SFX.blip();
 }
-function calBadge() {
-  if (!calEnsure() || C.seasonOver) return '';
-  if (calGameToday()) return 'Game today';
-  const D = calDay(calNextStop(C.cal.d));
-  return D.type === 'game' ? 'Game' : D.type === 'holiday' ? 'Eid' : D.type === 'jumuah' ? 'Jumu’ah' : '';
+// v9.12: Continue says where it goes ("Continue to Fri · Jumu’ah")
+function calContinueLabel() {
+  if (!calEnsure() || C.seasonOver) return 'Continue';
+  if (calGameToday()) return 'Continue to today’s game';
+  const d = calNextStop(C.cal.d), D = calDay(d), what = D.type === 'game' ? 'game day' : D.type === 'holiday' ? 'Eid' : D.type === 'jumuah' ? 'Jumu’ah' : '';
+  return 'Continue to ' + CAL_WD[calDate(d).wd] + (what ? ' · ' + what : '');
 }
 
 // ---------------------------------------------------------------- hooks
@@ -227,7 +228,7 @@ function calBadge() {
     const R = _he.apply(this, arguments);
     if (!C || !calShown() || !calEnsure()) return R;
     const fl = hubFirstLabel(), i = R.findIndex(e => e.label === fl && !e.sub);
-    if (i >= 0 && !C.seasonOver) R[i] = { label: 'Continue', badge: calBadge() || null, act: calContinue };
+    if (i >= 0 && !C.seasonOver) R[i] = { label: calContinueLabel(), act: calContinue, cont: true };   // (the label says where it goes: no badge)
     const bi = R.findIndex(e => e.label === 'Bracket' && !e.sub);
     if (bi >= 0) R[bi] = { label: 'Schedule', sub: [{ label: 'Calendar', act: openCalendar }, { label: 'Bracket', act: R[bi].act },
       { label: calGameToday() ? 'Play today’s game' : 'Next day', act: calNextDay }] };

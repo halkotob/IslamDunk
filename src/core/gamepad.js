@@ -22,7 +22,7 @@ const PAD_KEYS = [
 ];
 const PAD_PICKER_SCREENS = ['namekeys', 'joincode'];     // text entry: the on-screen letters, picked with the pad
 const Pad = {
-  order: [], prevKeys: {}, prevBtn: {}, rep: {}, seen: false, cursor: { on: false, i: -1, auto: false },
+  order: [], prevKeys: {}, prevBtn: {}, rep: {}, seen: false, cursor: { on: false, i: -1, auto: false }, slots: [null, null], lost: [],
   init() {
     addEventListener('gamepadconnected', e => this.connect(e.gamepad));
     addEventListener('gamepaddisconnected', e => { const g = e.gamepad; if (g) this.order = this.order.filter(i => i !== g.index); });
@@ -47,10 +47,20 @@ const Pad = {
   twoLocal() { return !Net.role && !!(M.players && M.players.some(p => p.human === 1) && M.players.some(p => p.human === 0)) && this.playing(); },
   poll(rdt) {
     const pads = this.pads(), want = {}, axes = [{ ax: 0, az: 0, m: 0 }, { ax: 0, az: 0, m: 0 }], two = this.twoLocal(), playing = this.playing();
+    // v9.12: in a two-player match each pad keeps its player. A pad that disconnects leaves its slot open (the match
+    // pauses and says so); the next pad that connects, in any order, takes the open slot. (It used to be "first
+    // connected = Player 1", so when pad 1 dropped, pad 2 slid into Player 1.)
+    const liveIdx = pads.map(g => g.index), inMatch = !!(M.players && M.players.some(p => p.human === 1)) && !Net.role;
+    if (!inMatch) this.slots = [null, null];
+    if (two) for (const g of pads) if (!this.slots.includes(g.index)) { const s = this.slots.findIndex(v => v == null || !liveIdx.includes(v)); if (s >= 0) this.slots[s] = g.index; }
+    const lostNow = inMatch ? [0, 1].filter(s => this.slots[s] != null && !liveIdx.includes(this.slots[s])) : [];
+    if (lostNow.length > this.lost.length && playing && !M.online) { Game.paused = true; Game.idx = 0; }
+    this.lost = lostNow;
     const edges = [];                                    // menu-direction presses from sticks (with repeat)
     let active = false, anyEdge = {};
     pads.forEach((g, n) => {
-      const slot = two ? Math.min(n, 1) : 0, K = PAD_KEYS[slot], prev = this.prevBtn[g.index] || [];
+      const slot = two ? this.slots.indexOf(g.index) : 0; if (slot < 0) return;   // a third pad in a two-player match: nobody's
+      const K = PAD_KEYS[slot], prev = this.prevBtn[g.index] || [];
       const b = i => this.btn(g, i), edge = i => b(i) && !prev[i];
       const st = this.stick(g);
       const nowBtn = []; for (let i = 0; i < 17; i++) nowBtn[i] = b(i);

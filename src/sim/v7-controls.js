@@ -17,7 +17,7 @@ for (const b of BINDS) { b.t = []; b.s = []; }        // turbo and skill keys re
 // ---- sprint gesture
 const Sprint = [{}, {}];
 function sprintStep(pad, c) {
-  const S = Sprint[pad], b = BINDS[pad], d = Input.down, now = nowMs() / 1000, dirs = ['up', 'down', 'left', 'right'];
+  const S = Sprint[pad], b = padBinds(pad), d = Input.down, now = nowMs() / 1000, dirs = ['up', 'down', 'left', 'right'];
   if (S.pobj !== Input.pressed) {                                  // once per frame: look at new presses
     S.pobj = Input.pressed;
     for (const k of dirs) if (b[k].some(x => Input.pressed[x])) {
@@ -231,15 +231,15 @@ drawHowTo = function (g) {
   const o = Math.round((W - 960) / 2); g.save(); g.translate(o, 0); const rw = W; W = 960;
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('How to play', W / 2, 44);
   const pad = Input.lastDev === 'pad';                   // v8.7.0: gamepad buttons when the pad was used last
-  const keys = pad ? [['Move', 'Left stick / D-pad', 'Left stick / D-pad'], ['Sprint', 'hold B (or RT / RB)', 'hold B (or RT / RB)'], ['Shoot', 'A', 'A'], ['Pass', 'X', 'X'], ['Move  \u2022  Defend', 'Y', 'Y']]
-    : [['Move', 'W A S D', 'Arrows'], ['Sprint', 'hold Left Shift while moving', 'Right Shift'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Move  \u2022  Defend', 'H (or L to defend)', 'Num0 / M (Num3 / /)']];
+  const keys = pad ? [['Move', 'Left stick / D-pad', 'Left stick / D-pad'], ['Sprint', 'hold B (or RT / RB)', 'hold B (or RT / RB)'], ['Shoot', 'A', 'A'], ['Pass', 'X', 'X'], ['Skill move  \u2022  Defend', 'Y', 'Y']]
+    : [['Move', 'W A S D', 'Arrows'], ['Sprint', 'hold Left Shift while moving', 'Right Shift'], ['Shoot', 'K', 'Num2 / .'], ['Pass', 'J', 'Num1 / ,'], ['Skill move  \u2022  Defend', 'H (or L to defend)', 'Num0 / M (Num3 / /)']];
   g.font = `11px ${FONT}`; g.fillStyle = '#9fb3c8'; g.fillText(pad ? 'PAD 1' : 'P1', 610, 72); g.fillText(pad ? 'PAD 2' : 'P2', 800, 72);
   keys.forEach((r, i) => { const y = 92 + i * 21; g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(r[0], 150, y); g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.fillText(r[1], 610, y); g.fillText(r[2], 800, y); });
   const col = (x, title, lines) => { g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `12px ${FONT}`; g.fillText(title, x, 222); g.font = `12px ${BODY}`; lines.forEach((t, i) => { g.fillStyle = t.startsWith('\u2022') ? '#9fb3c8' : IVORY; g.fillText(t, x, 242 + i * 18); }); };
-  col(60, 'OFFENSE', ['Shoot: hold and release at the top  \u2022  tap: pump fake, then shoot or pass', 'Sprint + Shoot in range: dunk  \u2022  Move at the rim: layup', 'Pass: tap  \u2022  type is automatic (bounce, lob, alley-oop)', 'Hold Pass: call a screen  \u2022  hold Pass + tap Move: pass fake',
-    'Move + direction: crossover, behind the back, spin, step-back', 'Tap Move: hesitation  \u2022  double-tap: signature move', '\u2022 On fire: Sprint + Move at the rim: self alley-oop', 'Hold Move near the paint: post up', '\u2022 Without the ball: Shoot calls for it (give-and-go,',
+  col(60, 'OFFENSE', ['Shoot: hold and release at the top  \u2022  tap: pump fake, then shoot or pass', 'Sprint + Shoot in range: dunk  \u2022  Skill move at the rim: layup', 'Pass: tap  \u2022  type is automatic (bounce, lob, alley-oop)', 'Hold Pass: call a screen  \u2022  hold Pass + tap Skill move: pass fake',
+    'Skill move + direction: crossover, behind the back, spin, step-back', 'Tap Skill move: hesitation  \u2022  double-tap: signature move', '\u2022 On fire: Sprint + Skill move at the rim: self alley-oop', 'Hold Skill move near the paint: post up', '\u2022 Without the ball: Shoot calls for it (give-and-go,',
     '\u2022   or alley-oop while sprinting at the rim)', '\u2022 Without the ball: Pass sets a screen for your partner']);
-  col(500, 'DEFENSE', ['Hold Defend (Move button or L): guard your man.', '\u2022   You slide with him, between him and the rim', '\u2022   Feet set in his path: he charges into you', 'Hold Defend on a shot: box out',
+  col(500, 'DEFENSE', ['Hold Defend (Skill move button or L): guard your man.', '\u2022   You slide with him, between him and the rim', '\u2022   Feet set in his path: he charges into you', 'Hold Defend on a shot: box out',
     'Pass: tap to steal  \u2022  hold: partner doubles the ball', 'Sprint + Pass: shove (hard foul)', 'Shoot: jump, block, contest  \u2022  sprint + Shoot: swipe', '\u2022 Reach across his body and it\u2019s a foul',
     '\u2022 Final minute: sprint + Pass dives for loose balls', '\u2022 Pause for timeouts and set plays']);
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(pad ? 'Pad: LB talks and uses things, Start pauses, View opens an on-screen picker for any button.' : 'Touch: push the stick past the dashed ring to sprint. Buttons: SHOOT, PASS, MOVE (labels change with the play).', W / 2, 438);

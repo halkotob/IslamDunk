@@ -51,7 +51,7 @@ freeLogic = function (p) {
   const _hc = humanCmd;
   humanCmd = function (pad, c) {
     _hc(pad, c);
-    const b = BINDS[pad], d = Input.down, rel = k => b[k].some(x => Input.released[x]);
+    const b = padBinds(pad), d = Input.down, rel = k => b[k].some(x => Input.released[x]);
     c.xHeld = b.x.some(k => d[k]); c.aHeld = b.a.some(k => d[k]); c.aRel = rel('a'); c.sHeld = b.s.some(k => d[k]);
   };
   const _zc = zeroCmd;

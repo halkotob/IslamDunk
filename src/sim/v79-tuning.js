@@ -30,7 +30,7 @@ function windCheck(p) {
 // either when you're alone), or on touch push the stick on past its ring
 const SPRINT_KEYS = [['ShiftLeft'], ['ShiftRight']];
 sprintStep = function (pad, c) {
-  const d = Input.down, b = BINDS[pad], solo = !(M.players && M.players.some(p => p.human === 1));
+  const d = Input.down, b = padBinds(pad), solo = soloKeys();
   const shift = SPRINT_KEYS[pad].some(k => d[k]) || (pad === 0 && solo && d.ShiftRight);
   const dir = ['up', 'down', 'left', 'right'].some(k => b[k].some(x => d[x]));
   const stick = pad === 0 && Input.touchMode && TouchUI.sid != null && !!Input.stick.deep;

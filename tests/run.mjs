@@ -805,7 +805,7 @@ T['v95'] = async ({ browser, base }) => {
     const me = M.players.find(q => q.human === 0); giveBall(me, 'inbound'); me.state = 'shoot'; me.st_t = 0.05; humanCmd(0, me.cmd); const held = me.cmd.bHeld;
     me.st_t = 0.9; humanCmd(0, me.cmd); out.autoShot = held === true && me.cmd.bHeld === false; SETTINGS.autoShot = false;
     const gi = SET_GROUPS.findIndex(x => x.name === 'Accessibility');
-    out.settings = gi >= 0 && setGroupItems(gi).map(x => x.label).join() === 'Shot release,Text size,Team colors';
+    out.settings = gi >= 0 && setGroupItems(gi).map(x => x.label).join() === 'Shot release,Text size,Team colors,Reduced motion,Camera shake,Flashes';
     // a CPU game for highlights
     window.__seed(7); newMatch(TEAMS[2], TEAMS[5], { humans: [], fmt: { format: 'quarters', len: 120 } });
     for (let n = 0; n < 60 * 60 * 14 && M.phase !== 'over'; n++) { if (Game.screen === 'halftime') Game.screen = 'title'; updateMatch(STEP); }
@@ -1390,6 +1390,152 @@ T['cpu-variety'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
+// v9.12: the play-test review. Arrow keys move a solo player (the tutorial says so); abandoning a Barakah run asks first;
+// an offline match pauses when the window loses focus; a controller keeps its player when another disconnects; a
+// label that would land on the big callout becomes its subtitle; vow card headings stay inside their cards.
+T['v912'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true, pad: true }), p = await open(ctx, base + '/', errs, 'v912');
+  const out = {};
+  // 1. arrows in the tutorial
+  await p.evaluate(() => { startTutorial(); });
+  await sleep(400);
+  const x0 = await p.evaluate(() => tutMe().x);
+  await p.evaluate(() => { Input.down.ArrowRight = true; }); await sleep(500); await p.evaluate(() => { Input.down.ArrowRight = false; });
+  out.arrows = (await p.evaluate(() => tutMe().x)) - x0 > 40;
+  await p.evaluate(() => tutEnd());
+  // 2. abandoning a run asks first, Keep playing is the default
+  out.run = await p.evaluate(() => {
+    openBarakah(); runHomeSelect(0); runPickVow(0);
+    const at = Game.screen; Input.pressed.Escape = true; gameUpdate(STEP); Input.endFrame && Input.endFrame();
+    const asked = !!Game.confirm && Game.screen === at && Run.active, def = Game.confirm && Game.confirm.sel === 0;
+    Input.pressed.Enter = true; gameUpdate(STEP); Input.endFrame && Input.endFrame();
+    const kept = !Game.confirm && Run.active && Game.screen === 'runmap';
+    BACK.runmap(); confirmPick(1);
+    return { asked, def, kept, ended: !Run.active && Game.screen === 'runend' };
+  });
+  // 3. losing focus pauses an offline match, and the clock stops
+  out.blur = await p.evaluate(async () => {
+    newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; M.introT = 0;
+    await new Promise(r => setTimeout(r, 300));
+    dispatchEvent(new Event('blur'));
+    const c0 = M.clock; await new Promise(r => setTimeout(r, 600));
+    const ok = Game.paused && M.clock === c0;
+    const items = pauseItems().map(x => x[0]);
+    return { paused: ok, help: items.includes('How to play') && items.some(t => /^Settings/.test(t)) };
+  });
+  // the pause menu: leaving asks; How to play comes back to the paused match
+  out.pause = await p.evaluate(() => {
+    const it = pauseItems(), leave = it.find(x => /^Quit to title/.test(x[0])); leave[1]();
+    const asked = !!Game.confirm; confirmPick(0);
+    const how = it.find(x => x[0] === 'How to play'); how[1](); const inHow = Game.screen === 'howto';
+    goTitle(); return { asked, back: inHow && Game.screen === 'play' && Game.paused && !!M.players };
+  });
+  // 4. two players on two pads: pad 1 drops, pad 2 stays player 2; pad 1 comes back as player 1
+  out.pads = await p.evaluate(async () => {
+    const w = () => new Promise(r => setTimeout(r, 120));
+    newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }, { team: 0, slot: 1, pad: 1 }] }); Game.screen = 'play'; Game.paused = false;
+    window.__padPlug(0, true); window.__padPlug(1, true); await w(); Pad.poll(STEP); await w();
+    const s0 = Pad.slots.slice();
+    window.__padPlug(0, false); await w(); Pad.poll(STEP);
+    const pausedOnLoss = Game.paused, lost = Pad.lost.slice();
+    Game.paused = false;
+    window.__padSet(1, { A: true }); Pad.poll(STEP); const p2still = !!Input.down.Numpad2 && !Input.down.KeyK; window.__padSet(1, {}); Pad.poll(STEP);
+    window.__padPlug(0, true); await w(); Pad.poll(STEP);
+    return { s0, lost, pausedOnLoss, p2still, back: Pad.slots[0] === 0 && Pad.slots[1] === 1 && !Pad.lost.length };
+  });
+  // 5. a label over the callout becomes its subtitle
+  out.callout = await p.evaluate(async () => {
+    newMatch(TEAMS[0], TEAMS[1], { humans: [] }); Game.screen = 'play'; Game.paused = false; FX.reset();
+    FX.callout('TABARAKALLAH!', '#ffd76a', 'HAMMERED HOME'); FX.calls[0].t = 0.1;
+    // a world point that lands in the middle of the callout: search for one
+    const h = hoops[1], fr = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    FX.pop(cam.x, 100, h.z, 'TOMAHAWK!', '#ffd76a'); const q = FX.pops[0]; Game.paused = true; await fr();
+    for (let i = 0; i < 40 && FX.pops.includes(q) && q.t < 5 && q._r && FX._cr; i++) {           // walk it onto the callout
+      const R = q._r, C = FX._cr, dy = ((C.t + C.b) / 2 - (R.t + R.b) / 2), dx = ((C.l + C.r) / 2 - (R.l + R.r) / 2);
+      q.y -= dy * 0.3; q.x += dx * 0.3; q.t = 0.1; FX.calls[0].t = 0.1; await fr();
+    }
+    return { sub: FX.calls[0] && FX.calls[0].sub, popLeft: FX.pops.filter(q => q.t < 5).length };
+  });
+  // 6. vow cards at the largest text size: every heading and line stays inside its card
+  out.cards = await p.evaluate(() => {
+    SETTINGS.textSize = 2; openBarakah(); runHomeSelect(0);
+    const g = ctx, panels = [], texts = [], _p = panel, _ft = g.fillText;
+    panel = function (g2, x, y, w, h) { panels.push({ x, y, w, h }); return _p.apply(this, arguments); };
+    g.fillText = function (t, x, y) { const m = g.measureText(t), al = g.textAlign; const l = al === 'center' ? x - m.width / 2 : al === 'right' ? x - m.width : x; texts.push({ t, l, r: l + m.width, y }); return _ft.apply(this, arguments); };
+    try { render(g); } finally { panel = _p; g.fillText = _ft; }
+    SETTINGS.textSize = 0;
+    const cards = panels.filter(P => P.h >= 200 && P.w <= 300);
+    const bad = [];
+    for (const T of texts) { const c = cards.find(P => T.y > P.y && T.y < P.y + P.h && T.l < P.x + P.w && T.r > P.x); if (c && (T.l < c.x + 4 || T.r > c.x + c.w - 4)) bad.push(T.t); }
+    return { cards: cards.length, bad };
+  });
+  // 7. the layup lesson, the tutorial's way into a match, button hints, settings groups and descriptions
+  out.m2 = await p.evaluate(async () => {
+    const fr = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const r = { welcome: !!Game.confirm };
+    startTutorial(); const li = TUT_STEPS.findIndex(s => s.title === 'Layup'); tutGo(li);
+    const me = tutMe(), h = attackHoop(0);
+    for (let k = 0; k < 240 && !TUT.s.layup && TUT.i === li; k++) {                         // drive at the rim, press Move toward it
+      Input.down.KeyD = h.x > me.x; Input.down.KeyA = h.x < me.x; Input.down.KeyW = h.z < me.z - 20; Input.down.KeyS = h.z > me.z + 20;
+      const tap = dxz(me, h) < 200 && k % 20 === 0; Input.down.KeyH = tap; if (tap) Input.pressed.KeyH = true; await fr();
+    }
+    for (const k of ['KeyD', 'KeyA', 'KeyW', 'KeyS', 'KeyH']) Input.down[k] = false;
+    r.layup = TUT.s.layup || TUT.i > li;
+    tutGo(TUT_STEPS.length - 1); const labels = [], _b = uiButton;
+    uiButton = function (g, x, y, w, hh, label) { labels.push(label); return _b.apply(this, arguments); };
+    try { render(ctx); } finally { uiButton = _b; }
+    r.final = labels; tutEnd();
+    // hints: a player holding the ball near the rim with Move toward it
+    newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; M.introT = 0; M.phase = 'live';
+    const p = M.players.find(q => q.human === 0), hh = attackHoop(0); place(p, hh.x + hh.dir * 150, hh.z); giveBall(p, 'inbound'); p.state = 'free';
+    p.cmd = { mx: hh.dir < 0 ? 1 : -1, mz: 0 }; const said = [], _ts = textSprite;
+    textSprite = function (t) { said.push(t); return _ts.apply(this, arguments); };
+    try { drawHot(ctx); SETTINGS.hints = false; drawHot(ctx); SETTINGS.hints = true; } finally { textSprite = _ts; }
+    r.hints = said;
+    // settings: the Sound group and a description for the selected setting
+    goTitle(); Game.screen = 'settings'; const names = SET_GROUPS.map(g => g.name || g.title || g.label);
+    r.groups = names; const txt = [], _ft = ctx.fillText;
+    ctx.fillText = function (t) { txt.push(String(t)); return _ft.apply(this, arguments); };
+    try { render(ctx); } finally { ctx.fillText = _ft; }
+    r.desc = txt.some(t => t.length > 40);
+    goTitle();
+    return r;
+  });
+  // 8. the miss breakdown, the layup-intent log, and fairness: mirrored spots, either team trailing
+  out.m3 = await p.evaluate(() => {
+    const r = {};
+    newMatch(TEAMS[0], TEAMS[0], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; M.introT = 0; M.phase = 'live';
+    const me = M.players.find(q => q.human === 0), h = attackHoop(0);
+    SETTINGS.missWhy = true; place(me, h.x + h.dir * 300, h.z); giveBall(me, 'inbound'); me.state = 'shoot'; me.st_t = 0.01;
+    const _rand = Math.random; Math.random = () => 0.999;                                    // a sure miss
+    try { releaseShot(me); } finally { Math.random = _rand; }
+    r.why = ball.shot && ball.shot.why; for (let k = 0; k < 400 && ball.state === 'shot'; k++) updateMatch(STEP); updateMatch(STEP);
+    r.shown = MissWhy.show && MissWhy.show.txt;
+    SETTINGS.missWhy = false; MissWhy.show = null;
+    // intent: a layup and a skill move near the rim are counted
+    PossLog.begin(); place(me, h.x + h.dir * 160, h.z); giveBall(me, 'inbound'); me.state = 'free'; me.cmd = { mx: -h.dir, mz: 0 };
+    startLayup(me, 'layup'); place(me, h.x + h.dir * 160, h.z); giveBall(me, 'inbound'); me.state = 'free'; startDribbleMove(me, 'cross');
+    r.intent = Object.assign({}, PossLog.game.intent); PossLog.game = null;
+    // fairness: the same player, mirrored across half court, has the same odds; trailing helps either team the same
+    const a = M.players.find(q => q.team === 0), b = M.players.find(q => q.team === 1);
+    for (const q of M.players) place(q, 660, -900);
+    const ha = attackHoop(0), hb = attackHoop(1), st = a.st; b.st = st;
+    const pa = shotProbability(a, ha.x + ha.dir * 260, ha.z + 80, 200), pb = shotProbability(b, hb.x + hb.dir * 260, hb.z + 80, 200);
+    r.mirror = [pa, pb];
+    SETTINGS.rubber = true; M.phase = 'live'; M.teams[0].score = 0; M.teams[1].score = 10; const t0 = trailing(0), t1 = trailing(1);
+    M.teams[0].score = 10; M.teams[1].score = 0; r.trail = [t0, t1, trailing(0), trailing(1)];
+    goTitle(); return r;
+  });
+  await ctx.close();
+  const ok = out.arrows && out.run.asked && out.run.def && out.run.kept && out.run.ended && out.blur.paused && out.blur.help && out.pause.asked && out.pause.back
+    && out.pads.s0.join() === '0,1' && out.pads.lost.join() === '0' && out.pads.pausedOnLoss && out.pads.p2still && out.pads.back
+    && /TOMAHAWK/.test(out.callout.sub || '') && out.callout.popLeft === 0 && out.cards.cards >= 3 && !out.cards.bad.length && !errs.length
+    && !out.m2.welcome && out.m2.layup && out.m2.final.includes('Play a match') && out.m2.hints.length === 1 && /LAYUP/.test(out.m2.hints[0]) && out.m2.groups.some(n => /Sound/.test(n)) && out.m2.desc
+    && /Release: (early|late|good|perfect)/.test(out.m3.why || '') && out.m3.shown === out.m3.why && out.m3.intent.lay === 1 && out.m3.intent.layStraight === 1 && out.m3.intent.skillNear === 1
+    && Math.abs(out.m3.mirror[0] - out.m3.mirror[1]) < 1e-9 && out.m3.trail.join() === 'true,false,false,true';
+  return { ok, detail: [JSON.stringify(out), ...errs] };
+};
+
 T['online-loop'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=40&jit=10&room=t', games: ['vs', 'one', 'co', 'co', 'lightning', 'horse', 'kotc'], dropP2P: true, noor: true });
 T['online-room'] = ({ browser, base }) => onlineFlow(browser, base, { room: true, games: ['vs', 'one'] });
 T['online-fb'] = ({ browser, base }) => onlineFlow(browser, base, { games: ['vs', 'co'] });
@@ -1710,7 +1856,8 @@ T['gamepad'] = async ({ browser, base }) => {
   await sleep(400);
   await press('START'); out.paused = await ev(() => Game.paused);
   for (let k = 0; k < 6 && !(await ev(() => /Quit|Leave/.test(pauseItems()[Game.idx % pauseItems().length][0]))); k++) await press('DOWN');
-  await press('A'); out.quit = await ev(() => Game.screen === 'title' && !Game.paused);
+  await press('A'); out.asked = await ev(() => !!Game.confirm);                  // v9.12: leaving asks first (Keep playing selected)
+  await press('RIGHT'); await press('A'); out.quit = await ev(() => Game.screen === 'title' && !Game.paused);
   // gameplay: one human; the stick moves him (analog), B sprints, A shoots, X passes
   await ev(() => { newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 120 } }); Game.screen = 'play'; Game.paused = false; M.introT = 0; });
   await p.waitForFunction(() => M.phase === 'live', null, { timeout: 15000 }).catch(() => {});
@@ -1760,13 +1907,13 @@ T['gamepad'] = async ({ browser, base }) => {
     window.__rumble.length = 0; for (let n = 0; n < 120; n++) updateMatch(STEP); M.cmdHook = null; return window.__rumble.length; });
   out.rumble = await dunk();
   await ev(() => { SETTINGS.vibration = false; }); out.rumbleOff = await dunk(); await ev(() => { SETTINGS.vibration = true; });
-  out.setting = await ev(() => setGroupItems(SET_GROUPS.findIndex(g => g.name === 'Sound & display')).some(s => s.label === 'Controller vibration'));
+  out.setting = await ev(() => setGroupItems(SET_GROUPS.findIndex(g => /^Sound/.test(g.name))).some(s => s.label === 'Controller vibration'));
   // keyboard still works with a pad connected
   await ev(() => { goTitle(); Game.screen = 'title'; const m = menuState('title'); m.sub = -1; m.path = []; m.idx = 0; });
   await p.keyboard.press('ArrowDown'); await sleep(150);
   out.keyboard = await ev(() => menuState('title').idx === 1 && Input.lastDev === 'kb');
   await ctx.close();
-  const ok = out.menu.inGame && out.menu.dev === 'pad' && out.paused && out.quit
+  const ok = out.menu.inGame && out.menu.dev === 'pad' && out.paused && out.asked && out.quit
     && out.walk.moved > 30 && !out.walk.turbo && out.sprint.turbo && out.sprint.drained && out.sprint.speed > out.walk.speed && out.shot && out.pass
     && out.two.p2 > 30 && Math.abs(out.two.p1) < 10 && out.plug.order === 2 && out.trivia.asked && !!out.trivia.noor
     && out.picker.on && out.picker.typed.length === 1 && out.pickerLeave !== 'joincode' && out.rumble > 0 && out.rumbleOff === 0 && out.setting && out.keyboard && !errs.length;
@@ -1882,7 +2029,7 @@ T['calendar'] = async ({ browser, base }) => {
     // finished career (World champions): the next thing is the Cup again after a break
     window.__calFresh(); window.__calPlayTo(3, 4); window.__calWin(); const doneOk1 = C.done && C.bracket.champ;
     delete C.cal; C.sv = 3; saveCareer(SAVE_SLOT); C = null; loadCareer(SAVE_SLOT);
-    o.doneOk = doneOk1 && C.cal.sched.entry && C.cal.sched.st === 3 && calGameDay() > C.cal.d && HUB_MENU().some(e => e.label === 'Continue') && HUB_MENU()[0].label.startsWith('Start Season');
+    o.doneOk = doneOk1 && C.cal.sched.entry && C.cal.sched.st === 3 && calGameDay() > C.cal.d && HUB_MENU().some(e => e.cont) && HUB_MENU()[0].label.startsWith('Start Season');
     // season over (lost a semifinal): no schedule until the new season, which starts after a break
     window.__calFresh(); window.__calPlayTo(0, 3); const sf = calGameDay(); calSetDay(sf); startCareerMatch(); M.teams[0].score = 10; M.teams[1].score = 30; M.winner = 1; M.phase = 'over'; careerAfterMatch();
     const so = !!C.seasonOver && C.cal.sched === null && C.cal.d === sf + 1;
@@ -1938,7 +2085,7 @@ T['career-run'] = async ({ browser, base }) => {
         if (C.season === 2 && out.games.some(g => g.s === 2)) break;              // into the new season: done
         const items = HUB_MENU();
         if (C.done && C.season === 1) { const ns = items.find(e => /^Start Season/.test(e.label)); ns.act(); continue; }
-        const c = items.find(e => e.label === 'Continue'); if (!c) { out.noContinue = items.map(e => e.label); break; }
+        const c = items.find(e => e.cont); if (!c) { out.noContinue = items.map(e => e.label); break; }
         c.act();
       } else if (s === 'story') Game.story.then();
       else if (s === 'scout') Game.screen = 'pregame';
@@ -2014,7 +2161,7 @@ T['world-flow'] = async ({ browser, base }) => {
     portal('out').act(); step(30); o.afterStore = where() === 'street/1' && worldStoreOk() === 'You went to the store today';
     // the masjid: the door goes into the hub (inside the masjid); Go outside comes back out, an hour on
     portal('masjid').act(); step(30); portal('door').act(); step(30);
-    const hub = HUB_MENU().map(e => e.label); o.hub = Game.screen === 'hub' && hub[0] === 'Continue' && hub[1] === 'Go outside';
+    const hub = HUB_MENU().map(e => e.label); o.hub = Game.screen === 'hub' && /^Continue/.test(hub[0]) && hub[1] === 'Go outside';
     hub && HUB_MENU().find(e => e.label === 'Go outside').act(); step(30);
     o.outside = where() === 'masjidfront/2' && worldMasjidOk() !== true;
     // home at dusk: night; at night only home is open

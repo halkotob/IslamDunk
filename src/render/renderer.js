@@ -611,9 +611,29 @@ function drawScene(g, t) {
     else { g.fillStyle = q.color; g.globalAlpha = k; if (q.kind === 'star') { star8(g, sx, sy, q.size + 1); g.fill(); } else g.fillRect(sx - q.size / 2, sy - q.size / 2, q.size, q.size); g.globalAlpha = 1; }
   }
   g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  // v9.12: one event, one clear message. A label that would land on the big callout becomes the callout's subtitle
+  // (TABARAKALLAH! / TOMAHAWK) instead of being drawn over it, and labels that would overlap each other stack.
+  const m0 = g.getTransform(), dk = typeof dpr !== 'undefined' ? dpr : 1, C = FX.calls[0], placed = [];
+  let CR = null;
+  if (C && C.t >= 0 && C.t < C.life) {
+    const s1 = textSprite(C.text, 36, C.color, '#140c06', 7), s2 = C.sub ? textSprite(C.sub, 17, '#ffffff', '#140c06', 4.5) : null, w = Math.max(s1.w, s2 ? s2.w : 0), cy = Math.round(H * 0.2);
+    CR = { l: (W / 2 - w / 2 - 6) * dk, r: (W / 2 + w / 2 + 6) * dk, t: (cy - s1.by - 6) * dk, b: (cy + (s2 ? 26 + s2.h - s2.by : s1.h - s1.by) + 6) * dk };
+  }
+  FX._cr = CR;   // (the tests read it)
+  const ov = (a, b) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
   for (const q of FX.pops) {
-    const [sx, sy] = P(q.x, q.y, q.z); g.globalAlpha = clamp(1.6 - q.t * 1.5, 0, 1);
-    { const k = 1 / Math.max(1, (broadcastOn() ? cam.zoom : 1) * 0.85); g.save(); g.translate(sx, sy); g.scale(k, k); drawTextSprite(g, textSprite(q.text, 17, q.color, '#1a1210', 3.5), 0, 0); g.restore(); }
+    let [sx, sy] = P(q.x, q.y, q.z); const al = clamp(1.6 - q.t * 1.5, 0, 1); if (al <= 0) continue;
+    const k = 1 / Math.max(1, (broadcastOn() ? cam.zoom : 1) * 0.85), sp = textSprite(q.text, 17, q.color, '#1a1210', 3.5);
+    const rect = y => { const a = m0.transformPoint(new DOMPoint(sx - sp.w * k / 2, y - sp.by * k)), b = m0.transformPoint(new DOMPoint(sx + sp.w * k / 2, y - sp.by * k + sp.h * k)); return { l: Math.min(a.x, b.x), r: Math.max(a.x, b.x), t: Math.min(a.y, b.y), b: Math.max(a.y, b.y) }; };
+    let R = rect(sy); q._r = R;
+    if (CR && ov(R, CR)) {
+      if (!C._abs && q.t < 0.6 && C.t < 0.6) { C.sub = q.text.replace(/!+$/, ''); C._abs = true; q.t = 99; }
+      continue;                                                       // the callout carries it (or it waits its turn)
+    }
+    for (let n = 0; n < 4 && placed.some(P2 => ov(R, P2)); n++) { sy -= sp.h * k + 2; R = rect(sy); }
+    placed.push(R);
+    g.globalAlpha = al;
+    g.save(); g.translate(sx, sy); g.scale(k, k); drawTextSprite(g, sp, 0, 0); g.restore();
     g.globalAlpha = 1;
   }
   if (FX.flashA > 0) { g.fillStyle = `rgba(255,245,210,${FX.flashA * 0.25})`; g.fillRect(-2000, -2000, 6000, 6000); }   // barely-there warmth, no white flash

@@ -195,7 +195,7 @@ BACK.world = () => { if (World.talk) worldLeaveTalk(); else if (World.shop) Worl
   const _he = hubExtra;
   hubExtra = function (items) {
     const R = _he.apply(this, arguments);
-    if (worldOn() && !C.seasonOver && !calGameToday()) { const i = R.findIndex(e => e.label === 'Continue'); R.splice(i >= 0 ? i + 1 : 0, 0, { label: 'Go outside', act: () => worldLeaveMasjid() }); }
+    if (worldOn() && !C.seasonOver && !calGameToday()) { const i = R.findIndex(e => e.cont || e.label === 'Continue'); R.splice(i >= 0 ? i + 1 : 0, 0, { label: 'Go outside', act: () => worldLeaveMasjid() }); }
     return R;
   };
   // arrivals: after a game's post-game (the next morning), after a load, and from the creator

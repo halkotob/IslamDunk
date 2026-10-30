@@ -72,7 +72,7 @@ function devRefresh() {
   for (const [l, fn] of DEV_MODES) b.append(btn(l, () => { Net.role || goTitle(); fn(); }));
   b.append(h('Play log (last ' + PLOG_MAX + ' games)'));
   b.append(btn('Download log', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(PossLog.load(), null, 1)], { type: 'application/json' })); a.download = 'islamdunk-playlog.json'; a.click(); }));
-  b.append(btn('Summary', () => { const g = PossLog.load(), s = possSummary(g, (x, t) => x.human[t]); devNote(g.length + ' games, you: ' + s.ptsPerPoss + ' pts/poss, scored on ' + s.scoredOn + ', TO ' + s.turnovers + ', FG ' + s.fg); }));
+  b.append(btn('Summary', () => { const g = PossLog.load(), s = possSummary(g, (x, t) => x.human[t]); devNote(g.length + ' games, you: ' + s.ptsPerPoss + ' pts/poss, scored on ' + s.scoredOn + ', TO ' + s.turnovers + ', FG ' + s.fg + (typeof layupIntent === 'function' && layupIntent(g).games ? (L => '. Near the rim: ' + L.lay + ' layups (' + L.layAngled + ' angled), ' + L.skillNear + ' skill moves, ' + L.floater + ' floaters, ' + L.dunk + ' dunks')(layupIntent(g)) : '')); }));
   b.append(btn('Clear log', () => { try { localStorage.removeItem(PLOG_KEY); } catch (e) {} devNote('Log cleared'); }));
   b.append(h('Difficulty and speed'));
   for (const d of DIFF_ORDER) b.append(btn((SETTINGS.difficulty === d ? '● ' : '') + diffName(d), () => { SETTINGS.difficulty = d; }));

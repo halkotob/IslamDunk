@@ -1,5 +1,47 @@
 # Changelog
 
+## 9.12.0: play-test fixes: controls, confirmations, pause, readable cards, a layup lesson, comfort and sound settings
+- **The arrow keys move you in the tutorial and in one-player games.** The tutorial said "W A S D (or the arrow
+  keys)" but the arrows only drove player 2. With one person playing on the keyboard, both sets of keys now
+  control you; with two people, each keeps their own.
+- **Ending a Barakah Run asks first.** Esc or Back on the route map or a route choice used to abandon the run at
+  once. Now it asks "End this run?", with Keep playing selected.
+- **Offline games pause when the window loses focus** (another tab, another app, the phone locks). Online games
+  keep running, because the other player is still playing.
+- **Controllers keep their players.** With two controllers, unplugging pad 1 no longer moves pad 2 into player 1's
+  place. The game pauses (offline), says which controller is missing, and puts it back in its place when it
+  reconnects.
+- **Celebration text no longer piles up.** A dunk label that would land on the big callout (TABARAKALLAH!) becomes
+  its subtitle; other labels stack instead of overlapping.
+- **Barakah Run vow cards fit their text** at every text size: headings wrap and cards grow to fit.
+- **Settings, How to play and the pause menu sit on solid panels**, so the court behind doesn't show through.
+- **The pause menu (offline)** adds How to play and Settings (sound, display, accessibility); both return to the
+  paused match. A timeout you can't call is greyed out with the reason. Leaving a match asks first.
+- **The tutorial teaches layups**: a new step after the dunk (Move toward the rim lays it up, released for you;
+  Shoot near the rim is a dunk or a floater). The last card offers **Play a match**, Again and Exit.
+- **A first-launch choice**: "Learn the basics" (the tutorial) or "Play now". Asked once per device.
+- **Button hints** (keyboard and controller): above your player, LAYUP · H (or Y) when Move would lay it up and
+  DUNK · K (or A) when Shoot would dunk. Settings → Display → Button hints.
+- **How to play** calls the H / Y button "Skill move", so it isn't confused with moving.
+- **The career hub**: the week goal fits at Larger text (the reward, then the WEEK GOAL label give way first), and
+  Continue says where it goes: "Continue to Fri · Jumu’ah", "Continue to today’s game".
+- **Every setting explains itself**: a line at the bottom describes the selected one. Controls and Shot release
+  show "(off online)" in an online game, and the online lobby says that Casual and Automatic release are offline
+  only.
+- **New settings:**
+  - Accessibility: Reduced motion (System / Reduced / Full), Camera shake (Off / Light / Full), Flashes.
+  - A **Sound & controller** group: Sound, Master, Effects and Crowd volume, Controller vibration, Stick
+    deadzone (Low / Normal / High).
+  - Display: Button hints, and Tomahawk style (moved from Game, so each group stays short enough for a phone).
+  - Game: **Miss breakdown** (off by default). After your own missed shot, one line: "Release: early · Contest:
+    heavy · Range: three".
+- **For play-testing:** each logged game counts what players do with the ball near the rim: layups (and whether
+  the stick pointed straight at the rim or at an angle), skill moves there instead, floaters and dunks. The test
+  panel's Summary shows it, and `layupIntent()` sums it, to check whether Move toward the rim catches people who
+  meant a dribble move.
+- New `v912` test covers all of the above, plus a fairness check: the same player has the same odds from mirrored
+  spots on either end, and rubber-banding helps whichever team trails.
+
 ## 9.11.0: the guest plays in real time, Barakah Run duos keep going, every CPU player plays his own game
 - **Online: the guest's own actions show at once.** 9.10.0 made the connection faster; this removes the wait that
   was left. The guest plays its own shots, layups, dunks, crossovers and passes on its screen the moment the button

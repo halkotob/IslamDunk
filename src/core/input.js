@@ -77,9 +77,18 @@ const Input = {
   }
 };
 const menuHit = n => Input.hit(MK[n]);
+// v9.12: playing alone (no second player on this keyboard), player 2's keys work for player 1 too: the arrow keys
+// move, and the number pad / , . / M N act. (The tutorial and How to play promised the arrow keys.)
+function soloKeys() { return !(typeof M !== 'undefined' && M.players && M.players.some(p => p.human === 1 && !M.online)); }
+let _soloB = null;
+function padBinds(pad) {
+  if (pad !== 0 || !soloKeys()) return BINDS[pad];
+  if (!_soloB || _soloB.src0 !== BINDS[0] || _soloB.v !== JSON.stringify(BINDS)) { const m = { src0: BINDS[0], v: JSON.stringify(BINDS) }; for (const k in BINDS[0]) m[k] = [...new Set([...(BINDS[0][k] || []), ...((BINDS[1] && BINDS[1][k]) || [])])]; _soloB = m; }
+  return _soloB;
+}
 // Build a command for a human pad (same shape the AI produces)
 function humanCmd(pad, c) {
-  const b = BINDS[pad], d = Input.down;
+  const b = padBinds(pad), d = Input.down;
   const has = k => b[k].some(x => d[x]), hit = k => b[k].some(x => Input.pressed[x]), rel = k => b[k].some(x => Input.released[x]);
   let mx = (has('right') ? 1 : 0) - (has('left') ? 1 : 0), mz = (has('down') ? 1 : 0) - (has('up') ? 1 : 0);
   if (pad === 0 && (Input.stick.ax || Input.stick.az)) { mx = Input.stick.ax; mz = Input.stick.az; }

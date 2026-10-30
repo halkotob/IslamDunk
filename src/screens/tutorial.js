@@ -110,7 +110,7 @@ function tutCmd(q) {
     g.fillStyle = 'rgba(8,16,28,0.9)'; roundRect(g, x, y, w, h, 14); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.6)'; g.lineWidth = 1.5; g.stroke();
     g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `18px ${FONT}`; g.fillText((st.final ? '' : (TUT.i + 1) + '/' + (TUT_STEPS.length - 1) + '  ') + st.title, x + 16, y + 28);
     g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapText(g, st.text(), x + 16, y + 52, w - 150, 18);
-    if (st.final) { uiButton(g, x + w - 124, y + 18, 108, 34, 'Finish', () => tutEnd(), true); uiButton(g, x + w - 124, y + 56, 108, 30, 'Again', () => tutGo(0)); }
+    if (st.final) { uiButton(g, x + w - 138, y + 14, 122, 34, 'Play a match', () => { tutEnd(); startSelect('1p'); }, true); uiButton(g, x + w - 138, y + 54, 58, 30, 'Again', () => tutGo(0)); uiButton(g, x + w - 74, y + 54, 58, 30, 'Exit', () => tutEnd()); }
     else uiButton(g, x + w - 112, y + 30, 96, 34, 'Skip', () => tutGo(TUT.i + 1));
     if (TUT.nice && (TUT.nice.t -= 1 / 60) > 0) { g.textAlign = 'right'; g.fillStyle = '#9dffb0'; g.font = `14px ${FONT}`; g.fillText('\u2713 ' + TUT.nice.title + ' done', x + w - 16, y + h - 6); } else TUT.nice = null;
     for (let k = 0; k < TUT_STEPS.length - 1; k++) { g.fillStyle = k < TUT.i ? '#9dffb0' : k === TUT.i ? GOLD : 'rgba(255,255,255,0.2)'; g.beginPath(); g.arc(x + 20 + k * 14, y + h - 10, 4, 0, Math.PI * 2); g.fill(); }

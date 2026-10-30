@@ -249,8 +249,8 @@ for(const a of [
     const before=Game.screen;oldUpdate(dt);if(Game.screen!==before)return;
     const s=Game.screen;
     if(s==='runhome') {menuNav(RUN_HOME.length,runHomeSelect);if(menuHit('left'))Run.team=(Run.team+TEAMS.length-1)%TEAMS.length;if(menuHit('right'))Run.team=(Run.team+1)%TEAMS.length;if(menuHit('back'))goTitle();}
-    if(s==='runchoice'&&Run.duo==='online'&&Run.turn===1){runGuestPick();if(menuHit('back')){Run.active=false;Game.screen='runend';Game.idx=0;}}
-    else if(s==='runchoice'){if(menuHit('left'))Game.idx=(Game.idx+Run.choices.length-1)%Run.choices.length;if(menuHit('right'))Game.idx=(Game.idx+1)%Run.choices.length;if(menuHit('ok'))pickRunPower(Game.idx);if(menuHit('back')){Run.active=false;Game.screen='runend';Game.idx=0;}}
+    if(s==='runchoice'&&Run.duo==='online'&&Run.turn===1){runGuestPick();if(menuHit('back'))runAskAbandon();}
+    else if(s==='runchoice'){if(menuHit('left'))Game.idx=(Game.idx+Run.choices.length-1)%Run.choices.length;if(menuHit('right'))Game.idx=(Game.idx+1)%Run.choices.length;if(menuHit('ok'))pickRunPower(Game.idx);if(menuHit('back'))runAskAbandon();}
     if(s==='runend'){menuNav(3,i=>{if(i===0)openClipShare(Run.clips,'runend');else if(i===1)startBarakah();else runEndBack();});if(menuHit('back'))runEndBack();}
     if(s==='shareclip'){if(menuHit('left'))selectShareClip(-1);if(menuHit('right'))selectShareClip(1);if(Input.pressed.KeyS||menuHit('ok'))downloadShareCard();if(menuHit('back'))Game.screen=ShareCard.back;}
     if(s==='runbadges'){menuNav(RUN_BADGES.length,chooseRunBadge);if(menuHit('back'))openBarakah();}

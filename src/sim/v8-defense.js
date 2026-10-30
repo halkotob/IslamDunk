@@ -17,7 +17,7 @@ const GUARD_ON = 36, GUARD_OFF_MIN = 46, GUARD_OFF_MAX = 120;
   const _hc = humanCmd;
   humanCmd = function (pad, c) {
     _hc.apply(this, arguments);
-    const k = DEF_KEYS[pad] || [];
+    const k = pad === 0 && soloKeys() ? [...DEF_KEYS[0], ...DEF_KEYS[1]] : DEF_KEYS[pad] || [];   // (v9.12: alone, either set)
     if (k.some(x => Input.down[x])) c.xHeld = true;
     if (k.some(x => Input.pressed[x])) c.x = true;
   };

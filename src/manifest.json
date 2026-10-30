@@ -114,6 +114,7 @@
     "sim/v911-cpu-style.js",
     "online/net-diag.js",
     "online/v911-predict.js",
+    "screens/v912-polish.js",
     "boot.js"
   ]
 }

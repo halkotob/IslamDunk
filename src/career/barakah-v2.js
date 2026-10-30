@@ -101,17 +101,31 @@ function runApplyNode() {
   RUN_BADGES.push({ id: 'champ', name: 'Champion', color: '#ffd76a', desc: 'Beat the Champions at the end of a solo Barakah Run.' });
 }
 // ---- screens: the vow and the map
+function textLines(g, text, maxW) {
+  const out = []; let line = '';
+  for (const w of String(text).split(' ')) { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; }
+  if (line) out.push(line); return out;
+}
+// v9.12: headings wrap inside the card (no shrinking), and the cards grow to fit their heading and description, at every
+// text size ("Quiet Focus, Loud Gym" ran out of its card)
 function drawRunCards(g, items, y, onPick) {
   const n = items.length, w = Math.min(280, (W - 80) / n - 16), x0 = W / 2 - (n * (w + 16) - 16) / 2;
-  items.forEach((it, i) => {
-    const x = x0 + i * (w + 16), sel = i === Game.idx;
-    panel(g, x, y, w, 210, sel);
-    if (it.col) { g.fillStyle = it.col; roundRect(g, x + 14, y + 14, w - 28, 8, 4); g.fill(); }
-    g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `18px ${FONT}`; g.fillText(it.name, x + w / 2, y + 52);
-    g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapTextLeft(g, it.desc, x + 16, y + 84, w - 32, 20);
-    uiButton(g, x + w / 2 - 80, y + 160, 160, 34, 'Choose', () => { Game.idx = i; onPick(i); }, sel);
-    addRect(x, y, w, 150, () => { Game.idx = i; });
+  const lay = items.map(it => {
+    g.font = `18px ${FONT}`; const head = textLines(g, it.name, w - 28);
+    g.font = `14px ${BODY}`; const desc = textLines(g, it.desc, w - 32);
+    return { head, desc, hh: head.length * 22, dh: desc.length * 20 };
   });
+  const H2 = Math.max(210, ...lay.map(L => 52 + L.hh + 14 + L.dh + 60));
+  items.forEach((it, i) => {
+    const x = x0 + i * (w + 16), sel = i === Game.idx, L = lay[i];
+    panel(g, x, y, w, H2, sel);
+    if (it.col) { g.fillStyle = it.col; roundRect(g, x + 14, y + 14, w - 28, 8, 4); g.fill(); }
+    g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `18px ${FONT}`; L.head.forEach((t, k) => g.fillText(t, x + w / 2, y + 52 + k * 22));
+    g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `14px ${BODY}`; L.desc.forEach((t, k) => g.fillText(t, x + 16, y + 52 + L.hh + 14 + k * 20));
+    uiButton(g, x + w / 2 - 80, y + H2 - 50, 160, 34, 'Choose', () => { Game.idx = i; onPick(i); }, sel);
+    addRect(x, y, w, H2 - 60, () => { Game.idx = i; });
+  });
+  return H2;
 }
 function drawRunStatus(g, y) {
   const ups = Object.entries(Run.upgrades).filter(([, r]) => r > 0).map(([id, r]) => { const p = RUN_POWERS.find(q => q.id === id); return p ? p.name + (r > 1 ? ' ' + r : '') : id; });
@@ -133,14 +147,14 @@ function runV2Screen(g) {
   if (Game.screen === 'runvow') {
     g.fillStyle = GOLD; g.font = `30px ${FONT}`; g.fillText('TAKE A VOW', W / 2, 70);
     g.fillStyle = IVORY; g.font = `15px ${BODY}`; g.fillText('A trade-off that lasts your whole run. Then choose your path: ' + RUN_STOPS + ' stops and a final.', W / 2, 104);
-    drawRunCards(g, RUN_VOWS, 150, i => runPickVow(i));
-    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('← → choose  •  Enter confirm  •  Esc back', W / 2, 400);
+    const ch = drawRunCards(g, RUN_VOWS, 150, i => runPickVow(i));
+    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('← → choose  •  Enter confirm  •  Esc back', W / 2, Math.max(400, 150 + ch + 30));
   } else {
     g.fillStyle = GOLD; g.font = `30px ${FONT}`; g.fillText(Run.step >= RUN_STOPS ? 'THE FINAL' : 'STOP ' + (Run.step + 1) + ' OF ' + RUN_STOPS, W / 2, 62);
     drawRunPath(g, 96);
-    drawRunCards(g, Run.choicesV2.map(id => RUN_NODES[id]), 128, i => runChooseNode(i));
-    drawRunStatus(g, 368);
-    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('← → choose  •  Enter go  •  Esc ends your run', W / 2, 420);
+    const ch = drawRunCards(g, Run.choicesV2.map(id => RUN_NODES[id]), 128, i => runChooseNode(i)), sy = Math.max(368, 128 + ch + 30);
+    drawRunStatus(g, sy);
+    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('← → choose  •  Enter go  •  Esc: end your run (asks first)', W / 2, sy + 52);
   }
 }
 function runPickVow(i) { Run.vow = RUN_VOWS[i].id; SFX.blip && SFX.blip(); runToMap(); }
@@ -150,7 +164,7 @@ function runV2Update() {
   if (menuHit('left') || menuHit('up')) Game.idx = (Game.idx + n - 1) % n;
   if (menuHit('right') || menuHit('down')) Game.idx = (Game.idx + 1) % n;
   if (menuHit('ok')) { if (Game.screen === 'runvow') runPickVow(Game.idx); else runChooseNode(Game.idx); return; }
-  if (menuHit('back')) { if (Game.screen === 'runvow') { Run.active = false; openBarakah(); } else { Run.active = false; Game.screen = 'runend'; Game.idx = 0; } }
+  if (menuHit('back')) { if (Game.screen === 'runvow') { Run.active = false; openBarakah(); } else runAskAbandon(); }   // v9.12: the map asks first
 }
 {
   const _gu = gameUpdate;

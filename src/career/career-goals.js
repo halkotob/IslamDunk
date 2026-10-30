@@ -203,9 +203,16 @@ function drawHubBadges(g) {
     // v9.6.2: the weekly goal is the menu panel's first row (HubL.goal, set by drawHub), labelled WEEK GOAL
     const ng = nextGoal(), R = HubL.goal || { x: 336, y: 210, w: 290, h: 24 }, x = R.x, y = R.y, w = R.w, h = R.h;
     g.fillStyle = 'rgba(232,195,90,0.16)'; roundRect(g, x, y, w, h, h / 2); g.fill(); g.strokeStyle = 'rgba(232,195,90,0.5)'; g.lineWidth = 1; g.stroke();
-    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; const by = y + h / 2 + hubPx(g) * 0.36; g.fillText('WEEK GOAL', x + 12, by);
-    const tx = x + 20 + g.measureText('WEEK GOAL').width;
-    g.fillStyle = IVORY; g.font = `11px ${BODY}`; g.fillText(fitText(g, ng.txt + (ng.pay ? '  •  ' + ng.pay : ''), x + w - 12 - tx), tx, by);
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; const by = y + h / 2 + hubPx(g) * 0.36;
+    // v9.12: at Larger text the goal was cut off ("Rookie: Finish a dr…"). What gives way first: the reward, then the
+    // WEEK GOAL label, then the size of the text; the goal itself is the last thing to be shortened.
+    const lab = g.measureText('WEEK GOAL').width; g.font = `11px ${BODY}`;
+    const full = ng.txt + (ng.pay ? '  •  ' + ng.pay : ''), room = l => x + w - 12 - (l ? x + 20 + lab : x + 12);
+    let t = full, showLab = true, px = 11;
+    if (g.measureText(full).width > room(true)) { t = ng.txt; if (g.measureText(t).width > room(true)) showLab = false; }
+    while (px > 8 && g.measureText(t).width > room(showLab)) { px--; g.font = `${px}px ${BODY}`; }
+    if (showLab) { g.save(); g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.fillText('WEEK GOAL', x + 12, by); g.restore(); }
+    g.fillStyle = IVORY; g.fillText(fitText(g, t, room(showLab)), showLab ? x + 20 + lab : x + 12, by);
     addRect(x, y, w, h, () => openGoals());
     drawHubBadges(g);
   };
