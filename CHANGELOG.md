@@ -1,5 +1,49 @@
 # Changelog
 
+## 9.13.0: Review Studio: every screen, sound alternatives, a crowd that matches the room
+No gameplay changes. Sounds are judged by ear in the Studio; the tests check what can be measured.
+- **Screens: every view with a UI.** 16 new Studio setups for the views that had none: the welcome dialog, a toast,
+  an achievement toast, tutorial cards (a step, the last card), tip-off, inbound, free throws, hot spot, replay,
+  period break, the timeout panel, the leave and abandon confirmations, the network report and the hub's corner
+  menu. 125 screens in all; hostlobby, netplay and netwait stay "not renderable", each with its reason. The new test
+  `studio-coverage` fails when the code has a `Game.screen`, an overlay or a `Game.`/`World.` view state that the
+  Studio neither shows nor lists (`src/review-studio/coverage.js`).
+- **Each screen says what it is** (`src/review-studio/screen-meta.js`, `docs/review/screen-census.json` from
+  `npm run review:census`): its flow (first-run, hub loop, match, results, career calendar, settings, rare), purpose,
+  how it is reached, the taps from the title and from the hub, tap targets, words and numbers on it, numbers another
+  screen also shows (and which), the version it was added in, the phone text audit per size, and flags: unreachable,
+  legacy, near-duplicate, crowded, text-heavy. Suggested verdicts are shown, never applied. A new verdict, **Merge
+  into** (M), picks the screen it should become part of; it exports as `merge_into`. The list is grouped by flow, with
+  a live **contact sheet** per flow.
+- **First-run path** (`npm run review:first-run`): the 31 views a brand-new player sees from the first launch to the
+  end of the first match and the first career day, with desktop and phone screenshots, taps, words on screen and
+  interruptions (the welcome dialog, callouts, achievements, Noor questions).
+- **Sounds: four variants each.** All 23 sound effects now have A Current, B Real, C Arcade and D Soft
+  (`src/core/sfx-variants.js`), level-matched to A (`src/core/sfx-levels.js`, `npm run sfx:levels`: K-weighted, the
+  loudest 200 ms). Bounce, squeak, swish, clank, thud and swipe have 2-3 sub-variants in B-D, chosen at random with no
+  immediate repeat. Recorded samples can be added later as more variants (`sfxAddSamples`). The Studio plays A-D
+  (1-4), loops, repeats ×5, compares A → D, lists where each sound triggers, and records a **pick** per sound
+  (CSV column `pick`); the bar plays every sound in one style.
+- **Settings > Sound style:** Current / Real / Arcade / Soft (default Current), plus a per-sound override kept in this
+  browser. **Settings > Room echo:** on / off. Both are in **Sound & controller**; Stick deadzone moves to
+  **Display** (a group stays at 7 rows or fewer).
+- **The crowd you hear matches the crowd you see.** The audience is the number of people drawn, and its tier sets the
+  sound: 0 nobody (no crowd sound), 1 up to 12 (claps and a voice or two, no bed), 2 up to 45 (a quiet murmur,
+  clusters of claps), 3 up to 160 (the bed and swells, quieter), 4 more (as before). Claps come from drawn people,
+  panned to where they stand, and they raise their hands; never more clappers or voices than people drawn.
+  Reactions: make, big play, groan (a bad miss, a turnover), "ooh" (a block) and an applause tail. Voices are
+  synthesized placeholders (they sound like buzzy vowels) with a slot for recordings (`CROWD_VOICE_SAMPLES`). The
+  practice gym is now silent of crowd.
+- **Room acoustics by venue:** a short room in small gyms, longer in big gyms and arenas, the longest in the domes,
+  none outdoors, on the ball, shoes, rim and contact, whistle and buzzer. Cost: about 1-1.5% of one desktop core on
+  the audio thread (so a few percent on a phone), and a 40-70 ms one-time build per room at 4x CPU slowdown.
+- **Studio Crowd section:** any venue, with make, dunk, buzzer beater, miss, block and turnover, showing the audience,
+  the tier, the levels and how many clapped and spoke. **Mix test:** a 60 s CPU match at a venue with a slider per bus.
+- **`docs/audio/sound-list.csv`** (`npm run sound-list`): all 299 places a sound is triggered and 21 events with no
+  sound. Found: the Lightning mini game calls `SFX.catch`, which doesn't exist (listed, not built).
+- `review:report` prints merges and the sound picks. New tests: `sfx-variants`, `crowd-tiers`, `sound-list`,
+  `studio-coverage`; `studio-csv` checks the merge and pick round trip. WebKit isn't installed in this environment,
+  so the WebKit half of `sfx-variants` runs only where Playwright's WebKit is.
 ## 9.12.1: online follow-up: trustworthy diagnostics, faster connect, lossy links measured
 - **Loss you can trust.** Snapshots now carry a number (`sn`), and every direct-link message already did, so the
   report counts what never arrived: snapshot loss and direct-link message loss over the last 5 s and since the match

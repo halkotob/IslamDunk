@@ -141,11 +141,19 @@
   };
 
   // ---------------------------------------------------------------- screens
+  // v9.13: overlays one setup leaves behind (a dialog, a tutorial card, a toast, a menu) don't show on the next one
+  RS.clearOverlays = () => {
+    Game.confirm = null; Game.toastT = 0; Game.hubMenu = null;
+    if (typeof TUT !== 'undefined' && TUT.on) { TUT.on = false; if (typeof M !== 'undefined' && M) M.cmdHook = null; }
+    if (typeof _achQ !== 'undefined') _achQ.length = 0;
+    if (typeof Replay !== 'undefined') Replay.active = null;
+    if (typeof NetReport !== 'undefined' && NetReport.close) try { NetReport.close(); } catch (e) {}
+  };
   RS.screenSetup = js => {
     RS.animStop(); RS.freeze(false);
     const A_ = window.__audit; A_.on = false; A_.found.clear();
     const e0 = window.__studioErrors.length;
-    try { Game.paused = false; Game.trivia = null; (0, eval)(js); } catch (e) { return { error: String(e && e.message || e), screen: Game.screen }; }
+    try { Game.paused = false; Game.trivia = null; RS.clearOverlays(); (0, eval)(js); } catch (e) { return { error: String(e && e.message || e), screen: Game.screen }; }
     A_.screen = 'studio';
     return { screen: Game.screen, e0 };
   };

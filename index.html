@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.12.1';
+const VERSION = '9.13.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -9134,6 +9134,258 @@ function drawFtBanner(g) {
   g.fillStyle = '#ffd76a'; g.textAlign = 'center'; g.fillText(txt, W / 2, y + 17);
 }
 
+// ================================================= v9.13: SOUND VARIANTS (A: Current, B: Real, C: Arcade, D: Soft)
+// Every sound effect has four versions made by the same procedural engine (Web Audio, no files):
+//   A  Current  the sound as it shipped (the function each SFX.<id> was before this file)
+//   B  Real     naturalistic: layered noise bursts and a resonant body (rim, ball, net), shorter and drier
+//   C  Arcade   punchy and exaggerated, NBA Jam energy
+//   D  Soft     muted and gentle, comfortable in a masjid
+// The often-repeated sounds (bounce, squeak, swish, clank, thud, swipe) have 2-3 sub-variants in B, C and D, picked at
+// random with no immediate repeat. Every variant is played through its own gain so all four are about as loud as A
+// (SFX_LEVELS, measured by tools/sfx-levels.mjs; the sfx-variants test checks it).
+// Which one plays: Settings > Sound style (Current / Real / Arcade / Soft, default Current), then a per-sound override
+// map (SFX_DEFAULT_PICKS, set from the reviewers' sound picks; a browser's own overrides in localStorage win).
+// Recorded samples can be added later as more variants of the same ID: sfxAddSamples('bounce', 'E', 'Recorded', [urls]).
+// Nothing else in the game changes: other files' wrappers (rumble on slam, the impact ring) wrap the dispatcher.
+const SFX_IDS = ['bad', 'best', 'blip', 'block', 'board', 'bounce', 'buzzer', 'cheer', 'clank', 'dunkNet', 'good', 'green', 'greenMake', 'heart', 'netSwish', 'rimTick', 'slam', 'snatch', 'squeak', 'swipe', 'swish', 'thud', 'whistle'];
+const SFX_STYLES = { A: 'Current', B: 'Real', C: 'Arcade', D: 'Soft' };
+const SFX_DEFAULT_PICKS = {};        // id -> 'A'..'D': the defaults chosen in the Studio (none yet)
+// sounds that happen in the room (ball, shoes, contact, rim and net, whistle, buzzer): they also feed the room's reverb
+const SFX_ROOM = new Set(['block', 'board', 'bounce', 'buzzer', 'clank', 'dunkNet', 'netSwish', 'rimTick', 'slam', 'snatch', 'squeak', 'swipe', 'swish', 'thud', 'whistle']);
+// where each one is heard (the Studio shows this; docs/audio/sound-list.csv has every call)
+const SFX_WHERE = {
+  bad: 'A wrong answer, a locked item, a failed action in menus and drills', best: 'A personal best or a goal completed',
+  blip: 'Menu moves and taps', block: 'A blocked shot', board: 'The ball off the backboard', bounce: 'Every dribble and loose-ball bounce',
+  buzzer: 'End of a period or the game, shot clock violation', cheer: 'The crowd after makes, steals, blocks and big plays (scaled by the venue)',
+  clank: 'A shot off the rim', dunkNet: 'The net after a dunk', good: 'A right answer or a confirmed choice', green: 'A perfectly timed release (GREEN)',
+  greenMake: 'A green release that goes in', heart: 'Clutch moments (heartbeat)', netSwish: 'A make through the net (speed sets the sound)',
+  rimTick: 'A make that touches the rim', slam: 'A dunk', snatch: 'A steal or a picked-off pass', squeak: 'Sneakers on a cut or a stop',
+  swipe: 'A steal attempt (the reach)', swish: 'Older callers of the swish (mini games, drills)', thud: 'A player knocked down or a hard foul', whistle: 'A foul or a violation'
+};
+const SFX_VARIANTS = {};             // id -> { A: { label, fn }, B..D, and any recorded ones }
+{
+  const S = SFX;
+  // ---- building blocks (all connect to S.out, which the dispatcher points at the variant's own gain)
+  const at = d => S.ctx.currentTime + (d || 0);
+  const env = (a, t, g, att, dur) => { a.gain.setValueAtTime(0.0001, t); a.gain.exponentialRampToValueAtTime(Math.max(0.0002, g), t + att); a.gain.exponentialRampToValueAtTime(0.0001, t + dur); };
+  // a tone with an optional low-pass and a fast or slow attack
+  const tn = (f, dur, type, g, o = {}) => {
+    const c = S.ctx; if (!c) return; const t = at(o.d), osc = c.createOscillator(), a = c.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(f, t); if (o.f2) osc.frequency.exponentialRampToValueAtTime(o.f2, t + (o.glide || dur));
+    env(a, t, g, o.att || 0.003, dur);
+    let n = osc; if (o.lp) { const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = o.lp; fl.Q.value = o.lq || 0.7; osc.connect(fl); n = fl; }
+    if (o.vib) { const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = o.vib[0]; lg.gain.value = o.vib[1]; l.connect(lg); lg.connect(osc.frequency); l.start(t); l.stop(t + dur + 0.05); }
+    n.connect(a); a.connect(S.out); osc.start(t); osc.stop(t + dur + 0.05);
+  };
+  // filtered noise with a chosen attack (2 ms = a hard transient)
+  const nz = (dur, type, f, q, g, o = {}) => {
+    const c = S.ctx; if (!c) return; const t = at(o.d), s = c.createBufferSource(), fl = c.createBiquadFilter(), a = c.createGain();
+    s.buffer = S.noise; fl.type = type; fl.frequency.setValueAtTime(f, t); fl.Q.value = q; if (o.f2) fl.frequency.exponentialRampToValueAtTime(o.f2, t + dur);
+    env(a, t, g, o.att || 0.002, dur);
+    let n = fl; if (o.lp) { const l2 = c.createBiquadFilter(); l2.type = 'lowpass'; l2.frequency.value = o.lp; fl.connect(l2); n = l2; }
+    s.connect(fl); n.connect(a); a.connect(S.out); s.start(t, Math.random() * 1.5); s.stop(t + dur + 0.05);
+  };
+  const ring = (f, dur, g, q = 12, d = 0) => nz(dur, 'bandpass', f, q, g, { d, att: 0.001 });           // a resonant body: noise into a narrow band
+  const thump = (f, f2, dur, g, d = 0, lp = 0) => tn(f, dur, 'sine', g, { f2, d, lp, att: 0.002 });
+  const metal = (parts, dur, g, v = 1, d = 0, type = 'sine') => parts.forEach((p, i) => tn(p * rand(0.985, 1.015), dur * (1 - i * 0.14), type, g * v * (1 - i * 0.12), { d, att: 0.001 }));
+  // pick a sub-variant: random, never the same one twice in a row
+  const last = {};
+  const sub = (key, n) => { let i; do i = Math.floor(Math.random() * n); while (n > 1 && i === last[key]); last[key] = i; return i; };
+  S.subPick = sub; S.subLast = last;                                      // (the tests check it never repeats)
+  const outdoor = () => typeof M !== 'undefined' && M.venue && M.venue.kind === 'outdoor';
+  // a short hand clap (used by the crowd too): a sharp noise burst with a little body
+  S.clapAt = (g = 0.2, d = 0, tone = 1) => { nz(0.012, 'highpass', 900 * tone, 0.7, g, { d }); nz(0.05 + 0.02 * Math.random(), 'bandpass', 1300 * tone, 1.4, g * 0.9, { d: d + 0.001 }); nz(0.02, 'lowpass', 500, 0.8, g * 0.25, { d }); };
+
+  // ---- B: Real
+  const B = {
+    bad() { tn(311, 0.09, 'triangle', 0.09, { f2: 290, lp: 1600 }); tn(233, 0.14, 'triangle', 0.09, { d: 0.1, f2: 220, lp: 1400 }); },
+    best() { [523, 659, 784].forEach((f, i) => { tn(f, 0.35, 'sine', 0.07, { d: i * 0.09 }); tn(f * 4, 0.06, 'sine', 0.018, { d: i * 0.09 }); }); },
+    blip() { nz(0.006, 'bandpass', 3200, 1.2, 0.18); tn(1150, 0.018, 'sine', 0.08); },
+    block() { nz(0.045, 'bandpass', 1450, 1.5, 0.5); thump(125, 70, 0.08, 0.45); ring(720, 0.05, 0.12, 9, 0.004); },
+    board() { thump(145, 92, 0.09, 0.14); ring(1120, 0.13, 0.05, 8, 0.002); nz(0.05, 'highpass', 2600, 0.7, 0.03, { d: 0.004 }); },
+    bounce(v = 1) {
+      const k = sub('bounceB', 3), F = [[120, 950], [104, 820], [136, 1080]][k], o = outdoor() ? 1.25 : 1;
+      thump(F[0] * o, 55 * o, 0.07, 0.34 * v); ring(F[1] * o, 0.045, 0.1 * v, 7); nz(0.008, 'highpass', 3000, 0.7, 0.05 * v);
+    },
+    buzzer() { tn(230, 0.9, 'sawtooth', 0.08, { lp: 1800, att: 0.02 }); tn(233, 0.9, 'sawtooth', 0.06, { lp: 1800, att: 0.02 }); tn(345, 0.9, 'square', 0.03, { lp: 1500, att: 0.02 }); },
+    cheer(amt = 1, delay = 0) {             // the swell of a real crowd: voices in three bands, staggered, with clapping inside
+      swell(amt, delay);
+      const L = S.crowdLevel, a = amt * L;
+      nz(0.7 + amt * 0.5 * L, 'bandpass', 520, 0.9, 0.05 * a, { d: delay, att: 0.12 }); nz(0.8 + amt * 0.5 * L, 'bandpass', 1150, 1.1, 0.06 * a, { d: delay + 0.03, att: 0.1 }); nz(0.6 + amt * 0.4 * L, 'bandpass', 2300, 1.2, 0.03 * a, { d: delay + 0.06, att: 0.1 });
+      for (let i = 0; i < 6 + 10 * Math.min(1, a); i++) S.clapAt(0.03 * a, delay + 0.1 + Math.random() * (0.8 + amt * 0.4), rand(0.85, 1.2));
+    },
+    clank(v = 1) {
+      const k = sub('clankB', 3), P = [[520, 1240, 1980, 2870, 3900], [470, 1130, 1830, 2610, 3720], [560, 1330, 2090, 3010, 4100]][k];
+      metal(P, 0.3, 0.07, v); nz(0.012, 'bandpass', 3000, 1, 0.12 * v); thump(160, 110, 0.05, 0.12 * v);
+    },
+    dunkNet() { nz(0.22, 'bandpass', 2600, 1.3, 0.22, { f2: 1500, lp: 6000 }); metal([700, 1520], 0.09, 0.05); for (let i = 0; i < 3; i++) ring(rand(900, 1400), 0.03, 0.05, 10, 0.05 + i * 0.04); },
+    good() { tn(660, 0.22, 'sine', 0.16); tn(1320, 0.05, 'sine', 0.04); tn(990, 0.3, 'sine', 0.16, { d: 0.09 }); tn(1980, 0.06, 'sine', 0.04, { d: 0.09 }); },
+    green() { tn(1318, 0.5, 'sine', 0.11); tn(1318 * 2.76, 0.18, 'sine', 0.03); tn(1760, 0.45, 'sine', 0.08, { d: 0.05 }); tn(2349, 0.4, 'sine', 0.05, { d: 0.1 }); nz(0.15, 'highpass', 7000, 0.7, 0.02, { d: 0.08, att: 0.03 }); },
+    greenMake(d = 0) { tn(1568, 0.45, 'sine', 0.07, { d: 0.02 + d }); tn(1568 * 2.76, 0.12, 'sine', 0.015, { d: 0.02 + d }); tn(2093, 0.4, 'sine', 0.05, { d: 0.08 + d }); },
+    heart() { thump(62, 42, 0.12, 0.5, 0, 180); nz(0.08, 'lowpass', 140, 0.8, 0.2); thump(54, 38, 0.13, 0.4, 0.17, 160); nz(0.08, 'lowpass', 120, 0.8, 0.15, { d: 0.17 }); },
+    netSwish(k = 0.7, delay = 0, pitch = 1) {
+      const i = sub('netB', 3), f = [3400, 3000, 3700][i] * pitch * (0.85 + 0.2 * clamp(k, 0.15, 1.35)), dur = clamp(0.14 + 0.08 * k, 0.12, 0.24);
+      S.netNoise(dur, f, 1.8, 0.09 + 0.2 * clamp(k, 0.15, 1.35), f * 0.7, delay);
+    },
+    rimTick(k = 0.6) { const v = 0.04 + 0.04 * clamp(k, 0, 1); ring(2620, 0.06, v * 9, 14); ring(4110, 0.04, v * 4, 14); tn(2620, 0.05, 'sine', v * 0.5); },
+    slam() { thump(72, 38, 0.3, 0.7); metal([380, 820, 1460, 2210], 0.22, 0.06); thump(150, 95, 0.08, 0.3, 0.005); nz(0.2, 'bandpass', 2400, 1.2, 0.18, { f2: 1400, d: 0.01, lp: 6000 }); },
+    snatch(v = 1) { nz(0.03, 'bandpass', 2000, 1.6, 0.4 * v); thump(140, 90, 0.05, 0.3 * v); ring(760, 0.04, 0.08 * v, 9, 0.01); },
+    squeak() {
+      const k = sub('squeakB', 3), f = [2550, 2850, 2300][k];
+      const c = S.ctx; if (!c) return;
+      const t = at(0), o = c.createOscillator(), bp = c.createBiquadFilter(), a = c.createGain();   // stick-slip: a buzzy source through a moving band
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(f / 3.4, t); o.frequency.linearRampToValueAtTime(f / 3.0, t + 0.07);
+      bp.type = 'bandpass'; bp.Q.value = 5; bp.frequency.setValueAtTime(f, t); bp.frequency.linearRampToValueAtTime(f * 1.25, t + 0.07);
+      env(a, t, 0.25, 0.006, 0.08); o.connect(bp); bp.connect(a); a.connect(S.out); o.start(t); o.stop(t + 0.12);
+      if (k === 2) tn(f * 1.1, 0.04, 'sine', 0.02, { d: 0.05 });
+    },
+    swipe() { const k = sub('swipeB', 3), F = [[2400, 800], [2000, 620], [2800, 1000]][k]; nz(0.09, 'bandpass', F[0], 1.6, 0.22, { f2: F[1], att: 0.015 }); },
+    swish(pitch = 1) { B.netSwish(0.7, 0, pitch); },
+    thud() { const k = sub('thudB', 3), f = [85, 76, 95][k]; thump(f, 40, 0.18, 0.4, 0, 400); nz(0.12, 'lowpass', 350, 0.9, 0.22); ring(900, 0.05, 0.05, 6, 0.01); },
+    whistle() { tn(2850, 0.34, 'sine', 0.055, { vib: [28, 160], att: 0.01 }); tn(5700, 0.3, 'sine', 0.008, { vib: [28, 300], att: 0.01 }); nz(0.3, 'bandpass', 2850, 3, 0.02, { att: 0.01 }); }
+  };
+  // ---- C: Arcade
+  const C = {
+    bad() { tn(392, 0.18, 'square', 0.08, { f2: 196 }); tn(330, 0.24, 'square', 0.07, { d: 0.17, f2: 150 }); },
+    best() { [523, 659, 784, 1047, 1319].forEach((f, i) => tn(f, 0.12, 'square', 0.06, { d: i * 0.055 })); nz(0.25, 'highpass', 6000, 0.7, 0.04, { d: 0.25 }); },
+    blip() { tn(880, 0.03, 'square', 0.06); tn(1320, 0.02, 'square', 0.03, { d: 0.02 }); },
+    block() { tn(180, 0.2, 'square', 0.12, { f2: 60 }); nz(0.12, 'bandpass', 1900, 1, 0.45, { f2: 500 }); tn(1800, 0.08, 'sawtooth', 0.06, { f2: 600 }); },
+    board() { tn(220, 0.25, 'sine', 0.1, { f2: 120 }); tn(110, 0.06, 'square', 0.025); nz(0.08, 'lowpass', 900, 1, 0.08); },
+    bounce(v = 1) { const k = sub('bounceC', 3), f = [180, 160, 200][k]; tn(f, 0.1, 'sine', 0.38 * v, { f2: 60 }); tn(f / 2, 0.05, 'square', 0.05 * v); },
+    buzzer() { tn(120, 1.0, 'square', 0.08, { vib: [7, 4] }); tn(240, 1.0, 'sawtooth', 0.05, { vib: [7, 8] }); tn(180, 1.0, 'square', 0.04); },
+    cheer(amt = 1, delay = 0) {             // an arena roar: wide, loud, rising
+      swell(amt * 1.15, delay);
+      const L = S.crowdLevel, a = amt * L;
+      nz(0.9 + amt * 0.7 * L, 'bandpass', 900, 0.4, 0.13 * a, { f2: 1500, d: delay, att: 0.05 }); nz(0.6 + amt * 0.4 * L, 'highpass', 2500, 0.6, 0.04 * a, { d: delay + 0.05, att: 0.05 });
+      tn(700, 0.5, 'sine', 0.012 * a, { f2: 1400, d: delay + 0.1 });
+    },
+    clank(v = 1) { const k = sub('clankC', 3), f = [600, 540, 680][k]; tn(f, 0.4, 'square', 0.05 * v, { vib: [18, 12] }); tn(f * 1.5, 0.35, 'square', 0.04 * v); nz(0.06, 'highpass', 3000, 1, 0.18 * v); tn(f * 2.4, 0.2, 'triangle', 0.05 * v); },
+    dunkNet() { nz(0.3, 'bandpass', 1500, 0.8, 0.16, { f2: 5500 }); tn(140, 0.12, 'square', 0.04, { f2: 70 }); },
+    good() { tn(988, 0.08, 'square', 0.07); tn(1319, 0.2, 'square', 0.07, { d: 0.08 }); },
+    green() { [659, 988, 1319, 1760].forEach((f, i) => tn(f, 0.1, 'square', 0.05, { d: i * 0.04 })); tn(2637, 0.35, 'triangle', 0.06, { d: 0.16 }); nz(0.3, 'highpass', 6500, 0.7, 0.05, { d: 0.12 }); },
+    greenMake(d = 0) { tn(1568, 0.12, 'square', 0.05, { d: 0.02 + d }); tn(2093, 0.25, 'square', 0.05, { d: 0.1 + d }); },
+    heart() { thump(70, 35, 0.16, 0.32); nz(0.02, 'highpass', 2000, 0.7, 0.025); thump(60, 30, 0.18, 0.28, 0.18); },
+    netSwish(k = 0.7, delay = 0, pitch = 1) { const i = sub('netC', 3), f = [1500, 1700, 1300][i] * pitch; nz(0.4, 'bandpass', f, 0.8, 0.16 + 0.12 * clamp(k, 0.15, 1.35), { f2: f * 4.6, d: delay, att: 0.01 }); tn(800 * pitch, 0.3, 'sine', 0.02, { f2: 1600 * pitch, d: delay }); },
+    rimTick(k = 0.6) { tn(2400, 0.08, 'square', 0.03 + 0.02 * clamp(k, 0, 1)); },
+    slam() { thump(60, 25, 0.6, 0.85); nz(0.35, 'lowpass', 600, 0.8, 0.5); tn(110, 0.15, 'square', 0.12, { f2: 50 }); nz(0.35, 'bandpass', 1500, 0.8, 0.22, { f2: 5500, d: 0.05 }); },
+    snatch(v = 1) { tn(400, 0.08, 'square', 0.08 * v, { f2: 1600 }); nz(0.06, 'bandpass', 3000, 2, 0.25 * v, { f2: 1200 }); },
+    squeak() { const k = sub('squeakC', 3), f = [2200, 2500, 1900][k]; tn(f, 0.05, 'square', 0.035, { f2: f * 1.55 }); },
+    swipe() { const k = sub('swipeC', 3), f = [3500, 3000, 4000][k]; nz(0.1, 'bandpass', f, 2, 0.1, { f2: 500 }); tn(1200, 0.08, 'sine', 0.016, { f2: 400 }); },
+    swish(pitch = 1) { C.netSwish(0.7, 0, pitch); },
+    thud() { const k = sub('thudC', 3), f = [60, 54, 66][k]; thump(f, 25, 0.35, 0.3); nz(0.15, 'lowpass', 500, 1, 0.14); tn(90, 0.1, 'square', 0.025, { f2: 45 }); },
+    whistle() { tn(2000, 0.14, 'square', 0.03, { f2: 2600 }); tn(2000, 0.12, 'square', 0.03, { f2: 2600, d: 0.17 }); }
+  };
+  // ---- D: Soft
+  const D = {
+    bad() { tn(220, 0.25, 'sine', 0.14, { f2: 180, att: 0.02 }); },
+    best() { tn(784, 0.5, 'sine', 0.09, { att: 0.02 }); tn(1175, 0.6, 'sine', 0.07, { d: 0.15, att: 0.02 }); },
+    blip() { tn(600, 0.04, 'sine', 0.06, { att: 0.006 }); },
+    block() { nz(0.07, 'lowpass', 800, 0.8, 0.35, { att: 0.006 }); thump(110, 70, 0.1, 0.3, 0, 300); },
+    board() { thump(120, 85, 0.1, 0.12, 0, 400); ring(900, 0.08, 0.02, 6); },
+    bounce(v = 1) { const k = sub('bounceD', 3), f = [100, 92, 110][k]; thump(f, 55, 0.08, 0.32 * v, 0, 260); nz(0.03, 'lowpass', 600, 0.7, 0.06 * v, { att: 0.004 }); },
+    buzzer() { tn(220, 0.7, 'triangle', 0.1, { lp: 900, att: 0.06 }); tn(330, 0.7, 'triangle', 0.06, { lp: 900, att: 0.06 }); },
+    cheer(amt = 1, delay = 0) {             // gentle applause, no roar
+      swell(amt * 0.7, delay);
+      const L = S.crowdLevel, a = amt * L;
+      for (let i = 0; i < 6 + 8 * Math.min(1, a); i++) S.clapAt(0.12 * a, delay + Math.random() * (0.9 + amt * 0.3), rand(0.75, 1));
+      nz(0.6 + amt * 0.3 * L, 'bandpass', 700, 0.7, 0.06 * a, { d: delay, att: 0.15, lp: 1800 });
+    },
+    clank(v = 1) { const k = sub('clankD', 3), P = [[440, 1050], [400, 960], [480, 1140]][k]; metal(P, 0.2, 0.11, v); thump(150, 100, 0.05, 0.1 * v, 0, 500); },
+    dunkNet() { nz(0.2, 'bandpass', 1800, 1.1, 0.22, { f2: 1100, lp: 3500, att: 0.01 }); },
+    good() { tn(523, 0.3, 'sine', 0.1, { att: 0.015 }); tn(659, 0.35, 'sine', 0.1, { d: 0.1, att: 0.015 }); },
+    green() { tn(880, 0.45, 'sine', 0.08, { att: 0.02 }); tn(1318, 0.5, 'sine', 0.06, { d: 0.06, att: 0.02 }); },
+    greenMake(d = 0) { tn(1318, 0.4, 'sine', 0.09, { d: 0.02 + d, att: 0.02 }); },
+    heart() { thump(55, 40, 0.13, 0.35, 0, 140); thump(50, 36, 0.14, 0.25, 0.18, 130); },
+    netSwish(k = 0.7, delay = 0, pitch = 1) { const i = sub('netD', 3), f = [2600, 2300, 2900][i] * pitch; S.netNoise(clamp(0.15 + 0.07 * k, 0.12, 0.24), f, 1.4, 0.13 + 0.2 * clamp(k, 0.15, 1.35), f * 0.75, delay, 4000); },
+    rimTick(k = 0.6) { tn(1800, 0.05, 'sine', 0.045 + 0.035 * clamp(k, 0, 1), { att: 0.003 }); },
+    slam() { thump(80, 50, 0.22, 0.85, 0, 300); nz(0.18, 'bandpass', 1800, 1.1, 0.12, { f2: 1100, lp: 3500, att: 0.01, d: 0.01 }); },
+    snatch(v = 1) { nz(0.05, 'lowpass', 1200, 0.8, 0.25 * v, { att: 0.004 }); tn(300, 0.06, 'sine', 0.06 * v); },
+    squeak() { const k = sub('squeakD', 2), f = [1900, 1700][k]; tn(f, 0.045, 'sine', 0.045, { f2: f * 1.2, att: 0.008 }); },
+    swipe() { const k = sub('swipeD', 3), f = [1200, 1000, 1400][k]; nz(0.1, 'bandpass', f, 1.2, 0.15, { f2: f * 0.42, att: 0.02, lp: 2000 }); },
+    swish(pitch = 1) { D.netSwish(0.7, 0, pitch); },
+    thud() { const k = sub('thudD', 2), f = [70, 64][k]; thump(f, 40, 0.15, 0.4, 0, 220); nz(0.12, 'lowpass', 250, 0.8, 0.18, { att: 0.006 }); },
+    whistle() { tn(1800, 0.2, 'sine', 0.08, { vib: [22, 60], att: 0.02 }); }
+  };
+  // the crowd bed's swell (as A does it), scaled by the venue's crowd
+  function swell(amt, delay) {
+    if (!S.ctx || !S.crowdG) return;
+    const g = S.crowdG.gain, now = S.ctx.currentTime, t = now + delay, L = S.crowdLevel, base = S.bedBase();
+    g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(base + 0.2 * amt * L * S.swellK(), t + 0.15); g.linearRampToValueAtTime(base, t + 1.8 + amt * L);
+  }
+  S.swell = swell;
+  S.bedBase = () => 0.03 * S.crowdLevel;     // (crowd-audio.js makes these follow the audience)
+  S.swellK = () => 1;
+
+  // ---- the variants table, A = the function as it is now
+  for (const id of SFX_IDS) {
+    const cur = S[id];
+    SFX_VARIANTS[id] = { A: { label: 'Current', fn: cur }, B: { label: 'Real', fn: B[id] }, C: { label: 'Arcade', fn: C[id] }, D: { label: 'Soft', fn: D[id] } };
+  }
+  SFX_VARIANTS.cheer.A.fn = function (amt = 1, delay = 0) {      // A as it was, with its swell going through the shared one
+    if (!this.ctx) return;
+    swell(amt, delay); const L = this.crowdLevel;
+    this.hiss(0.6 + amt * 0.6 * L, 'bandpass', 1300, 0.5, 0.1 * amt * L, 850, delay);
+  };
+  // which variant plays: a forced one (the Studio), then this browser's override, the default pick, the style
+  S.style = 'A'; S.picks = {}; S.force = null;
+  try { const st = localStorage.getItem('islamdunk.sfxstyle'); if (SFX_STYLES[st]) S.style = st; S.picks = JSON.parse(localStorage.getItem('islamdunk.sfxpick') || '{}') || {}; } catch (e) {}
+  S.variantOf = id => { const V = SFX_VARIANTS[id]; const k = (S.force && (S.force[id] || S.force['*'])) || S.picks[id] || SFX_DEFAULT_PICKS[id] || S.style; return V && V[k] && (V[k].fn || V[k].samples) ? k : 'A'; };
+  S.saveStyle = () => { try { localStorage.setItem('islamdunk.sfxstyle', S.style); localStorage.setItem('islamdunk.sfxpick', JSON.stringify(S.picks)); } catch (e) {} };
+  // the dispatcher: the chosen variant, through its own gain (level matching) and, for room sounds, the reverb send
+  let depth = 0, curK = 'A';
+  S.play = function (id, k, args) {
+    const V = SFX_VARIANTS[id], vv = V && (V[k] || V.A);
+    if (!vv) return;
+    if (!this.ctx || !this.out || depth > 0) { if (vv.fn) return vv.fn.apply(this, args); return this.playSample(vv, args); }   // nested (slam -> dunkNet): the outer gain covers it
+    const c = this.ctx, real = this.out, g = c.createGain(), db = (typeof SFX_LEVELS !== 'undefined' && SFX_LEVELS[id] && SFX_LEVELS[id][k]) || 0;
+    g.gain.value = Math.pow(10, db / 20) * (vv.gain || 1);
+    g.connect(real); if (SFX_ROOM.has(id) && this.roomSend) g.connect(this.roomSend);
+    this.out = g; depth++; curK = k;
+    try { return vv.fn ? vv.fn.apply(this, args) : this.playSample(vv, args); }
+    finally { depth--; this.out = real; setTimeout(() => { try { g.disconnect(); } catch (e) {} }, 4000); }
+  };
+  for (const id of SFX_IDS) S[id] = function () { return S.play.call(this, id, depth > 0 ? (SFX_VARIANTS[id][curK] ? curK : 'A') : S.variantOf(id), arguments); };
+
+  // ---- recorded samples: more variants of the same ID (loaded when first played; one of the files at random, no repeat)
+  S.playSample = function (vv) {
+    const c = this.ctx; if (!c || !vv.samples || !vv.samples.length) return;
+    vv.bufs = vv.bufs || [];
+    const i = sub('sample-' + vv.label, vv.samples.length), url = vv.samples[i];
+    const go = buf => { const s = c.createBufferSource(), a = c.createGain(); s.buffer = buf; a.gain.value = vv.vol || 1; s.connect(a); a.connect(this.out); s.start(); };
+    if (vv.bufs[i]) return go(vv.bufs[i]);
+    fetch(url).then(r => r.arrayBuffer()).then(b => c.decodeAudioData(b)).then(buf => { vv.bufs[i] = buf; go(buf); }).catch(() => {});
+  };
+}
+function sfxAddSamples(id, key, label, urls, vol = 1) { if (!SFX_VARIANTS[id]) return false; SFX_VARIANTS[id][key] = { label, samples: [].concat(urls), vol }; return true; }
+// v9.13: level matching for the sound variants (dB added to each variant so it is about as loud as A, the current
+// sound). Written by tools/sfx-levels.mjs (short-term loudness, K-weighted, the loudest 200 ms window, the average
+// of 16 renders); the sfx-variants test checks it still holds.
+const SFX_LEVELS = {
+  bad: { B: -0.4, C: -4.5, D: -6 },
+  best: { B: -0.4, C: 1, D: -1.6 },
+  blip: { B: -2.3, C: -3.6, D: -1.4 },
+  block: { B: 1.9, C: 4.7, D: 3.3 },
+  board: { B: -2.6, C: -3.9, D: -2.5 },
+  bounce: { B: 0.1, C: -1.1, D: -0.9 },
+  buzzer: { B: 1.1, C: -2.2, D: 0.6 },
+  cheer: { B: 5.1, C: -4.4, D: 3.7 },
+  clank: { B: 0.4, C: 0.4, D: 1.6 },
+  dunkNet: { B: -2.7, C: -0.6, D: -0.1 },
+  good: { B: -5.1, C: 1.6, D: -1.8 },
+  green: { B: -2, C: 3.2, D: 2.5 },
+  greenMake: { B: -0.7, C: 2.8, D: 0.6 },
+  heart: { B: -2.7, C: -0.6, D: 0.6 },
+  netSwish: { B: 2, C: -0.2, D: 0.9 },
+  rimTick: { B: -2, C: -1.2, D: -0.6 },
+  slam: { B: 1.4, C: -3.1, D: 1.2 },
+  snatch: { B: -5.3, C: -0.1, D: 4.4 },
+  squeak: { B: 1.6, C: 1.1, D: 1.5 },
+  swipe: { B: -4.6, C: -0.8, D: 0.4 },
+  swish: { B: 2.1, C: -0.2, D: 1 },
+  thud: { B: -0.4, C: -1, D: 0.1 },
+  whistle: { B: -0.4, C: 5.1, D: 0.1 }
+};
 // ============================================================ LOGO
 // v7.9.1: the mark is a dunker in a thawb and kufi taking off for a dunk: leaning in, ball arm fully
 // extended, free arm out for balance, front knee driving up, the thawb streaming back off the trailing
@@ -25486,6 +25738,244 @@ const NetReport = {
   pauseNav = function () { if (NetReport.update()) return; return _pn.apply(this, arguments); };
   const _gt = goTitle;
   goTitle = function () { NetReport.close(); return _gt.apply(this, arguments); };
+}
+// ================================================= v9.13: A CROWD THAT MATCHES THE ROOM
+// What you hear follows the people you see. The audience is the number of crowd members the venue actually draws
+// (VL.crowd, or the classic arena's stands), and it sets a tier:
+//   0  nobody drawn (practice gym, neighbourhood, career screens): no crowd sound at all
+//   1  a handful (1-12): no bed; single hand claps (spaced, panned to where that person sits) and a voice or two
+//   2  a small crowd (13-45): a quiet, narrow murmur, clusters of claps, a few voices
+//   3  a crowd (46-160): the bed and the swells, quieter than before, with clapping
+//   4  big gyms and arenas: as before
+// Reactions: make, big play (dunk, buzzer beater), groan (a bad miss, a turnover), "ooh" (a block), and an applause
+// tail. A clap or a voice is always one of the drawn people: never more clappers or voices than people, and the ones on
+// screen are used first (they raise their hands while they clap). Voices are synthesized placeholders (a buzzy
+// vowel-shaped tone, not a person); recorded ones can go in CROWD_VOICE_SAMPLES.
+// The room: ball, shoes, contact, whistle and buzzer go through a short reverb that fits the venue (tight in small
+// gyms, long in arenas, none outdoors). Settings > Room echo turns it off.
+const CROWD_TIERS = [[0, 0], [1, 12], [2, 45], [3, 160], [4, Infinity]];   // [tier, up to this many people]
+const CROWD_VOICE_SAMPLES = { yeah: [], ooh: [], aww: [] };            // recorded voices, when there are some (URLs)
+function crowdTierOf(n) { for (const [t, max] of CROWD_TIERS) if (n <= max) return t; return 4; }
+// the people drawn in the current scene: [{ x (screen), m (the member, to light up) }]
+function crowdPeople() {
+  if (typeof M === 'undefined' || !M.teams || M.gym) return [];
+  const live = ['play', 'netplay', 'halftime', 'final'].includes(Game.screen) || M.attract;
+  if (!live) return [];
+  if (VL && VL.crowd) return VL.crowd.map(m => ({ x: m.x + BG_X0 - cam.x, m }));
+  if (!M.venue && typeof crowd !== 'undefined' && crowd.length) return crowd.map(m => ({ x: m.x - cam.x * 0.8, m }));
+  return [];
+}
+// the room a venue (or the practice gym) is: reverb length (s) and wet level
+const ROOMS = { none: null, small: [0.45, 0.16], practice: [0.6, 0.18], medium: [0.75, 0.2], large: [1.1, 0.24], arena: [1.5, 0.28], dome: [2.2, 0.32] };
+function roomOf(v, gym) {
+  if (gym) return 'practice';
+  if (!v || v.kind === 'classic') return 'arena';
+  if (v.kind === 'outdoor') return 'none';
+  if (v.kind === 'gym') return v.size === 'L' ? 'large' : v.size === 'M' ? 'medium' : 'small';
+  if (v.kind === 'arena') return v.tier === 'intl' || v.tier === 'grand' ? 'dome' : 'arena';
+  return 'none';
+}
+const CrowdA = { n: 0, tier: 4, room: 'arena', at: 0, stats: { maxClap: 0, maxVoice: 0, lastClap: 0, lastVoice: 0, audience: 0, events: 0 }, irs: {} };
+try { SETTINGS.room = localStorage.getItem('islamdunk.room') !== '0'; } catch (e) { SETTINGS.room = true; }
+{
+  const S = SFX;
+  // ---- buses: murmur (tier 2), crowd effects (claps, voices), the room
+  const _init = S.init;
+  S.init = function () {
+    const had = !!this.ctx, r = _init.apply(this, arguments);
+    if (!had && this.ctx && this.noise) {
+      try {
+        const c = this.ctx, dest = this.crowdVol || this.master || c.destination;
+        const src = c.createBufferSource(); src.buffer = this.noise; src.loop = true;
+        const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 480; f.Q.value = 2.2;
+        const f2 = c.createBiquadFilter(); f2.type = 'lowpass'; f2.frequency.value = 1100;
+        this.murG = c.createGain(); this.murG.gain.value = 0;
+        src.connect(f); f.connect(f2); f2.connect(this.murG); this.murG.connect(dest); src.start(0, 0.7);
+        this.crowdFx = c.createGain(); this.crowdFx.gain.value = 1; this.crowdFx.connect(dest);
+        this.conv = c.createConvolver(); this.roomWet = c.createGain(); this.roomWet.gain.value = 0;
+        this.conv.connect(this.roomWet); this.roomWet.connect(this.out);
+        crowdTick(true);
+      } catch (e) {}
+    }
+    return r;
+  };
+  // ---- the bed follows the tier (the swells start from it)
+  const BED = [0, 0, 0, 0.018, 0.03], MUR = [0, 0, 0.012, 0, 0];
+  S.bedBase = () => BED[CrowdA.tier] * S.crowdLevel;
+  S.swellK = () => (CrowdA.tier >= 3 ? 1 : 0);                             // (tier 3: cheer() lowers the level itself)
+  function irFor(key) {
+    const R = ROOMS[key]; if (!R || !S.ctx) return null;
+    if (CrowdA.irs[key]) return CrowdA.irs[key];
+    const c = S.ctx, sec = R[0], len = Math.floor(c.sampleRate * sec), b = c.createBuffer(2, len, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = b.getChannelData(ch), dec = Math.exp(-6.9 / sec / c.sampleRate), dk = 0.6 / len; let lp = 0, env = 1, k = 0.25;
+      for (let i = 0; i < len; i++) { lp += (Math.random() * 2 - 1 - lp) * (1 - k * 0.8); d[i] = lp * env; env *= dec; k += dk; }   // (no exp per sample: cheap on phones)
+      for (const [ms, a] of [[7 + ch * 2, 0.5], [13 + ch * 3, 0.35], [21 + ch, 0.28], [33 + ch * 4, 0.18]]) { const i = Math.floor(ms / 1000 * c.sampleRate * (0.6 + sec * 0.4)); if (i < len) d[i] += a; }   // early reflections (closer walls in small rooms)
+    }
+    return (CrowdA.irs[key] = b);
+  }
+  function setRoom(key) {
+    CrowdA.room = key;
+    if (!S.conv) return;
+    const on = SETTINGS.room && ROOMS[key];
+    if (on) { const ir = irFor(key); if (S.conv.buffer !== ir) S.conv.buffer = ir; S.roomWet.gain.setTargetAtTime(ROOMS[key][1], S.ctx.currentTime, 0.05);
+      if (!S.roomSend) { S.roomSend = S.ctx.createGain(); S.roomSend.connect(S.conv); } }
+    else { if (S.roomSend) { try { S.roomSend.disconnect(); } catch (e) {} S.roomSend = null; } S.roomWet.gain.setTargetAtTime(0, S.ctx.currentTime, 0.05); }
+  }
+  // ---- every frame (cheap, 4 times a second): the audience, the tier, the room
+  function crowdTick(force) {
+    const now = nowMs(); if (!force && now - CrowdA.at < 250) return; CrowdA.at = now;
+    const P = crowdPeople(), n = CrowdA.force ? CrowdA.force.n : P.length, tier = CrowdA.force ? crowdTierOf(n) : crowdTierOf(n);
+    CrowdA.n = n; CrowdA.stats.audience = n;
+    const room = CrowdA.force ? CrowdA.force.room : (typeof M !== 'undefined' && M.teams && (['play', 'netplay', 'halftime', 'final'].includes(Game.screen) || M.attract)) ? roomOf(M.venue, M.gym) : 'none';
+    if (!S.ctx) { CrowdA.tier = tier; CrowdA.room = room; return; }
+    if (tier !== CrowdA.tier || force) {
+      CrowdA.tier = tier; const t = S.ctx.currentTime;
+      if (S.crowdG) { S.crowdG.gain.cancelScheduledValues(t); S.crowdG.gain.setTargetAtTime(S.bedBase(), t, 0.3); }
+      if (S.murG) S.murG.gain.setTargetAtTime(MUR[tier] * S.crowdLevel, t, 0.3);
+    }
+    if (room !== CrowdA.room || force || CrowdA.roomOn !== SETTINGS.room) { CrowdA.roomOn = SETTINGS.room; setRoom(room); }
+  }
+  CrowdA.tick = crowdTick;
+  CrowdA.levels = () => ({ bed: S.bedBase(), murmur: MUR[CrowdA.tier] * S.crowdLevel, swell: S.swellK() });
+  const _scl = S.setCrowdLevel;
+  S.setCrowdLevel = function (l) { _scl.apply(this, arguments); if (this.crowdG) this.crowdG.gain.value = this.bedBase(); if (this.murG) this.murG.gain.value = MUR[CrowdA.tier] * l; };
+  const _r = render;
+  render = function (g) { const r = _r.apply(this, arguments); try { crowdTick(false); } catch (e) {} return r; };
+
+  // ---- one hand clap from one person, and a few in a row
+  const pan = (x) => clamp((x / Math.max(1, W)) * 2 - 1, -0.9, 0.9);
+  function viaPan(x, fn) {
+    const c = S.ctx, real = S.out, p = c.createStereoPanner ? c.createStereoPanner() : null;
+    const g = c.createGain(); g.gain.value = 1;
+    if (p) { p.pan.value = pan(x); g.connect(p); p.connect(S.crowdFx || real); } else g.connect(S.crowdFx || real);
+    S.out = g; try { fn(); } finally { S.out = real; setTimeout(() => { try { g.disconnect(); p && p.disconnect(); } catch (e) {} }, 5000); }
+  }
+  function clapper(person, n, d0, loud, gap) {
+    const tone = person.tone || (person.tone = rand(0.8, 1.25)); let d = d0;
+    viaPan(person.x, () => { for (let i = 0; i < n; i++) { S.clapAt(loud * rand(0.8, 1.1), d, tone); d += gap * rand(0.85, 1.2); } });
+    if (person.m) person.m.clapT = nowMs() + d0 * 1000;
+    return d;
+  }
+  // ---- placeholder voices: a buzzy source through three moving formants (sounds like a vowel, not a person)
+  const VOW = { i: [270, 2290, 3010], e: [530, 1840, 2480], a: [730, 1090, 2440], aw: [570, 840, 2410], u: [300, 870, 2240], o: [450, 800, 2830] };
+  const WORDS = {   // vowel path, length (s), pitch shape (start, peak, end) x base
+    yeah: { v: ['i', 'e', 'a'], len: 0.38, p: [1.0, 1.3, 0.95] }, ooh: { v: ['u', 'u', 'o'], len: 0.55, p: [0.9, 1.35, 1.0] },
+    aww: { v: ['aw', 'aw', 'o'], len: 0.55, p: [1.25, 1.0, 0.7] }, oh: { v: ['o', 'o', 'u'], len: 0.45, p: [1.1, 1.0, 0.8] }
+  };
+  function voice(word, person, d = 0, loud = 0.06) {
+    const c = S.ctx, W2 = WORDS[word], smp = CROWD_VOICE_SAMPLES[word];
+    if (smp && smp.length) { viaPan(person.x, () => S.playSample({ label: 'voice-' + word, samples: smp }, [])); return; }
+    const t = c.currentTime + d, f0 = person.f0 || (person.f0 = rand(105, 210)), L = W2.len * rand(0.9, 1.15);
+    viaPan(person.x, () => {
+      const src = c.createOscillator(); src.type = 'sawtooth';
+      src.frequency.setValueAtTime(f0 * W2.p[0], t); src.frequency.linearRampToValueAtTime(f0 * W2.p[1], t + L * 0.35); src.frequency.linearRampToValueAtTime(f0 * W2.p[2], t + L);
+      const vib = c.createOscillator(), vg = c.createGain(); vib.frequency.value = rand(4.5, 6.5); vg.gain.value = f0 * 0.02; vib.connect(vg); vg.connect(src.frequency);
+      const a = c.createGain(); a.gain.setValueAtTime(0.0001, t); a.gain.exponentialRampToValueAtTime(loud, t + 0.04); a.gain.setValueAtTime(loud, t + L * 0.6); a.gain.exponentialRampToValueAtTime(0.0001, t + L);
+      for (let k = 0; k < 3; k++) {
+        const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = [9, 12, 14][k];
+        const f = W2.v.map(v => VOW[v][k]);
+        bp.frequency.setValueAtTime(f[0], t); bp.frequency.linearRampToValueAtTime(f[1], t + L * 0.35); bp.frequency.linearRampToValueAtTime(f[2], t + L * 0.8);
+        const fg = c.createGain(); fg.gain.value = [1, 0.5, 0.25][k] * 3;
+        src.connect(bp); bp.connect(fg); fg.connect(a);
+      }
+      a.connect(S.out); src.start(t); vib.start(t); src.stop(t + L + 0.05); vib.stop(t + L + 0.05);
+    });
+  }
+  // a whole crowd's vowel (tiers 3-4): noise through the vowel's formants, a swell of "ohh" or "ooh"
+  function massVowel(word, amt, d) {
+    const c = S.ctx, t = c.currentTime + d, W2 = WORDS[word], L = 0.7 + 0.4 * amt, g0 = 0.05 * amt * S.crowdLevel * (CrowdA.tier >= 4 ? 1 : 0.6);
+    const s = c.createBufferSource(); s.buffer = S.noise; const a = c.createGain();
+    a.gain.setValueAtTime(0.0001, t); a.gain.exponentialRampToValueAtTime(Math.max(0.0002, g0), t + 0.12); a.gain.exponentialRampToValueAtTime(0.0001, t + L);
+    for (let k = 0; k < 3; k++) { const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 6; const f = W2.v.map(v => VOW[v][k]);
+      bp.frequency.setValueAtTime(f[0] * (word === 'ooh' ? 0.9 : 1.1), t); bp.frequency.linearRampToValueAtTime(f[2] * (word === 'ooh' ? 1.15 : 0.85), t + L);
+      const fg = c.createGain(); fg.gain.value = [1, 0.45, 0.2][k] * 2.5; s.connect(bp); bp.connect(fg); fg.connect(a); }
+    a.connect(S.crowdFx || S.out); s.start(t, Math.random()); s.stop(t + L + 0.05);
+  }
+  // choose people: on screen first, then the rest; never more than are drawn
+  function choose(P, k) {
+    const on = P.filter(p => p.x > 0 && p.x < W), off = P.filter(p => !(p.x > 0 && p.x < W)), out = [];
+    shuffle(on); shuffle(off);
+    for (const p of on.concat(off)) { if (out.length >= k) break; out.push(p); }
+    return out;
+  }
+  // ---- reactions. kind: make | big | groan | ooh | applause
+  S.crowd = function (kind, amt = 1, delay = 0) {
+    if (!this.ctx || !this.out) return { clap: 0, voice: 0 };
+    crowdTick(true);
+    const P = CrowdA.force ? Array.from({ length: CrowdA.force.n }, (_, i) => ({ x: (i + 0.5) / Math.max(1, CrowdA.force.n) * W })) : crowdPeople();
+    const n = P.length, tier = CrowdA.tier, st = CrowdA.stats; st.events++;
+    let nClap = 0, nVoice = 0;
+    const claps = (k, reps, loud, gap) => { const who = choose(P, Math.min(n, k)); nClap = who.length; for (const p of who) clapper(p, reps + rint(3), delay + Math.random() * 0.3, loud, gap); return who; };
+    const voices = (word, k, loud, clappers = []) => { const who = choose(P, Math.min(n, k)); void clappers;   // (a clapper can shout too: each count stays within the people drawn)
+      nVoice += who.length; who.forEach((p, i) => voice(i === 0 ? word : (word === 'yeah' && Math.random() < 0.4 ? 'ooh' : word), p, delay + 0.05 + Math.random() * 0.35, 0.05)); };
+    if (tier === 0 || !n) { /* nobody there */ }
+    else if (kind === 'make' || kind === 'big' || kind === 'applause') {
+      const big = kind === 'big';
+      if (tier <= 2) {
+        const k = tier === 1 ? (big ? n : Math.min(n, 1 + Math.round(amt * 2.5))) : (big ? Math.min(n, 22) : Math.min(n, 4 + Math.round(amt * 6)));
+        const who = claps(k, big ? 4 : kind === 'applause' ? 2 : 3, tier === 1 ? 0.18 : 0.12, 0.24);
+        if (kind !== 'applause') voices(big ? 'yeah' : 'yeah', tier === 1 ? (big ? 2 : amt > 0.6 ? 1 : 0) : (big ? 4 : 1 + rint(2)), 0.05, who);
+        if (tier === 2 && this.murG) { const t = this.ctx.currentTime + delay, g = this.murG.gain, b = MUR[2] * this.crowdLevel; g.cancelScheduledValues(t); g.setValueAtTime(b, t); g.linearRampToValueAtTime(b * (big ? 3 : 1.8), t + 0.2); g.linearRampToValueAtTime(b, t + 1.4); }
+      } else {
+        if (tier === 3) claps(Math.min(n, 8 + Math.round(amt * 8)), 3, 0.06, 0.22);
+      }
+    } else if (kind === 'groan') {
+      if (tier <= 2) voices('aww', tier === 1 ? 1 : 2 + rint(2), 0.045);
+      else { massVowel('oh', amt, delay); voices('aww', 2, 0.04); }
+    } else if (kind === 'ooh') {
+      if (tier <= 2) voices('ooh', tier === 1 ? Math.min(2, n) : 3, 0.05);
+      else massVowel('ooh', amt, delay);
+    }
+    st.lastClap = nClap; st.lastVoice = nVoice; st.maxClap = Math.max(st.maxClap, nClap); st.maxVoice = Math.max(st.maxVoice, nVoice);
+    if (nClap > n || nVoice > n) st.over = (st.over || 0) + 1;
+    return { clap: nClap, voice: nVoice, audience: n, tier };
+  };
+  // the cheer everyone already calls: the variant's swell and burst in tiers 3-4, people in tiers 1-2, nothing in 0
+  const _ch = S.cheer;
+  S.cheer = function (amt = 1, delay = 0) {
+    if (!this.ctx) return;
+    crowdTick(true);
+    const t = CrowdA.tier, kind = amt >= 1.4 ? 'big' : 'make';
+    if (t >= 3) { const lvl = this.crowdLevel; if (t === 3) this.crowdLevel = lvl * 0.6; try { _ch.call(this, amt, delay); } finally { this.crowdLevel = lvl; } }
+    const r = this.crowd(kind, amt, delay);
+    if (t >= 1 && t <= 3 && kind === 'big') setTimeout(() => this.crowd('applause', 0.5, 0), 1300);   // the applause tail
+    return r;
+  };
+}
+// the people who clap raise their hands (small crowds are drawn live)
+{
+  const _dcm = drawCrowdMember;
+  drawCrowdMember = function (g, m, x, y, bounce, ex, groan) {
+    if (m && m.clapT) { const dt = nowMs() - m.clapT; if (dt > -50 && dt < 900) { ex = Math.max(ex || 0, 0.75); bounce = Math.max(bounce || 0, Math.abs(Math.sin(dt / 60)) * 2); } }
+    return _dcm.call(this, g, m, x, y, bounce, ex, groan);
+  };
+}
+// groan after a bad miss and a turnover (not a steal: that's a cheer), "ooh" on a block
+{
+  const _cg = crowdGroan;
+  crowdGroan = function (a = 1) { _cg.apply(this, arguments); SFX.crowd && SFX.crowd('groan', a); };
+  let stealT = -1;
+  const _gb = giveBall;
+  giveBall = function (p, how) { if (how === 'steal') stealT = M.time; return _gb.apply(this, arguments); };
+  const _tov = addTov;
+  addTov = function (p) { const r = _tov.apply(this, arguments); if (p && !M.attract && M.time - stealT > 0.1) SFX.crowd && SFX.crowd('groan', 0.6, 0.15); return r; };
+  const _bf = blockFeel;
+  blockFeel = function () { SFX.crowd && SFX.crowd('ooh', 1, 0.02); return _bf.apply(this, arguments); };
+}
+// ---- Settings: Sound style, Room echo
+{
+  const keys = Object.keys(SFX_STYLES);
+  const style = { label: 'Sound style', get: () => SFX_STYLES[SFX.style] + (Object.keys(SFX.picks).length ? ' (+' + Object.keys(SFX.picks).length + ' picked)' : ''), step: d => { SFX.style = keys[(keys.indexOf(SFX.style) + (d || 1) + keys.length) % keys.length]; SFX.saveStyle(); SFX.bounce && SFX.bounce(); } };
+  const room = { label: 'Room echo', get: () => SETTINGS.room ? 'On' : 'Off', step: () => { SETTINGS.room = !SETTINGS.room; try { localStorage.setItem('islamdunk.room', SETTINGS.room ? '1' : '0'); } catch (e) {} CrowdA.tick && CrowdA.tick(true); } };
+  const i = SET_ITEMS.findIndex(s => s.label === 'Crowd volume');
+  SET_ITEMS.splice(i >= 0 ? i + 1 : SET_ITEMS.length - 1, 0, style, room);
+  const G = SET_GROUPS.find(g => g.name === 'Sound & controller');
+  if (G && G.labels) {
+    const j = G.labels.indexOf('Crowd volume'); G.labels.splice(j >= 0 ? j + 1 : G.labels.length, 0, 'Sound style', 'Room echo');
+    // a group holds at most 7 rows on desktop: Stick deadzone moves to Display (the catch-all)
+    G.labels = G.labels.filter(l => l !== 'Stick deadzone');
+  }
 }
 
 boot();

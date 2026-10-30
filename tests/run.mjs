@@ -77,6 +77,7 @@
 //   hub-layout   v9.6.2: the career hub at 5 sizes x 13 cases: no text on text, no panel on panel, no text outside its
 //                container, badge pills inside the card, 12 px gutters, no small text on phones (tests/hub-layout.mjs)
 //   league-*     v9.7.0: real league games, isolation, formats, boards, time, calibration, layout (tests/league.mjs)
+//   sfx-variants, crowd-tiers, sound-list, studio-coverage   v9.13 (tests/audio.mjs)
 //   studio, studio-anim, studio-csv, studio-excluded   v9.2.1-9.2.2 Review Studio (tests/studio.mjs; npm test builds dist/review first)
 //   v93          v9.3.0: a team's own court (editor rows, first on the venue screen, built gym and park floors, share
 //                codes, career away games, online lobby), 3 on 3 third-player picks, your players as mini game
@@ -102,6 +103,7 @@ import { STUDIO_TESTS } from './studio.mjs';
 import { hubTests } from './hub-layout.mjs';
 import { leagueTests } from './league.mjs';
 import { netTests } from './net.mjs';
+import { audioTests } from './audio.mjs';
 import { JUMUAH_HELPERS, JUMUAH_STAGES } from './jumuah-setup.js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -2582,6 +2584,7 @@ T['jumuah-visual'] = async ({ browser, base }) => {
 Object.assign(T, hubTests({ newContext, open }));
 Object.assign(T, leagueTests({ newContext, open }));   // v9.7.0 the league (tests/league.mjs)   // v9.6.2 career hub fixtures (tests/hub-layout.mjs)
 Object.assign(T, netTests({ newContext, open }));   // v9.10 online latency (tests/net.mjs)
+Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)
 Object.assign(T, STUDIO_TESTS);   // the Review Studio (tests/studio.mjs)
 
 // ------------------------------------------------------------------ runner

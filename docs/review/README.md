@@ -56,8 +56,40 @@ reviewers access without publishing it:
     the phone text audit does it. The checks are listed under the screen: text past the edge, text under 11 CSS
     px, overlapping tap targets (**Show tap targets** draws them), the touch buttons over the scoreboard, and page
     errors. Screens that can't be shown here are listed under **Not renderable**, with the reason.
-  - sounds: every sound effect in `src/core/utils-audio.js`, with a play button (or P). They are synthesised by
-    Web Audio, so there are no files.
+
+    v9.13: every view with a UI is here: each `Game.screen`, and the overlays and in-match states (the welcome
+    dialog, toasts, tutorial cards, tip-off, inbound, free throws, hot spot, Noor question and choice, replay,
+    period break, timeout, pause, confirmations, the network report, the hub's corner menu). The test
+    `studio-coverage` fails when the code has a view the Studio neither shows nor lists as not renderable with a
+    reason (`src/review-studio/coverage.js`). Screens are grouped by flow (first-run, hub loop, match, results,
+    career calendar, settings, rare). Each one shows: its purpose, how it is reached, the taps from the title and
+    from the hub, what is on it (tap targets, words, numbers), numbers that another screen also shows (and which),
+    the version it was added in, the phone text audit (pass/fail per size), and flags: unreachable, legacy,
+    near-duplicate of another, crowded (16+ tap targets), text-heavy (130+ words). Some carry a **suggested verdict**
+    (never applied). The verdicts are Keep, Fix, **Merge into** (pick the screen it should become part of) and
+    Delete. The counts come from `npm run review:census` (`docs/review/screen-census.json`).
+
+    **First-run path** shows what a brand-new player sees, in order, from the first launch to the end of the first
+    match and the first career day: desktop and phone screenshots, the taps, the words on screen and what interrupts
+    (`npm run review:first-run` records it into `docs/review/first-run.json` and `docs/review/img/first-run/`).
+    Each flow also has a **contact sheet**: every screen of that flow side by side, drawn live.
+  - sounds (v9.13): every sound effect with four variants, **A Current**, **B Real**, **C Arcade**, **D Soft**,
+    played by the game's own Web Audio code at matched loudness (`src/core/sfx-levels.js`, from
+    `npm run sfx:levels`). Per sound: play A-D (or 1-4), **Loop**, **Repeat ×5** (bounce, squeak, swish, clank, thud
+    and swipe have 2-3 sub-variants in B-D, never the same twice in a row), **Compare A → D**, where it triggers
+    (every call in the code), and a **Pick** (which variant should win; exported in the CSV `pick` column). The bar
+    on top sets the preview style (P) and plays every sound in one style (**All A** … **All D**).
+
+    **Crowd**: pick a venue (practice gym to the Grand Ummah Dome), then trigger a make, a dunk, a buzzer beater, a
+    miss, a block or a turnover. It shows the audience drawn, the tier, the levels and how many people clapped and
+    spoke. **Mix test**: a 60 s CPU match at a venue with a slider per bus (master, effects, crowd, claps and
+    voices, room echo); the sliders only change the test.
+
+    In the game, Settings > **Sound style** picks Current / Real / Arcade / Soft for every sound (default Current),
+    and **Room echo** turns the room sound off. A recorded sample can be added later as another variant:
+    `sfxAddSamples('bounce', 'E', 'Recorded', ['assets/sfx/bounce-1.ogg', …])`; crowd voices have a slot too
+    (`CROWD_VOICE_SAMPLES`). Every place a sound is triggered, and the events with no sound, are in
+    `docs/audio/sound-list.csv` (`npm run sound-list`).
   - voice: the lines listed in `assets/voice/manifest.json`, each with its transcript and a player. There is no
     voice yet, so this shows how to add it. The format:
 
@@ -71,7 +103,7 @@ reviewers access without publishing it:
   the version it was added in, the flags, the verdict buttons, the comment, the suggested text, and other
   reviewers' marks.
 - **Keys:**
-  - **K**, **F**, **D** set the verdict and move to the next item.
+  - **K**, **F**, **D** set the verdict and move to the next item; **M** is Merge (screens).
   - **←/→** move back and forward. **N** goes to the comment box, and **Esc** leaves it.
   - **Ctrl/⌘+Z** undoes.
   - On a touch screen, tap the buttons, or swipe the stage to move.
@@ -81,7 +113,8 @@ reviewers access without publishing it:
 **CSV**
 
 - **Download CSV** and **Copy as CSV** export every item, one row per item and reviewer:
-  `id, category, name, where, version_added, verdict, comment, suggested, reviewer, role, reviewed_at, build_version`.
+  `id, category, name, where, version_added, verdict, comment, suggested, reviewer, role, reviewed_at, build_version,
+  merge_into, pick` (v9.13: `merge_into` is the screen a Merge verdict points to, `pick` the sound variant picked).
   The `id` names exactly one item.
 - **Import…** takes:
   - a studio CSV, to restore or merge another reviewer's work;
@@ -92,7 +125,8 @@ reviewers access without publishing it:
   reviewer, and the newest `reviewed_at` wins. Differences are listed as conflicts (the **Conflicts** button). Rows
   that match no item are reported, never guessed.
 - `npm run review:report -- export.csv [more.csv]` prints a worklist grouped by source file. It lists the Delete
-  items, and the Fix items with the comment and the suggested text. It applies nothing.
+  items, the Merge items (and what into), and the Fix items with the comment and the suggested text, then the sound
+  picks per sound. It applies nothing.
 
 **Item IDs**
 
@@ -106,7 +140,8 @@ Every item has a stable ID derived from where it comes from:
 | `text/<file>/<slug>-<hash>` | Every other player-facing string. |
 | `anim/<state>/<variant>` | An animation, for example `anim/dunk/tomahawk-float`, `anim/taunt/sujood`, `anim/react/fist`. |
 | `screen/<name>/<size>` | A screen at `desktop`, `phone-750x342` or `phone-667x300`, for example `screen/hub/phone-750x342`; `screen/<name>/not-renderable` for a screen that can't be shown. |
-| `sound/<name>`, `voice/<file>` | A sound effect (`sound/slam`), a recorded voice line. |
+| `sound/<name>`, `voice/<file>` | A sound effect (`sound/slam`), a recorded voice line. `sound/crowd/<venue>` and `sound/mix` are the Crowd section and the mix test. |
+| `screen/first-run-path`, `screen/sheet/<flow>` | The first-run path and a flow's contact sheet. |
 | `sprite/<kind>/…` | Sprites: `cast/saleem`, `player/<team>/<n>`, `npc/<id>`, `creator/<row>/<n>`, `crest/<team>`, `jersey/<team>`, `ball/<skin>`, `hoop/default`, `venue/<id>`, `scene/<id>`, `prop/<scene>/<id>`, `masjid/none`, `masjid/all`, `hud/desktop`, `hud/touch`. |
 
 `studio-ids.json` records every ID and the version it was added in, which drives "new since last review".

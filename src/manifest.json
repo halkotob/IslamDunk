@@ -33,6 +33,8 @@
     "screens/challenges.js",
     "core/skill-touch.js",
     "sim/fouls.js",
+    "core/sfx-variants.js",
+    "core/sfx-levels.js",
     "render/logo.js",
     "career/musalla-walk.js",
     "render/reactions.js",
@@ -116,6 +118,7 @@
     "online/v911-predict.js",
     "screens/v912-polish.js",
     "online/v9111-net.js",
+    "screens/v913-crowd.js",
     "boot.js"
   ]
 }

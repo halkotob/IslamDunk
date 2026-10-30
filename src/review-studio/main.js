@@ -10,6 +10,7 @@ import { buildItems, locateSprites, CATS, TRIGGERS, cmpVer } from './items.js';
 import { drawSprite, natural, thumb, face, bbox } from './views.js';
 import { VList } from './vlist.js';
 import { extraCategories } from './extra.js';
+import { stageSound as sndStage, stageCrowd as crowdStage, stageMix as mixStage, soundTabBar, stopAll } from './sounds.js';
 
 const $ = s => document.querySelector(s);
 const el = (tag, attrs = {}, ...kids) => {
@@ -18,7 +19,7 @@ const el = (tag, attrs = {}, ...kids) => {
   for (const k of kids.flat()) if (k != null && k !== false) e.append(k instanceof Node ? k : document.createTextNode(String(k)));
   return e;
 };
-const VLABEL = { keep: 'Keep', fix: 'Fix', delete: 'Delete' };
+const VLABEL = { keep: 'Keep', fix: 'Fix', merge: 'Merge', delete: 'Delete' };
 
 const S = {
   data: null, G: null, items: [], byId: new Map(), byText: new Map(), view: [], cur: -1,
@@ -36,7 +37,7 @@ async function boot() {
   S.G = await openGame($('#gamehost'));
   S.items = buildItems(S.G.rs, S.data);
   const reg = (S.data.registry && S.data.registry.ids) || {};
-  for (const it of await extraCategories(S.G, S.data, { stageAnim, stageScreen, stageNA, stageSound, stageVoice, stageVoiceEmpty })) {
+  for (const it of await extraCategories(S.G, S.data, { stageAnim, stageScreen, stageNA, stageSound, stageCrowd, stageMix, stageVoice, stageVoiceEmpty, stageFirstRun, stageSheet })) {
     Object.assign(it, { version: reg[it.id] || S.data.version, where: it.where || it.src || '', occ: [], religious: !!it.religious, flag: '' });
     S.items.push(it);
   }
@@ -162,7 +163,8 @@ function selectId(id) {
 function drawStage() {
   const it = S.view[S.cur], bar = $('#stagebar'), view = $('#view');
   bar.replaceChildren(); view.replaceChildren(); view.className = '';
-  AN.token++; AN.keys = null; S.stageRes = null;
+  AN.token++; AN.keys = null; S.stageRes = null; S.extraKeys = null; stopAll(SND);
+  if (S.onLeave) { const f = S.onLeave; S.onLeave = null; try { f(); } catch (e) {} }
   if (!it || it.kind !== 'screen') { SC.token++; hideGame(); }
   if (!it) { view.append(el('div', { class: 'empty' }, 'Nothing here with these filters.')); return; }
   try {
@@ -170,7 +172,7 @@ function drawStage() {
     else if (it.kind === 'trivia') stageTrivia(it, view);
     else if (it.kind === 'text') stageText(it, view);
     else if (it.kind === 'sprite') stageSprite(it, bar, view);
-    else if (it.stage) S.stageRes = it.stage(S.G, bar, view, it);
+    else if (it.stage) { if (it.cat === 'Sounds' && it.kind !== 'voice' && it.kind !== 'voice-empty') { soundTabBar(S.G, bar, sndHelpers()); bar.append(el('br')); } S.stageRes = it.stage(S.G, bar, view, it); }
     delete S.renderErrors[it.id];
   } catch (e) {
     S.renderErrors[it.id] = String(e && e.message || e);
@@ -265,14 +267,22 @@ function drawSide() {
     el('dt', {}, 'When'), el('dd', {}, it.when || TRIGGERS[it.group] || (it.section ? 'Shown in: ' + it.section : '—')),
     el('dt', {}, 'Added'), el('dd', {}, (it.version === 'phase1' ? 'Phase 1' : 'v' + it.version) + (isNew(it) ? ' · new since last review' : '')),
     it.flag || it.religious ? el('dt', {}, 'Flags') : null, it.flag || it.religious ? el('dd', {}, [it.religious ? 'Religious review' : null, it.flag].filter(Boolean).join(' · ')) : null));
+  if (it.meta) side.append(metaBlock(it));
   const fl = it.kind === 'screen' && SC.flags[it.id];
   if (fl) { const o = fl.found.filter(f => f.kind === 'overflow').length, sm = fl.found.filter(f => f.kind === 'small').length, ov = fl.nOverlaps + fl.touch.length;
     side.append(el('div', { class: 'note' }, `Screen checks: ${o} past the edge · ${sm} small text · ${ov} overlapping targets · ${fl.errors.length} errors`)); }
   if (it.placeholder) { side.append(el('div', { class: 'note' }, 'Nothing to review here yet.')); return; }
   const vb = el('div', { class: 'verdicts', role: 'group', 'aria-label': 'Verdict' });
-  for (const [v, k] of [['keep', 'K'], ['fix', 'F'], ['delete', 'D']]) vb.append(el('button', { class: v + (m.verdict === v ? ' on' : ''), 'aria-pressed': m.verdict === v ? 'true' : 'false', 'data-v': v,
+  const VS = it.meta ? [['keep', 'K'], ['fix', 'F'], ['merge', 'M'], ['delete', 'D']] : [['keep', 'K'], ['fix', 'F'], ['delete', 'D']];
+  for (const [v, k] of VS) vb.append(el('button', { class: v + (m.verdict === v ? ' on' : ''), 'aria-pressed': m.verdict === v ? 'true' : 'false', 'data-v': v,
     onclick: () => { store.set(it.id, { verdict: m.verdict === v ? '' : v }); afterMark(it); } }, VLABEL[v], el('kbd', {}, k)));
   side.append(vb);
+  if (m.verdict === 'merge') {                     // v9.13: Merge into <screen>
+    const names = [...new Set(S.items.filter(x => x.meta && x.screen).map(x => x.screen.name))].sort(), cur = it.screen && it.screen.name;
+    const sel = el('select', { id: 'f-merge' }, el('option', { value: '' }, '(pick the screen it goes into)'), ...names.filter(n => n !== cur).map(n => el('option', { value: n }, n)));
+    sel.value = m.merge || ''; sel.addEventListener('change', () => { store.set(it.id, { merge: sel.value }); afterMark(it); });
+    side.append(el('label', { class: 'blk' }, 'Merge into', sel));
+  }
   if (m.verdict === 'delete') side.append(el('div', { class: 'note' }, 'Delete means “recommend removal”. Nothing is removed from the game.'));
   const ta = (label, key, ph) => { const t = el('textarea', { placeholder: ph, id: 'f-' + key, rows: key === 'comment' ? 3 : 3 }); t.value = m[key] || '';
     let before = null;
@@ -296,7 +306,9 @@ function setupKeys() {
     if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
     const it = S.view[S.cur];
     const k = e.key.toLowerCase();
+    if (S.extraKeys && S.extraKeys(k)) { e.preventDefault(); return; }
     if ((k === 'k' || k === 'f' || k === 'd') && it) { e.preventDefault(); store.set(it.id, { verdict: { k: 'keep', f: 'fix', d: 'delete' }[k] }); afterMark(it); step(1); return; }
+    if (k === 'm' && it && it.meta) { e.preventDefault(); store.set(it.id, { verdict: 'merge' }); afterMark(it); const sel = $('#f-merge'); if (sel) sel.focus(); return; }
     if (k === 'arrowright' || k === 'arrowdown' || k === 'j') { e.preventDefault(); step(1); return; }
     if (k === 'arrowleft' || k === 'arrowup') { e.preventDefault(); step(-1); return; }
     if (k === 'pagedown') { e.preventDefault(); step(10); return; } if (k === 'pageup') { e.preventDefault(); step(-10); return; }
@@ -316,8 +328,8 @@ export function exportRows() {
     if (it.placeholder) continue;
     const base = { id: it.id, category: it.cat + ' / ' + it.group, name: it.name, where: it.where, version_added: it.version, build_version: S.data.version };
     const ms = Object.entries(store.marksFor(it.id));
-    if (!ms.length) rows.push(Object.assign({ verdict: '', comment: '', suggested: '', reviewer: '', role: '', reviewed_at: '' }, base));
-    for (const [r, m] of ms) rows.push(Object.assign({}, base, { verdict: m.verdict, comment: m.comment, suggested: m.suggested, reviewer: r, role: m.role, reviewed_at: m.at }));
+    if (!ms.length) rows.push(Object.assign({ verdict: '', comment: '', suggested: '', reviewer: '', role: '', reviewed_at: '', merge_into: '', pick: '' }, base));
+    for (const [r, m] of ms) rows.push(Object.assign({}, base, { verdict: m.verdict, comment: m.comment, suggested: m.suggested, reviewer: r, role: m.role, reviewed_at: m.at, merge_into: m.merge || '', pick: m.pick || '' }));
   }
   return rows;
 }
@@ -410,6 +422,60 @@ function stageAnim(G, bar, view, it) {
 }
 const JOINT_NAMES = { nh: 'near hip', nk: 'near knee', fh: 'far hip', fk: 'far knee', ns: 'near shoulder', ne: 'near elbow', fs: 'far shoulder', fe: 'far elbow', lean: 'body lean' };
 
+// ------------------------------------------------------------------ v9.13: screen metadata, the first-run path, contact sheets
+function metaBlock(it) {
+  const m = it.meta, c = m.census, path = p => p == null ? 'not from there' : p.length ? p.length + (p.length === 1 ? ' tap: ' : ' taps: ') + p.join(' → ') : 'it’s where you start';
+  const audit = c && c.audit ? Object.entries(c.audit).map(([sz, a]) => el('div', {}, sz + ': ', a.error ? el('b', {}, 'setup failed') : a.pass ? el('b', { style: 'color:var(--keep)' }, 'pass') : el('b', { style: 'color:var(--fix)' }, 'fail'), a.error ? '' : a.pass ? (a.small ? ` (${a.small} small for a phone; desktop doesn’t fail on that)` : '') : ` (${a.overflow} past the edge, ${a.small} small, ${a.overlaps} overlapping, ${a.errors} errors)`)) : [el('div', {}, 'not in the census yet (npm run review:census)')];
+  return el('dl', { class: 'meta' },
+    el('dt', {}, 'Flow'), el('dd', {}, m.flow),
+    el('dt', {}, 'Purpose'), el('dd', {}, m.purpose || '—'),
+    el('dt', {}, 'Reached'), el('dd', {}, m.reach || '—'),
+    el('dt', {}, 'From the title'), el('dd', {}, path(m.title)),
+    el('dt', {}, 'From the hub'), el('dd', {}, path(m.hub)),
+    el('dt', {}, 'On it'), el('dd', {}, c ? `${c.taps} tap targets · ${c.words} words${c.numbers.length ? ' · numbers: ' + c.numbers.slice(0, 10).join(', ') + (c.numbers.length > 10 ? '…' : '') : ''}` : '—'),
+    el('dt', {}, 'Same numbers on'), el('dd', {}, c && c.shared && c.shared.length ? c.shared.map(x => el('div', {}, x.screen + ': ' + x.numbers.join(', '))) : 'no other screen'),
+    el('dt', {}, 'Added in'), el('dd', {}, m.ver || '—'),
+    el('dt', {}, 'Phone text audit'), el('dd', {}, ...audit),
+    el('dt', {}, 'Flags'), el('dd', {}, m.flags.length ? m.flags.map(f => el('span', { class: 'flag' + (/unreachable|legacy|crowded|text-heavy/.test(f) ? ' warn' : '') }, f)) : 'none'),
+    m.suggest ? el('dt', {}, 'Suggested') : null, m.suggest ? el('dd', { class: 'sugg' }, VLABEL[m.suggest.v] + (m.suggest.into ? ' into “' + m.suggest.into + '”' : '') + (m.suggest.why ? ': ' + m.suggest.why : '') + ' (only a suggestion; nothing is set)') : null);
+}
+function stageFirstRun(G, bar, view, it) {
+  hideGame(); const fr = S.data.firstRun;
+  if (!fr) { view.append(el('div', { class: 'card' }, el('h3', {}, 'No first-run path recorded yet'), el('p', {}, 'Run node tools/review-first-run.mjs to record it.'))); return { done: Promise.resolve() }; }
+  const tot = fr.steps.reduce((a, s) => a + (s.taps || 0), 0);
+  view.append(el('div', { class: 'card' }, el('h3', {}, 'First-run path'), el('p', {}, `${fr.steps.length} views, ${tot} taps from the first launch to the end of the first career day. Recorded ${fr.built} on game ${fr.version}. Words are what the screen draws.`)),
+    el('div', { class: 'frun' }, ...fr.steps.map((s, i) => el('div', { class: 'step' }, el('div', { class: 'n' }, i + 1),
+      el('div', {}, el('b', {}, s.title), el('div', { class: 'note' }, `${s.screen} · ${s.taps ? s.taps + (s.taps === 1 ? ' tap' : ' taps') + ': ' + s.how : s.how || 'no tap'} · ${s.words} words`),
+        s.interrupt ? el('div', { class: 'int' }, 'Interruption: ' + s.interrupt) : null,
+        el('div', { class: 'shots' }, ...['desktop', 'phone'].filter(k => s.img && s.img[k]).map(k => el('img', { src: 'first-run/' + s.img[k], alt: s.title + ' (' + k + ')', loading: 'lazy' }))),
+        el('details', {}, el('summary', {}, 'Words on screen'), el('div', { class: 'say' }, (s.texts || []).join(' · '))))))));
+  return { done: Promise.resolve() };
+}
+function stageSheet(G, bar, view, it) {
+  hideGame();
+  const list = S.items.filter(x => x.kind === 'screen' && x.meta && x.meta.flow === it.flow);
+  const sizes = [...new Set(list.map(x => x.screen.size))];
+  let size = S.sp.sheetSize || 'desktop';
+  const grid = el('div', { class: 'sheet' });
+  const build = async () => {
+    const tok = ++SC.token; grid.replaceChildren(); btn.disabled = true;
+    for (const x of list.filter(x => x.screen.size === size)) {
+      if (tok !== SC.token) return;
+      const s = x.screen; await S.G.size(s.w, s.h, s.touch); const r = S.G.rs.screenSetup(s.js); await S.G.frames(8);
+      const c = S.G.canvas(), img = el('img', { alt: s.name }); try { img.src = c.toDataURL('image/jpeg', 0.6); } catch (e) {}
+      const a = x.meta.census && x.meta.census.audit && x.meta.census.audit[s.size];
+      grid.append(el('figure', { onclick: () => selectId(x.id), style: 'cursor:pointer' }, img, el('figcaption', {}, s.name + (r.error ? ' (setup failed)' : '') + (a ? (a.pass ? ' · audit pass' : ' · audit fail') : ''))));
+    }
+    btn.disabled = false;
+  };
+  const btn = el('button', { onclick: build }, '▶ Build the contact sheet');
+  const sel = el('select', {}, ...sizes.map(z => el('option', { value: z }, z))); sel.value = sizes.includes(size) ? size : sizes[0]; size = sel.value;
+  sel.addEventListener('change', () => { size = sel.value; S.sp.sheetSize = size; store.setUi('sp', S.sp); });
+  bar.append(btn, sel, el('span', { class: 'note' }, `${list.filter(x => x.screen.size === size).length} screens; each is set up live (about a second each)`));
+  view.append(el('div', { class: 'card' }, el('h3', {}, 'Contact sheet: ' + it.flow), el('p', {}, 'Click a picture to open that screen.')), grid);
+  return { done: Promise.resolve() };
+}
+
 // ------------------------------------------------------------------ Phase 2: screens
 const SC = { token: 0, flags: {} };
 function hideGame() { const h = $('#gamehost'); h.style.cssText = ''; h.classList.remove('shown'); }
@@ -455,14 +521,18 @@ function screenFlagList(res, s) {
 function stageNA(G, bar, view, it) { hideGame(); view.append(el('div', { class: 'card' }, el('h3', {}, 'Not renderable here'), el('p', {}, 'Game.screen “' + it.id.split('/')[1] + '”'), el('p', {}, it.reason))); return { done: Promise.resolve() }; }
 
 // ------------------------------------------------------------------ Phase 3 (scaffold): sounds and voice
-function stageSound(G, bar, view, it) {
-  const play = () => { try { G.rs.playSound(it.sound); st.textContent = 'Played ' + it.sound + ' at ' + new Date().toLocaleTimeString(); } catch (e) { st.textContent = 'Could not play: ' + e.message; } };
-  const st = el('div', { class: 'note' }, 'Press Play (or P). Sounds are made by the game’s Web Audio code, so there is no file.');
-  bar.append(el('button', { onclick: play }, '▶ Play'));
-  view.append(el('div', { class: 'card' }, el('h3', {}, 'Sound effect'), el('div', { class: 'q' }, 'SFX.' + it.sound + '()'), el('button', { class: 'bigplay', onclick: play }, '▶ Play'), st));
-  AN.keys = k => { if (k === 'p' || k === ' ') play(); };
-  return { done: Promise.resolve() };
+const SND = { timers: [], loop: null };
+function gameSlot(view, w, h) {
+  const vw = Math.max(200, view.clientWidth - 32), sc = Math.min(1, vw / w), ph = el('div', { class: 'screenph', style: `width:${w * sc}px;height:${h * sc}px` }), tok = ++SC.token;
+  view.append(ph);
+  const place = () => { if (tok !== SC.token) return; const r = ph.getBoundingClientRect(), g = $('#gamehost'); g.classList.add('shown'); g.style.cssText = `left:${r.left}px;top:${r.top}px;width:${w}px;height:${h}px;transform:scale(${sc});transform-origin:0 0;`; };
+  new ResizeObserver(place).observe(ph); view.addEventListener('scroll', place, { passive: true });
+  return { place };
 }
+function sndHelpers() { return { el, S, store, T: SND, AN, afterMark, redraw: drawStage, gameSlot, set onLeave(f) { S.onLeave = f; }, set extraKeys(f) { S.extraKeys = f; } }; }
+function stageSound(G, bar, view, it) { return sndStage(G, bar, view, it, sndHelpers()); }
+function stageCrowd(G, bar, view, it) { return crowdStage(G, bar, view, it, sndHelpers()); }
+function stageMix(G, bar, view, it) { return mixStage(G, bar, view, it, sndHelpers()); }
 function stageVoice(G, bar, view, it) {
   const v = it.voice, a = el('audio', { controls: true, src: 'voice/' + v.file, preload: 'none' });
   view.append(el('div', { class: 'card' }, el('h3', {}, (v.speaker || 'Voice') + ' · ' + v.id), el('div', { class: 'q' }, v.transcript || '(no transcript)'), a,
@@ -499,6 +569,22 @@ Object.assign(window.__studio, {
       if (i % 40 === 0) await new Promise(r => setTimeout(r, 0));
     }
     S.f = keep; applyFilters(); hideGame(); return out;
+  },
+  // v9.13: the screen census: every screen setup at each size, what it draws (texts, tap targets) and the phone text audit
+  async census(sizes) {
+    const out = {}, G = S.G, seen = new Set();
+    for (const it of S.items) {
+      if (it.kind !== 'screen') continue;
+      const s = it.screen; if (sizes && !sizes.includes(s.size)) continue;
+      await G.size(s.w, s.h, s.touch);
+      const r = G.rs.screenSetup(s.js); if (r.error) { (out[s.name] = out[s.name] || {})[s.size] = { error: r.error }; continue; }
+      await G.frames(8); G.rs.auditOn(); G.rs.textsOn(); await G.frames(6);
+      const a = G.rs.auditResult(r.e0), t = G.rs.textsOff();
+      const ov = a.found.filter(f => f.kind === 'overflow').length, sm = a.found.filter(f => f.kind === 'small').length, ol = a.nOverlaps + (s.touch && a.screen === 'play' ? G.rs.touchOverScoreboard().length : 0);
+      (out[s.name] = out[s.name] || {})[s.size] = { texts: t.texts, taps: t.taps, overflow: ov, small: sm, overlaps: ol, errors: a.errors.length, screen: r.screen };
+      seen.add(s.name);
+    }
+    hideGame(); return out;
   },
   counts() { const c = {}; for (const it of S.items) { c[it.cat] = c[it.cat] || { total: 0, groups: {} }; c[it.cat].total++; c[it.cat].groups[it.group] = (c[it.cat].groups[it.group] || 0) + 1; } return c; },
   gameErrors: () => S.G.errors(),

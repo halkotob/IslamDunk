@@ -1,0 +1,4359 @@
+{
+ "built": "2026-10-30",
+ "screens": {
+  "title": {
+   "words": 25,
+   "taps": 6,
+   "numbers": [
+    "9.13.0"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "settings": {
+   "words": 21,
+   "taps": 8,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "settings: controls & camera": {
+   "words": 40,
+   "taps": 9,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "settings: game": {
+   "words": 39,
+   "taps": 11,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "howto": {
+   "words": 260,
+   "taps": 1,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "about": {
+   "words": 25,
+   "taps": 1,
+   "numbers": [
+    "9.13.0"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "achievements": {
+   "words": 100,
+   "taps": 1,
+   "numbers": [
+    "50",
+    "10",
+    "15",
+    "25"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "bests": {
+   "words": 45,
+   "taps": 1,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "funmodes": {
+   "words": 38,
+   "taps": 5,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "select": {
+   "words": 36,
+   "taps": 6,
+   "numbers": [
+    "10",
+    "14"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "venue": {
+   "words": 89,
+   "taps": 22,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "online": {
+   "words": 41,
+   "taps": 3,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "joincode": {
+   "words": 42,
+   "taps": 28,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "lobby": {
+   "words": 97,
+   "taps": 29,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 10,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 10,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 10,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "minis": {
+   "words": 58,
+   "taps": 6,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "profile": {
+   "words": 74,
+   "taps": 8,
+   "numbers": [
+    "120"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "world: shop",
+     "numbers": [
+      "120"
+     ]
+    }
+   ]
+  },
+  "teams & players": {
+   "words": 40,
+   "taps": 7,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "custom teams: import": {
+   "words": 27,
+   "taps": 4,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "custom teams: share": {
+   "words": 41,
+   "taps": 4,
+   "numbers": [
+    "21"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "custom teams: edit a team": {
+   "words": 33,
+   "taps": 23,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 6,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 6,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 6,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "custom teams: edit a player": {
+   "words": 54,
+   "taps": 31,
+   "numbers": [
+    "51",
+    "10"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 8,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 8,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 8,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "custom teams: edit a team (own court)": {
+   "words": 50,
+   "taps": 38,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 11,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 11,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 11,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "3 on 3: third players": {
+   "words": 46,
+   "taps": 9,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "venue: your own court": {
+   "words": 92,
+   "taps": 23,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "tournament setup": {
+   "words": 29,
+   "taps": 8,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "tournament bracket": {
+   "words": 39,
+   "taps": 6,
+   "numbers": [
+    "100",
+    "21",
+    "17",
+    "16",
+    "18",
+    "13"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "league schedule",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "my clips",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "cgoals",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "csummary",
+     "numbers": [
+      "100"
+     ]
+    }
+   ]
+  },
+  "league standings": {
+   "words": 59,
+   "taps": 7,
+   "numbers": [
+    "42",
+    "34",
+    "21",
+    "17",
+    "40",
+    "38",
+    "36",
+    "37",
+    "16"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "league schedule": {
+   "words": 35,
+   "taps": 7,
+   "numbers": [
+    "100",
+    "21",
+    "17",
+    "12"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "tournament bracket",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "my clips",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "cgoals",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "csummary",
+     "numbers": [
+      "100"
+     ]
+    }
+   ]
+  },
+  "league leaders": {
+   "words": 56,
+   "taps": 7,
+   "numbers": [
+    "11.0",
+    "10.5",
+    "10.0",
+    "9.5",
+    "7.0",
+    "5.0",
+    "4.5",
+    "4.0",
+    "3.5",
+    "3.0",
+    "2.5",
+    "2.0",
+    "1.5"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "my clips": {
+   "words": 39,
+   "taps": 2,
+   "numbers": [
+    "100"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "tournament bracket",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "league schedule",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "cgoals",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "csummary",
+     "numbers": [
+      "100"
+     ]
+    }
+   ]
+  },
+  "settings: accessibility": {
+   "words": 53,
+   "taps": 10,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "barakah run": {
+   "words": 98,
+   "taps": 8,
+   "numbers": [
+    "45"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "daily scenario": {
+   "words": 66,
+   "taps": 1,
+   "numbers": [
+    "10",
+    "30",
+    "16",
+    "52",
+    "53",
+    "60"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "dunk lab": {
+   "words": 41,
+   "taps": 5,
+   "numbers": [
+    "99"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "match HUD": {
+   "words": 22,
+   "taps": 5,
+   "numbers": [
+    "14"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "match: noor question": {
+   "words": 57,
+   "taps": 8,
+   "numbers": [
+    "14",
+    "27",
+    "10"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "match: noor choice": {
+   "words": 77,
+   "taps": 7,
+   "numbers": [
+    "14",
+    "12",
+    "30",
+    "10"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 4,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 4,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 4,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "match: pause": {
+   "words": 30,
+   "taps": 7,
+   "numbers": [
+    "14"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "halftime": {
+   "words": 34,
+   "taps": 0,
+   "numbers": [
+    "14"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "final": {
+   "words": 32,
+   "taps": 3,
+   "numbers": [
+    "21",
+    "18",
+    "14"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "career menu": {
+   "words": 44,
+   "taps": 4,
+   "numbers": [
+    "60"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "creator": {
+   "words": 100,
+   "taps": 51,
+   "numbers": [
+    "60"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "namekeys": {
+   "words": 56,
+   "taps": 30,
+   "numbers": [
+    "60"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "story": {
+   "words": 40,
+   "taps": 1,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "hub": {
+   "words": 66,
+   "taps": 13,
+   "numbers": [
+    "25",
+    "10"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "cbracket": {
+   "words": 71,
+   "taps": 1,
+   "numbers": [
+    "16",
+    "11",
+    "22"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "hub calendar: game": {
+   "words": 63,
+   "taps": 12,
+   "numbers": [
+    "105",
+    "90",
+    "22",
+    "23",
+    "24",
+    "25"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "hub calendar: season 2",
+     "numbers": [
+      "105"
+     ]
+    },
+    {
+     "screen": "hub calendar: schedule menu",
+     "numbers": [
+      "105"
+     ]
+    }
+   ]
+  },
+  "month view: game": {
+   "words": 53,
+   "taps": 34,
+   "numbers": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "18",
+    "19",
+    "20",
+    "21",
+    "22",
+    "23",
+    "24",
+    "25",
+    "26",
+    "27",
+    "28",
+    "29",
+    "30"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "hub calendar: jumuah": {
+   "words": 66,
+   "taps": 13,
+   "numbers": [
+    "170",
+    "15",
+    "16",
+    "17",
+    "18"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "shop",
+     "numbers": [
+      "170"
+     ]
+    }
+   ]
+  },
+  "month view: jumuah": {
+   "words": 47,
+   "taps": 33,
+   "numbers": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "18",
+    "19",
+    "20",
+    "21",
+    "22",
+    "23",
+    "24",
+    "25",
+    "26",
+    "27",
+    "28",
+    "29"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "hub calendar: ramadan": {
+   "words": 65,
+   "taps": 13,
+   "numbers": [
+    "11",
+    "971",
+    "3290",
+    "26",
+    "27",
+    "28",
+    "29"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "month view: ramadan": {
+   "words": 51,
+   "taps": 34,
+   "numbers": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "18",
+    "19",
+    "20",
+    "21",
+    "22",
+    "23",
+    "24",
+    "25",
+    "26",
+    "27",
+    "28",
+    "29",
+    "30"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 13,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "hub calendar: eid": {
+   "words": 64,
+   "taps": 13,
+   "numbers": [
+    "12",
+    "1072",
+    "3570"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "month view: eid": {
+   "words": 51,
+   "taps": 33,
+   "numbers": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "18",
+    "19",
+    "20",
+    "21",
+    "22",
+    "23",
+    "24",
+    "25",
+    "26",
+    "27",
+    "28",
+    "29"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 13,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "hub calendar: break": {
+   "words": 66,
+   "taps": 13,
+   "numbers": [
+    "415",
+    "880",
+    "23",
+    "24",
+    "25",
+    "26"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "month view: break": {
+   "words": 55,
+   "taps": 34,
+   "numbers": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "18",
+    "19",
+    "20",
+    "21",
+    "22",
+    "23",
+    "24",
+    "25",
+    "26",
+    "27",
+    "28",
+    "29",
+    "30"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 12,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "world: home": {
+   "words": 26,
+   "taps": 3,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "world: street": {
+   "words": 23,
+   "taps": 2,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "world: masjid front": {
+   "words": 23,
+   "taps": 2,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "world: store": {
+   "words": 23,
+   "taps": 2,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "world: speech bubble": {
+   "words": 15,
+   "taps": 2,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "world: long bubble": {
+   "words": 25,
+   "taps": 2,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "world: prompt": {
+   "words": 26,
+   "taps": 3,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "world: closed prompt": {
+   "words": 30,
+   "taps": 2,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "world: shop": {
+   "words": 46,
+   "taps": 9,
+   "numbers": [
+    "120",
+    "80",
+    "60",
+    "40"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "profile",
+     "numbers": [
+      "120"
+     ]
+    }
+   ]
+  },
+  "world: menu": {
+   "words": 12,
+   "taps": 4,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "world: jumuah banner": {
+   "words": 38,
+   "taps": 3,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "world: night street": {
+   "words": 23,
+   "taps": 2,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "jumuah: at the door": {
+   "words": 45,
+   "taps": 5,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 2,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 2,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 2,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "jumuah: the room": {
+   "words": 11,
+   "taps": 1,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "jumuah: a reminder": {
+   "words": 23,
+   "taps": 1,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "jumuah: the longest reminder": {
+   "words": 45,
+   "taps": 1,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "jumuah: touched on": {
+   "words": 30,
+   "taps": 2,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "hub calendar: season 2": {
+   "words": 64,
+   "taps": 12,
+   "numbers": [
+    "105",
+    "90",
+    "22",
+    "23",
+    "24",
+    "25"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "hub calendar: game",
+     "numbers": [
+      "105"
+     ]
+    },
+    {
+     "screen": "hub calendar: schedule menu",
+     "numbers": [
+      "105"
+     ]
+    }
+   ]
+  },
+  "hub calendar: schedule menu": {
+   "words": 70,
+   "taps": 12,
+   "numbers": [
+    "105",
+    "90",
+    "22",
+    "23",
+    "24",
+    "25"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "hub calendar: game",
+     "numbers": [
+      "105"
+     ]
+    },
+    {
+     "screen": "hub calendar: season 2",
+     "numbers": [
+      "105"
+     ]
+    }
+   ]
+  },
+  "cstats": {
+   "words": 73,
+   "taps": 6,
+   "numbers": [
+    "0.0",
+    "33",
+    "30",
+    "20"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "clip video: done",
+     "numbers": [
+      "0.0"
+     ]
+    }
+   ]
+  },
+  "cgoals": {
+   "words": 162,
+   "taps": 1,
+   "numbers": [
+    "40",
+    "100",
+    "30",
+    "25",
+    "20"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "tournament bracket",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "league schedule",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "my clips",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "csummary",
+     "numbers": [
+      "100"
+     ]
+    }
+   ]
+  },
+  "crecords": {
+   "words": 23,
+   "taps": 1,
+   "numbers": [
+    "10",
+    "20"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "career league leaders": {
+   "words": 81,
+   "taps": 29,
+   "numbers": [
+    "16",
+    "9.3",
+    "14",
+    "13.3",
+    "22.2",
+    "22.0",
+    "21.2",
+    "20.8",
+    "19.7",
+    "19.0",
+    "18.8",
+    "18.3",
+    "17.0",
+    "10",
+    "15.3"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "career league player",
+     "numbers": [
+      "9.3"
+     ]
+    }
+   ]
+  },
+  "career league player": {
+   "words": 88,
+   "taps": 5,
+   "numbers": [
+    "9.3",
+    "1.3",
+    "1.7",
+    "0.3",
+    "0.7",
+    "4.7",
+    "88",
+    "28",
+    "14",
+    "16",
+    "21",
+    "30",
+    "10",
+    "31",
+    "27",
+    "32"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "career league leaders",
+     "numbers": [
+      "9.3"
+     ]
+    }
+   ]
+  },
+  "career league around": {
+   "words": 43,
+   "taps": 11,
+   "numbers": [
+    "39",
+    "20"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "career league box score": {
+   "words": 54,
+   "taps": 1,
+   "numbers": [
+    "25",
+    "39",
+    "13",
+    "12",
+    "11",
+    "20",
+    "19",
+    "14",
+    "10",
+    "15",
+    "29"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "career around the league (waiting)": {
+   "words": 56,
+   "taps": 3,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "csummary": {
+   "words": 85,
+   "taps": 1,
+   "numbers": [
+    "193",
+    "100",
+    "14",
+    "31",
+    "27",
+    "10",
+    "21",
+    "30",
+    "16",
+    "32"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "tournament bracket",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "league schedule",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "my clips",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "cgoals",
+     "numbers": [
+      "100"
+     ]
+    }
+   ]
+  },
+  "postgame": {
+   "words": 66,
+   "taps": 0,
+   "numbers": [
+    "21",
+    "30",
+    "10",
+    "15",
+    "49"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "scout": {
+   "words": 90,
+   "taps": 0,
+   "numbers": [
+    "11",
+    "39",
+    "25",
+    "50",
+    "41",
+    "35"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "pregame": {
+   "words": 89,
+   "taps": 4,
+   "numbers": [
+    "52"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "journal": {
+   "words": 31,
+   "taps": 1,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "office": {
+   "words": 28,
+   "taps": 4,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "musalla": {
+   "words": 75,
+   "taps": 2,
+   "numbers": [
+    "40",
+    "10"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "masjid": {
+   "words": 46,
+   "taps": 3,
+   "numbers": [
+    "40",
+    "10"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "shop": {
+   "words": 82,
+   "taps": 13,
+   "numbers": [
+    "130",
+    "300",
+    "800",
+    "600",
+    "700",
+    "500",
+    "2500",
+    "400",
+    "170",
+    "40",
+    "10"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 10,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "gym",
+     "numbers": [
+      "130"
+     ]
+    },
+    {
+     "screen": "hub: corner menu",
+     "numbers": [
+      "130"
+     ]
+    },
+    {
+     "screen": "hub calendar: jumuah",
+     "numbers": [
+      "170"
+     ]
+    }
+   ]
+  },
+  "train": {
+   "words": 66,
+   "taps": 11,
+   "numbers": [
+    "323",
+    "40"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "gym",
+     "numbers": [
+      "323"
+     ]
+    },
+    {
+     "screen": "hub: corner menu",
+     "numbers": [
+      "323"
+     ]
+    }
+   ]
+  },
+  "gym": {
+   "words": 30,
+   "taps": 4,
+   "numbers": [
+    "323",
+    "130"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "hub: corner menu",
+     "numbers": [
+      "323",
+      "130"
+     ]
+    },
+    {
+     "screen": "train",
+     "numbers": [
+      "323"
+     ]
+    },
+    {
+     "screen": "shop",
+     "numbers": [
+      "130"
+     ]
+    }
+   ]
+  },
+  "saves": {
+   "words": 43,
+   "taps": 5,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "newseason": {
+   "words": 84,
+   "taps": 3,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 9,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "share clip": {
+   "words": 18,
+   "taps": 5,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "clip video: no video support": {
+   "words": 19,
+   "taps": 3,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "clip video: done": {
+   "words": 15,
+   "taps": 4,
+   "numbers": [
+    "0.0"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "cstats",
+     "numbers": [
+      "0.0"
+     ]
+    }
+   ]
+  },
+  "select (forced, no setup)": {
+   "words": 25,
+   "taps": 6,
+   "numbers": [
+    "9.13.0"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "title after forced select": {
+   "words": 25,
+   "taps": 6,
+   "numbers": [
+    "9.13.0"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "splash": {
+   "words": 6,
+   "taps": 0,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "in-game review (?review=1)": {
+   "words": 62,
+   "taps": 14,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "career intro: outside the masjid": {
+   "words": 26,
+   "taps": 1,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "run vow": {
+   "words": 76,
+   "taps": 10,
+   "numbers": [
+    "10",
+    "20"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "run map": {
+   "words": 38,
+   "taps": 6,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "run choice": {
+   "words": 51,
+   "taps": 3,
+   "numbers": [
+    "0.5",
+    "10"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": false,
+     "overflow": 1,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "run end": {
+   "words": 23,
+   "taps": 3,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "run badges": {
+   "words": 54,
+   "taps": 6,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "welcome dialog (first launch)": {
+   "words": 53,
+   "taps": 2,
+   "numbers": [
+    "9.13.0"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "toast message": {
+   "words": 58,
+   "taps": 2,
+   "numbers": [
+    "9.13.0"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "achievement toast": {
+   "words": 61,
+   "taps": 2,
+   "numbers": [
+    "9.13.0"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "tutorial: a step": {
+   "words": 66,
+   "taps": 2,
+   "numbers": [
+    "99",
+    "10"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "tutorial: the last card": {
+   "words": 71,
+   "taps": 2,
+   "numbers": [
+    "99"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "match: tip-off": {
+   "words": 72,
+   "taps": 2,
+   "numbers": [
+    "14"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 19,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 20,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "match: inbound": {
+   "words": 72,
+   "taps": 2,
+   "numbers": [
+    "14"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 19,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 20,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "match: free throws": {
+   "words": 72,
+   "taps": 2,
+   "numbers": [
+    "14"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 19,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 20,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "match: hot spot": {
+   "words": 72,
+   "taps": 2,
+   "numbers": [
+    "14"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 19,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 20,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "match: replay": {
+   "words": 77,
+   "taps": 2,
+   "numbers": [
+    "12"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 21,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 22,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "match: period break": {
+   "words": 70,
+   "taps": 2,
+   "numbers": [
+    "14"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 17,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 18,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "match: timeout (call a play)": {
+   "words": 123,
+   "taps": 2,
+   "numbers": [
+    "14"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 26,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 27,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "match: leave? (confirm)": {
+   "words": 47,
+   "taps": 2,
+   "numbers": [
+    "14"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": false,
+     "overflow": 0,
+     "small": 12,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": false,
+     "overflow": 0,
+     "small": 18,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "barakah run: abandon? (confirm)": {
+   "words": 66,
+   "taps": 2,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "online: network report": {
+   "words": 244,
+   "taps": 7,
+   "numbers": [
+    "9.13.0",
+    "50",
+    "95",
+    "10",
+    "20",
+    "30",
+    "141"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "hub: corner menu",
+     "numbers": [
+      "141"
+     ]
+    }
+   ]
+  },
+  "hub: corner menu": {
+   "words": 218,
+   "taps": 7,
+   "numbers": [
+    "323",
+    "130",
+    "17",
+    "18",
+    "19",
+    "20",
+    "9.13.0",
+    "50",
+    "95",
+    "10",
+    "30",
+    "141"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": [
+    {
+     "screen": "gym",
+     "numbers": [
+      "323",
+      "130"
+     ]
+    },
+    {
+     "screen": "train",
+     "numbers": [
+      "323"
+     ]
+    },
+    {
+     "screen": "shop",
+     "numbers": [
+      "130"
+     ]
+    },
+    {
+     "screen": "online: network report",
+     "numbers": [
+      "141"
+     ]
+    }
+   ]
+  }
+ }
+}

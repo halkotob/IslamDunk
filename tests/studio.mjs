@@ -2,7 +2,8 @@
 //   studio          loads with no page errors (studio or game frame); every item of every category draws without
 //                   throwing (failures listed); counts per category; IDs are unique and every registered ID
 //                   (docs/review/studio-ids.json) still exists or is listed as removed
-//   studio-csv      K/F/D/arrows/N/undo; CSV export -> clear -> import gives the same marks; game-text.csv
+//   studio-csv      K/F/D/arrows/N/undo; CSV export -> clear -> import gives the same marks (v9.13: with merge_into and the
+//                   sound picks); game-text.csv
 //                   (Keep/Change/Cut) and ?review=1 (islamdunk-review.csv) imports map Change -> fix, Cut -> delete;
 //                   merge by id + reviewer with the newest mark winning, conflicts listed; Delete never changes the
 //                   game or game-text.csv (file hashes before / after); the game frame's storage is sandboxed;
@@ -105,17 +106,20 @@ STUDIO_TESTS['studio-csv'] = async ({ browser }) => {
   await ev(() => { window.__studio.select('trivia/2'); }); await p.locator('#list').focus(); await key('d');
   // more marks by a second reviewer, across categories
   await ev(() => { const s = window.__studio.store; s.set('dialogue/niyyah/0', { verdict: 'fix', comment: 'too long, the "intention" line', suggested: 'Before you go out: what is your intention?' });
-    s.setReviewer('Yusuf', 'Art'); s.set('sprite/cast/saleem', { verdict: 'keep' }); s.set('sprite/ball/night', { verdict: 'delete', comment: 'hard to see, on dark courts' }); s.set('trivia/0', { verdict: 'fix', comment: 'second opinion' }); });
+    s.setReviewer('Yusuf', 'Art'); s.set('sprite/cast/saleem', { verdict: 'keep' }); s.set('sprite/ball/night', { verdict: 'delete', comment: 'hard to see, on dark courts' }); s.set('trivia/0', { verdict: 'fix', comment: 'second opinion' });
+    s.set('sound/bounce', { verdict: 'fix', pick: 'B', comment: 'the real one' }); s.set('sound/cheer', { pick: 'none' }); s.set('screen/about/desktop', { verdict: 'merge', merge: 'screen/howto/desktop', comment: 'one help screen' }); });
   const csv1 = await ev(() => window.__studio.exportCsv());
   const rows1 = csv1.trim().split('\n').length - 1, items = await ev(() => window.__studio.list().length);
   out.header = csv1.split('\n')[0];
   // round trip
-  const canon = () => ev(() => { const m = window.__studio.store.state.marks, o = []; for (const id of Object.keys(m).sort()) for (const r of Object.keys(m[id]).sort()) { const x = m[id][r]; o.push([id, r, x.verdict, x.comment, x.suggested, x.role, x.at]); } return JSON.stringify(o); });
+  const canon = () => ev(() => { const m = window.__studio.store.state.marks, o = []; for (const id of Object.keys(m).sort()) for (const r of Object.keys(m[id]).sort()) { const x = m[id][r]; o.push([id, r, x.verdict, x.comment, x.suggested, x.role, x.at, x.merge || '', x.pick || '']); } return JSON.stringify(o); });
   const marks1 = await canon();
   await ev(() => window.__studio.store.clearAll());
   out.imp = await ev(t => window.__studio.importCsv(t, 'export.csv'), csv1);
   const marks2 = await canon();
   out.roundTrip = marks1 === marks2;
+  out.picks = await ev(() => { const s = window.__studio.store; return [(s.mark('sound/bounce') || {}).pick, (s.mark('sound/cheer') || {}).pick, (s.mark('screen/about/desktop') || {}).verdict, (s.mark('screen/about/desktop') || {}).merge].join('|'); });
+  out.picksInCsv = /^sound\/bounce,.*,B$/m.test(csv1) && /^screen\/about\/desktop,.*,merge,.*,screen\/howto\/desktop,$/m.test(csv1);
   // conflicts: the same id + reviewer, differently, newer and older than ours
   const m = await mk('trivia/0');           // Yusuf's
   const head = out.header;
@@ -151,12 +155,13 @@ STUDIO_TESTS['studio-csv'] = async ({ browser }) => {
   const tmp = path.join(ROOT, 'node_modules/.cache/studio-test'); fs.mkdirSync(tmp, { recursive: true });
   const f = path.join(tmp, 'export.csv'); fs.writeFileSync(f, csvFinal);
   const rep = execFileSync(process.execPath, [path.join(ROOT, 'scripts/review-report.mjs'), f], { encoding: 'utf8' });
-  out.report = /== data\/trivia\.js/.test(rep) && /Delete \(recommended\)/.test(rep) && /new:  “Before you go out/.test(rep) && /Nothing has been changed/.test(rep);
+  out.report = /== data\/trivia\.js/.test(rep) && /Delete \(recommended\)/.test(rep) && /new:  “Before you go out/.test(rep) && /Nothing has been changed/.test(rep)
+    && /Merge into screen\/howto\/desktop/.test(rep) && /sound\/bounce: B/.test(rep);
   const after = { src: hashTree(path.join(ROOT, 'src')), text: hashFile(path.join(ROOT, 'docs/review/game-text.csv')), web: fs.existsSync(path.join(ROOT, 'dist/web/index.html')) ? hashFile(path.join(ROOT, 'dist/web/index.html')) : '' };
   out.untouched = before.src === after.src && before.text === after.text && before.web === after.web;
   const ok = out.cur === 'trivia/1' && out.m0 === 'keep' && out.m1.verdict === 'fix' && /Quran/.test(out.m1.comment) && /Mother of the Book/.test(out.m1.suggested) && out.m2 === 'delete'
-    && out.afterUndo.m1 === '' && out.afterUndo.m2 === '' && out.header === 'id,category,name,where,version_added,verdict,comment,suggested,reviewer,role,reviewed_at,build_version'
-    && rows1 >= items && out.roundTrip && out.imp.added > 0 && out.imp.conflicts === 0
+    && out.afterUndo.m1 === '' && out.afterUndo.m2 === '' && out.header === 'id,category,name,where,version_added,verdict,comment,suggested,reviewer,role,reviewed_at,build_version,merge_into,pick'
+    && rows1 >= items && out.roundTrip && out.picks === 'B|none|merge|screen/howto/desktop' && out.picksInCsv && out.imp.added > 0 && out.imp.conflicts === 0
     && out.newer.updated === 1 && out.afterNewer === 'keep' && out.older.kept === 1 && out.afterOlder === 'keep' && out.conflictsListed >= 2
     && out.legacy.format === 'game-text.csv' && out.legacyMarks.kaw === 'keep' && out.legacyMarks.chalk && out.legacyMarks.chalk.verdict === 'fix' && out.legacyMarks.chalk.suggested === 'Chalk forgives, beta.' && out.legacyMarks.win === 'delete'
     && out.inGame.format === 'in-game review' && out.inGame.unmatched === 1 && out.inGameMarks.a && out.inGameMarks.a.verdict === 'fix' && out.inGameMarks.a.comment === 'say it calmer' && out.inGameMarks.b === 'delete'

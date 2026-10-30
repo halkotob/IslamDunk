@@ -1,6 +1,8 @@
 // Screens the studio shows besides the phone text audit's (tests/phone-audit.mjs SCREENS), which screen each setup
 // lands on (checked by the studio test), and why some screens can't be shown here.
 const RUN = `goTitle(); openBarakah(); runHomeSelect(0);`;
+const MATCH = `Input.touchMode = false; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; M.introT = 0;
+  for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP);`;
 export const STUDIO_SCREENS = [
   ['splash', `goTitle(); Game.screen = 'splash'; Game.splashT = 0;`],
   ['in-game review (?review=1)', `goTitle(); Game.screen = 'review'; RV.tab = 0; RV.idx = 0;`],
@@ -9,7 +11,24 @@ export const STUDIO_SCREENS = [
   ['run map', RUN + ` runPickVow(0);`],
   ['run choice', RUN + ` runPickVow(0); Run.choicesV2 = ['train', 'masjid']; runChooseNode(0);`],
   ['run end', RUN + ` runPickVow(0); Run.active = false; Run.champion = false; Game.screen = 'runend'; Game.idx = 0;`],
-  ['run badges', `goTitle(); openBarakah(); Game.screen = 'runbadges'; Game.idx = 0;`]
+  ['run badges', `goTitle(); openBarakah(); Game.screen = 'runbadges'; Game.idx = 0;`],
+  // v9.13: the overlays and in-match states that had no item (tests/studio.mjs studio-coverage lists every view)
+  ['welcome dialog (first launch)', `goTitle(); showWelcome();`],
+  ['toast message', `goTitle(); toast('Saved to the manual slot', 30);`],
+  ['achievement toast', `goTitle(); achToast(ACHIEVEMENTS[0]);`],
+  ['tutorial: a step', `startTutorial(); tutGo(2);`],
+  ['tutorial: the last card', `startTutorial(); tutGo(TUT_STEPS.length - 1);`],
+  ['match: tip-off', `Input.touchMode = false; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; for (let i = 0; i < 30; i++) updateMatch(STEP);`],
+  ['match: inbound', MATCH + ` M.possTeam = 1; inbound(1); for (let i = 0; i < 10; i++) updateMatch(STEP);`],
+  ['match: free throws', MATCH + ` callFoul(M.players[2], M.players[0]); for (let i = 0; i < 40; i++) updateMatch(STEP);`],
+  ['match: hot spot', MATCH + ` const h = attackHoop(0); M.hot = { x: h.x + h.dir * 260, z: 350, t: 9, m: 1, v: 2 };`],
+  ['match: replay', MATCH + ` for (let i = 0; i < 120; i++) updateMatch(STEP); const fr = Replay.buf.slice(-210); Replay.active = { frames: fr, t: 0.6, dur: fr.length / 60 / 0.55 };`],
+  ['match: period break', MATCH + ` M.fmt.periods = 4; M.quarter = 1; endQuarter();`],
+  ['match: timeout (call a play)', MATCH + ` giveBall(M.players[0], 'inbound'); M.possTeam = 0; callTimeout(0, true);`],
+  ['match: leave? (confirm)', MATCH + ` Game.paused = true; Game.idx = 0; const it = pauseItems(); it[it.length - 1][1]();`],
+  ['barakah run: abandon? (confirm)', RUN + ` runPickVow(0); runAskAbandon();`],
+  ['online: network report', `goTitle(); Lobby.open(); NetReport.open('lobby');`],
+  ['hub: corner menu', `if (!C) { C = freshCareer(); C.name = 'Reviewer'; C.bracket = makeBracket(0); } careerHub(); Game.hubMenu = { open: true, idx: 0 };`]
 ];
 // the Game.screen each setup lands on (the studio test fails if a setup lands anywhere else)
 export const SCREEN_OF = {
@@ -121,7 +140,23 @@ export const SCREEN_OF = {
   "league schedule": "series",
   "league leaders": "series",
   "my clips": "myclips",
-  "settings: accessibility": "settings"
+  "settings: accessibility": "settings",
+  "welcome dialog (first launch)": "title",
+  "toast message": "title",
+  "achievement toast": "title",
+  "tutorial: a step": "play",
+  "tutorial: the last card": "play",
+  "match: tip-off": "play",
+  "match: inbound": "play",
+  "match: free throws": "play",
+  "match: hot spot": "play",
+  "match: replay": "play",
+  "match: period break": "play",
+  "match: timeout (call a play)": "play",
+  "match: leave? (confirm)": "play",
+  "barakah run: abandon? (confirm)": "runmap",
+  "online: network report": "lobby",
+  "hub: corner menu": "hub"
 };
 export const NOT_RENDERABLE = {
   hostlobby: 'Needs a live online session with you as host and a guest connected. The online-loop, online-room and online-fb tests play it with a fake network.',

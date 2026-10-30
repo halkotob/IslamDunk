@@ -1,9 +1,12 @@
-// Review marks: one per item per reviewer ({ verdict: 'keep' | 'fix' | 'delete' | '', comment, suggested, at }).
+// Review marks: one per item per reviewer ({ verdict: 'keep' | 'fix' | 'merge' | 'delete' | '', comment, suggested, at }).
+// v9.13: merge (Merge into <merge>, screens), pick (the sound variant that should win: A-D or 'none').
 // Saved to localStorage on every change (key islamdunk.studio). Undo is in memory for this session.
 // The studio only records verdicts: "delete" means "recommend removal" and never touches the game.
 export const STORE_KEY = 'islamdunk.studio';
 export const ROLES = ['Content/religious', 'Art', 'Gameplay', 'Other'];
-export const VERDICTS = ['keep', 'fix', 'delete'];
+export const VERDICTS = ['keep', 'fix', 'merge', 'delete'];
+const FIELDS = ['verdict', 'comment', 'suggested', 'merge', 'pick'];
+const isEmpty = m => !FIELDS.some(f => m[f]);
 
 export function createStore(storage = window.localStorage) {
   let s;
@@ -21,8 +24,8 @@ export function createStore(storage = window.localStorage) {
     // set fields of the current reviewer's mark on an item
     set(id, patch, { record = true } = {}) {
       const r = who(), cur = st.mark(id, r), prev = cur ? Object.assign({}, cur) : null;
-      const next = Object.assign({ verdict: '', comment: '', suggested: '' }, cur || {}, patch, { at: new Date().toISOString(), role: s.reviewer.role });
-      const empty = !next.verdict && !next.comment && !next.suggested;
+      const next = Object.assign({ verdict: '', comment: '', suggested: '', merge: '', pick: '' }, cur || {}, patch, { at: new Date().toISOString(), role: s.reviewer.role });
+      const empty = isEmpty(next);
       s.marks[id] = s.marks[id] || {};
       if (empty) delete s.marks[id][r]; else s.marks[id][r] = next;
       if (!Object.keys(s.marks[id]).length) delete s.marks[id];
@@ -44,10 +47,10 @@ export function createStore(storage = window.localStorage) {
     merge(rows, source) {
       const rep = { added: 0, updated: 0, same: 0, kept: 0, conflicts: [] };
       for (const r of rows) {
-        if (!r.verdict && !r.comment && !r.suggested) continue;
-        const rv = r.reviewer || who(), cur = st.mark(r.id, rv), inc = { verdict: r.verdict || '', comment: r.comment || '', suggested: r.suggested || '', at: r.at || new Date().toISOString(), role: r.role || '' };
+        if (isEmpty(r)) continue;
+        const rv = r.reviewer || who(), cur = st.mark(r.id, rv), inc = { verdict: r.verdict || '', comment: r.comment || '', suggested: r.suggested || '', merge: r.merge || '', pick: r.pick || '', at: r.at || new Date().toISOString(), role: r.role || '' };
         if (!cur) { s.marks[r.id] = s.marks[r.id] || {}; s.marks[r.id][rv] = inc; rep.added++; continue; }
-        if (cur.verdict === inc.verdict && cur.comment === inc.comment && cur.suggested === inc.suggested) { rep.same++; continue; }
+        if (FIELDS.every(f => (cur[f] || '') === (inc[f] || ''))) { rep.same++; continue; }
         const c = { id: r.id, reviewer: rv, source, mine: cur, theirs: inc };
         if ((inc.at || '') > (cur.at || '')) { s.marks[r.id][rv] = inc; rep.updated++; c.kept = 'theirs'; } else { rep.kept++; c.kept = 'mine'; }
         rep.conflicts.push(c);

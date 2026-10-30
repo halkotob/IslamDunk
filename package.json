@@ -1,7 +1,7 @@
 {
   "name": "islam-dunk",
   "productName": "Islam Dunk",
-  "version": "9.12.1",
+  "version": "9.13.0",
   "description": "Islam Dunk: 2v2 masjid-league arcade basketball",
   "private": true,
   "type": "module",
@@ -30,7 +30,11 @@
     "review:preview": "vite preview --mode review --port 5175",
     "review:jumuah": "vite build --mode web && node scripts/review-jumuah.mjs",
     "review:hub": "vite build --mode web && node scripts/review-hub.mjs",
-    "review:league": "vite build --mode web && node scripts/review-league.mjs"
+    "review:league": "vite build --mode web && node scripts/review-league.mjs",
+    "review:census": "vite build --mode review && node tools/screen-census.mjs",
+    "review:first-run": "vite build --mode web && node tools/review-first-run.mjs",
+    "sfx:levels": "vite build --mode web && node tools/sfx-levels.mjs",
+    "sound-list": "node tools/sound-list.mjs"
   },
   "devDependencies": {
     "electron": "^38.0.0",

@@ -155,3 +155,27 @@ dialog table { border-collapse: collapse; font-size: 12px; width: 100%; } dialog
 
 .bigplay { font-size: 18px; padding: 10px 22px; margin: 6px 0 10px; }
 pre.code { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font: 12px ui-monospace, monospace; overflow-x: auto; white-space: pre; }
+
+/* v9.13: Sounds tab: variants, picks, crowd, mix; Screens: merge, flows, first-run path, contact sheets */
+
+.svrow { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; align-items: center; }
+.vbtn { display: flex; flex-direction: column; align-items: flex-start; min-width: 132px; padding: 8px 12px; gap: 2px; text-align: left; }
+.vbtn b { font-size: 16px; } .vbtn small { color: var(--dim); font-size: 11px; }
+.vbtn.picked { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.pick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0 8px; }
+.pick button.on, .chips button.on, #stagebar button.on { background: #3a3220; border-color: var(--accent); }
+.card.snd { max-width: 980px; } .card.snd .where { font: 12px ui-monospace, monospace; color: var(--dim); }
+.cinfo { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
+.slider { display: grid; grid-template-columns: 260px minmax(120px, 1fr) 56px; gap: 10px; align-items: center; margin: 6px 0; }
+.chips { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.verdicts button.merge.on { background: #4f8fd4; border-color: #4f8fd4; color: #fff; }
+.meta dt { color: var(--dim); } .meta .flag { display: inline-block; margin: 2px 4px 2px 0; padding: 1px 7px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); font-size: 12px; }
+.meta .flag.warn { border-color: var(--fix); } .meta .sugg { color: var(--accent); }
+.sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.sheet figure { margin: 0; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
+.sheet figure img, .sheet figure canvas { width: 100%; height: auto; display: block; border-radius: 4px; }
+.sheet figcaption { font-size: 12px; margin-top: 4px; color: var(--dim); }
+.frun { display: flex; flex-direction: column; gap: 16px; }
+.frun .step { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.frun .n { font-size: 20px; color: var(--accent); text-align: center; } .frun .shots { display: flex; gap: 8px; flex-wrap: wrap; } .frun .shots img { max-width: 48%; min-width: 220px; border-radius: 4px; }
+.frun .say { font-size: 12px; color: var(--dim); white-space: pre-wrap; } .frun .int { color: var(--fix); }

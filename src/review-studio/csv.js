@@ -1,9 +1,10 @@
 // CSV: export, parse, and the three import formats.
-//   studio      id, category, name, where, version_added, verdict, comment, suggested, reviewer, role, reviewed_at, build_version
+//   studio      id, category, name, where, version_added, verdict, comment, suggested, reviewer, role, reviewed_at, build_version,
+//               merge_into (v9.13: a screen's Merge into <id>), pick (v9.13: the sound variant that should win, A-D or none)
 //   game-text   the docs/review/game-text.csv packet: Keep / Change / Cut, Suggested text, Notes (matched by Text)
 //   in-game     the ?review=1 export islamdunk-review.csv: Kind, Text, Mark, Note (lines matched by Text)
 // Change -> fix and Cut -> delete. Rows that match no item are reported, never guessed.
-export const COLUMNS = ['id', 'category', 'name', 'where', 'version_added', 'verdict', 'comment', 'suggested', 'reviewer', 'role', 'reviewed_at', 'build_version'];
+export const COLUMNS = ['id', 'category', 'name', 'where', 'version_added', 'verdict', 'comment', 'suggested', 'reviewer', 'role', 'reviewed_at', 'build_version', 'merge_into', 'pick'];
 const esc = v => { const s = v == null ? '' : String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 export function toCsv(rows, cols = COLUMNS) { return [cols.join(','), ...rows.map(r => cols.map(c => esc(r[c])).join(','))].join('\n') + '\n'; }
 export function parseCsv(txt) {
@@ -19,14 +20,16 @@ export function parseCsv(txt) {
   const head = rows.shift() || [];
   return { head, rows: rows.filter(r => r.some(x => x !== '')).map(r => Object.fromEntries(head.map((h, i) => [h, r[i] == null ? '' : r[i]]))) };
 }
-export const VERDICT_OF = { keep: 'keep', change: 'fix', fix: 'fix', cut: 'delete', delete: 'delete', remove: 'delete', '1': 'keep', '2': 'fix', '3': 'delete' };
+export const VERDICT_OF = { keep: 'keep', change: 'fix', fix: 'fix', merge: 'merge', cut: 'delete', delete: 'delete', remove: 'delete', '1': 'keep', '2': 'fix', '3': 'delete' };
+const PICKS = new Set(['A', 'B', 'C', 'D', 'E', 'F', 'none']);
 // rows for the store's merge(): { id, reviewer, role, verdict, comment, suggested, at }; unmatched lists what had no item
 export function importRows(txt, { byText, ids, reviewer, role, now = new Date().toISOString() }) {
   const { head, rows } = parseCsv(txt), out = [], unmatched = [], skipped = [];
   const v = s => VERDICT_OF[String(s || '').trim().toLowerCase()] || '';
   if (head.includes('id') && head.includes('verdict')) {
-    for (const r of rows) { if (!ids.has(r.id)) { if (r.verdict || r.comment || r.suggested) unmatched.push(r.id); continue; }
-      out.push({ id: r.id, reviewer: r.reviewer || reviewer, role: r.role || role, verdict: v(r.verdict), comment: r.comment || '', suggested: r.suggested || '', at: r.reviewed_at || now }); }
+    for (const r of rows) { if (!ids.has(r.id)) { if (r.verdict || r.comment || r.suggested || r.pick || r.merge_into) unmatched.push(r.id); continue; }
+      const pk = String(r.pick || '').trim();
+      out.push({ id: r.id, reviewer: r.reviewer || reviewer, role: r.role || role, verdict: v(r.verdict), comment: r.comment || '', suggested: r.suggested || '', merge: r.merge_into || '', pick: PICKS.has(pk) ? pk : '', at: r.reviewed_at || now }); }
     return { format: 'studio', rows: out, unmatched, skipped };
   }
   if (head.includes('Keep / Change / Cut')) {
