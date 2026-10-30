@@ -115,6 +115,7 @@
     "online/net-diag.js",
     "online/v911-predict.js",
     "screens/v912-polish.js",
+    "online/v9111-net.js",
     "boot.js"
   ]
 }

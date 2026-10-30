@@ -5,12 +5,17 @@
 //   hands after he lets go), pass (the ball is in the air after he presses pass); 6 tries each, the median
 //   snapshot staleness: how old the host's state on screen is (network + render delay), median and 95th percentile
 //   bytes per snapshot on the wire (the s key)
+// v9.11.1: a 15 s "roam" after the tries: the guest runs a stick pattern while the other team runs circles with the
+//   ball, and the guest's screen is watched for position corrections of its own player (pulled more than 40 units,
+//   about 3 ft, debounced 300 ms; measured here, the same way on every build) and the longest gap between updates of
+//   the other players' drawn positions. And a fifth profile, the play-test report: a lossy, jittery direct link.
 // Used by tests/run.mjs (lag-profiles) and tools/lag-report.mjs (the table).
 export const LAG_PROFILES = [
   ['Direct, 30 ms RTT', { mode: 'udp', lat: 15, jit: 0, loss: 0, bw: 0, direct: 1 }],
   ['Relay, 90 ms RTT, 20 ms jitter', { mode: 'udp', lat: 45, jit: 20, loss: 0, bw: 0, direct: 1 }],
   ['Server, 250 ms RTT, 40 ms jitter, 3% loss', { mode: 'server', lat: 125, jit: 40, loss: 3, bw: 64000, direct: 0 }],
-  ['Bad mobile, 400 ms RTT, 10% loss', { mode: 'udp', lat: 200, jit: 30, loss: 10, bw: 32000, direct: 1 }]
+  ['Bad mobile, 400 ms RTT, 10% loss', { mode: 'udp', lat: 200, jit: 30, loss: 10, bw: 32000, direct: 1 }],
+  ['Direct, 100 ms RTT, 35 ms jitter, 20% loss', { mode: 'udp', lat: 50, jit: 35, loss: 20, bw: 0, direct: 1 }]
 ];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const med = a => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null; };
@@ -31,6 +36,38 @@ const GUEST_INIT = () => {
     requestAnimationFrame(watch);
   };
   requestAnimationFrame(watch);
+  // v9.11.1: corrections of the guest's own predicted position, and gaps in the other players' drawn movement
+  L.fix = []; L.gapMax = 0; L.roaming = false; L.arrMax = 0; L.dist = 0;
+  const _po = Net.predictOwn;
+  Net.predictOwn = function (rdt) {
+    const m = me(), d0 = m && m._pd, x0 = d0 && d0.x, z0 = d0 && d0.z;
+    const r = _po.apply(this, arguments);
+    const d1 = m && m._pd;
+    if (L.roaming && d0 && d1) {
+      const err = d1 !== d0 ? Math.hypot(d1.x - x0, d1.z - z0) : Math.hypot(d1.x - x0, d1.z - z0) / Math.max(1e-3, Math.min(1, rdt * 18));
+      const now = performance.now(); if (err > 40 && !(L.fix.length && now - L.fix[L.fix.length - 1] < 300)) L.fix.push(now);
+    }
+    return r;
+  };
+  let prev = null, lastCh = 0;
+  const gapWatch = () => {
+    const now = performance.now(), m = me();
+    if (L.roaming && M.players && Game.screen === 'netplay') {
+      const cur = M.players.filter(q => q !== m).map(q => q.x + q.z * 1e-3);
+      if (!prev || cur.some((v, i) => Math.abs(v - prev[i]) > 0.01)) lastCh = now; else L.gapMax = Math.max(L.gapMax, now - lastCh);
+      prev = cur;
+      const n = Net.snaps[Net.snaps.length - 1]; if (n) L.arrMax = Math.max(L.arrMax, now - n.t);           // the longest wait for the next snapshot
+      if (m) { if (L.lastMe) L.dist += Math.hypot(m.x - L.lastMe[0], m.z - L.lastMe[1]); L.lastMe = [m.x, m.z]; }
+    } else { prev = null; lastCh = now; }
+    requestAnimationFrame(gapWatch);
+  };
+  requestAnimationFrame(gapWatch);
+  const DIRS = ['right', 'up', 'left', 'down'];
+  L.roam = ms => new Promise(res => {
+    L.roaming = true; L.fix = []; L.gapMax = 0; L.arrMax = 0; L.dist = 0; L.lastMe = null; let i = 0;
+    const iv = setInterval(() => { for (const d of DIRS) Input.down[K(d)] = false; Input.down[K(DIRS[i++ % 4])] = true; }, 500);
+    setTimeout(() => { clearInterval(iv); for (const d of DIRS) Input.down[K(d)] = false; L.roaming = false; res({ fixes: L.fix.length * 60000 / ms, gapMax: Math.round(L.gapMax), snapGapMax: Math.round(L.arrMax), roamDist: Math.round(L.dist) }); }, ms);
+  });
   // one try: press, then wait for the effect on screen (ms), or 3000 if it never shows
   L.trial = kind => new Promise(res => {
     const p = me(); if (!p) return res(3000);
@@ -67,6 +104,12 @@ const HOST_INIT = () => {
     else { M.possTeam = g.team; giveBall(g, 'steal'); }
     M.shotClock = 99;
   };
+  // v9.11.1: the roam: the other team runs circles with the ball, the guest's teammate stands, the guest is free
+  window.__lagRoam = () => {
+    window.__lagSetup('move');
+    const g = M.players.find(q => q.human === 1);
+    M.cmdHook = q => { if (q.human === 1) return false; zeroCmd(q.cmd); if (q.team !== g.team) { const t = M.time * 1.6 + M.players.indexOf(q) * 2; q.cmd.mx = Math.cos(t); q.cmd.mz = Math.sin(t); } return true; };
+  };
 };
 
 export async function lagRun(browser, base, name, prof, opts = {}) {
@@ -101,19 +144,21 @@ export async function lagRun(browser, base, name, prof, opts = {}) {
       }
       res[kind] = med(t); res[kind + 'All'] = t;
     }
+    await H.evaluate(() => window.__lagRoam()); await sleep(prof.lat * 4 + 500);
+    Object.assign(res, await G.evaluate(ms => window.__lag.roam(ms), opts.roamMs || 15000));
+    res.fixes = Math.round(res.fixes * 10) / 10;
     const st = await G.evaluate(() => window.__lag.stale.filter(x => x > 0 && x < 5000));
     res.staleMed = Math.round(med(st)); res.staleP95 = Math.round(pct(st, 0.95));
     const b = await H.evaluate(() => { const S = Net.room.stats || {}; return { bytes: (S.byKey || {}).s || 0, n: (S.nByKey || {}).s || 0, kb: (S.byKey || {}).sk || 0 }; });
     res.snapBytes = b.n ? Math.round((b.bytes + b.kb) / b.n) : 0; res.snapsSent = b.n; res.keyframeBytes = b.n ? Math.round(b.kb / b.n) : 0;   // v9.10: keyframes (server path) count too
-    const gd = await G.evaluate(() => typeof NetDiag === 'undefined' ? {} : { unresolved: NetDiag.unresolved, fixes: NetDiag.fixesPerMin() });
-    Object.assign(res, gd);
+    res.unresolved = await G.evaluate(() => typeof NetDiag === 'undefined' ? 0 : NetDiag.unresolved);
     Object.assign(out, res);
   } catch (e) { out.error = String(e && e.message || e); }
   await ctx.close();
   return out;
 }
 export function lagTable(rows) {
-  const L = ['| Profile | Move | Jump | Shot release | Pass | Staleness (median / p95) |', '|---|---|---|---|---|---|'];
-  for (const r of rows) L.push(`| ${r.name} | ${r.move} ms | ${r.jump} ms | ${r.shot} ms | ${r.pass} ms | ${r.staleMed} / ${r.staleP95} ms |`);
+  const L = ['| Profile | Move | Jump | Shot release | Pass | Staleness (median / p95) | Corrections / min | Longest snapshot gap | Longest frozen draw | Bytes / snapshot |', '|---|---|---|---|---|---|---|---|---|---|'];
+  for (const r of rows) L.push(`| ${r.name} | ${r.move} ms | ${r.jump} ms | ${r.shot} ms | ${r.pass} ms | ${r.staleMed} / ${r.staleP95} ms | ${r.fixes} | ${r.snapGapMax} ms | ${r.gapMax} ms | ${r.snapBytes} |`);
   return L.join('\n');
 }

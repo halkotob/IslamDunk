@@ -19,7 +19,7 @@
 //     render delay and prediction corrections in a small box. The lobby rates each player's connection (Good / OK /
 //     Poor) from a 5 s probe, and "Copy network report" copies a plain-text report. Nothing is sent anywhere.
 const ONLINE_ICE_URL = null;   // after deploying worker/ice: 'https://islamdunk-ice.<your-subdomain>.workers.dev/ice'
-const NET_PROTO = 2;           // bump when the wire format changes in a way older clients can't read
+const NET_PROTO = 3;           // bump when the wire format changes in a way older clients can't read (3: v9.11.1 trickle ICE, snapshot numbers)
 const SNAP_V = 2;              // newest snapshot format this client reads
 
 // ---------------------------------------------------------------- ICE servers (TURN) from the Worker
@@ -172,7 +172,7 @@ const SnapZ = {
   k: (Math.random() * 1e6) | 0, sent: new Map(), propAt: 0, fx: null, mid: null, keys: new Map(), lastKey: null,
   on(s) {
     if (Net.role !== 'host' || Net.noCompact || !s || s.mid == null || s.sc === 'lobby' || !s.p) return false;
-    if (typeof P2P !== 'undefined' && P2P.open) return false;                 // the direct link keeps full snapshots
+    if (typeof P2P !== 'undefined' && P2P.open) return false;                 // the direct link keeps full snapshots (v9.11.1: compact ones measured no better there)
     const gp = Lobby.guestPres(); return !!(gp && gp.pv >= 2);
   },
   // the host's v 1 snapshot -> v 2: a key (everything, with id k) now and then, else only what changed since the
@@ -364,7 +364,9 @@ function unpackEv(e) { if (typeof e[1] !== 'number') return e; const n = SNAP_EV
     const me = M.players && M.players.find(p => p.human === 1), d0 = me && me._pd, x0 = d0 && d0.x, z0 = d0 && d0.z;
     _po.apply(this, arguments);
     const d1 = me && me._pd; if (!d0 || !d1) return;
-    const err = d1 !== d0 ? Infinity : Math.hypot(d1.x - x0, d1.z - z0) / Math.max(1e-3, Math.min(1, rdt * 18));
+    // eased toward the host's view: the pull is the step / the easing factor; replaced (9.11: also when within 3
+    // units, so that is no correction): the jump itself
+    const err = d1 !== d0 ? Math.hypot(d1.x - x0, d1.z - z0) : Math.hypot(d1.x - x0, d1.z - z0) / Math.max(1e-3, Math.min(1, rdt * 18));
     const now = nowMs();
     if (err > 40 && now - NetDiag.lastFixAt > 300) { NetDiag.fixT.push(now); NetDiag.lastFixAt = now; }
   };

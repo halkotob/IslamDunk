@@ -1,5 +1,31 @@
 # Changelog
 
+## 9.12.1: online follow-up: trustworthy diagnostics, faster connect, lossy links measured
+- **Loss you can trust.** Snapshots now carry a number (`sn`), and every direct-link message already did, so the
+  report counts what never arrived: snapshot loss and direct-link message loss over the last 5 s and since the match
+  started, each separate from ping loss. On the server path a missing snapshot is one the server replaced with a
+  newer one, so it's reported as skipped.
+- **Snapshots a second** is a rolling 2 s count, and reads "not in a match" in the lobby. A real direct-link match
+  was checked every 250 ms: the guest's rate stays within 3% of what the host sends and never reads 0.
+- **More in the report:** bytes a second each way, RTT p50 / p95 over 10 s, the snapshot rate target, how often the
+  render delay changed, and the time of each connect step (lobby ready, offer, answer, ICE gathering, ICE
+  connected, data channel open, first snapshot) with the number of signalling writes.
+- **Network report screen** (lobby and pause): a preview with one-tap "I'm on: Wi-Fi / Cellular / Not sure"
+  (Safari doesn't say), kept on this device only and included in the copied text.
+- **Position corrections fixed.** 9.11 made a tiny (under 3 units) catch-up replace the predicted position, which the
+  counter took as a correction; it now counts only real pulls of more than 3 ft.
+- **Faster connect.** Each side sent its description only after ICE gathering finished or 2.5 s passed. Candidates
+  now trickle through the same presence key (`rtc`) as a growing list, so nothing is lost if a write is late. On
+  the test link (60 ms each way for signalling) the first direct snapshot comes at 0.7 s instead of 3.3 s. A guest
+  still answers an older host the old way. A failed attempt is retried after 4 s (was 8).
+- **Measured and not kept:** an adaptive direct-link snapshot rate (60 → 30 → 20 Hz on loss, jitter or RTT) made the
+  lossy profile worse (staleness 237 vs 176 ms, longest snapshot gap 165 vs 120 ms), and compact snapshots on the
+  direct link (about 470 → 285 bytes) changed nothing measurable in latency, corrections or gaps on any profile.
+- Network protocol 3 (trickle signalling, snapshot numbers); the version check keeps older and newer clients apart.
+- **Lag harness:** a fifth profile, "Direct, 100 ms RTT, 35 ms jitter, 20% loss", and a 15 s roam that measures
+  position corrections a minute and the longest gap between snapshots; `tools/connect-report.mjs` times each
+  connect step from outside the game. `lag-profiles` now compares against 9.11.0. New tests: `net-seqloss`,
+  `net-rate`, `net-connect`.
 ## 9.12.0: play-test fixes: controls, confirmations, pause, readable cards, a layup lesson, comfort and sound settings
 - **The arrow keys move you in the tutorial and in one-player games.** The tutorial said "W A S D (or the arrow
   keys)" but the arrows only drove player 2. With one person playing on the keyboard, both sets of keys now

@@ -129,6 +129,6 @@ Connection paths, fastest first: **Direct** (peer to peer), **Relay** (TURN, for
 **Server** (Firebase). The relay needs the small Cloudflare Worker in `worker/ice` (see its README): it hands out
 1-hour TURN credentials, and its URL goes in `ONLINE_ICE_URL` in `src/online/net-diag.js`. Without it the game uses
 STUN only, as before. Settings → Sound & display → **Show network info** shows the mode, ping, jitter, loss and
-snapshot rate in a match; the lobby rates each player's connection and has **Copy network report** (also in the
-pause menu). Nothing is sent anywhere. `node tools/lag-report.mjs` measures input-to-screen latency under four
-simulated networks (`tests/lag-harness.mjs`).
+snapshot rate in a match; the lobby rates each player's connection and has **Network report** (also in the
+pause menu) to preview and copy the details. Nothing is sent anywhere. `node tools/lag-report.mjs` measures input-to-screen latency, corrections and snapshot gaps under five
+simulated networks (`tests/lag-harness.mjs`); `node tools/connect-report.mjs` times each step of connecting.

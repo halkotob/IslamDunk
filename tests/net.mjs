@@ -92,7 +92,7 @@ export function netTests({ newContext, open }) {
         if (!g) { res.unresolved++; continue; }
         res.got++;
         pend.push(SnapZ.lastKey); if (pend.length > 2) kk = pend.shift();   // the guest's ack reaches the host two snapshots later
-        const keys = new Set([...Object.keys(full), ...Object.keys(g)]); keys.delete('v');
+        const keys = new Set([...Object.keys(full), ...Object.keys(g)]); for (const k of ['v', 'sn', 'gf']) keys.delete(k);   // (sn, gf: added to every send, after packing)
         for (const k of keys) {
           if (k === 'p') { full.p.forEach((a, i) => a.forEach((v, j) => { if (!near(v, g.p[i][j], Q[j])) res.bad.push(`p[${i}][${j}] ${v} vs ${g.p[i][j]}`); })); continue; }
           if (k === 'b' || k === 'b2') { full[k].forEach((v, j) => { if (!near(v, g[k][j], BQ[j])) res.bad.push(`${k}[${j}] ${v} vs ${g[k][j]}`); }); continue; }
@@ -155,19 +155,30 @@ export function netTests({ newContext, open }) {
     await sleep(6500);                                                    // the 5 s probe
     const detail = []; let ok = true;
     const priv = await H.evaluate(() => [Net.code, Net.myPeer(), Net.guestPeer, ...TEAMS.flatMap(t => [t.name, t.short, ...t.players.map(p => p.name)])].filter(Boolean));
+    await G.evaluate(() => { localStorage.removeItem('islamdunk.mynet'); NetReport.open('lobby'); NetReport.pick('cell'); });   // the player says Cellular on the report screen
+    await sleep(400); fs.mkdirSync(path.join(ROOT, 'tests/output'), { recursive: true }); await G.screenshot({ path: path.join(ROOT, 'tests/output/net-report-screen.png') });
     for (const [who, P] of [['host', H], ['guest', G]]) {
-      const r = await P.evaluate(() => { NetDiag.copy('lobby'); return { txt: window.__lastNetReport, toast: Lobby.toast && Lobby.toast.m, rating: NetDiag.rating, other: (Net.role === 'host' ? Lobby.guestPres() : Net.hostPeer().presence).nq }; });
+      const r = await P.evaluate(() => { NetDiag.copy('lobby'); return { txt: window.__lastNetReport, rating: NetDiag.rating, other: (Net.role === 'host' ? Lobby.guestPres() : Net.hostPeer().presence).nq, stored: localStorage.getItem('islamdunk.mynet') }; });
       await sleep(300);
       const toast = await P.evaluate(() => Lobby.toast && Lobby.toast.m);
-      const need = ['App version: ', 'Mode: ', 'Ping (round trip): ', 'Jitter: ', 'Packet loss: ', 'ICE servers: ', 'ICE candidates offered here: host', 'Selected candidate pair: host -> host', 'Time to connect (lobby to first direct or relay packet): ', 'Direct-link attempts: ', 'Browser: ', 'Platform: ', 'Network type: '];
-      const miss = need.filter(s => !r.txt.includes(s));
+      const need = ['App version: ', 'Mode: ', 'Ping: RTT ', ' (p50 ', ' / p95 ', 'over 10 s), jitter ', 'ping loss ', who === 'guest' ? 'Snapshots received: not in a match, target 60/s' : 'Snapshots sent: not in a match, target 60/s', 'Direct-link message loss (from the other player): ', 'Data: sent ', 'KB/s', 'ICE servers: ', 'ICE candidates offered here: host', 'Selected candidate pair: host -> host', 'Time to connect (lobby to first direct or relay packet): ',
+        'Connect steps (ms from lobby ready): lobby ready 0, ', 'ICE gathering finished', 'data channel open ', 'signalling writes sent ', 'Direct-link attempts: ', 'Browser: ', 'Platform: ', 'Network type: '];
+      if (who === 'guest') need.push('Snapshot loss: ', 'Player says: Cellular');
+      const miss = need.filter(x => !r.txt.includes(x));
       const ip4 = r.txt.match(/\b\d{1,3}(\.\d{1,3}){3}\b/), ip6 = r.txt.match(/\b[0-9a-f]{1,4}(:[0-9a-f]{0,4}){3,}\b/i), local = /\.local\b|candidate:|ufrag|fingerprint/i.test(r.txt);
-      const names = priv.filter(s => s.length > 2 && r.txt.includes(s));
-      const good = !miss.length && !ip4 && !ip6 && !local && !names.length && r.rating && r.other && r.other.r && /copied|Could not/.test(toast || '');
+      const names = priv.filter(x => x.length > 2 && r.txt.includes(x));
+      const good = !miss.length && !ip4 && !ip6 && !local && !names.length && r.rating && r.other && r.other.r && /copied|Could not/.test(toast || '') && (who === 'host' || r.stored === 'cell');
       ok = ok && good;
-      detail.push(`${who}: ${good ? 'ok' : 'BAD'}; rating ${r.rating}, other side's ${r.other && r.other.r}; ${toast}${miss.length ? '; missing ' + miss.join(', ') : ''}${ip4 || ip6 ? '; an address: ' + (ip4 || ip6)[0] : ''}${names.length ? '; names: ' + names.join(', ') : ''}`);
-      if (who === 'guest') { fs.mkdirSync(path.join(ROOT, 'tests/output'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'tests/output/net-report.txt'), r.txt); }
+      detail.push(`${who}: ${good ? 'ok' : 'BAD'}; rating ${r.rating}, other side's ${r.other && r.other.r}; ${toast}${miss.length ? '; missing ' + miss.join(' | ') : ''}${ip4 || ip6 ? '; an address: ' + (ip4 || ip6)[0] : ''}${names.length ? '; names: ' + names.join(', ') : ''}`);
+      if (who === 'guest') fs.writeFileSync(path.join(ROOT, 'tests/output/net-report.txt'), r.txt);
     }
+    // in a match: the snapshot lines are live
+    await H.evaluate(() => Lobby.start()); await G.waitForFunction(() => Game.screen === 'netplay', null, { timeout: 15000 }).catch(() => {}); await sleep(3500);
+    const live = await G.evaluate(() => NetDiag.report());
+    const lv = /Snapshots received: ([\d.]+)\/s \(last 2 s\)/.exec(live), sl = /Snapshot loss: ([\d.]+)% \(\d+ of \d+ in the last 5 s\)/.test(live);
+    const good2 = !!lv && +lv[1] > 5 && sl;
+    ok = ok && good2; detail.push(`in a match: snapshots ${lv ? lv[1] + '/s' : 'MISSING'}, snapshot loss line ${sl ? 'there' : 'MISSING'} ${good2 ? 'ok' : 'BAD'}`);
+    fs.writeFileSync(path.join(ROOT, 'tests/output/net-report-match.txt'), live);
     ok = ok && !errs.length; detail.push(...errs);
     void code; await ctx.close();
     return { ok, detail };
@@ -272,22 +283,94 @@ export function netTests({ newContext, open }) {
     catch (e) { return { ok: false, detail: [String(e.stdout || ''), String(e.stderr || e.message)] }; }
   };
 
+  // loss from sequence numbers: known drops, reordering, the 5 s window, the 16-bit wrap
+  T['net-seqloss'] = async ({ browser, base }) => {
+    const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'seq');
+    const r = await p.evaluate(() => {
+      const out = [];
+      const L = SeqLoss.make(); const drop = new Set([3, 7, 8, 20, 41, 42, 43, 44, 45, 99]);
+      for (let n = 1; n <= 100; n++) if (!drop.has(n)) SeqLoss.add(L, n, n * 10);                  // all inside 1 s
+      const a = SeqLoss.loss(L, 1000), all = SeqLoss.loss(L, 1000, true);
+      out.push(['10 of 100 dropped (window)', a.pct, 10], ['10 of 100 dropped (since start)', all.pct, 10], ['received', all.got, 90]);
+      const R = SeqLoss.make(); [1, 2, 4, 3, 6, 5, 8, 7, 7, 10, 9].forEach((n, i) => SeqLoss.add(R, n, i));   // reordered, one duplicate
+      out.push(['reordered + duplicate: no loss', SeqLoss.loss(R, 20).pct, 0]);
+      const W = SeqLoss.make();
+      for (let n = 1; n <= 100; n++) if (n % 2) SeqLoss.add(W, n, n * 100);                             // 0-10 s: half lost
+      for (let n = 101; n <= 200; n++) SeqLoss.add(W, n, n * 100);                                       // 10-20 s: none lost
+      out.push(['window: only the last 5 s count', SeqLoss.loss(W, 20000).pct, 0], ['since start: all of it', SeqLoss.loss(W, 20000, true).pct, 25]);
+      const W2 = SeqLoss.make(); for (let n = 1; n <= 100; n++) if (n % 2) SeqLoss.add(W2, n, n * 100);
+      out.push(['window: the lossy 5 s (10 s in)', SeqLoss.loss(W2, 10000).pct, Math.round((1 - 25 / 49) * 1000) / 10]);   // 51..99: 25 of 49 arrived
+      const st = {}; const seq = [65534, 65535, 0, 1, 3].map(v => seqUnwrap(st, v)); out.push(['16-bit wrap', seq.join(','), '65534,65535,65536,65537,65539']);
+      return out;
+    });
+    await ctx.close();
+    const bad = r.filter(([, got, want]) => String(got) !== String(want));
+    return { ok: !bad.length && !errs.length, detail: r.map(([k, got, want]) => `${String(got) === String(want) ? 'ok ' : 'BAD'} ${k}: ${got} (want ${want})`).concat(errs) };
+  };
+
+  // a real direct-link match: the guest's snapshot rate matches what the host sends and never reads 0; "not in a match"
+  // in the lobby; no loss on a clean local link
+  T['net-rate'] = async ({ browser, base }) => {
+    const { ctx, H, G, errs } = await pair(browser, base, '?net=loop&lat=20&jit=4&room=rate');
+    await G.waitForFunction(() => P2P.open, null, { timeout: 15000 }).catch(() => {});
+    const lobby = await G.evaluate(() => [NetDiag.snapRate2(), NetDiag.inMatch()]);
+    await startVs(H, G); await G.bringToFront(); await sleep(3000);
+    const samples = [];
+    for (let i = 0; i < 24; i++) { const [g, h] = await Promise.all([G.evaluate(() => NetDiag.snapRate2()), H.evaluate(() => NetDiag.snapRate2())]); samples.push([g, h]); await sleep(250); }
+    const loss = await G.evaluate(() => SeqLoss.loss(NetDiag.snapL, nowMs(), true));
+    const zero = samples.filter(([g]) => !g).length, worst = Math.max(...samples.map(([g, h]) => Math.abs(g - h) / Math.max(1, h)));
+    const ok = lobby[0] === null && lobby[1] === false && zero === 0 && worst < 0.25 && loss && loss.pct <= 1 && !errs.length;
+    await ctx.close();
+    return { ok, detail: [`lobby: ${lobby[0] === null ? 'not in a match' : lobby[0]}`, `in the match (guest / host, every 250 ms): ${samples.map(([g, h]) => g + '/' + h).join(' ')}`, `readings of 0: ${zero}; largest difference ${(worst * 100).toFixed(0)}%; snapshot loss since the start ${loss && loss.pct}% (${loss && loss.got} of ${loss && loss.of})`, ...errs] };
+  };
+
+  // connecting: trickle ICE, steps and signalling writes; an older host (complete description, no trickle) still connects
+  T['net-connect'] = async ({ browser, base }) => {
+    const detail = []; let ok = true;
+    for (const old of [false, true]) {
+      const { ctx, H, G, errs } = await pair(browser, base, `?net=loop&mode=server&lat=60&jit=10&room=cn${old ? 'o' : 'n'}`, { noJoin: true });
+      if (old) await H.evaluate(() => {               // the 9.11.0 offer: wait for gathering, send the complete description
+        P2P.offer = async function (guest) {
+          this.state = 'offering'; this.tries++; this.remote = guest; this.id = Date.now() % 1e9;
+          const pc = this.pc = this.newPc(), id = this.id;
+          this.wireDc(pc.createDataChannel('fast', { ordered: false, maxRetransmits: 0 }));
+          await pc.setLocalDescription(await pc.createOffer()); await this.gather(pc);
+          if (this.pc !== pc) return;
+          this.base.presence({ rtc: { t: 'o', to: guest, id, sdp: pc.localDescription.sdp } }).catch(() => {});
+        };
+      });
+      const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
+      await G.evaluate(c => Lobby.join(c), code);
+      await H.waitForFunction(() => !!Net.guestPeer, null, { timeout: 15000 }).catch(() => {});
+      const t0 = Date.now();
+      await G.waitForFunction(() => P2P.open && NetDiag.firstSnapAt, null, { timeout: 15000 }).catch(() => {});
+      const ms = Date.now() - t0;
+      const cs = await G.evaluate(() => NetDiag.connectSteps());
+      const good = ms < (old ? 8000 : 4000) && cs && cs.steps.find(s => s[0] === 'data channel open')[1] != null && !errs.length;
+      ok = ok && good;
+      detail.push(`${old ? 'older host (no trickle)' : 'trickle'}: first snapshot on the direct link ${ms} ms after lobby ready ${good ? 'ok' : 'BAD'}; guest steps ${cs ? cs.steps.map(([k, v]) => k + ' ' + v).join(', ') + `; signalling writes ${cs.sigOut} sent, ${cs.sigIn} received` : 'none'}`, ...errs);
+      await ctx.close();
+    }
+    return { ok, detail };
+  };
+
   // the four network profiles, against the numbers v9.9.1 measured (tests/fixtures/lag-baseline.json). The server
   // path is noisy (one write in flight, resends), so each median may be up to 25% + 60 ms worse before it counts.
   T['lag-profiles'] = async ({ browser, base }) => {
-    const B = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/fixtures/lag-baseline.json'), 'utf8')).profiles;
+    const F = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/fixtures/lag-baseline.json'), 'utf8')), B = F.profiles;
     const rows = [], detail = []; let ok = true;
+    const LAT = ['move', 'jump', 'shot', 'pass', 'staleMed'];
+    const worse = (name, x) => [...LAT.filter(k => !(x[k] <= B[name][k] * 1.25 + 60)), ...(x.fixes <= B[name].fixes * 1.5 + 6 ? [] : ['fixes']), ...(x.snapGapMax <= B[name].snapGapMax * 1.25 + 80 ? [] : ['snapGapMax'])];
     for (const [name, prof] of LAG_PROFILES) {
       let r = await lagRun(browser, base, name, prof);
-      const worse = x => ['move', 'jump', 'shot', 'pass', 'staleMed'].filter(k => !(x[k] <= B[name][k] * 1.25 + 60));
-      if (!r.error && worse(r).length) { detail.push(`${name}: ${worse(r).join(', ')} slower than v9.9.1 on the first run; running again`); const r2 = await lagRun(browser, base, name, prof); for (const k of ['move', 'jump', 'shot', 'pass', 'staleMed']) r[k] = Math.min(r[k], r2[k]); }
+      if (!r.error && worse(name, r).length) { detail.push(`${name}: ${worse(name, r).join(', ')} worse than ${F.version} on the first run; running again`); const r2 = await lagRun(browser, base, name, prof); for (const k of [...LAT, 'fixes', 'snapGapMax']) r[k] = Math.min(r[k], r2[k]); }
       rows.push(r);
-      const bad = r.error ? ['error ' + r.error] : worse(r);
-      ok = ok && !bad.length && !r.errs.length && (prof.mode !== 'server' || r.snapBytes < B[name].snapBytes);
-      detail.push(`${name}: ${bad.length ? 'SLOWER ' + bad.join(', ') : 'no regression'}; ${r.snapBytes} bytes a snapshot (v9.9.1: ${B[name].snapBytes})${r.errs.length ? '; ' + r.errs.join('; ') : ''}`);
+      const bad = r.error ? ['error ' + r.error] : worse(name, r);
+      ok = ok && !bad.length && !r.errs.length && r.snapBytes <= B[name].snapBytes * 1.1 + 10;   // (+ the snapshot number sn, v9.11.1, and whatever later versions add; the server path was ~440 before 9.10)
+      detail.push(`${name}: ${bad.length ? 'WORSE ' + bad.join(', ') : 'no regression'}; ${r.snapBytes} bytes a snapshot (${F.version}: ${B[name].snapBytes})${r.errs.length ? '; ' + r.errs.join('; ') : ''}`);
     }
     const before = Object.entries(B).map(([name, b]) => Object.assign({ name }, b));
-    detail.push('', 'before (v9.9.1):', ...lagTable(before).split('\n'), '', 'after:', ...lagTable(rows).split('\n'));
+    detail.push('', `before (${F.version}):`, ...lagTable(before).split('\n'), '', 'after:', ...lagTable(rows).split('\n'));
     fs.mkdirSync(path.join(ROOT, 'tests/output'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'tests/output/lag-after.json'), JSON.stringify(rows, null, 1));
     return { ok, detail };
   };

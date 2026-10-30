@@ -1,41 +1,66 @@
 {
- "note": "v9.9.1 (before v9.10), tools/lag-report.mjs: medians of 6 tries (ms); staleness median/p95 (ms); bytes per snapshot on the wire",
+ "version": "9.11.0",
+ "note": "v9.11.1: the lag harness (tests/lag-harness.mjs, with the roam and the lossy direct profile) on the 9.11.0 build, 6 tries each, medians in ms; fixes = guest position corrections a minute during the 15 s roam, snapGapMax = the longest wait for a snapshot then, gapMax = the longest time the other players' drawn positions didn't move. lag-profiles fails if a later build is clearly worse (see tests/net.mjs).",
  "profiles": {
   "Direct, 30 ms RTT": {
-   "move": 48,
-   "jump": 133,
-   "shot": 134,
-   "pass": 124,
-   "staleMed": 74,
-   "staleP95": 99,
-   "snapBytes": 451
+   "move": 28,
+   "jump": 3,
+   "shot": 5,
+   "pass": 6,
+   "staleMed": 108,
+   "staleP95": 148,
+   "fixes": 0,
+   "snapGapMax": 69,
+   "gapMax": 26,
+   "snapBytes": 474
   },
   "Relay, 90 ms RTT, 20 ms jitter": {
-   "move": 51,
-   "jump": 187,
-   "shot": 236,
-   "pass": 226,
-   "staleMed": 105,
-   "staleP95": 142,
-   "snapBytes": 447
+   "move": 48,
+   "jump": 4,
+   "shot": 4,
+   "pass": 4,
+   "staleMed": 155,
+   "staleP95": 199,
+   "fixes": 0,
+   "snapGapMax": 92,
+   "gapMax": 0,
+   "snapBytes": 467
   },
   "Server, 250 ms RTT, 40 ms jitter, 3% loss": {
-   "move": 71,
-   "jump": 766,
-   "shot": 655,
-   "pass": 616,
-   "staleMed": 327,
-   "staleP95": 374,
-   "snapBytes": 443
+   "move": 49,
+   "jump": 4,
+   "shot": 4,
+   "pass": 3,
+   "staleMed": 372,
+   "staleP95": 427,
+   "fixes": 60,
+   "snapGapMax": 724,
+   "gapMax": 495,
+   "snapBytes": 280
   },
   "Bad mobile, 400 ms RTT, 10% loss": {
-   "move": 58,
-   "jump": 542,
-   "shot": 553,
-   "pass": 545,
-   "staleMed": 292,
-   "staleP95": 1224,
-   "snapBytes": 435
+   "move": 47,
+   "jump": 3,
+   "shot": 4,
+   "pass": 4,
+   "staleMed": 336,
+   "staleP95": 391,
+   "fixes": 0,
+   "snapGapMax": 92,
+   "gapMax": 59,
+   "snapBytes": 454
+  },
+  "Direct, 100 ms RTT, 35 ms jitter, 20% loss": {
+   "move": 45,
+   "jump": 4,
+   "shot": 6,
+   "pass": 4,
+   "staleMed": 178,
+   "staleP95": 229,
+   "fixes": 0,
+   "snapGapMax": 101,
+   "gapMax": 21,
+   "snapBytes": 463
   }
  }
 }
