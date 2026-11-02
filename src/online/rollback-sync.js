@@ -15,7 +15,7 @@ function rbAnchors() {                                                    // the
 // the definitions both sides built the match from (the same start message): by name
 function rbStatics() {                                                    // every definition object, named by its path
   const R = new Map();
-  const name = (v, n) => { if (!v || typeof v !== 'object' || R.has(v) || v instanceof Hoop) return; R.set(v, n); for (const k of Object.keys(v)) name(v[k], n + '/' + k); };
+  const name = (v, n) => { if (!v || typeof v !== 'object' || R.has(v) || v instanceof Hoop) return; R.set(v, n); for (const k of Object.keys(v)) { const d = Object.getOwnPropertyDescriptor(v, k); if (d && 'value' in d) name(d.value, n + '/' + k); } };
   name(M.teamDefs, 'TD');
   M.players.forEach((p, i) => { name(p.def, 'D' + i); name(p.T, 'T' + i); if (p.look && typeof p.look === 'object') name(p.look, 'L' + i); });
   (M.teams || []).forEach((t, i) => name(t.def, 'TT' + i));
@@ -106,4 +106,14 @@ function rbOnDesync(f) {
   // the host: a desync seen by the guest only is still put right (the guest's checksum differs from ours)
   const _rp = RBN.report;
   RBN.report = function () { const r = _rp.apply(this, arguments); if (r && this.stats) { r.desyncs = this.stats.desyncs || 0; r.syncs = this.stats.syncs || 0; r.syncsSent = this.stats.syncsSent || 0; } return r; };
+}
+// the network report (lobby and pause): how the rollback match is going
+{
+  const _rp = NetDiag.report;
+  NetDiag.report = function () {
+    const txt = _rp.apply(this, arguments), r = typeof RBN !== 'undefined' && RBN.on ? RBN.report() : null;
+    const line = r ? `Netcode: rollback   Input delay: ${r.delay} frame(s)   Corrections: ${r.rollbacksPerSec}/s, ${r.avgRoll} frames on average (max ${r.maxRoll})   Waits: ${r.stalls}   Desyncs put right: ${r.syncs || r.syncsSent || 0}`
+      : `Netcode: ${Net.mode && RBN.modes.has(Net.mode) ? 'snapshots (no direct link)' : 'snapshots'}`;
+    return txt.replace('\nICE servers:', '\n' + line + '\nICE servers:');
+  };
 }

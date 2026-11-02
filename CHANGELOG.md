@@ -1,5 +1,57 @@
 # Changelog
 
+## 9.14.0: online matches with rollback netcode
+Same team vs CPU, Head to head and 1 on 1 now play with rollback, the way fighting games play online. Both
+players run the whole match and send each other only their controls. Your own player answers your press at once
+(after a short input delay: 1 frame on a good link), the host has no advantage any more, and both screens always
+agree on every steal, block, rebound and basket.
+- **How it works.** Each side plays its own input at once and guesses the other player's (the buttons they were
+  holding). When the real input arrives and differs, the game goes back to that frame and plays the frames since
+  again, within the same drawn frame: corrections of a few frames, up to 10. The input delay follows the
+  connection (rbDelayFor): about 4 frames of the friend's input left to guess, more delay on a slow link instead of
+  waits. The side that runs ahead slows down slightly until both are on the same frame. Inputs are one number a
+  frame, sent with every input the other side hasn't confirmed, so a lost packet costs nothing.
+- **Measured** on the lag harness's connections (rb-lag; your press to your player moving, and your friend's press
+  to their player moving on your screen):
+
+  | Connection | Your press | Friend's press on your screen | Corrections | Waits | Before (9.11): other players on screen |
+  |---|---|---|---|---|---|
+  | Direct, 30 ms RTT | 24 ms | 40-44 ms | 5.3/s, 1.4 frames | 3 | 108 ms old |
+  | Relay, 90 ms RTT, 20 ms jitter | 29-32 ms | 82-88 ms | 5.9/s, 2.5 frames | 0 | 155 ms old |
+  | Direct, 100 ms RTT, 35 ms jitter, 20% loss | 23-39 ms | 90-101 ms | 5.5/s, 3.1 frames | 3 | 178 ms old |
+  | Bad mobile, 400 ms RTT, 10% loss | 149-157 ms | 235-246 ms | 5.3/s, 5.2 frames | 15 | 336 ms old |
+
+  (Both players mashing buttons every 16 ms, far more than real play; the 250 ms server profile has no direct link,
+  so it keeps the snapshots.) 7-12 KB/s each way, under half the old snapshots' rate.
+- **Every frame the same on both machines.** A match frame (rbStep) uses its own seeded random numbers, the
+  settings both players agreed on, both players' recorded inputs on a virtual keyboard, and its own versions of
+  sin, cos, exp, pow, atan2 and hypot built from + - * / and sqrt, because browsers may differ in the last bit
+  (Chrome's V8 and Safari's JavaScriptCore do). Effects, sounds, the net, the camera and the commentary roll their
+  own random numbers and never change the match. Fixed on the way: a spark's random roll that happened only when the
+  player was on screen, sprint's double tap reading the wall clock, the CPU's taunt on a timer (now in match time, in
+  games with a person in them: CPU-only games never got it, as before),
+  two commentary pickers whose memory changed how many random numbers they drew, one ** (engine-specific pow).
+- **Going back is exact.** rbSave/rbLoad keep a shallow copy of every object the match owns and put the values back
+  in place (the same objects, the same key order); the definitions (teams, players) are recognised by identity
+  and never copied. An effect first seen in a replayed frame (your friend's dunk arrived a frame late) still plays,
+  once; one already shown isn't shown again.
+- **Desyncs are caught and put right.** Every second both sides compare the checksum of a frame both have
+  confirmed. If they ever differ, the host sends its state for its newest confirmed frame and the guest rebuilds onto
+  it. None were seen in 12 twenty-second runs on a lossy link under load after the last fix; the repair is tested
+  by forcing one.
+- **The netcode follows the link.** Rollback needs the direct link (WebRTC). Without one (everything through the
+  server, where a lost message holds up the ones behind it), a match uses the snapshot netcode as before, and so do
+  HORSE, Lightning and Barakah Run duos. Halftime has no screen in a rollback match, and Noor questions, timeouts
+  and instant replays are off there for now.
+- The network report (lobby and pause) says which netcode is in use, the input delay, corrections, waits and
+  desyncs put right.
+- **Tests:** rb-determinism (two pages, one disturbed by a wider screen, drawing, other settings and touch; and
+  Chrome's engine against Safari's through bun: 3,600 frames identical), rb-rollback (2 minutes of mispredicted,
+  restored and replayed frames identical to a straight run; costs: a frame 0.05 ms, a save 0.12 ms, on a 4x slower
+  CPU an 8-frame rollback 7-9 ms), rb-online, rb-flow (to the final whistle, the lobby, a rematch, the host
+  leaving), rb-resync, rb-lag; Electron plays a rollback match between two windows over real WebRTC. The older online
+  tests keep testing the snapshot netcode.
+
 ## 9.13.0: Review Studio: every screen, sound alternatives, a crowd that matches the room
 No gameplay changes. Sounds are judged by ear in the Studio; the tests check what can be measured.
 - **Screens: every view with a UI.** 16 new Studio setups for the views that had none: the welcome dialog, a toast,

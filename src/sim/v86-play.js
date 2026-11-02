@@ -303,13 +303,13 @@ function tauntOpen(p, why) {
   M.taunt = { p, until: M.time + 3, why, used: false, deadOK: why === 'score' };
   // a CPU player taunts back half a second to a second later, in match time (v9.14: was a timer, so the frame it landed on
   // depended on the machine; an online match plays every frame the same on both)
-  if (p.human < 0 && chance(why === 'block' ? 0.25 : 0.3)) M.taunt.cpu = { at: M.time + 0.5 + Math.random() * 0.5, id: pick(['sky', 'flex', 'wag', 'chest', 'takbir', 'dua']) };
+  if (p.human < 0 && chance(why === 'block' ? 0.25 : 0.3)) { const at = M.time + 0.5 + Math.random() * 0.5; if (M.players.some(q => q.human >= 0)) M.taunt.cpu = { at }; }   // (which taunt: picked when it comes. Only at a person: CPU-only games (the league) never got the timer's taunt, and are calibrated without it)
 }
 {
   const _um = updateMatch;
   updateMatch = function (dt) {
     const r = _um.apply(this, arguments), T = M.taunt;
-    if (T && T.cpu && M.time >= T.cpu.at) { const c = T.cpu; T.cpu = null; if (!T.used) doTaunt(T.p, c.id); }
+    if (T && T.cpu && M.time >= T.cpu.at) { T.cpu = null; if (!T.used) doTaunt(T.p, pick(['sky', 'flex', 'wag', 'chest', 'takbir', 'dua'])); }
     return r;
   };
 }

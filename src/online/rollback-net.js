@@ -1,24 +1,29 @@
 // ================================================= v9.14: ROLLBACK NETCODE, PART 2: THE ONLINE MATCH
 // Same team vs CPU, Head to head and 1 on 1 (the match modes) are played with rollback: both players run the whole
 // match (rollback.js makes every frame the same on both machines) and send each other only their controls.
-//   * Your own controls play at once (after a fixed 2-frame input delay, 33 ms, which hides most corrections).
+//   * Your own controls play at once (after a short input delay, 1 frame on a good link and more on a slow one: it
+//     hides most corrections; rbDelayFor).
 //   * Your friend's controls for a frame you've already played are guessed (the buttons they were holding); when the
 //     real ones arrive and differ, the game goes back to that frame and plays the frames since again, in the same
-//     drawn frame (RBN.W = 8 frames at most; further behind than that, the game waits for them).
-//   * Inputs are tiny (three numbers a frame) and each packet repeats every input the other side hasn't confirmed, so
-//     a lost packet costs nothing. They travel on the direct link (unordered, no resends) like the old snapshots.
+//     drawn frame (RBN.W = 10 frames at most; further behind than that, the game waits for them). The delay grows
+//     on a slow link (up to 9 frames) so the window covers the rest, instead of waits.
+//   * Inputs are tiny (one number a frame, runs of the same input as one) and each packet repeats every input the other
+//     side hasn't confirmed (48 at most), so a lost packet costs nothing. They travel on the direct link (unordered, no resends) like the old snapshots.
 //   * The side that runs ahead slows down a little until both are on the same frame (time sync).
 //   * Every second each side sends the checksum of a frame both have confirmed; a mismatch is a desync (reported in
 //     the network report, and the host's state is sent to put the guest right: rollback-sync.js).
 // The match starts from the host's start message (rbgo): the match setup, the seed and the agreed settings; both
-// sides build the same match from it. HORSE, Lightning and Barakah Run duos still use the host's snapshots.
+// sides build the same match from it. HORSE, Lightning and Barakah Run duos still use the host's snapshots, and so do
+// matches without a direct link (everything through the server: in-order delivery holds every input up behind a lost
+// one, and rollback would wait; there the snapshots keep your own player instant).
 const RBN = {
-  on: false, id: 0, me: 0, D: 2, W: 8, keep: 40,
+  on: false, id: 0, me: 0, D: 2, W: 10, keep: 40, maxD: 9,
   f: 0, acc: 0, states: new Map(), ins: [new Map(), new Map()], used: new Map(), conf: -1, lastIn: RB_IDLE,
   rollTo: Infinity, peerF: -1, peerAck: -1, peerV: null, gotAt: 0, rtt: 0, lastPkt: null, hashes: new Map(), theirHash: null,
   desync: null, gone: false, stats: null, cfg: null, over: false, hold: 0,
   modes: new Set(['co', 'vs', 'one']),
-  eligible(mode) { return this.modes.has(mode) && !/[?&]rb=0\b/.test(typeof location !== 'undefined' ? location.search : ''); },
+  direct() { return (typeof P2P !== 'undefined' && P2P.open) || (Net.transport === 'loop' && Net.loop && Net.loop.mode !== 'server'); },   // (the test link stands in for one)
+  eligible(mode) { return this.modes.has(mode) && this.direct() && !(typeof window !== 'undefined' && window.ISLAMDUNK_RB === false) && !/[?&]rb=0\b/.test(typeof location !== 'undefined' ? location.search : ''); },   // (?rb=0 / the test switch: the snapshot netcode)
   // ---------------------------------------------------------------- starting
   // host: the start message (what newMatch needs, all of it data), then the match at frame 0
   hostStart() {
@@ -40,12 +45,16 @@ const RBN = {
     M.rbSeed = cfg.seed ^ 0x5bd1e995; M.rb = true; M.introT = 0; for (const q of M.players) q.hifzUsed = true;   // (no Noor questions in a rollback match yet)
     RB.cfg = cfg.set;
     Object.assign(this, { on: true, cfg, id: cfg.id, me, f: 0, acc: 0, rollTo: Infinity, conf: -1, peerF: -1, peerAck: -1, peerV: null, gotAt: nowMs(), rtt: 0, lastPkt: null,
-      desync: null, gone: false, over: false, hold: 0, theirHash: null, lastIn: RB_IDLE, hashedTo: -1, dbg: null, endF: null, hostGoneT: 0, needSync: false, pendingState: null });
+      desync: null, gone: false, over: false, hold: 0, theirHash: null, lastIn: RB_IDLE, hashedTo: -1, dbg: null, trace: null, lastSet: 1, dAt: 0, rtts: [], endF: null, hostGoneT: 0, needSync: false, pendingState: null });
     RB_EVENTS.clear(); this.states.clear(); this.ins[0].clear(); this.ins[1].clear(); this.used.clear(); this.hashes.clear();
     this.stats = { frames: 0, rollbacks: 0, rolled: 0, maxRoll: 0, stalls: 0, slowed: 0, mispredicted: 0, sent: 0, got: 0, hashes: 0, t0: nowMs() };
+    const ping = (typeof Lobby !== 'undefined' && Lobby.ping) || 0;          // (the lobby's round trip: a good first delay)
+    this.D = ping > 0 ? rbDelayFor(ping) : 2;
     for (let f = 0; f < this.D; f++) this.ins[me].set(f, RB_IDLE);    // the input delay: nobody presses anything in the first frames
+    this.lastSet = this.D - 1;
     M.online = false; Game.screen = 'play'; Game.paused = false; Game.trivia = null; Replay.reset();
-    if (/[?&]rbdebug=1/.test(location.search)) { this.startLines = rbStateLines(); this.dbg = new Map(); this.dbgDump = +(new URLSearchParams(location.search).get('rbdump') || -1); }   // (tests: both sides must start alike)
+    if (/[?&]rbdebug=2/.test(location.search)) this.trace = new Map();
+    if (/[?&]rbdebug=[12]/.test(location.search)) { this.startLines = rbStateLines(); this.dbg = new Map(); this.dbgDump = +(new URLSearchParams(location.search).get('rbdump') || -1); }   // (tests: both sides must start alike)
     FX.scale = 1; FX.stopF = 0;
   },
   stop() { this.on = false; RB.cfg = null; },
@@ -80,11 +89,11 @@ const RBN = {
   // ---------------------------------------------------------------- the network
   peerPres() { const p = Net.role === 'host' ? (Net.guestPeer && Net.peers().find(q => q.peer === Net.guestPeer)) : Net.hostPeer(); return p && p.presence; },
   send() {
-    const me = this.me, to = this.f - 1 + this.D, d = [];                 // (the newest input sampled so far)
-    const firstMine = Math.max(this.peerAck == null ? 0 : this.peerAck + 1, to - 60, 0);   // every input they haven't confirmed (a second's worth at most)
-    for (let k = firstMine; k <= to; k++) { const I = this.ins[me].get(k); if (!I) break; d.push(rbPackIn(I)); }   // (never a gap: 0 is not "no input")
+    const me = this.me, to = this.lastSet, d = [];                        // (the newest input sampled so far)
+    const firstMine = Math.max(this.peerAck == null ? 0 : this.peerAck + 1, 0);   // every input they haven't confirmed, oldest first
+    for (let k = firstMine; k <= to && d.length < 48; k++) { const I = this.ins[me].get(k); if (!I) break; d.push(rbPackIn(I)); }   // (never a gap: 0 is not "no input"; 48 at most a packet)
     const last = [...this.hashes.entries()].pop();
-    const pkt = { i: this.id, s: firstMine, d, a: this.conf, F: this.f, v: this.peerF >= 0 ? this.f - this.peerF : 0, t: Math.round(nowMs() * 10) / 10 };   // v: how far ahead of them we are, as we see it
+    const pkt = { i: this.id, s: firstMine, d: rbRunsOut(d), a: this.conf, F: this.f, v: this.peerF >= 0 ? this.f - this.peerF : 0, t: Math.round(nowMs() * 10) / 10 };   // v: how far ahead of them we are, as we see it
     if (this.lastPkt) { pkt.et = this.lastPkt.t; pkt.ed = Math.round((nowMs() - this.gotAt) * 10) / 10; }
     if (last) pkt.h = last;
     Net.setP({ rb: pkt }); this.stats.sent++;
@@ -96,9 +105,10 @@ const RBN = {
     this.lastPkt = pkt; this.gotAt = nowMs(); this.stats.got++;
     if (pkt.et != null) this.rtt = this.rtt ? lerp(this.rtt, nowMs() - pkt.et - (pkt.ed || 0), 0.2) : nowMs() - pkt.et - (pkt.ed || 0);
     const R = 1 - this.me, I = this.ins[R];
-    for (let j = 0; j < pkt.d.length; j++) {
+    const D = rbRunsIn(pkt.d);
+    for (let j = 0; j < D.length; j++) {
       const f = pkt.s + j; if (I.has(f)) continue;
-      const v = rbUnpackIn(pkt.d[j]); I.set(f, v);
+      const v = rbUnpackIn(D[j]); I.set(f, v);
       if (f < this.f) { const u = this.used.get(f); if (!u || !rbSameIn(u, v)) { this.rollTo = Math.min(this.rollTo, f); this.stats.mispredicted++; } }
     }
     while (I.has(this.conf + 1)) this.conf++;
@@ -118,7 +128,10 @@ const RBN = {
   // ---------------------------------------------------------------- frames
   stepFrame(f, resim) {
     this.states.set(f, rbSave());
-    RB.frame = f; rbStep(this.inputsFor(f), resim); RB.frame = null;
+    RB.frame = f;
+    if (this.trace) { const calls = [], _r = rbRandom; rbRandom = function () { calls.push((new Error().stack || '').split('\n').slice(2, 6).map(l => (l.match(/at ([\w$.<>]+)/) || [])[1] || '?').join('<')); return _r(); }; try { rbStep(this.inputsFor(f), resim); } finally { rbRandom = _r; } this.trace.set(f, calls); }   // (rbdebug=2: what drew each random number)
+    else rbStep(this.inputsFor(f), resim);
+    RB.frame = null;
     if (this.endF == null && M.phase === 'over') this.endF = f;          // (the frame the match ended on)
   },
   // frames both players have confirmed are final: every 60th gets a checksum (of the saved state just after it), sent
@@ -152,6 +165,14 @@ const RBN = {
     if (this.rollTo < this.f) this.rollback();
     this.confirmHashes();
     if (this.needSync && typeof rbSendState === 'function' && rbSendState()) this.needSync = false;   // (a desync: the host's state, now that it's final)
+    // the input delay follows the connection: the correction window (W frames) covers what the delay doesn't, so a
+    // slow link gets a little more delay instead of waits (slow motion). Twice a second, from the worst recent round trip.
+    if (this.rtt > 0 && nowMs() - (this.dAt || 0) > 500) {
+      this.dAt = nowMs(); this.rtts = (this.rtts || []).concat(this.rtt).slice(-6);
+      const hi = Math.max(...this.rtts);                                // (the worst round trip of the last 3 s)
+      const want = rbDelayFor(hi);
+      if (want > this.D) this.D = want; else if (want < this.D) this.D--;   // (up at once, down a frame every half second)
+    }
     // time sync: each side sees the other's frames late by the same delay, so half the difference between how far
     // ahead each of us looks to itself is how far ahead we really are (as in fighting games)
     const ahead = this.peerF >= 0 && this.peerV != null ? ((this.f - this.peerF) - this.peerV) / 2 : 0;
@@ -160,7 +181,12 @@ const RBN = {
     let n = 0, edges = true;
     while (this.acc >= STEP && n < 4) {
       if (!this.gone && this.f - this.conf > this.W) { this.stats.stalls++; this.acc = Math.min(this.acc, STEP); break; }   // too far ahead of their inputs: wait
-      this.ins[this.me].set(this.f + this.D, Game.paused ? RB_IDLE : this.sample(edges)); edges = false;   // (in the pause menu the keys are the menu's)
+      const t = this.f + this.D;                                         // the frame this input is for
+      if (t > this.lastSet) {
+        const I = Game.paused ? RB_IDLE : this.sample(edges); edges = false;   // (in the pause menu the keys are the menu's)
+        for (let k = this.lastSet + 1; k < t; k++) this.ins[this.me].set(k, rbIn(I.h, 0, 0, I.qx, I.qz));   // (the delay grew: the frames between hold the same buttons)
+        this.ins[this.me].set(t, I); this.lastSet = t;
+      }
       snapPrev();
       this.stepFrame(this.f, false); this.f++; this.stats.frames++; n++;
       this.acc -= STEP;
@@ -193,11 +219,17 @@ const RBN = {
   report() {
     const S = this.stats; if (!S) return null;
     const secs = Math.max(1, (nowMs() - S.t0) / 1000);
-    return { frame: this.f, behind: this.f - 1 - this.conf, rtt: Math.round(this.rtt), rollbacksPerSec: +(S.rollbacks / secs).toFixed(2), avgRoll: S.rollbacks ? +(S.rolled / S.rollbacks).toFixed(1) : 0,
+    return { frame: this.f, delay: this.D, behind: this.f - 1 - this.conf, rtt: Math.round(this.rtt), rollbacksPerSec: +(S.rollbacks / secs).toFixed(2), avgRoll: S.rollbacks ? +(S.rolled / S.rollbacks).toFixed(1) : 0,
       maxRoll: S.maxRoll, stalls: S.stalls, slowed: S.slowed, mispredicted: S.mispredicted, hashesChecked: S.hashes, desync: this.desync ? this.desync.f : null };
   }
 };
 // a frame input, and on the wire as one number: 9 bits held, 9 pressed, 9 released, then the stick (x, z: -127..127)
+// the input delay for a round trip: about 4 frames of the other player's input left to guess (corrections that small
+// are hard to see), never under 1 frame, never so little that the window can't cover the rest (no waits)
+function rbDelayFor(rtt) {
+  const oneWay = Math.ceil((rtt / 2 + 20) / (STEP * 1000));            // (frames, with a margin for jitter)
+  return clamp(Math.max(oneWay - 4, oneWay - RBN.W + 2), 1, RBN.maxD);
+}
 function rbIn(h, p, r, qx, qz) { return { h, p, r, qx, qz, mx: qx / 127, mz: qz / 127 }; }
 function rbPackIn(I) { return I.h + I.p * 512 + I.r * 262144 + (I.qx + 127) * 134217728 + (I.qz + 127) * 34359738368; }
 function rbUnpackIn(n) {
@@ -206,6 +238,9 @@ function rbUnpackIn(n) {
   const r = Math.floor(n / 262144); n -= r * 262144;
   const p = Math.floor(n / 512); return rbIn(n - p * 512, p, r, qx - 127, qz - 127);
 }
+// inputs on the wire: base 36, and a run of the same input as value*count ("3k9x1*7,3k9x2")
+function rbRunsOut(d) { const o = []; for (let i = 0; i < d.length;) { let n = 1; while (i + n < d.length && d[i + n] === d[i]) n++; o.push(d[i].toString(36) + (n > 1 ? '*' + n : '')); i += n; } return o.join(','); }
+function rbRunsIn(s) { const o = []; if (!s) return o; for (const t of String(s).split(',')) { const [v, n] = t.split('*'), x = parseInt(v, 36); for (let k = 0; k < (n ? +n : 1); k++) o.push(x); } return o; }
 function rbSameIn(a, b) { return a.h === b.h && a.p === b.p && a.r === b.r && a.qx === b.qx && a.qz === b.qz; }
 // the end of the match, once: the real end-of-match flow (records, the final screen) runs on the confirmed frame
 function rbFinishOnce() { if (RB.finish) { const f = RB.finish; RB.finish = null; try { f(); } catch (e) {} } }

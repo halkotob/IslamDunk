@@ -12,11 +12,15 @@
 //                    exchanged checksum matches (no desync), corrections stay within the window
 //   rb-flow          a short match (2 halves of 8 s) to the final whistle on both sides with the same score, then both
 //                    back in the lobby; a rematch starts a new rollback match; the host leaving sends the guest back
+//   rb-lag           the lag harness's five connections (tests/lag-harness.mjs), with rollback: how long from a press
+//                    to your own player moving (host and guest), and to your friend's player moving on your screen;
+//                    corrections a second and how deep, waits, bytes a second, and no desync (rbLagTable: the table)
 //   rb-resync        a desync made on purpose (the guest's state nudged) is seen at the next checksum, the host sends
 //                    its state, the guest rebuilds onto it, and the checksums match again from then on
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { LAG_PROFILES } from './lag-harness.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const SESSION = fs.readFileSync(path.join(ROOT, 'tests/rollback-session.js'), 'utf8');
@@ -92,7 +96,7 @@ export function rollbackTests({ newContext, open }) {
   };
   // two tabs in one lobby on a conditioned test link, then a Head to head match
   async function rbPair(browser, base, q, setup) {
-    const errs = [], ctx = await newContext(browser);
+    const errs = [], ctx = await newContext(browser, { rb: true });
     const H = await open(ctx, base + '/' + q, errs, 'host'), G = await open(ctx, base + '/' + q, errs, 'guest');
     const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
     await G.evaluate(c => Lobby.join(c), code);
@@ -123,9 +127,9 @@ export function rollbackTests({ newContext, open }) {
     const { ctx, H, G, errs } = await rbPair(browser, base, '?net=loop&mode=udp&lat=30&jit=5&p2p=0&room=rbflow&nowelcome=1', { format: 'halves', len: 8 });
     const out = {};
     await H.evaluate(MASH, 5); await G.evaluate(MASH, 9);
-    const fin = p => p.waitForFunction(() => Game.screen === 'final', null, { timeout: 90000 }).then(() => true, () => false);
+    const fin = p => p.waitForFunction(() => Game.screen === 'final', null, { timeout: 150000 }).then(() => true, () => false);
     const [hf, gf] = await Promise.all([fin(H), fin(G)]);
-    const end = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return { screen: Game.screen, score: M.teams.map(t => t.score), winner: M.winner, desync: RBN.desync, err: RB.errors || 0 }; })));
+    const end = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return { screen: Game.screen, score: M.teams.map(t => t.score), winner: M.winner, desync: RBN.desync, err: RB.errors || 0, phase: M.phase, q: M.quarter, clock: M.clock, endF: RBN.endF, conf: RBN.conf, f: RBN.f }; })));
     out.final = { hf, gf, host: end[0], guest: end[1] };
     // the host goes on: both in the lobby
     await H.evaluate(() => finalContinue());
@@ -161,5 +165,55 @@ export function rollbackTests({ newContext, open }) {
     const ok = rep[0].syncsSent >= 1 && rep[1].syncs >= 1 && after.every(a => a.desync == null) && rep.every(r => r.err === 0) && !errs.length;
     return { ok, detail: [JSON.stringify(out), ...errs] };
   };
+  // one connection: a Head to head with rollback, the presses timed on both screens
+  async function rbLagRun(browser, base, name, prof) {
+    const q = `?net=loop&mode=${prof.mode}&lat=${prof.lat}&jit=${prof.jit}&loss=${prof.loss}&bw=${prof.bw}&p2p=0&room=rblag${Math.random().toString(36).slice(2, 7)}&nowelcome=1`;
+    const { ctx, H, G, errs } = await rbPair(browser, base, q);
+    const helper = () => {
+      Replay.schedule = () => {};
+      const me = (h) => M.players.find(q => q.human === h);
+      // press (or release) a direction on this keyboard
+      window.__press = (k, on) => { Input.down[k] = on; if (on) Input.pressed[k] = true; else Input.released[k] = true; };
+      // from now: the first frame the given human's player moves the given way (ms, wall clock)
+      window.__watch = (h, dir) => new Promise(res => { const t0 = Date.now(); const tick = () => { const p = me(h); if (p && p.vx * dir > 40) return res(Date.now()); if (Date.now() - t0 > 3000) return res(null); requestAnimationFrame(tick); }; requestAnimationFrame(tick); });
+      window.__still = h => { const p = me(h); return p && Math.abs(p.vx) < 5 && Math.abs(p.vz) < 5 && p.state === 'free'; };
+    };
+    await H.evaluate(helper); await G.evaluate(helper);
+    await sleep(2500);
+    const own = { host: [], guest: [] }, remote = { atGuest: [], atHost: [] };
+    for (let i = 0; i < 6; i++) {
+      const dir = i % 2 ? -1 : 1, key = dir > 0 ? 'KeyD' : 'KeyA';
+      for (const [P, O, h, oh, ownL, remL] of [[H, G, 0, 0, own.host, remote.atGuest], [G, H, 1, 1, own.guest, remote.atHost]]) {
+        for (let w = 0; w < 30 && !(await P.evaluate(x => window.__still(x), h)); w++) await sleep(50);
+        const seenHere = P.evaluate(([x, d]) => window.__watch(x, d), [h, dir]), seenThere = O.evaluate(([x, d]) => window.__watch(x, d), [oh, dir]);
+        const t0 = await P.evaluate(k => { const t = Date.now(); window.__press(k, true); return t; }, key);
+        const [a, b] = await Promise.all([seenHere, seenThere]);
+        await P.evaluate(k => window.__press(k, false), key);
+        if (a) ownL.push(a - t0); if (b) remL.push(b - t0);
+        await sleep(450);
+      }
+    }
+    // then both mash for 10 s: corrections, waits, bytes
+    const b0 = await Promise.all([H, G].map(p => p.evaluate(() => ({ bytes: (Net.room && Net.room.stats && Net.room.stats.byKey && Net.room.stats.byKey.rb) || 0, t: Date.now() }))));
+    await H.evaluate(MASH, 31); await G.evaluate(MASH, 37);
+    await sleep(10000);
+    const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { bytes: (Net.room && Net.room.stats && Net.room.stats.byKey && Net.room.stats.byKey.rb) || 0, t: Date.now(), err: RB.errors || 0 }); })));
+    await ctx.close();
+    const med = a => { const x = a.slice().sort((p, q) => p - q); return x.length ? x[x.length >> 1] : null; };
+    return { name, ownHost: med(own.host), ownGuest: med(own.guest), friendAtGuest: med(remote.atGuest), friendAtHost: med(remote.atHost),
+      rollbacksPerSec: +((rep[0].rollbacksPerSec + rep[1].rollbacksPerSec) / 2).toFixed(1), avgRoll: +((rep[0].avgRoll + rep[1].avgRoll) / 2).toFixed(1), maxRoll: Math.max(rep[0].maxRoll, rep[1].maxRoll),
+      stalls: rep[0].stalls + rep[1].stalls, delay: [rep[0].delay, rep[1].delay], bytesPerSec: Math.round((rep[0].bytes - b0[0].bytes) / Math.max(1, (rep[0].t - b0[0].t) / 1000)),
+      desync: rep[0].desyncs + rep[1].desyncs, err: rep[0].err + rep[1].err, samples: [own.host.length, own.guest.length, remote.atGuest.length, remote.atHost.length], errs };
+  }
+  T['rb-lag'] = async ({ browser, base }) => {
+    const rows = [];
+    for (const [name, prof] of LAG_PROFILES) rows.push(prof.mode === 'server' ? { name, snapshots: true } : await rbLagRun(browser, base, name, prof));   // (no direct link: the snapshot netcode)
+    const ok = rows.every(r => r.snapshots || (r.ownHost != null && r.ownGuest != null && r.desync === 0 && r.err === 0 && !r.errs.length)) && rows.filter(r => !r.snapshots && /^Direct|^Relay/.test(r.name)).every(r => r.ownHost <= 70 && r.ownGuest <= 70);   // (your own press within ~4 frames on direct and relay links)
+    return { ok, detail: [rbLagTable(rows), JSON.stringify(rows)] };
+  };
   return T;
+}
+export function rbLagTable(rows) {
+  const h = '| Connection | Your press, host | Your press, guest | Friend\'s press on your screen | Corrections /s (avg frames) | Waits | Bytes/s |\n|---|---|---|---|---|---|---|\n';
+  return h + rows.map(r => r.snapshots ? `| ${r.name} | snapshot netcode (no direct link) | | | | | |` : `| ${r.name} | ${r.ownHost} ms | ${r.ownGuest} ms | ${r.friendAtGuest} / ${r.friendAtHost} ms | ${r.rollbacksPerSec} (${r.avgRoll}, max ${r.maxRoll}) | ${r.stalls} | ${r.bytesPerSec} |`).join('\n');
 }

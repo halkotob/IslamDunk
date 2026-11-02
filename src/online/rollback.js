@@ -95,7 +95,8 @@ function rbPresent(obj, k, tag, always) {
     const r = Math.random; Math.random = FX_RANDOM;
     try { return f.apply(this, arguments); } finally { Math.random = r; }
   };
-  w._rb = true; obj[k] = w;
+  w._rb = true; try { Object.defineProperty(w, 'length', { value: f.length }); } catch (e) {}   // (the Studio tells sounds with arguments apart by length)
+  obj[k] = w;
 }
 function rbPresentGlobal(name, always) {                                  // a global function binding, by name
   try {
@@ -110,7 +111,7 @@ function rbPresentGlobal(name, always) {                                  // a g
   if (typeof Ach !== 'undefined') for (const k of Object.keys(Ach)) rbPresent(Ach, k, 'Ach.');
   if (typeof Pad !== 'undefined') rbPresent(Pad, 'rumble');
   rbPresent(Hoop.prototype, 'kick', 'hoop.');
-  rbPresentGlobal('pickCall', true);
+  rbPresentGlobal('pickCall', true); rbPresentGlobal('sigCall', true);   // (commentary pickers: they remember their last line, so they draw a varying number of times)
   for (const n of ['toast', 'coachNote', 'updateCamera', 'buildCourt', 'buildCrowd', 'setVenue', 'buildGymFloor', 'updateBroadcastCam']) rbPresentGlobal(n);
   // the hoops: in a rollback step only the rim spring moves (bounces read it); the net is drawing (rbNets, per frame)
   const _hu = Hoop.prototype.update;
@@ -130,11 +131,11 @@ const RB_LOOKS = new Set(['_coach', '_refl', '_hudF', '_hudPT', '_hudA', '_sv', 
   'canvas', 'spr', 'sprites', 'img', 'cache', 'rbScreen', 'coach', 'pendingClips', 'highlights']);
 // the definitions a match is built from (the teams, the players, their looks): never changed by a match, so saved
 // frames keep a reference to them without copying them, and the checksum doesn't walk them. Found by identity, not by
-// key name (a player's stats have a 'def' too: his defense). Marked by newMatch.
+// key name (a player's stats have a 'def' too: his defense). Marked for a match the first time it's saved.
 const RB_STATICS = new Set();
 function rbMarkStatics() {
   RB_STATICS.clear();
-  const add = v => { if (!v || typeof v !== 'object' || RB_STATICS.has(v) || v instanceof Hoop) return; RB_STATICS.add(v); for (const k of Object.keys(v)) add(v[k]); };
+  const add = v => { if (!v || typeof v !== 'object' || RB_STATICS.has(v) || v instanceof Hoop) return; RB_STATICS.add(v); for (const k of Object.keys(v)) { const d = Object.getOwnPropertyDescriptor(v, k); if (d && 'value' in d) add(d.value); } };   // (getters aren't called: they may build something)
   (M.teamDefs || []).forEach(add); add(M.teamDefs);
   for (const p of M.players || []) { add(p.def); add(p.T); if (p.look && typeof p.look === 'object') add(p.look); }
   for (const t of M.teams || []) add(t.def);
@@ -155,6 +156,7 @@ function rbWalk(roots, out) {
   return out;
 }
 function rbStateLines() {
+  rbStaticsFresh();
   return rbWalk([['M', M], ['ball', ball], ['rims', hoops.map(h => [h.dy, h.vy])], ['sprint', Sprint.map(S => [S.on, S.lastDir, S.lastT, S.held])], ['react', typeof React8 !== 'undefined' ? React8 : null]], []);
 }
 function rbHash(lines = rbStateLines()) {
@@ -242,6 +244,7 @@ const RB_MATH = Object.keys(DMath);
 // AI's player) still points at the right thing. Objects made after the save simply stop being referenced.
 function rbSkipKey(k) { return RB_LOOKS.has(k); }
 function rbSave() {
+  rbStaticsFresh();
   const list = [], seen = new Set();
   const go = v => {
     if (v == null || typeof v !== 'object' || seen.has(v)) return; seen.add(v);
@@ -308,7 +311,4 @@ function rbSavedLines(S) {
   }
   return out;
 }
-{
-  const _nm = newMatch;
-  newMatch = function () { const r = _nm.apply(this, arguments); rbMarkStatics(); return r; };
-}
+function rbStaticsFresh() { if (RB.staticsOf !== M.teamDefs) { rbMarkStatics(); RB.staticsOf = M.teamDefs; } }   // (marked for the match being saved, once)
