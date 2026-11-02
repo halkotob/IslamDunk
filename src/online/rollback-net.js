@@ -40,8 +40,8 @@ const RBN = {
     M.rbSeed = cfg.seed ^ 0x5bd1e995; M.rb = true; M.introT = 0; for (const q of M.players) q.hifzUsed = true;   // (no Noor questions in a rollback match yet)
     RB.cfg = cfg.set;
     Object.assign(this, { on: true, cfg, id: cfg.id, me, f: 0, acc: 0, rollTo: Infinity, conf: -1, peerF: -1, peerAck: -1, peerV: null, gotAt: nowMs(), rtt: 0, lastPkt: null,
-      desync: null, gone: false, over: false, hold: 0, theirHash: null, lastIn: RB_IDLE, hashedTo: -1, dbg: null });
-    this.states.clear(); this.ins[0].clear(); this.ins[1].clear(); this.used.clear(); this.hashes.clear();
+      desync: null, gone: false, over: false, hold: 0, theirHash: null, lastIn: RB_IDLE, hashedTo: -1, dbg: null, endF: null, hostGoneT: 0, needSync: false, pendingState: null });
+    RB_EVENTS.clear(); this.states.clear(); this.ins[0].clear(); this.ins[1].clear(); this.used.clear(); this.hashes.clear();
     this.stats = { frames: 0, rollbacks: 0, rolled: 0, maxRoll: 0, stalls: 0, slowed: 0, mispredicted: 0, sent: 0, got: 0, hashes: 0, t0: nowMs() };
     for (let f = 0; f < this.D; f++) this.ins[me].set(f, RB_IDLE);    // the input delay: nobody presses anything in the first frames
     M.online = false; Game.screen = 'play'; Game.paused = false; Game.trivia = null; Replay.reset();
@@ -109,12 +109,17 @@ const RBN = {
     const H = this.theirHash; if (!H) return;
     const mine = this.hashes.get(H[0]); if (mine == null) return;
     this.stats.hashes++;
-    if (mine !== H[1] && !this.desync) { this.desync = { f: H[0], at: nowMs() }; try { console.warn('[rollback] desync at frame', H[0]); } catch (e) {} if (typeof rbOnDesync === 'function') rbOnDesync(H[0]); }
+    if (mine === H[1]) { if (this.desync && H[0] > this.desync.f) this.desync = null; return; }   // (matching again: put right)
+    if (!this.desync || nowMs() - this.desync.at > 2000) {
+      this.desync = { f: H[0], at: nowMs() }; try { console.warn('[rollback] desync at frame', H[0]); } catch (e) {}
+      if (typeof rbOnDesync === 'function') rbOnDesync(H[0]);
+    }
   },
   // ---------------------------------------------------------------- frames
   stepFrame(f, resim) {
     this.states.set(f, rbSave());
-    rbStep(this.inputsFor(f), resim);
+    RB.frame = f; rbStep(this.inputsFor(f), resim); RB.frame = null;
+    if (this.endF == null && M.phase === 'over') this.endF = f;          // (the frame the match ended on)
   },
   // frames both players have confirmed are final: every 60th gets a checksum (of the saved state just after it), sent
   // to the other side and compared there. (With ?rbdebug=1, every confirmed frame, for tests.)
@@ -124,7 +129,7 @@ const RBN = {
       this.hashedTo = k; if (k % every !== 0) continue;
       const S = k + 1 === this.f ? rbSave() : this.states.get(k + 1); if (!S) continue;
       const hv = rbHashSaved(S);
-      if (this.dbg) { this.dbg.set(k, hv); (this.dbgS = this.dbgS || new Map()).set(k, S); (this.dbgIn = this.dbgIn || new Map()).set(k, [this.ins[0].get(k), this.ins[1].get(k), this.used.get(k)].map(x => x ? rbPackIn(x) : '-').join(',')); if (this.dbgS.size > 1500) this.dbgS.delete(this.dbgS.keys().next().value); }
+      if (this.dbg) { this.dbg.set(k, hv); (this.dbgIn = this.dbgIn || new Map()).set(k, [this.ins[0].get(k), this.ins[1].get(k), this.used.get(k)].map(x => x ? rbPackIn(x) : '-').join(',')); (this.dbgS = this.dbgS || new Map()).set(k, S); (this.dbgIn = this.dbgIn || new Map()).set(k, [this.ins[0].get(k), this.ins[1].get(k), this.used.get(k)].map(x => x ? rbPackIn(x) : '-').join(',')); if (this.dbgS.size > 1500) this.dbgS.delete(this.dbgS.keys().next().value); }
       if (k % 60 === 0) { this.hashes.set(k, hv); if (this.hashes.size > 4) this.hashes.delete(this.hashes.keys().next().value); this.checkHash(); }
     }
   },
@@ -132,6 +137,7 @@ const RBN = {
     const t = this.rollTo; this.rollTo = Infinity;
     if (t >= this.f || !this.states.has(t)) return;
     rbLoad(this.states.get(t));
+    if (this.endF != null && t <= this.endF) this.endF = null;           // (replayed: it may end on another frame, or not yet)
     const n = this.f - t; this.stats.rollbacks++; this.stats.rolled += n; this.stats.maxRoll = Math.max(this.stats.maxRoll, n);
     for (let k = t; k < this.f; k++) this.stepFrame(k, true);
   },
@@ -145,6 +151,7 @@ const RBN = {
     this.receive();
     if (this.rollTo < this.f) this.rollback();
     this.confirmHashes();
+    if (this.needSync && typeof rbSendState === 'function' && rbSendState()) this.needSync = false;   // (a desync: the host's state, now that it's final)
     // time sync: each side sees the other's frames late by the same delay, so half the difference between how far
     // ahead each of us looks to itself is how far ahead we really are (as in fighting games)
     const ahead = this.peerF >= 0 && this.peerV != null ? ((this.f - this.peerF) - this.peerV) / 2 : 0;
@@ -160,7 +167,7 @@ const RBN = {
     }
     if (n) { Input.pressed = {}; Input.released = {}; } else Game.keepInput = true;
     if (n >= 4) this.acc = 0;
-    this.send(); this.tidy();
+    this.send(); this.tidy(); if ((this.f & 63) === 0) rbEventsTidy(this.f);
     Game.alpha = clamp(this.acc / STEP, 0, 1); Game.interp = true;
     FX.scale = 1; FX.stopF = 0;
     rbNets(rdt);
@@ -177,7 +184,7 @@ const RBN = {
   play(rdt) {
     if (Game.paused) pauseNav();                                        // (the menu only: the match keeps running online)
     else if (menuHit('back') || Input.pressed.KeyP) { Game.paused = true; Game.idx = 0; }
-    if (M.phase === 'over' && this.f - 1 <= this.conf) {
+    if (M.phase === 'over' && this.endF != null && this.endF <= this.conf) {   // (their input for the last frame is in: the result is final)
       if (!this.over) { this.over = true; this.overT = 2.2; rbFinishOnce(); }
       this.overT -= rdt; if (this.overT <= 0) { Game.screen = 'final'; Game.paused = false; }
     }
@@ -226,6 +233,7 @@ function rbFinishOnce() { if (RB.finish) { const f = RB.finish; RB.finish = null
       if (g && g.id !== RBN.lastGo && !(h.presence.rbend === g.id)) { RBN.lastGo = g.id; Net.mode = g.mode; RBN.start(g, 1); return; }
     }
     if (!RBN.on) return _nu.apply(this, arguments);
+    if (Game.screen !== 'play') { RBN.receive(); RBN.send(); }          // (the final screen: the other side may still need our last inputs)
     if (this.role === 'host') {                                          // still notice the guest leaving
       const keep = this.snapDue; this.snapDue = () => false;
       try { this.hostTick(rdt); } finally { this.snapDue = keep; }
@@ -233,7 +241,9 @@ function rbFinishOnce() { if (RB.finish) { const f = RB.finish; RB.finish = null
     } else {
       this.onPeers && this.onPeers();
       const h = this.hostPeer();
-      if (h && h.presence && h.presence.rbend === RBN.id) { RBN.stop(); Lobby.guestBack(); }   // the host went back to the lobby
+      if (h && h.presence && h.presence.rbend === RBN.id) { RBN.stop(); Lobby.guestBack(); return; }   // the host went back to the lobby
+      RBN.hostGoneT = h && h.presence && h.presence.role === 'host' ? 0 : RBN.hostGoneT + rdt;
+      if (RBN.hostGoneT > 2 && !RBN.gone) RBN.lose();                      // the host left the room
     }
   };
   // the play screen

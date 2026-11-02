@@ -10,6 +10,10 @@
 //   rb-online        a Head to head match through the lobby, host and guest each pressing their own random buttons
 //                    for 20 s on a 40 ms (+-10) link losing 2% of messages: both sides play it with rollback, every
 //                    exchanged checksum matches (no desync), corrections stay within the window
+//   rb-flow          a short match (2 halves of 8 s) to the final whistle on both sides with the same score, then both
+//                    back in the lobby; a rematch starts a new rollback match; the host leaving sends the guest back
+//   rb-resync        a desync made on purpose (the guest's state nudged) is seen at the next checksum, the host sends
+//                    its state, the guest rebuilds onto it, and the checksums match again from then on
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -57,6 +61,17 @@ export function rollbackTests({ newContext, open }) {
       const da = await run({ frames, dump: out.first }), db = await run({ frames, rollback: true, noisy: true, dump: out.first });
       const sa = new Set(da.dump || []), sb = new Set(db.dump || []); out.straight = (da.dump || []).filter(x => !sb.has(x)).slice(0, 10); out.rolled = (db.dump || []).filter(x => !sa.has(x)).slice(0, 10);
     }
+    // effects in a replayed frame: one already shown when the frame was first played isn't shown again, a new one is
+    out.events = await p.evaluate(() => {
+      const n = () => FX.pops.length, n0 = n(); RB.sim = true;
+      try {
+        RB.frame = 100; FX.pop(100, 50, 200, 'SEEN', '#fff');                   // played forward
+        RB.resim = true; RB.frame = 101; FX.pop(100, 50, 200, 'SEEN', '#fff');  // the same, replayed a frame later: skipped
+        const a = n() - n0; FX.pop(400, 50, 200, 'NEW', '#fff');                // first seen in a replay: shown
+        const b = n() - n0; RB.frame = null; FX.pop(500, 50, 200, 'NOFRAME', '#fff');   // a replay outside an online match: skipped
+        return [a, b, n() - n0];
+      } finally { RB.sim = false; RB.resim = false; RB.frame = null; }
+    });
     // what a frame costs: a match step, a save, a restore, a checksum (ms, median of a few hundred), here and 4x slower
     const cost = () => p.evaluate(() => {
       const n = 300, r = v => Math.round(v / n * 1000) / 1000, S0 = []; let t0 = performance.now();
@@ -72,17 +87,17 @@ export function rollbackTests({ newContext, open }) {
     out.cost4x = await cost(); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
     const c = out.cost4x; out.replay8ms4x = Math.round((c.load + 8 * (c.step + c.save)) * 100) / 100;   // a rollback of 8 frames on the slow CPU
     await ctx.close();
-    const ok = out.frames === frames && out.first === -1 && out.stepErrors[0] === 0 && !errs.length;
+    const ok = out.frames === frames && out.first === -1 && out.stepErrors[0] === 0 && out.events.join() === '1,2,2' && !errs.length;
     return { ok, detail: [JSON.stringify(out), ...errs] };
   };
   // two tabs in one lobby on a conditioned test link, then a Head to head match
-  async function rbPair(browser, base, q) {
+  async function rbPair(browser, base, q, setup) {
     const errs = [], ctx = await newContext(browser);
     const H = await open(ctx, base + '/' + q, errs, 'host'), G = await open(ctx, base + '/' + q, errs, 'guest');
     const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
     await G.evaluate(c => Lobby.join(c), code);
     await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 15000 }).catch(() => {});
-    await H.evaluate(() => { const o = Lobby.opts(); o.game = 'vs'; Net.mode = 'vs'; Lobby.changed(); });
+    await H.evaluate(S => { const o = Lobby.opts(); o.game = 'vs'; Net.mode = 'vs'; Object.assign(o, S || {}); Lobby.changed(); }, setup || null);
     await G.evaluate(() => Lobby.setReady(1)); await sleep(900);
     await H.evaluate(() => Lobby.start());
     await G.waitForFunction(() => RBN.on && Game.screen === 'play', null, { timeout: 15000 }).catch(() => {});
@@ -102,6 +117,48 @@ export function rollbackTests({ newContext, open }) {
     const out = { started, host: rep[0], guest: rep[1] };
     const ok = started.every(s => s.on && s.screen === 'play') && started[0].me === 0 && started[1].me === 1
       && rep.every(r => r.desync == null && r.hashesChecked >= 5 && r.frame > 900 && r.maxRoll <= 8 && r.stepErrors === 0) && !errs.length;
+    return { ok, detail: [JSON.stringify(out), ...errs] };
+  };
+  T['rb-flow'] = async ({ browser, base }) => {
+    const { ctx, H, G, errs } = await rbPair(browser, base, '?net=loop&mode=udp&lat=30&jit=5&p2p=0&room=rbflow&nowelcome=1', { format: 'halves', len: 8 });
+    const out = {};
+    await H.evaluate(MASH, 5); await G.evaluate(MASH, 9);
+    const fin = p => p.waitForFunction(() => Game.screen === 'final', null, { timeout: 90000 }).then(() => true, () => false);
+    const [hf, gf] = await Promise.all([fin(H), fin(G)]);
+    const end = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return { screen: Game.screen, score: M.teams.map(t => t.score), winner: M.winner, desync: RBN.desync, err: RB.errors || 0 }; })));
+    out.final = { hf, gf, host: end[0], guest: end[1] };
+    // the host goes on: both in the lobby
+    await H.evaluate(() => finalContinue());
+    await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 10000 }).catch(() => {});
+    out.lobby = await Promise.all([H, G].map(p => p.evaluate(() => ({ screen: Game.screen, rb: RBN.on }))));
+    // a rematch
+    const id0 = await H.evaluate(() => RBN.id);
+    await sleep(600); await H.evaluate(() => Lobby.start());
+    await G.waitForFunction(() => RBN.on && Game.screen === 'play', null, { timeout: 15000 }).catch(() => {});
+    await sleep(1500);
+    out.rematch = await Promise.all([H, G].map(p => p.evaluate(() => ({ on: RBN.on, id: RBN.id, f: RBN.f, screen: Game.screen }))));
+    // the host leaves in the middle of it
+    await H.evaluate(() => goTitle());
+    await G.waitForFunction(() => !RBN.on, null, { timeout: 10000 }).catch(() => {});
+    out.left = await G.evaluate(() => ({ on: RBN.on, screen: Game.screen }));
+    await ctx.close();
+    const ok = hf && gf && end[0].score.join() === end[1].score.join() && end[0].winner === end[1].winner && end.every(e => e.desync == null && e.err === 0)
+      && out.lobby.every(l => l.screen === 'lobby' && !l.rb) && out.rematch.every(r => r.on && r.id === id0 + 1 && r.f > 30 && r.screen === 'play')
+      && !out.left.on && out.left.screen !== 'play' && !errs.length;
+    return { ok, detail: [JSON.stringify(out), ...errs] };
+  };
+  T['rb-resync'] = async ({ browser, base }) => {
+    const { ctx, H, G, errs } = await rbPair(browser, base, '?net=loop&mode=udp&lat=30&jit=5&p2p=0&room=rbsync&nowelcome=1');
+    await H.evaluate(MASH, 3); await G.evaluate(MASH, 4);
+    await sleep(3000);
+    await G.evaluate(() => { const p = M.players[2]; p.x += 37; p.turbo = 3; M.teams[0].score += 0; });   // a desync, on the guest only
+    await sleep(6000);
+    const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { err: RB.errors || 0 }); })));
+    await sleep(2500);
+    const after = await Promise.all([H, G].map(p => p.evaluate(() => ({ desync: RBN.desync, last: [...RBN.hashes.entries()].pop() }))));
+    await ctx.close();
+    const out = { host: rep[0], guest: rep[1], after };
+    const ok = rep[0].syncsSent >= 1 && rep[1].syncs >= 1 && after.every(a => a.desync == null) && rep.every(r => r.err === 0) && !errs.length;
     return { ok, detail: [JSON.stringify(out), ...errs] };
   };
   return T;

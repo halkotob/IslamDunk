@@ -11,7 +11,7 @@
 //   * the old host / guest code stays out of the way (Net.role is cleared for the step);
 //   * while a frame is played again (RB.resim), effects, sounds, replays and the like are skipped altogether.
 // rbHash() is the checksum of everything the match owns, for tests now and for desync detection later.
-const RB = { sim: false, resim: false, cfg: null };
+const RB = { sim: false, resim: false, cfg: null, frame: null };   // frame: set by the online match (events in replayed frames)
 // the buttons a frame's input carries, and the keys they press for player 1 and 2 (the bindings the control code reads)
 const RB_BTN = ['up', 'down', 'left', 'right', 'a', 'b', 'x', 'd', 't'];
 const RB_KEYS = [['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyJ', 'KeyK', 'KeyH', 'KeyL', 'ShiftLeft'],
@@ -59,14 +59,39 @@ function rbStep(ins, resim) {
 }
 // ---------------------------------------------------------------- what isn't the match
 // Effects, sounds, replays, achievements, commentary, the net and the camera. In a rollback step they use their own
-// random numbers; in a replayed frame they don't run at all. (Installed once; outside a rollback step they're as before.)
-// always: the match uses what it returns (the commentary line), so it also runs in a replayed frame (its own random numbers)
+// random numbers. (Installed once; outside a rollback step they're as before.) In a replayed frame:
+//   * what runs every frame (the particles, the replay recorder, the camera) is skipped;
+//   * an event (a sound, a popup, a callout, the net, an achievement) plays only if it didn't already play when that
+//     frame was first played (the same call within 3 frames): a dunk you first see in a replayed frame (your friend's
+//     input arrived late) still swishes, once, and one that was already shown isn't shown again;
+//   * always: the match uses what it returns (the commentary line), so it runs as usual (its own random numbers).
+const RB_EVERY_FRAME = new Set(['FX.update', 'FX.updateReal', 'FX.reset', 'Replay.record', 'Replay.frame', 'Replay.tick', 'Replay.reset', 'updateCamera', 'updateBroadcastCam',
+  'buildCourt', 'buildCrowd', 'setVenue', 'buildGymFloor']);
+const RB_EVENTS = new Map();                                              // name|arguments -> the frames it played on
+function rbEventKey(name, args) {
+  let k = name;
+  for (let i = 0; i < args.length && i < 4; i++) {
+    const a = args[i], t = typeof a;
+    k += '|' + (t === 'number' ? Math.round(a / 8) : t === 'string' || t === 'boolean' ? a : a && t === 'object' && typeof M !== 'undefined' && M.players && M.players.includes(a) ? 'P' + M.players.indexOf(a) : '-');
+  }
+  return k;
+}
+function rbEventSeen(key, f) { const L = RB_EVENTS.get(key); if (L) for (const g of L) if (Math.abs(g - f) <= 3) return true; return false; }
+function rbEventMark(key, f) { let L = RB_EVENTS.get(key); if (!L) RB_EVENTS.set(key, L = []); L.push(f); if (L.length > 8) L.shift(); }
+function rbEventsTidy(f) { for (const [k, L] of RB_EVENTS) if (L[L.length - 1] < f - 120) RB_EVENTS.delete(k); }
 function rbPresent(obj, k, tag, always) {
   const f = obj[k]; if (typeof f !== 'function' || f._rb) return;
-  const name = (tag || '') + k;
+  const name = (tag || '') + k, every = RB_EVERY_FRAME.has(name);
   const w = function () {
     if (!RB.sim) return f.apply(this, arguments);
-    if (RB.resim && !always && !(RB.keepInResim && RB.keepInResim(name))) return;   // (tests can keep some running, to find one that mustn't be skipped)
+    if (!always) {
+      if (RB.resim && (every || !RB.frame)) { if (!(RB.keepInResim && RB.keepInResim(name))) return; }   // (tests can keep some running, to find one that mustn't be skipped)
+      else if (!every && RB.frame != null) {
+        const key = rbEventKey(name, arguments);
+        if (RB.resim && rbEventSeen(key, RB.frame)) return;              // already played when this frame was first played
+        rbEventMark(key, RB.frame);
+      }
+    }
     const r = Math.random; Math.random = FX_RANDOM;
     try { return f.apply(this, arguments); } finally { Math.random = r; }
   };
@@ -84,7 +109,7 @@ function rbPresentGlobal(name, always) {                                  // a g
   if (typeof Replay !== 'undefined') for (const k of Object.keys(Replay)) rbPresent(Replay, k, 'Replay.');
   if (typeof Ach !== 'undefined') for (const k of Object.keys(Ach)) rbPresent(Ach, k, 'Ach.');
   if (typeof Pad !== 'undefined') rbPresent(Pad, 'rumble');
-  rbPresent(Hoop.prototype, 'kick');
+  rbPresent(Hoop.prototype, 'kick', 'hoop.');
   rbPresentGlobal('pickCall', true);
   for (const n of ['toast', 'coachNote', 'updateCamera', 'buildCourt', 'buildCrowd', 'setVenue', 'buildGymFloor', 'updateBroadcastCam']) rbPresentGlobal(n);
   // the hoops: in a rollback step only the rim spring moves (bounces read it); the net is drawing (rbNets, per frame)
@@ -101,14 +126,26 @@ function rbNets(dt) {                                                     // the
 // ---------------------------------------------------------------- the match's checksum
 // Fields that only the screen writes or reads (the HUD, reflections, trails, the sideline cast) and the hoops' nets
 // are left out; everything else under M, the ball, the rim springs and the sprint gestures is in.
-const RB_LOOKS = new Set(['_coach', '_refl', '_hudF', '_hudPT', '_hudA', '_sv', '_vSq', '_vT', '_vOwn', 'camCut', '_cvx', '_cvz', 'ix', 'iy', 'iz', 'ihip', 'irot', 'isq', 'ia', 'trail', 'teamDefs', 'def', 'look', 'cmdHook',
-  'canvas', 'spr', 'sprites', 'img', 'cache', 'c', 'rbScreen', 'coach', 'pendingClips', 'highlights']);
+const RB_LOOKS = new Set(['_coach', '_refl', '_hudF', '_hudPT', '_hudA', '_sv', '_vSq', '_vT', '_vOwn', 'ivd', 'camCut', '_cvx', '_cvz', 'ix', 'iy', 'iz', 'ihip', 'irot', 'isq', 'ia', 'trail', 'cmdHook',
+  'canvas', 'spr', 'sprites', 'img', 'cache', 'rbScreen', 'coach', 'pendingClips', 'highlights']);
+// the definitions a match is built from (the teams, the players, their looks): never changed by a match, so saved
+// frames keep a reference to them without copying them, and the checksum doesn't walk them. Found by identity, not by
+// key name (a player's stats have a 'def' too: his defense). Marked by newMatch.
+const RB_STATICS = new Set();
+function rbMarkStatics() {
+  RB_STATICS.clear();
+  const add = v => { if (!v || typeof v !== 'object' || RB_STATICS.has(v) || v instanceof Hoop) return; RB_STATICS.add(v); for (const k of Object.keys(v)) add(v[k]); };
+  (M.teamDefs || []).forEach(add); add(M.teamDefs);
+  for (const p of M.players || []) { add(p.def); add(p.T); if (p.look && typeof p.look === 'object') add(p.look); }
+  for (const t of M.teams || []) add(t.def);
+}
 function rbWalk(roots, out) {
   const seen = new Set();
   const go = (v, path, d) => {
     if (v == null || v === false || typeof v === 'function') return;   // (false and missing play the same)
     if (typeof v !== 'object') { out.push(path + '=' + (typeof v === 'number' ? (Object.is(v, -0) ? '0' : String(v)) : typeof v === 'string' ? v : String(v))); return; }
     if (v instanceof Hoop) { out.push(path + '=hoop' + hoops.indexOf(v)); return; }       // (its spring is under rims; the net is looks)
+    if (RB_STATICS.has(v)) { out.push(path + '=static'); return; }
     if (seen.has(v) || d > 7) return; seen.add(v);
     if (typeof HTMLElement !== 'undefined' && (v instanceof HTMLElement || v instanceof CanvasRenderingContext2D || (typeof ImageBitmap !== 'undefined' && v instanceof ImageBitmap))) return;
     if (v instanceof Set || v instanceof Map) { out.push(path + '#' + v.size); return; }
@@ -203,13 +240,12 @@ const RB_MATH = Object.keys(DMath);
 // ball and the sprint gestures, without the team definitions and the fields only the screen uses); rbLoad() puts
 // those values back into the same objects, so every reference anyone holds (a player in the renderer's caches, the
 // AI's player) still points at the right thing. Objects made after the save simply stop being referenced.
-const RB_STATIC = new Set(['def', 'teamDefs', 'look', 'cmdHook']);            // never changed by a match
-function rbSkipKey(k) { return RB_STATIC.has(k) || RB_LOOKS.has(k); }
+function rbSkipKey(k) { return RB_LOOKS.has(k); }
 function rbSave() {
   const list = [], seen = new Set();
   const go = v => {
     if (v == null || typeof v !== 'object' || seen.has(v)) return; seen.add(v);
-    if (v instanceof Hoop || (typeof HTMLElement !== 'undefined' && v instanceof HTMLElement) || (typeof CanvasRenderingContext2D !== 'undefined' && v instanceof CanvasRenderingContext2D)) return;
+    if (RB_STATICS.has(v) || v instanceof Hoop || (typeof HTMLElement !== 'undefined' && v instanceof HTMLElement) || (typeof CanvasRenderingContext2D !== 'undefined' && v instanceof CanvasRenderingContext2D)) return;
     if (Array.isArray(v)) { list.push(v, v.slice()); for (let i = 0; i < v.length; i++) go(v[i]); return; }
     if (v instanceof Set) { const a = [...v]; list.push(v, a); for (const x of a) go(x); return; }
     if (v instanceof Map) { const a = [...v]; list.push(v, a); for (const [k, x] of a) { go(k); go(x); } return; }
@@ -271,4 +307,8 @@ function rbSavedLines(S) {
     else for (const k in c) { if (c[k] === false || c[k] === undefined) continue; out.push(n + '.' + k + '=' + v(c[k])); }
   }
   return out;
+}
+{
+  const _nm = newMatch;
+  newMatch = function () { const r = _nm.apply(this, arguments); rbMarkStatics(); return r; };
 }

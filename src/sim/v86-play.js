@@ -301,7 +301,17 @@ KIND_TXT.taunt = 'Taunt';
 function tauntOpen(p, why) {
   if (!p || M.attract || M.practice || M.mini) return;
   M.taunt = { p, until: M.time + 3, why, used: false, deadOK: why === 'score' };
-  if (p.human < 0 && chance(why === 'block' ? 0.25 : 0.3)) setTimeout(() => { if (M.taunt && M.taunt.p === p && !M.taunt.used) doTaunt(p, pick(['sky', 'flex', 'wag', 'chest', 'takbir', 'dua'])); }, 500 + Math.random() * 500);
+  // a CPU player taunts back half a second to a second later, in match time (v9.14: was a timer, so the frame it landed on
+  // depended on the machine; an online match plays every frame the same on both)
+  if (p.human < 0 && chance(why === 'block' ? 0.25 : 0.3)) M.taunt.cpu = { at: M.time + 0.5 + Math.random() * 0.5, id: pick(['sky', 'flex', 'wag', 'chest', 'takbir', 'dua']) };
+}
+{
+  const _um = updateMatch;
+  updateMatch = function (dt) {
+    const r = _um.apply(this, arguments), T = M.taunt;
+    if (T && T.cpu && M.time >= T.cpu.at) { const c = T.cpu; T.cpu = null; if (!T.used) doTaunt(T.p, c.id); }
+    return r;
+  };
 }
 function myTaunt() { const t = (Profile.load().equip || {}).taunt || 'sky'; return Profile.has('taunt', t) || t === 'sky' ? t : 'sky'; }
 function doTaunt(p, id) {
