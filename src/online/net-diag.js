@@ -18,7 +18,7 @@
 //   * Diagnostics: Settings > Show network info (off by default) shows the mode, ping, jitter, loss, snapshot rate,
 //     render delay and prediction corrections in a small box. The lobby rates each player's connection (Good / OK /
 //     Poor) from a 5 s probe, and "Copy network report" copies a plain-text report. Nothing is sent anywhere.
-const ONLINE_ICE_URL = null;   // after deploying worker/ice: 'https://islamdunk-ice.<your-subdomain>.workers.dev/ice'
+const ONLINE_ICE_URL = 'https://islamdunk-ice.islamdunk.workers.dev/ice';   // the Worker in worker/ice (TURN credentials)
 const NET_PROTO = 3;           // bump when the wire format changes in a way older clients can't read (3: v9.11.1 trickle ICE, snapshot numbers)
 const SNAP_V = 2;              // newest snapshot format this client reads
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 9.14.1: the online relay is on
+Players whose connection can't link peer to peer (strict routers, many mobile carriers, school and office
+networks) now get a direct link through Cloudflare's TURN relay, so they play with rollback too instead of the
+laggy snapshots through the server.
+- The Worker `islamdunk-ice` (worker/ice) is deployed at `https://islamdunk-ice.islamdunk.workers.dev/ice`, and
+  `ONLINE_ICE_URL` points at it. Hosting or joining a lobby fetches 1-hour TURN credentials from it. If the fetch
+  fails or takes over 2 s, the game goes on with the free STUN servers, as before.
+- The Network report says `Mode: Relay (TURN)` when a match goes through the relay.
+
 ## 9.14.0: online matches with rollback netcode
 Same team vs CPU, Head to head and 1 on 1 now play with rollback, the way fighting games play online. Both
 players run the whole match and send each other only their controls. Your own player answers your press at once

@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.14.0';
+const VERSION = '9.14.1';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -24413,7 +24413,7 @@ function cpuPress(p) { return p && p.human < 0 && !M.mini ? clamp(cpuTend(p).pre
 //   * Diagnostics: Settings > Show network info (off by default) shows the mode, ping, jitter, loss, snapshot rate,
 //     render delay and prediction corrections in a small box. The lobby rates each player's connection (Good / OK /
 //     Poor) from a 5 s probe, and "Copy network report" copies a plain-text report. Nothing is sent anywhere.
-const ONLINE_ICE_URL = null;   // after deploying worker/ice: 'https://islamdunk-ice.<your-subdomain>.workers.dev/ice'
+const ONLINE_ICE_URL = 'https://islamdunk-ice.islamdunk.workers.dev/ice';   // the Worker in worker/ice (TURN credentials)
 const NET_PROTO = 3;           // bump when the wire format changes in a way older clients can't read (3: v9.11.1 trickle ICE, snapshot numbers)
 const SNAP_V = 2;              // newest snapshot format this client reads
 

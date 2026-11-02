@@ -1,6 +1,6 @@
 # Online: where things stand (pick up here)
 
-Last updated with 9.14.0. Read this first when continuing the online work.
+Last updated with 9.14.1. Read this first when continuing the online work.
 
 ## Done
 
@@ -13,44 +13,22 @@ Last updated with 9.14.0. Read this first when continuing the online work.
   1-hour TURN credentials from our Cloudflare Worker and adds them to the WebRTC config. Tested with a fake ICE
   endpoint (`net-ice`). The Worker itself (`worker/ice`) passes its tests (`node --test test/worker.test.mjs`).
 
-## Not done yet: turning the relay on
+## Relay (TURN): deployed (9.14.1)
 
-Without it, pairs that can't connect peer to peer (strict routers, many mobile carriers, school/office networks)
-fall back to the old snapshot netcode through Firebase (the laggy path). Needs the owner's Cloudflare account:
-
-1. Cloudflare dashboard → **Realtime → TURN Server → Create**, name `islamdunk`. Copy the **Turn Token ID** and the
-   **API Token** (shown once).
-2. On your own computer:
-   ```sh
-   cd worker/ice
-   npx wrangler@latest login
-   npx wrangler@latest secret put TURN_KEY_ID          # paste the Turn Token ID
-   npx wrangler@latest secret put TURN_KEY_API_TOKEN   # paste the API Token
-   npx wrangler@latest deploy                          # prints https://islamdunk-ice.<subdomain>.workers.dev
-   ```
-3. Check: `curl -H 'Origin: https://halkotob.github.io' https://islamdunk-ice.<subdomain>.workers.dev/ice` returns
-   `{"iceServers":[...],"ttl":3600}` (403 without the Origin header is correct).
-4. **Then (Claude or anyone):** set `ONLINE_ICE_URL` in `src/online/net-diag.js` to that URL + `/ice`, run
-   `node tests/run.mjs --only net-ice,rb-online,rb-lag`, bump the version, CHANGELOG, `npm run publish:web`, push.
-   Before publishing it can be tried on any build with `?ice=<the URL>` added to the game's address.
-5. **Verify for real:** one player on a phone's mobile data (hotspot off), one on home Wi-Fi. In the lobby or pause
-   menu, **Network report** should say `Mode: Relay (TURN)` (or Direct) and `Netcode: rollback`. Before the relay it
-   would say `Server` and `snapshots (no direct link)`.
-
-Alternative to step 2 (lets Claude deploy), the plan agreed with the owner:
-- The environment has a **network secret** for host `api.cloudflare.com` (header `Authorization`, prefix `Bearer `,
-  the account API token from the "Edit Cloudflare Workers" template), and Allowed domains include
-  `api.cloudflare.com` and `workers.dev`. The token is added by the proxy; it is not an environment variable.
-- Claude deploys from `worker/ice`: `CLOUDFLARE_API_TOKEN=injected-by-proxy npx wrangler@latest deploy` (the
-  placeholder only gets wrangler past its "not logged in" check; the proxy supplies the real header). Untested: if
-  the proxy doesn't replace the header and wrangler fails to authenticate, fall back to the owner running step 2
-  on their Mac.
-- The two TURN values never enter the environment: after the deploy the owner adds `TURN_KEY_ID` and
-  `TURN_KEY_API_TOKEN` in the Cloudflare dashboard (Workers & Pages → islamdunk-ice → Settings → Variables and
-  Secrets). Then step 3 (curl check) and step 4.
-
-Status: the TURN app `islamdunk` exists (step 1 done by the owner). Step 2 not done yet: the session that tried had
-no Cloudflare credentials and `api.cloudflare.com` was blocked by the network policy.
+- Worker `islamdunk-ice` is live at `https://islamdunk-ice.islamdunk.workers.dev/ice` (workers.dev subdomain
+  `islamdunk` on the owner's account). Secrets `TURN_KEY_ID` and `TURN_KEY_API_TOKEN` are set on the Worker (TURN app
+  `islamdunk`). `ONLINE_ICE_URL` in `src/online/net-diag.js` points at it.
+- Redeploying from a cloud session: the environment has the env variables `CLOUDFLARE_API_TOKEN`,
+  `CLOUDFLARE_ACCOUNT_ID`, `TURN_KEY_ID` and `TURN_KEY_API_TOKEN`, so `cd worker/ice && npx wrangler@latest deploy`
+  works directly. Secrets persist across deploys; to replace one:
+  `printf '%s' "$TURN_KEY_ID" | npx wrangler@latest secret put TURN_KEY_ID`.
+- The cloud network policy blocks `*.workers.dev` and `rtc.live.cloudflare.com`, so the Worker can't be called from
+  the container. Check it from a normal computer:
+  `curl -H 'Origin: https://halkotob.github.io' https://islamdunk-ice.islamdunk.workers.dev/ice` should return
+  `{"iceServers":[...],"ttl":3600}` (403 without the Origin header is correct).
+- **Still to verify for real:** one player on a phone's mobile data (hotspot off), one on home Wi-Fi. In the lobby or
+  pause menu, **Network report** should say `Mode: Relay (TURN)` (or Direct) and `Netcode: rollback`. If ICE shows a
+  failure, check the Worker logs: `npx wrangler@latest tail` in `worker/ice`.
 
 Cost: Cloudflare TURN includes 1,000 GB a month free, then $0.05/GB (billed on what it sends to the players). A
 rollback match on the relay is about 7-12 KB/s to each player (rb-lag), so 50-90 MB per match-hour in all: the free
@@ -69,8 +47,9 @@ tier covers roughly 11,000+ relayed match-hours a month (only pairs without a pe
 
 ## Working in a fresh cloud container (notes for Claude)
 
-- `npm ci`, then if Playwright complains about browser versions: replace `node_modules/playwright` and
-  `node_modules/playwright-core` with symlinks to the container's global Playwright (`/opt/node22/lib/node_modules`).
+- `npm ci`, then if Playwright complains about browser versions: install the version of the container's global
+  Playwright without saving it, e.g. `npm i --no-save playwright@1.63.0 playwright-core@1.63.0` (check
+  `/opt/node22/lib/node_modules/playwright/package.json`; symlinking fails when the global playwright-core is missing).
 - Electron test: `node node_modules/electron/install.js` once, then
   `NODE_PATH=$PWD/node_modules xvfb-run -a npm run test:electron`.
 - `rb-determinism` compares against Safari's engine through `bun` when it is installed (it is in these containers).
