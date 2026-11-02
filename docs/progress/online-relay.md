@@ -37,10 +37,17 @@ fall back to the old snapshot netcode through Firebase (the laggy path). Needs t
    menu, **Network report** should say `Mode: Relay (TURN)` (or Direct) and `Netcode: rollback`. Before the relay it
    would say `Server` and `snapshots (no direct link)`.
 
-Alternative to step 2 (lets Claude deploy): add `CLOUDFLARE_API_TOKEN` (permissions: Workers Scripts Edit, and
-Realtime/Calls Edit if Claude should create the TURN key) and `CLOUDFLARE_ACCOUNT_ID` in the cloud environment's
-settings, then start a new session (a running session doesn't see new environment values). Never paste tokens
-into the chat.
+Alternative to step 2 (lets Claude deploy): the TURN app's two values are not enough on their own (deploying a
+Worker needs an account token). In the cloud environment's settings add four environment secrets, then start a new
+session (a running session doesn't see new values). Never paste them into the chat:
+- `CLOUDFLARE_API_TOKEN`: dashboard → My Profile → API Tokens → Create Token → "Edit Cloudflare Workers" template
+- `CLOUDFLARE_ACCOUNT_ID`: dashboard → Workers & Pages (right side), or the account home page
+- `TURN_KEY_ID`, `TURN_KEY_API_TOKEN`: the TURN app's Turn Token ID and API Token (step 1)
+
+Claude then runs, from `worker/ice`: `printf %s "$TURN_KEY_ID" | npx wrangler@latest secret put TURN_KEY_ID`, the
+same for `TURN_KEY_API_TOKEN`, `npx wrangler@latest deploy`, and carries on from step 3.
+
+Status: the TURN app `islamdunk` exists (step 1 done by the owner). Step 2 not done yet.
 
 Cost: Cloudflare TURN includes 1,000 GB a month free, then $0.05/GB (billed on what it sends to the players). A
 rollback match on the relay is about 7-12 KB/s to each player (rb-lag), so 50-90 MB per match-hour in all: the free
