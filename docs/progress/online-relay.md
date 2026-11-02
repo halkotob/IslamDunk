@@ -47,7 +47,11 @@ session (a running session doesn't see new values). Never paste them into the ch
 Claude then runs, from `worker/ice`: `printf %s "$TURN_KEY_ID" | npx wrangler@latest secret put TURN_KEY_ID`, the
 same for `TURN_KEY_API_TOKEN`, `npx wrangler@latest deploy`, and carries on from step 3.
 
-Status: the TURN app `islamdunk` exists (step 1 done by the owner). Step 2 not done yet.
+The environment's network policy must also allow `api.cloudflare.com` (and `workers.dev` for the step 3 check):
+environment settings → Network access → Allowed domains. Without it the deploy fails (the proxy answers 403).
+
+Status: the TURN app `islamdunk` exists (step 1 done by the owner). Step 2 not done yet: the session that tried had
+no Cloudflare credentials and `api.cloudflare.com` was blocked by the network policy.
 
 Cost: Cloudflare TURN includes 1,000 GB a month free, then $0.05/GB (billed on what it sends to the players). A
 rollback match on the relay is about 7-12 KB/s to each player (rb-lag), so 50-90 MB per match-hour in all: the free
