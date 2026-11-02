@@ -27,7 +27,7 @@
     return out;
   };
   const IN = hands(777), WRONG = rollback ? hands(31337) : null;
-  const sums = [], after = () => { if (noisy) { for (let i = 0; i < 7; i++) Math.random(); try { render(ctx); rbNets(STEP); } catch (e) {} } };
+  let nf = 0; const sums = [], after = () => { if (noisy && (++nf % 3 === 0 || !rollback)) { for (let i = 0; i < 7; i++) Math.random(); try { render(ctx); rbNets(STEP); } catch (e) {} } };
   for (let f = 0; f < frames; f++) {
     if (rollback && f % 30 === 0 && f + 8 <= frames && M.phase !== 'over') {
       const S = rbSave();

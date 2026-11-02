@@ -120,6 +120,7 @@
     "online/v9111-net.js",
     "screens/v913-crowd.js",
     "online/rollback.js",
+    "online/rollback-net.js",
     "boot.js"
   ]
 }

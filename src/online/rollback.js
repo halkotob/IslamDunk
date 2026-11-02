@@ -47,6 +47,7 @@ function rbStep(ins, resim) {
   Math.random = rbRandom; Net.role = null; Game.screen = 'play'; Game.paused = false; Game.trivia = null;
   RB.sim = true; RB.resim = !!resim;
   try { updateMatch(STEP); }
+  catch (e) { RB.errors = (RB.errors || 0) + 1; RB.lastErr = String(e && e.stack || e).slice(0, 300); }   // (counted: a frame that throws is a bug; tests require none)
   finally {
     RB.sim = false; RB.resim = false;
     Math.random = keep.rand; Net.role = keep.role; for (const k of RB_MATH) Math[k] = nat[k];
@@ -59,30 +60,33 @@ function rbStep(ins, resim) {
 // ---------------------------------------------------------------- what isn't the match
 // Effects, sounds, replays, achievements, commentary, the net and the camera. In a rollback step they use their own
 // random numbers; in a replayed frame they don't run at all. (Installed once; outside a rollback step they're as before.)
-function rbPresent(obj, k) {
+// always: the match uses what it returns (the commentary line), so it also runs in a replayed frame (its own random numbers)
+function rbPresent(obj, k, tag, always) {
   const f = obj[k]; if (typeof f !== 'function' || f._rb) return;
+  const name = (tag || '') + k;
   const w = function () {
     if (!RB.sim) return f.apply(this, arguments);
-    if (RB.resim) return;
+    if (RB.resim && !always && !(RB.keepInResim && RB.keepInResim(name))) return;   // (tests can keep some running, to find one that mustn't be skipped)
     const r = Math.random; Math.random = FX_RANDOM;
     try { return f.apply(this, arguments); } finally { Math.random = r; }
   };
   w._rb = true; obj[k] = w;
 }
-function rbPresentGlobal(name) {                                          // a global function binding, by name
+function rbPresentGlobal(name, always) {                                  // a global function binding, by name
   try {
     const f = (0, eval)('typeof ' + name + ' === "function" ? ' + name + ' : null'); if (!f || f._rb) return;
-    const o = { [name]: f }; rbPresent(o, name); globalThis.__rbFn = o[name]; (0, eval)(name + ' = globalThis.__rbFn'); delete globalThis.__rbFn;
+    const o = { [name]: f }; rbPresent(o, name, '', always); globalThis.__rbFn = o[name]; (0, eval)(name + ' = globalThis.__rbFn'); delete globalThis.__rbFn;
   } catch (e) {}
 }
 {
-  for (const k of Object.keys(FX)) rbPresent(FX, k);
-  for (const k of Object.keys(SFX)) rbPresent(SFX, k);
-  if (typeof Replay !== 'undefined') for (const k of Object.keys(Replay)) rbPresent(Replay, k);
-  if (typeof Ach !== 'undefined') for (const k of Object.keys(Ach)) rbPresent(Ach, k);
+  for (const k of Object.keys(FX)) rbPresent(FX, k, 'FX.');
+  for (const k of Object.keys(SFX)) rbPresent(SFX, k, 'SFX.');
+  if (typeof Replay !== 'undefined') for (const k of Object.keys(Replay)) rbPresent(Replay, k, 'Replay.');
+  if (typeof Ach !== 'undefined') for (const k of Object.keys(Ach)) rbPresent(Ach, k, 'Ach.');
   if (typeof Pad !== 'undefined') rbPresent(Pad, 'rumble');
   rbPresent(Hoop.prototype, 'kick');
-  for (const n of ['pickCall', 'toast', 'coachNote', 'updateCamera']) rbPresentGlobal(n);
+  rbPresentGlobal('pickCall', true);
+  for (const n of ['toast', 'coachNote', 'updateCamera', 'buildCourt', 'buildCrowd', 'setVenue', 'buildGymFloor', 'updateBroadcastCam']) rbPresentGlobal(n);
   // the hoops: in a rollback step only the rim spring moves (bounces read it); the net is drawing (rbNets, per frame)
   const _hu = Hoop.prototype.update;
   Hoop.prototype.update = function (dt) {
@@ -97,7 +101,7 @@ function rbNets(dt) {                                                     // the
 // ---------------------------------------------------------------- the match's checksum
 // Fields that only the screen writes or reads (the HUD, reflections, trails, the sideline cast) and the hoops' nets
 // are left out; everything else under M, the ball, the rim springs and the sprint gestures is in.
-const RB_LOOKS = new Set(['_coach', '_refl', '_hudF', '_hudPT', '_hudA', '_sv', '_vSq', '_vT', '_cvx', '_cvz', 'trail', 'teamDefs', 'def', 'look', 'cmdHook',
+const RB_LOOKS = new Set(['_coach', '_refl', '_hudF', '_hudPT', '_hudA', '_sv', '_vSq', '_vT', '_vOwn', 'camCut', '_cvx', '_cvz', 'ix', 'iy', 'iz', 'ihip', 'irot', 'isq', 'ia', 'trail', 'teamDefs', 'def', 'look', 'cmdHook',
   'canvas', 'spr', 'sprites', 'img', 'cache', 'c', 'rbScreen', 'coach', 'pendingClips', 'highlights']);
 function rbWalk(roots, out) {
   const seen = new Set();
@@ -222,7 +226,49 @@ function rbLoad(S) {
     if (Array.isArray(o)) { o.length = c.length; for (let j = 0; j < c.length; j++) o[j] = c[j]; }
     else if (o instanceof Set) { o.clear(); for (const x of c) o.add(x); }
     else if (o instanceof Map) { o.clear(); for (const [k, x] of c) o.set(k, x); }
-    else { for (const k of Object.keys(o)) if (!(k in c) && !rbSkipKey(k)) delete o[k]; Object.assign(o, c); }
+    else {
+      const now = Object.keys(o); let same = true, j = 0;                // the same keys in the same order? (usually)
+      for (const k of now) { if (rbSkipKey(k)) continue; if (!(k in c)) { same = false; break; } j++; }
+      if (same && j !== Object.keys(c).length) same = false;
+      if (same) { let i2 = 0; const ck = Object.keys(c); for (const k of now) { if (rbSkipKey(k)) continue; if (k !== ck[i2++]) { same = false; break; } } }
+      if (!same) for (const k of now) if (!rbSkipKey(k)) delete o[k];   // (rebuilt in the saved order: code that loops over keys sees the same order)
+      Object.assign(o, c);
+    }
   }
   hoops.forEach((h, i) => { h.dy = S.rims[i][0]; h.vy = S.rims[i][1]; });
+}
+// the checksum of a saved frame: every value in save order (numbers by their exact bits), objects by their place in the save
+const RB_HF = new Float64Array(1), RB_HU = new Uint32Array(RB_HF.buffer);
+function rbHashSaved(S) {
+  const L = S.list, id = new Map(); for (let i = 0; i < L.length; i += 2) id.set(L[i], i >> 1);
+  let h = 2166136261;
+  const mix = n => { h ^= n; h = Math.imul(h, 16777619); };
+  const val = v => {
+    if (v === undefined) return mix(1); if (v === null) return mix(2); if (v === true) return mix(3); if (v === false) return mix(4);
+    const t = typeof v;
+    if (t === 'number') { RB_HF[0] = v === 0 ? 0 : v; mix(RB_HU[0]); mix(RB_HU[1]); return; }
+    if (t === 'string') { mix(5); for (let i = 0; i < v.length; i++) mix(v.charCodeAt(i)); return; }
+    if (t === 'object') { const k = id.get(v); mix(k == null ? 6 : 7 + k); return; }   // (an object outside the save: a hoop, a definition)
+    mix(8);
+  };
+  for (let i = 0; i < L.length; i += 2) {
+    const o = L[i], c = L[i + 1]; mix(0xabc);
+    if (Array.isArray(o) || o instanceof Set) { mix(c.length); for (const x of c) val(x); }
+    else if (o instanceof Map) { mix(c.length); for (const [k, x] of c) { val(k); val(x); } }
+    else for (const k in c) { const x = c[k]; if (x === false || x === undefined) continue; val(k); val(x); }   // (false and missing play the same)
+  }
+  for (const r of S.rims) { val(r[0]); val(r[1]); }
+  return h >>> 0;
+}
+// a saved frame as text lines (tests: what differs between two sides)
+function rbSavedLines(S) {
+  const L = S.list, id = new Map(), out = []; for (let i = 0; i < L.length; i += 2) id.set(L[i], i >> 1);
+  const v = x => x === undefined ? 'undef' : x === null ? 'null' : typeof x === 'object' ? (id.has(x) ? '#' + id.get(x) : '#out:' + (x.constructor && x.constructor.name)) : typeof x + ':' + String(x);
+  for (let i = 0; i < L.length; i += 2) {
+    const o = L[i], c = L[i + 1], n = '#' + (i >> 1) + (o.constructor ? '<' + o.constructor.name + '>' : '');
+    if (Array.isArray(o) || o instanceof Set) c.forEach((x, j) => out.push(n + '[' + j + ']=' + v(x)));
+    else if (o instanceof Map) c.forEach(([k, x], j) => out.push(n + '{' + v(k) + '}=' + v(x)));
+    else for (const k in c) { if (c[k] === false || c[k] === undefined) continue; out.push(n + '.' + k + '=' + v(c[k])); }
+  }
+  return out;
 }
