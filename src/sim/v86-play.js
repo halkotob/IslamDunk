@@ -293,7 +293,7 @@ KIND_TXT.taunt = 'Taunt';
   updatePlayer = function (p, dt) {
     const r = _up.apply(this, arguments);
     if (p.swat && M.time - p.swat.t0 < 0.26 && onScreen(p.x)) { const hd = p.hands.n; FX.spark(hd.x, hd.y, hd.z, '#e8f7ff'); }
-    if (p.mv && ball.owner === p && (p.mv.kind === 'cross' || p.mv.kind === 'btb') && onScreen(p.x) && chance(0.6)) FX.spark(ball.x, ball.y, ball.z, 'rgba(255,255,255,0.7)');
+    if (p.mv && ball.owner === p && (p.mv.kind === 'cross' || p.mv.kind === 'btb') && onScreen(p.x) && fxChance(0.6)) FX.spark(ball.x, ball.y, ball.z, 'rgba(255,255,255,0.7)');
     return r;
   };
 }

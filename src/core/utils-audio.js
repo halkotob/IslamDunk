@@ -4,6 +4,10 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const rand = (a = 0, b = 1) => a + Math.random() * (b - a);
 const rint = n => (Math.random() * n) | 0;
 const chance = p => Math.random() < p;
+// v9.14: random numbers for looks only (sparks, dust). Never the match's own stream, so what's on screen can't change a
+// game (an online match replays its frames and both sides must roll the same numbers).
+const FX_RANDOM = Math.random;
+const fxChance = p => FX_RANDOM() < p;
 const pick = a => a[rint(a.length)];
 const sgn = v => v < 0 ? -1 : 1;
 const dxz = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
