@@ -37,18 +37,17 @@ fall back to the old snapshot netcode through Firebase (the laggy path). Needs t
    menu, **Network report** should say `Mode: Relay (TURN)` (or Direct) and `Netcode: rollback`. Before the relay it
    would say `Server` and `snapshots (no direct link)`.
 
-Alternative to step 2 (lets Claude deploy): the TURN app's two values are not enough on their own (deploying a
-Worker needs an account token). In the cloud environment's settings add four environment secrets, then start a new
-session (a running session doesn't see new values). Never paste them into the chat:
-- `CLOUDFLARE_API_TOKEN`: dashboard → My Profile → API Tokens → Create Token → "Edit Cloudflare Workers" template
-- `CLOUDFLARE_ACCOUNT_ID`: dashboard → Workers & Pages (right side), or the account home page
-- `TURN_KEY_ID`, `TURN_KEY_API_TOKEN`: the TURN app's Turn Token ID and API Token (step 1)
-
-Claude then runs, from `worker/ice`: `printf %s "$TURN_KEY_ID" | npx wrangler@latest secret put TURN_KEY_ID`, the
-same for `TURN_KEY_API_TOKEN`, `npx wrangler@latest deploy`, and carries on from step 3.
-
-The environment's network policy must also allow `api.cloudflare.com` (and `workers.dev` for the step 3 check):
-environment settings → Network access → Allowed domains. Without it the deploy fails (the proxy answers 403).
+Alternative to step 2 (lets Claude deploy), the plan agreed with the owner:
+- The environment has a **network secret** for host `api.cloudflare.com` (header `Authorization`, prefix `Bearer `,
+  the account API token from the "Edit Cloudflare Workers" template), and Allowed domains include
+  `api.cloudflare.com` and `workers.dev`. The token is added by the proxy; it is not an environment variable.
+- Claude deploys from `worker/ice`: `CLOUDFLARE_API_TOKEN=injected-by-proxy npx wrangler@latest deploy` (the
+  placeholder only gets wrangler past its "not logged in" check; the proxy supplies the real header). Untested: if
+  the proxy doesn't replace the header and wrangler fails to authenticate, fall back to the owner running step 2
+  on their Mac.
+- The two TURN values never enter the environment: after the deploy the owner adds `TURN_KEY_ID` and
+  `TURN_KEY_API_TOKEN` in the Cloudflare dashboard (Workers & Pages → islamdunk-ice → Settings → Variables and
+  Secrets). Then step 3 (curl check) and step 4.
 
 Status: the TURN app `islamdunk` exists (step 1 done by the owner). Step 2 not done yet: the session that tried had
 no Cloudflare credentials and `api.cloudflare.com` was blocked by the network policy.
