@@ -60,7 +60,10 @@ try { SETTINGS.room = localStorage.getItem('islamdunk.room') !== '0'; } catch (e
   };
   // ---- the bed follows the tier (the swells start from it)
   const BED = [0, 0, 0, 0.018, 0.03], MUR = [0, 0, 0.012, 0, 0];
-  S.bedBase = () => BED[CrowdA.tier] * S.crowdLevel;
+  S.bedBase = () => S.solo ? 0 : BED[CrowdA.tier] * S.crowdLevel;
+  const murL = tier => S.solo ? 0 : MUR[tier] * S.crowdLevel;
+  // solo: nothing plays on its own (no bed, no murmur, no match sounds), only what is played on purpose with SFX.force
+  S.setSolo = on => { S.solo = !!on; if (S.ctx) { const t = S.ctx.currentTime; if (S.crowdG) { S.crowdG.gain.cancelScheduledValues(t); S.crowdG.gain.setTargetAtTime(S.bedBase(), t, 0.05); } if (S.murG) { S.murG.gain.cancelScheduledValues(t); S.murG.gain.setTargetAtTime(murL(CrowdA.tier), t, 0.05); } } };
   S.swellK = () => (CrowdA.tier >= 3 ? 1 : 0);                             // (tier 3: cheer() lowers the level itself)
   function irFor(key) {
     const R = ROOMS[key]; if (!R || !S.ctx) return null;
@@ -91,14 +94,14 @@ try { SETTINGS.room = localStorage.getItem('islamdunk.room') !== '0'; } catch (e
     if (tier !== CrowdA.tier || force) {
       CrowdA.tier = tier; const t = S.ctx.currentTime;
       if (S.crowdG) { S.crowdG.gain.cancelScheduledValues(t); S.crowdG.gain.setTargetAtTime(S.bedBase(), t, 0.3); }
-      if (S.murG) S.murG.gain.setTargetAtTime(MUR[tier] * S.crowdLevel, t, 0.3);
+      if (S.murG) S.murG.gain.setTargetAtTime(murL(tier), t, 0.3);
     }
     if (room !== CrowdA.room || force || CrowdA.roomOn !== SETTINGS.room) { CrowdA.roomOn = SETTINGS.room; setRoom(room); }
   }
   CrowdA.tick = crowdTick;
-  CrowdA.levels = () => ({ bed: S.bedBase(), murmur: MUR[CrowdA.tier] * S.crowdLevel, swell: S.swellK() });
+  CrowdA.levels = () => ({ bed: S.bedBase(), murmur: murL(CrowdA.tier), swell: S.swellK() });
   const _scl = S.setCrowdLevel;
-  S.setCrowdLevel = function (l) { _scl.apply(this, arguments); if (this.crowdG) this.crowdG.gain.value = this.bedBase(); if (this.murG) this.murG.gain.value = MUR[CrowdA.tier] * l; };
+  S.setCrowdLevel = function (l) { _scl.apply(this, arguments); if (this.crowdG) this.crowdG.gain.value = this.bedBase(); if (this.murG) this.murG.gain.value = murL(CrowdA.tier); };
   const _r = render;
   render = function (g) { const r = _r.apply(this, arguments); try { crowdTick(false); } catch (e) {} return r; };
 
@@ -160,7 +163,7 @@ try { SETTINGS.room = localStorage.getItem('islamdunk.room') !== '0'; } catch (e
   }
   // ---- reactions. kind: make | big | groan | ooh | applause
   S.crowd = function (kind, amt = 1, delay = 0) {
-    if (!this.ctx || !this.out) return { clap: 0, voice: 0 };
+    if (!this.ctx || !this.out || (this.solo && !this.force)) return { clap: 0, voice: 0 };
     crowdTick(true);
     const P = CrowdA.force ? Array.from({ length: CrowdA.force.n }, (_, i) => ({ x: (i + 0.5) / Math.max(1, CrowdA.force.n) * W })) : crowdPeople();
     const n = P.length, tier = CrowdA.tier, st = CrowdA.stats; st.events++;

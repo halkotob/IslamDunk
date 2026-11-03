@@ -199,6 +199,7 @@ const SFX_VARIANTS = {};             // id -> { A: { label, fn }, B..D, and any 
   // the dispatcher: the chosen variant, through its own gain (level matching) and, for room sounds, the reverb send
   let depth = 0, curK = 'A';
   S.play = function (id, k, args) {
+    if (this.solo && !this.force) return;                                  // solo: only sounds played on purpose (a review tool listening to one sound)
     const V = SFX_VARIANTS[id], vv = V && (V[k] || V.A);
     if (!vv) return;
     if (!this.ctx || !this.out || depth > 0) { if (vv.fn) return vv.fn.apply(this, args); return this.playSample(vv, args); }   // nested (slam -> dunkNet): the outer gain covers it

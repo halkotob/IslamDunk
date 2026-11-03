@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.14.3: Review Studio: the Sounds tab plays only the sound you press
+- The Studio's game frame keeps a CPU match running behind the title, and once sound was on, its bounces, squeaks and
+  crowd played under the sound being compared. The sound engine has a solo mode (`SFX.setSolo`): nothing plays on its
+  own, no crowd bed or murmur, only what is played on purpose. The Studio turns it on for every tab except the Crowd
+  section and the mix test, which are meant to sound like a match. The game itself never uses it.
+- `crowd-tiers` checks it: with solo on, the background match makes no sound and a pressed variant still plays.
 ## 9.14.2: online matches go back to the 9.13 netcode
 Rollback (9.14.0) is taken out: online play didn't feel live with it. Same team vs CPU, Head to head and 1 on 1 use
 the host's snapshots again, exactly as in 9.13.0 (the guest's own actions show at once, the rest follows the host).

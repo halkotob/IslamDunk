@@ -8,7 +8,8 @@
 //   crowd-tiers     the tier thresholds; every crowd venue in the Review Studio: audience drawn -> tier (a table, checked
 //                   against the expected tiers below); tiers 0 and 1 have no bed (gain 0); tier 0 makes no crowd sound at
 //                   all; every reaction (make, dunk, buzzer, miss, block, turnover) never has more clappers or voices than
-//                   people drawn; the room follows the venue (none outdoors) and Room echo off removes it
+//                   people drawn; the room follows the venue (none outdoors) and Room echo off removes it; in the Studio,
+//                   outside Crowd and Mix, the game plays nothing on its own (solo), only the variant pressed
 //   sound-list      docs/audio/sound-list.csv is up to date; every sound the game calls exists, except the ones listed
 //                   as missing (SFX.catch)
 //   studio-coverage every Game.screen, overlay and Game./World. state object in the source has a Studio setup or a reason
@@ -142,10 +143,19 @@ export function audioTests({ newContext, open }) {
         rows.push({ key, name, audience: info.audience, tier: info.tier, expect: EXPECT[key], tierOf: W.crowdTierOf(info.audience), bed: info.levels.bed, murmur: info.levels.murmur, room: roomOn, sendOn, sendOff, venueKind: W.M.venue ? W.M.venue.kind : '', over: W.CrowdA.stats.over || 0, maxClap: Math.max(big.clap, app.clap, ...Object.values(reacts).map(v => v[0])), maxVoice: Math.max(big.voice, app.voice, ...Object.values(reacts).map(v => v[1])) });
       }
       rs.crowdOff();
-      return { thr, rows };
+      // solo (the Sounds tab): the match behind the title plays nothing; only what the studio plays on purpose
+      const S = W.SFX, made = []; const c0 = S.ctx.createOscillator.bind(S.ctx), b0 = S.ctx.createBufferSource.bind(S.ctx);
+      S.ctx.createOscillator = () => { made.push('o'); return c0(); }; S.ctx.createBufferSource = () => { made.push('b'); return b0(); };
+      S.bounce(1); S.squeak(); S.cheer(1); S.crowd('make', 1); const quiet = made.length;
+      rs.playVariant('bounce', 'B', [1]); const played = made.length - quiet;
+      S.ctx.createOscillator = c0; S.ctx.createBufferSource = b0;
+      const solo = { on: !!S.solo, quiet, played, bed: S.bedBase() };
+      return { thr, rows, solo };
     }, EXPECT_TIERS);
     const wantThr = '0->0 1->1 12->1 13->2 45->2 46->3 160->3 161->4 2000->4';
     if (r.thr !== wantThr) bad.push('tier thresholds: ' + r.thr);
+    detail.push(`solo (Sounds tab): on ${r.solo.on}; match sounds made ${r.solo.quiet} sources, a pressed variant ${r.solo.played}, bed ${r.solo.bed}`);
+    if (!r.solo.on || r.solo.quiet || !r.solo.played || r.solo.bed) bad.push('solo: the game plays sounds of its own on the Sounds tab');
     detail.push('thresholds (people drawn -> tier): ' + r.thr);
     detail.push('venue | audience drawn | tier | bed | murmur | room | most clapping / voices at once');
     for (const x of r.rows) {

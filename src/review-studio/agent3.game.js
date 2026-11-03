@@ -24,7 +24,9 @@
   RS.audioWith = ctx => {
     SETTINGS.sound = true;
     if (!SFX.ctx) { const AC = window.AudioContext, WAC = window.webkitAudioContext; window.AudioContext = function () { return ctx; }; window.webkitAudioContext = window.AudioContext; try { SFX.init(); } finally { window.AudioContext = AC; window.webkitAudioContext = WAC; } }
-    SFX.setOn && SFX.setOn(true); return !!SFX.ctx;
+    SFX.setOn && SFX.setOn(true);
+    if (!RS.crowdOn && !(RS.mix && RS.mix.on)) SFX.setSolo && SFX.setSolo(true);   // only what the studio plays, not the match behind the title
+    return !!SFX.ctx;
   };
   RS.sfxIds = () => SFX_IDS.slice();
   RS.variants = id => Object.entries(SFX_VARIANTS[id] || {}).map(([k, v]) => ({ key: k, label: v.label, sample: !!v.samples, db: (SFX_LEVELS[id] && SFX_LEVELS[id][k]) || 0 }));
@@ -41,7 +43,7 @@
     const [venue, opts] = P[2](); RS.clearOverlays && RS.clearOverlays();
     newMatch(TEAMS[0], TEAMS[1], Object.assign({ humans: [], venue }, opts || {}));
     Game.screen = 'play'; Game.paused = false; M.introT = 0; M.attract = false; M.cmdHook = q => { zeroCmd(q.cmd); return true; };
-    RS.crowdOn = true; CrowdA.force = null; CrowdA.tick(true);
+    RS.crowdOn = true; CrowdA.force = null; SFX.setSolo && SFX.setSolo(false); CrowdA.tick(true);
     return RS.crowdInfo();
   };
   RS.crowdInfo = () => ({ audience: CrowdA.n, tier: CrowdA.tier, room: CrowdA.room, roomOn: !!SETTINGS.room, levels: CrowdA.levels(), venue: M.venue ? M.venue.name || M.venue.id : M.gym ? 'Practice gym' : 'Masjid League Arena', stats: Object.assign({}, CrowdA.stats) });
@@ -55,7 +57,7 @@
     else if (kind === 'turnover') { SFX.whistle(); SFX.crowd('groan', 0.6, 0.15); }
     void h; return RS.crowdInfo();
   };
-  RS.crowdOff = () => { RS.crowdOn = false; CrowdA.force = null; M.cmdHook = null; };
+  RS.crowdOff = () => { RS.crowdOn = false; CrowdA.force = null; M.cmdHook = null; SFX.setSolo && SFX.setSolo(true); };
   // ---- the mix test: a CPU match at the venue, at normal speed, for 60 s, with a level per bus
   RS.mix = { on: false };
   RS.mixStart = key => {
