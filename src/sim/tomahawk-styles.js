@@ -114,10 +114,10 @@ function tkHands(p, J) {                                // the forward kinematic
   render = function (g) {                                // draw the ball in the hand you see
     const d = ball.vd, id = ball.ivd || d;
     if (!d || Replay.active) return _r.apply(this, arguments);
-    const ix = ball.ix !== undefined;
+    const ix = ball.ix !== undefined, keep = [ball.x, ball.y, ball.z, ball.ix, ball.iy, ball.iz];
     ball.x += d[0]; ball.y += d[1]; ball.z += d[2]; if (ix) { ball.ix += id[0]; ball.iy += id[1]; ball.iz += id[2]; }
     try { return _r.apply(this, arguments); }
-    finally { ball.x -= d[0]; ball.y -= d[1]; ball.z -= d[2]; if (ix) { ball.ix -= id[0]; ball.iy -= id[1]; ball.iz -= id[2]; } }
+    finally { [ball.x, ball.y, ball.z, ball.ix, ball.iy, ball.iz] = keep; }   // (v9.15: the exact values back: x + d - d isn't always x, and drawing must never move the ball)
   };
 }
 function setTomahawk(d) {

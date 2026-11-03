@@ -17,7 +17,7 @@
 // matches without a direct link (everything through the server: in-order delivery holds every input up behind a lost
 // one, and rollback would wait; there the snapshots keep your own player instant).
 const RBN = {
-  on: false, id: 0, me: 0, D: 2, W: 10, keep: 40, maxD: 9,
+  on: false, id: 0, me: 0, D: 2, W: 20, keep: 60, maxD: 9,
   f: 0, acc: 0, states: new Map(), ins: [new Map(), new Map()], used: new Map(), conf: -1, lastIn: RB_IDLE,
   rollTo: Infinity, peerF: -1, peerAck: -1, peerV: null, gotAt: 0, rtt: 0, lastPkt: null, hashes: new Map(), theirHash: null,
   desync: null, gone: false, stats: null, cfg: null, over: false, hold: 0,
@@ -48,7 +48,7 @@ const RBN = {
     Object.assign(this, { on: true, cfg, id: cfg.id, me, f: 0, acc: 0, rollTo: Infinity, conf: -1, peerF: -1, peerAck: -1, peerV: null, gotAt: nowMs(), rtt: 0, lastPkt: null,
       desync: null, gone: false, over: false, hold: 0, theirHash: null, lastIn: RB_IDLE, hashedTo: -1, dbg: null, trace: null, lastSet: 1, dAt: 0, rtts: [], endF: null, hostGoneT: 0, needSync: false, pendingState: null });
     RB_EVENTS.clear(); this.states.clear(); this.ins[0].clear(); this.ins[1].clear(); this.used.clear(); this.hashes.clear();
-    this.stats = { frames: 0, rollbacks: 0, rolled: 0, maxRoll: 0, stalls: 0, slowed: 0, mispredicted: 0, sent: 0, got: 0, hashes: 0, t0: nowMs() };
+    this.stats = { frames: 0, rollbacks: 0, rolled: 0, maxRoll: 0, stalls: 0, forced: 0, slowed: 0, mispredicted: 0, sent: 0, got: 0, hashes: 0, t0: nowMs() };
     const ping = (typeof Lobby !== 'undefined' && Lobby.ping) || 0;          // (the lobby's round trip: a good first delay)
     this.D = ping > 0 ? rbDelayFor(ping) : 2;
     for (let f = 0; f < this.D; f++) this.ins[me].set(f, RB_IDLE);    // the input delay: nobody presses anything in the first frames
@@ -121,7 +121,7 @@ const RBN = {
     const mine = this.hashes.get(H[0]); if (mine == null) return;
     this.stats.hashes++;
     if (mine === H[1]) { if (this.desync && H[0] > this.desync.f) this.desync = null; return; }   // (matching again: put right)
-    if (!this.desync || nowMs() - this.desync.at > 2000) {
+    if (!this.desync || nowMs() - this.desync.at > 600) {             // (again after 0.6 s if it isn't put right)
       this.desync = { f: H[0], at: nowMs() }; try { console.warn('[rollback] desync at frame', H[0]); } catch (e) {}
       if (typeof rbOnDesync === 'function') rbOnDesync(H[0]);
     }
@@ -138,22 +138,24 @@ const RBN = {
   // frames both players have confirmed are final: every 60th gets a checksum (of the saved state just after it), sent
   // to the other side and compared there. (With ?rbdebug=1, every confirmed frame, for tests.)
   confirmHashes() {
-    const upTo = Math.min(this.conf, this.f - 1), every = this.dbg ? 1 : 60;
+    const upTo = Math.min(this.conf, this.f - 1), every = this.dbg ? 1 : 15;   // (a checksum every quarter second)
     for (let k = (this.hashedTo == null ? -1 : this.hashedTo) + 1; k <= upTo; k++) {
       this.hashedTo = k; if (k % every !== 0) continue;
       const S = k + 1 === this.f ? rbSave() : this.states.get(k + 1); if (!S) continue;
       const hv = rbHashSaved(S);
       if (this.dbg) { this.dbg.set(k, hv); (this.dbgIn = this.dbgIn || new Map()).set(k, [this.ins[0].get(k), this.ins[1].get(k), this.used.get(k)].map(x => x ? rbPackIn(x) : '-').join(',')); (this.dbgS = this.dbgS || new Map()).set(k, S); (this.dbgIn = this.dbgIn || new Map()).set(k, [this.ins[0].get(k), this.ins[1].get(k), this.used.get(k)].map(x => x ? rbPackIn(x) : '-').join(',')); if (this.dbgS.size > 1500) this.dbgS.delete(this.dbgS.keys().next().value); }
-      if (k % 60 === 0) { this.hashes.set(k, hv); if (this.hashes.size > 4) this.hashes.delete(this.hashes.keys().next().value); this.checkHash(); }
+      if (k % 15 === 0) { this.hashes.set(k, hv); if (this.hashes.size > 16) this.hashes.delete(this.hashes.keys().next().value); this.checkHash(); }
     }
   },
   rollback() {
     const t = this.rollTo; this.rollTo = Infinity;
     if (t >= this.f || !this.states.has(t)) return;
+    const before = rbSmoothBefore();
     rbLoad(this.states.get(t));
     if (this.endF != null && t <= this.endF) this.endF = null;           // (replayed: it may end on another frame, or not yet)
     const n = this.f - t; this.stats.rollbacks++; this.stats.rolled += n; this.stats.maxRoll = Math.max(this.stats.maxRoll, n);
     for (let k = t; k < this.f; k++) this.stepFrame(k, true);
+    rbSmoothAfter(before);
   },
   tidy() {                                                                 // what can't be needed again
     const keepFrom = Math.min(this.conf + 1, this.f) - 2;
@@ -178,10 +180,16 @@ const RBN = {
     // ahead each of us looks to itself is how far ahead we really are (as in fighting games)
     const ahead = this.peerF >= 0 && this.peerV != null ? ((this.f - this.peerF) - this.peerV) / 2 : 0;
     this.acc += Math.min(rdt, 0.1);
+    if (ahead <= -2) this.acc += STEP;                                  // behind (a hiccup on this device): an extra frame a drawn frame until level
     if (ahead >= 1 && this.acc >= STEP) { this.hold += rdt; if (this.hold > 0.1) { this.hold = 0; this.acc -= STEP; this.stats.slowed++; } } else this.hold = 0;   // (a frame skipped every 0.1 s while ahead)
     let n = 0, edges = true;
     while (this.acc >= STEP && n < 4) {
-      if (!this.gone && this.f - this.conf > this.W) { this.stats.stalls++; this.acc = Math.min(this.acc, STEP); break; }   // too far ahead of their inputs: wait
+      if (!this.gone && (!this.lastPkt || this.f < 180) && this.f - this.conf > this.W) { this.stats.stalls++; this.acc = Math.min(this.acc, STEP); break; }   // (the first 3 s: wait, the other side is still starting; guessing its first frames would split the games)
+      while (!this.gone && this.f - this.conf > this.W) {               // their input is very late: nobody waits. The frame
+        const R = 1 - this.me, k = this.conf + 1;                       // keeps the guess, and the host's state settles it if
+        this.ins[R].set(k, this.used.get(k) || this.remoteFor(k)); this.stats.forced++;   // the guess was wrong (a checksum, then rbSendState)
+        while (this.ins[R].has(this.conf + 1)) this.conf++;
+      }
       const t = this.f + this.D;                                         // the frame this input is for
       if (t > this.lastSet) {
         const I = Game.paused ? RB_IDLE : this.sample(edges); edges = false;   // (in the pause menu the keys are the menu's)
@@ -221,7 +229,7 @@ const RBN = {
     const S = this.stats; if (!S) return null;
     const secs = Math.max(1, (nowMs() - S.t0) / 1000);
     return { frame: this.f, delay: this.D, behind: this.f - 1 - this.conf, rtt: Math.round(this.rtt), rollbacksPerSec: +(S.rollbacks / secs).toFixed(2), avgRoll: S.rollbacks ? +(S.rolled / S.rollbacks).toFixed(1) : 0,
-      maxRoll: S.maxRoll, stalls: S.stalls, slowed: S.slowed, mispredicted: S.mispredicted, hashesChecked: S.hashes, desync: this.desync ? this.desync.f : null };
+      maxRoll: S.maxRoll, stalls: S.stalls, forced: S.forced, slowed: S.slowed, mispredicted: S.mispredicted, hashesChecked: S.hashes, desync: this.desync ? this.desync.f : null };
   }
 };
 // a frame input, and on the wire as one number: 9 bits held, 9 pressed, 9 released, then the stick (x, z: -127..127)
@@ -293,4 +301,28 @@ function rbFinishOnce() { if (RB.finish) { const f = RB.finish; RB.finish = null
   // no instant replays in a rollback match (they would stop one side's match)
   const _rs = Replay.schedule;
   Replay.schedule = function () { if (RBN.on) return; return _rs.apply(this, arguments); };
+}
+// ---------------------------------------------------------------- corrections slide instead of jumping
+// After going back, a player (or the loose ball) whose drawn position moved is drawn where he was and slides to where
+// he is over about 0.1 s. Big corrections (more than ~5 ft) still jump: sliding those would show the wrong play.
+function rbSmoothBefore() { return { p: M.players.map(q => [q.x, q.y, q.z]), b: [ball.x, ball.y, ball.z, ball.owner] }; }
+function rbSmoothAfter(B) {
+  M.players.forEach((q, i) => {
+    const [x, y, z] = B.p[i], dx = x - q.x, dy = y - q.y, dz = z - q.z;
+    if (Math.hypot(dx, dz) < 70 && Math.abs(dy) < 60) { q._smx = (q._smx || 0) + dx; q._smy = (q._smy || 0) + dy; q._smz = (q._smz || 0) + dz; }
+  });
+  if (!ball.owner && !B.b[3]) { const dx = B.b[0] - ball.x, dy = B.b[1] - ball.y, dz = B.b[2] - ball.z; if (Math.hypot(dx, dy, dz) < 70) { ball._smx = (ball._smx || 0) + dx; ball._smy = (ball._smy || 0) + dy; ball._smz = (ball._smz || 0) + dz; } }
+}
+{
+  const decay = (o, k) => { if (!o._smx && !o._smy && !o._smz) return; o._smx *= k; o._smy *= k; o._smz *= k; if (Math.abs(o._smx) + Math.abs(o._smy) + Math.abs(o._smz) < 0.2) o._smx = o._smy = o._smz = 0; };
+  const KEYS = ['x', 'ix', 'y', 'iy', 'z', 'iz'], AX = { x: '_smx', ix: '_smx', y: '_smy', iy: '_smy', z: '_smz', iz: '_smz' };
+  const shift = (o, kept) => { if (!o._smx && !o._smy && !o._smz) return; const v = {}; for (const k of KEYS) if (o[k] != null) { v[k] = o[k]; o[k] += o[AX[k]]; } kept.push([o, v]); };
+  const _r = render;
+  render = function (g) {
+    if (!RBN.on || !M.players) return _r.apply(this, arguments);
+    const k = Math.exp(-(Game.rdt || STEP) / 0.04);                       // (about 0.1 s to settle)
+    for (const q of M.players) decay(q, k); decay(ball, k);
+    const kept = []; for (const q of M.players) shift(q, kept); shift(ball, kept);
+    try { return _r.apply(this, arguments); } finally { for (const [o, v] of kept) Object.assign(o, v); }   // (the exact values back: x + d - d isn't always x)
+  };
 }

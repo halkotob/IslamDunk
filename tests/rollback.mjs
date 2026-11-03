@@ -9,7 +9,7 @@
 //                    frame costs (a step, a save, a restore, a checksum) on this machine and on a 4x slower CPU
 //   rb-online        a Head to head match through the lobby, host and guest each pressing their own random buttons
 //                    for 20 s on a 40 ms (+-10) link losing 2% of messages: both sides play it with rollback, every
-//                    exchanged checksum matches (no desync), corrections stay within the window
+//                    exchanged checksum matches (not one desync), corrections stay within the window
 //   rb-flow          a short match (2 halves of 8 s) to the final whistle on both sides with the same score, then both
 //                    back in the lobby; a rematch starts a new rollback match; the host leaving sends the guest back
 //   rb-lag           the lag harness's five connections (tests/lag-harness.mjs), with rollback: how long from a press
@@ -19,6 +19,10 @@
 //                    difficulty, sound, touch): the match uses the host's, so no desync in 15 s of play
 //   rb-touch         both players on touch (the stick, past its ring to sprint, and the SHOOT / PASS / MOVE / DEFEND
 //                    buttons) for 15 s: no desync, and a touch player can sprint
+//   rb-slow          the guest's CPU 4x slower: the host's match keeps its pace (no freezing, no slow motion), the
+//                    guest keeps up, no desync left at the end
+//   rb-freeze        the guest's game stops for 2 s (an app in the background): the host's match keeps going
+//                    (nobody waits), and when the guest is back both are on the same frame and the same game again
 //   rb-resync        a desync made on purpose (the guest's state nudged) is seen at the next checksum, the host sends
 //                    its state, the guest rebuilds onto it, and the checksums match again from then on
 import fs from 'node:fs';
@@ -121,11 +125,11 @@ export function rollbackTests({ newContext, open }) {
     const started = await Promise.all([H, G].map(p => p.evaluate(() => ({ on: RBN.on, me: RBN.me, screen: Game.screen }))));
     await H.evaluate(MASH, 11); await G.evaluate(MASH, 23);
     await sleep(20000);
-    const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { score: M.teams.map(t => t.score), phase: M.phase, stepErrors: RB.errors || 0 }); })));
+    const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { score: M.teams.map(t => t.score), phase: M.phase, stepErrors: RB.errors || 0, log: RBN.desyncLog || null }); })));
     await ctx.close();
     const out = { started, host: rep[0], guest: rep[1] };
     const ok = started.every(s => s.on && s.screen === 'play') && started[0].me === 0 && started[1].me === 1
-      && rep.every(r => r.desync == null && r.hashesChecked >= 5 && r.frame > 900 && r.maxRoll <= 8 && r.stepErrors === 0) && !errs.length;
+      && rep.every(r => r.desync == null && (r.desyncs || 0) === 0 && r.hashesChecked >= 5 && r.frame > 900 && r.maxRoll <= 20 && r.stepErrors === 0) && !errs.length;
     return { ok, detail: [JSON.stringify(out), ...errs] };
   };
   T['rb-flow'] = async ({ browser, base }) => {
@@ -187,11 +191,44 @@ export function rollbackTests({ newContext, open }) {
     const ok = rep.every(r => (r.desyncs || 0) === 0 && r.hashesChecked >= 5 && r.err === 0) && rep.some(r => r.sprinted) && !errs.length;
     return { ok, detail: [JSON.stringify({ host: rep[0], guest: rep[1] }), ...errs] };
   };
+  T['rb-slow'] = async ({ browser, base }) => {
+    const { ctx, H, G, errs } = await rbPair(browser, base, '?net=loop&mode=udp&lat=30&jit=5&p2p=0&room=rbslow&nowelcome=1');
+    const cdp = await ctx.newCDPSession(G); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    await H.evaluate(MASH, 61); await G.evaluate(MASH, 63);
+    const f0 = await Promise.all([H, G].map(p => p.evaluate(() => [RBN.f, Date.now()])));
+    await sleep(12000);
+    const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { err: RB.errors || 0, t: Date.now() }); })));
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    await sleep(3000);
+    const after = await Promise.all([H, G].map(p => p.evaluate(() => ({ f: RBN.f, desync: RBN.desync, code: rbSyncCode() }))));
+    await ctx.close();
+    const rate = (r, i) => Math.round((r.frame - f0[i][0]) / ((r.t - f0[i][1]) / 1000));   // frames a second over the 12 s
+    const out = { hostFps: rate(rep[0], 0), guestFps: rate(rep[1], 1), host: rep[0], guest: rep[1], after };
+    const ok = out.hostFps >= 50 && out.guestFps >= 45 && after.every(a => a.desync == null) && Math.abs(after[0].f - after[1].f) < 30 && rep.every(r => r.err === 0) && !errs.length;
+    return { ok, detail: [JSON.stringify(out), ...errs] };
+  };
+  T['rb-freeze'] = async ({ browser, base }) => {
+    const { ctx, H, G, errs } = await rbPair(browser, base, '?net=loop&mode=udp&lat=30&jit=5&p2p=0&room=rbfrz&nowelcome=1');
+    await H.evaluate(MASH, 71); await G.evaluate(MASH, 73);
+    await sleep(3000);
+    const h0 = await H.evaluate(() => [RBN.f, Date.now()]);
+    await G.evaluate(() => { window.__upd = RBN.update; RBN.update = () => {}; clearInterval(window.__mash); });   // the guest's app is in the background
+    await sleep(2000);
+    const h1 = await H.evaluate(() => [RBN.f, Date.now()]);
+    await G.evaluate(() => { RBN.update = window.__upd; });
+    await sleep(5000);
+    const after = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { desyncNow: RBN.desync, err: RB.errors || 0 }); })));
+    await ctx.close();
+    const hostFpsWhileFrozen = Math.round((h1[0] - h0[0]) / ((h1[1] - h0[1]) / 1000));
+    const out = { hostFpsWhileFrozen, host: after[0], guest: after[1] };
+    const ok = hostFpsWhileFrozen >= 50 && Math.abs(after[0].frame - after[1].frame) < 20 && after.every(a => a.desyncNow == null && a.err === 0) && !errs.length;
+    return { ok, detail: [JSON.stringify(out), ...errs] };
+  };
   T['rb-resync'] = async ({ browser, base }) => {
     const { ctx, H, G, errs } = await rbPair(browser, base, '?net=loop&mode=udp&lat=30&jit=5&p2p=0&room=rbsync&nowelcome=1');
     await H.evaluate(MASH, 3); await G.evaluate(MASH, 4);
     await sleep(3000);
-    await G.evaluate(() => { const p = M.players[2]; p.x += 37; p.turbo = 3; M.teams[0].score += 0; });   // a desync, on the guest only
+    await G.evaluate(() => { const iv = setInterval(() => { const p = M.players[2]; p.x += 37; p.turbo = 3; }, 16); setTimeout(() => clearInterval(iv), 500); });   // a desync, on the guest only (for half a second: a single nudge is undone by the next rollback)
     await sleep(6000);
     const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { err: RB.errors || 0 }); })));
     await sleep(2500);
@@ -233,18 +270,18 @@ export function rollbackTests({ newContext, open }) {
     const b0 = await Promise.all([H, G].map(p => p.evaluate(() => ({ bytes: (Net.room && Net.room.stats && Net.room.stats.byKey && Net.room.stats.byKey.rb) || 0, t: Date.now() }))));
     await H.evaluate(MASH, 31); await G.evaluate(MASH, 37);
     await sleep(10000);
-    const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { bytes: (Net.room && Net.room.stats && Net.room.stats.byKey && Net.room.stats.byKey.rb) || 0, t: Date.now(), err: RB.errors || 0 }); })));
+    const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { bytes: (Net.room && Net.room.stats && Net.room.stats.byKey && Net.room.stats.byKey.rb) || 0, t: Date.now(), err: RB.errors || 0, log: RBN.desyncLog || null }); })));
     await ctx.close();
     const med = a => { const x = a.slice().sort((p, q) => p - q); return x.length ? x[x.length >> 1] : null; };
     return { name, ownHost: med(own.host), ownGuest: med(own.guest), friendAtGuest: med(remote.atGuest), friendAtHost: med(remote.atHost),
       rollbacksPerSec: +((rep[0].rollbacksPerSec + rep[1].rollbacksPerSec) / 2).toFixed(1), avgRoll: +((rep[0].avgRoll + rep[1].avgRoll) / 2).toFixed(1), maxRoll: Math.max(rep[0].maxRoll, rep[1].maxRoll),
       stalls: rep[0].stalls + rep[1].stalls, delay: [rep[0].delay, rep[1].delay], bytesPerSec: Math.round((rep[0].bytes - b0[0].bytes) / Math.max(1, (rep[0].t - b0[0].t) / 1000)),
-      desync: rep[0].desyncs + rep[1].desyncs, err: rep[0].err + rep[1].err, samples: [own.host.length, own.guest.length, remote.atGuest.length, remote.atHost.length], errs };
+      desync: rep[0].desyncs + rep[1].desyncs, log: rep[1].log || rep[0].log, err: rep[0].err + rep[1].err, samples: [own.host.length, own.guest.length, remote.atGuest.length, remote.atHost.length], errs };
   }
   T['rb-lag'] = async ({ browser, base }) => {
     const rows = [];
     for (const [name, prof] of LAG_PROFILES) rows.push(prof.mode === 'server' ? { name, snapshots: true } : await rbLagRun(browser, base, name, prof));   // (no direct link: the snapshot netcode)
-    const ok = rows.every(r => r.snapshots || (r.ownHost != null && r.ownGuest != null && r.desync === 0 && r.err === 0 && !r.errs.length)) && rows.filter(r => !r.snapshots && /^Direct|^Relay/.test(r.name)).every(r => r.ownHost <= 70 && r.ownGuest <= 70);   // (your own press within ~4 frames on direct and relay links)
+    const ok = rows.every(r => r.snapshots || (r.ownHost != null && r.ownGuest != null && r.desync === 0 && r.err === 0 && !r.errs.length)) && rows.filter(r => !r.snapshots && /^Direct|^Relay/.test(r.name)).every(r => r.ownHost <= 70 && r.ownGuest <= 70 && r.desync === 0);   // (your own press within ~4 frames on direct and relay links, and one game)
     return { ok, detail: [rbLagTable(rows), JSON.stringify(rows)] };
   };
   return T;

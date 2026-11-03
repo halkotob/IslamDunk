@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.14.3';
+const VERSION = '9.15.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -341,6 +341,10 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const rand = (a = 0, b = 1) => a + Math.random() * (b - a);
 const rint = n => (Math.random() * n) | 0;
 const chance = p => Math.random() < p;
+// v9.14: random numbers for looks only (sparks, dust). In an online (rollback) match never the match's own stream, so
+// what's on screen can't change a game (both sides replay frames and must roll the same numbers).
+const FX_RANDOM = Math.random;
+const fxChance = p => (typeof RB !== 'undefined' && RB.sim ? FX_RANDOM() : Math.random()) < p;   // (elsewhere as before: a league game's own stream)
 const pick = a => a[rint(a.length)];
 const sgn = v => v < 0 ? -1 : 1;
 const dxz = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -1140,7 +1144,7 @@ function canDunk(p) {
 function dunkPath(a, s) {
   s = Math.min(s, 1);
   const u = Math.min(1, s / 0.8), e = 1 - (1 - u) * (1 - u);
-  return { x: lerp(a.sx, a.tx, e), z: lerp(a.sz, a.tz, e), y: Math.max(0, a.peak * (1 - ((s - 0.6) / 0.6) ** 2)) };
+  return { x: lerp(a.sx, a.tx, e), z: lerp(a.sz, a.tz, e), y: Math.max(0, a.peak * (1 - (typeof RB !== 'undefined' && RB.sim ? ((s - 0.6) / 0.6) * ((s - 0.6) / 0.6) : ((s - 0.6) / 0.6) ** 2))) };   // (v9.14: in an online match a plain multiply, the same bits on every engine; elsewhere ** as recorded)
 }
 function startDunk(p, opts) {
   const h = attackHoop(p.team), d = dxz(p, h);
@@ -8938,7 +8942,7 @@ color:#fff;background:rgba(12,20,30,.55);border:2px solid rgba(255,255,255,.55);
     for (const k of ['pass', 'turbo', 'cross', 'skill']) this.btns[k].style.display = room ? 'none' : '';
     if (room) { if (this.last !== 'room') { this.last = 'room'; this.btns.shoot.firstChild.textContent = 'TALK'; this.btns.shoot.classList.toggle('hint', !!Game.mus.near); } else this.btns.shoot.classList.toggle('hint', !!Game.mus.near); return; }
     // contextual labels
-    const me = M.players && M.players.find(p => p.human === 0); if (!me) return;
+    const me = M.players && M.players.find(p => p.human === (Net.role === 'guest' ? 1 : 0)); if (!me) return;   // (v9.15: online the guest's own player)
     const bo = ball.owner, offense = bo ? bo.team === me.team : (ball.pass && ball.pass.from.team === me.team);
     let pass = 'PASS', shoot = 'SHOOT', hintP = false, hintS = false;
     if (!offense) {
@@ -12671,7 +12675,8 @@ for (const b of BINDS) { b.t = []; b.s = []; }        // turbo and skill keys re
 // ---- sprint gesture
 const Sprint = [{}, {}];
 function sprintStep(pad, c) {
-  const S = Sprint[pad], b = padBinds(pad), d = Input.down, now = nowMs() / 1000, dirs = ['up', 'down', 'left', 'right'];
+  const S = Sprint[pad], b = padBinds(pad), d = Input.down, now = typeof RB !== 'undefined' && RB.sim ? M.time : nowMs() / 1000,   // (v9.14: a rollback step uses match time)
+    dirs = ['up', 'down', 'left', 'right'];
   if (S.pobj !== Input.pressed) {                                  // once per frame: look at new presses
     S.pobj = Input.pressed;
     for (const k of dirs) if (b[k].some(x => Input.pressed[x])) {
@@ -14423,7 +14428,7 @@ const SPRINT_KEYS = [['ShiftLeft'], ['ShiftRight']];
 sprintStep = function (pad, c) {
   const d = Input.down, b = padBinds(pad), solo = soloKeys();
   const shift = SPRINT_KEYS[pad].some(k => d[k]) || (pad === 0 && solo && d.ShiftRight);
-  const dir = ['up', 'down', 'left', 'right'].some(k => b[k].some(x => d[x]));
+  const dir = ['up', 'down', 'left', 'right'].some(k => b[k].some(x => d[x])) || (typeof RB !== 'undefined' && RB.sim && Input.padAxis[pad] && Math.hypot(Input.padAxis[pad].ax, Input.padAxis[pad].az) > 0.3);   // (v9.15: in an online match the stick counts as a direction, so pushing the touch stick past its ring sprints)
   const stick = pad === 0 && Input.touchMode && TouchUI.sid != null && !!Input.stick.deep;
   c.turbo = !!(shift && dir) || stick;
 };
@@ -18999,7 +19004,7 @@ KIND_TXT.taunt = 'Taunt';
   updatePlayer = function (p, dt) {
     const r = _up.apply(this, arguments);
     if (p.swat && M.time - p.swat.t0 < 0.26 && onScreen(p.x)) { const hd = p.hands.n; FX.spark(hd.x, hd.y, hd.z, '#e8f7ff'); }
-    if (p.mv && ball.owner === p && (p.mv.kind === 'cross' || p.mv.kind === 'btb') && onScreen(p.x) && chance(0.6)) FX.spark(ball.x, ball.y, ball.z, 'rgba(255,255,255,0.7)');
+    if (p.mv && ball.owner === p && (p.mv.kind === 'cross' || p.mv.kind === 'btb') && onScreen(p.x) && fxChance(0.6)) FX.spark(ball.x, ball.y, ball.z, 'rgba(255,255,255,0.7)');
     return r;
   };
 }
@@ -19007,7 +19012,17 @@ KIND_TXT.taunt = 'Taunt';
 function tauntOpen(p, why) {
   if (!p || M.attract || M.practice || M.mini) return;
   M.taunt = { p, until: M.time + 3, why, used: false, deadOK: why === 'score' };
-  if (p.human < 0 && chance(why === 'block' ? 0.25 : 0.3)) setTimeout(() => { if (M.taunt && M.taunt.p === p && !M.taunt.used) doTaunt(p, pick(['sky', 'flex', 'wag', 'chest', 'takbir', 'dua'])); }, 500 + Math.random() * 500);
+  // a CPU player taunts back half a second to a second later, in match time (v9.14: was a timer, so the frame it landed on
+  // depended on the machine; an online match plays every frame the same on both)
+  if (p.human < 0 && chance(why === 'block' ? 0.25 : 0.3)) { const at = M.time + 0.5 + Math.random() * 0.5; if (M.players.some(q => q.human >= 0)) M.taunt.cpu = { at }; }   // (which taunt: picked when it comes. Only at a person: CPU-only games (the league) never got the timer's taunt, and are calibrated without it)
+}
+{
+  const _um = updateMatch;
+  updateMatch = function (dt) {
+    const r = _um.apply(this, arguments), T = M.taunt;
+    if (T && T.cpu && M.time >= T.cpu.at) { T.cpu = null; if (!T.used) doTaunt(T.p, pick(['sky', 'flex', 'wag', 'chest', 'takbir', 'dua'])); }
+    return r;
+  };
 }
 function myTaunt() { const t = (Profile.load().equip || {}).taunt || 'sky'; return Profile.has('taunt', t) || t === 'sky' ? t : 'sky'; }
 function doTaunt(p, id) {
@@ -20141,10 +20156,10 @@ function tkHands(p, J) {                                // the forward kinematic
   render = function (g) {                                // draw the ball in the hand you see
     const d = ball.vd, id = ball.ivd || d;
     if (!d || Replay.active) return _r.apply(this, arguments);
-    const ix = ball.ix !== undefined;
+    const ix = ball.ix !== undefined, keep = [ball.x, ball.y, ball.z, ball.ix, ball.iy, ball.iz];
     ball.x += d[0]; ball.y += d[1]; ball.z += d[2]; if (ix) { ball.ix += id[0]; ball.iy += id[1]; ball.iz += id[2]; }
     try { return _r.apply(this, arguments); }
-    finally { ball.x -= d[0]; ball.y -= d[1]; ball.z -= d[2]; if (ix) { ball.ix -= id[0]; ball.iy -= id[1]; ball.iz -= id[2]; } }
+    finally { [ball.x, ball.y, ball.z, ball.ix, ball.iy, ball.iz] = keep; }   // (v9.15: the exact values back: x + d - d isn't always x, and drawing must never move the ball)
   };
 }
 function setTomahawk(d) {
@@ -25980,6 +25995,818 @@ try { SETTINGS.room = localStorage.getItem('islamdunk.room') !== '0'; } catch (e
     // a group holds at most 7 rows on desktop: Stick deadzone moves to Display (the catch-all)
     G.labels = G.labels.filter(l => l !== 'Stick deadzone');
   }
+}
+// ================================================= v9.14: ROLLBACK NETCODE, PART 1: A DETERMINISTIC MATCH STEP
+// The plan (CHANGELOG 9.14): both players run the whole match and send each other only their controls. Each side
+// plays its own input at once and guesses the other's; when the real input arrives and differs, it goes back to the
+// saved state of that frame and plays the frames since again. That only works if a frame played twice, on two
+// machines, gives exactly the same result. rbStep() is that frame:
+//   * the match's random numbers come from its own seeded stream (M.rbSeed, saved with the state); effects, sounds,
+//     the net and the camera roll their own (FX_RANDOM), so what each screen shows can't change the game;
+//   * the match uses the settings both players agreed on at the start (RB.cfg), never this device's;
+//   * the controls are both players' recorded inputs for that frame, played on a virtual keyboard (player 1 on the
+//     WASD keys, player 2 on the arrows), so the existing control code runs unchanged;
+//   * the old host / guest code stays out of the way (Net.role is cleared for the step);
+//   * while a frame is played again (RB.resim), effects, sounds, replays and the like are skipped altogether.
+// rbHash() is the checksum of everything the match owns, for tests now and for desync detection later.
+const RB = { sim: false, resim: false, cfg: null, frame: null };   // frame: set by the online match (events in replayed frames)
+// the buttons a frame's input carries, and the keys they press for player 1 and 2 (the bindings the control code reads)
+const RB_BTN = ['up', 'down', 'left', 'right', 'a', 'b', 'x', 'd', 't'];
+const RB_KEYS = [['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyJ', 'KeyK', 'KeyH', 'KeyL', 'ShiftLeft'],
+  ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Numpad1', 'Numpad2', 'Numpad0', 'Numpad3', 'ShiftRight']];
+// the settings: every one the host has travels with the match and is used on both sides, except the few that only
+// change this screen, this speaker or this controller (v9.15: was a list of the ones the match reads, and two devices
+// with a different ball magnet or a setting one of them never stored played two different games). Ball magnet lives
+// in View, not SETTINGS: it travels too.
+const RB_LOCAL = new Set(['sound', 'aud', 'vibration', 'textSize', 'cbSafe', 'netInfo', 'motion', 'shake', 'flashes', 'hints', 'deadzone', 'missWhy', 'calendar']);
+function rbConfig(from = SETTINGS, view = typeof View !== 'undefined' ? View : null) {
+  const o = {};
+  for (const k of Object.keys(from)) if (!RB_LOCAL.has(k)) { const v = from[k]; o[k] = v && typeof v === 'object' ? JSON.parse(JSON.stringify(v)) : v; }
+  o.casual = false; o.autoShot = false;                                // offline-only assists (as online always was)
+  o.__magnet = view && view.magnet != null ? view.magnet : 1;
+  return o;
+}
+// the match's random numbers (mulberry32 on M.rbSeed)
+function rbRandom() {
+  let s = M.rbSeed = (M.rbSeed + 0x6D2B79F5) | 0;
+  let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+// an input frame: { h: held bits, p: pressed bits, r: released bits, mx, mz: the stick (0 for keys alone) }
+const RB_IDLE = { h: 0, p: 0, r: 0, mx: 0, mz: 0 };
+// one frame of the match
+function rbStep(ins, resim) {
+  const keep = { rand: Math.random, role: Net.role, down: Input.down, pressed: Input.pressed, released: Input.released, stick: Input.stick,
+    axes: Input.padAxis, touch: Input.touchMode, scr: Game.screen, paused: Game.paused, trivia: Game.trivia, set: {} };
+  const D = {}, Pr = {}, Rl = {}, axes = [{ ax: 0, az: 0 }, { ax: 0, az: 0 }];
+  for (let k = 0; k < 2; k++) {
+    const I = ins[k] || RB_IDLE, K = RB_KEYS[k];
+    for (let i = 0; i < K.length; i++) { const bit = 1 << i; if (I.h & bit) D[K[i]] = true; if (I.p & bit) Pr[K[i]] = true; if (I.r & bit) Rl[K[i]] = true; }
+    axes[k] = { ax: I.mx || 0, az: I.mz || 0 };
+  }
+  const C = RB.cfg;
+  for (const k of new Set([...Object.keys(SETTINGS), ...Object.keys(C)])) {   // (a setting this device has and the host doesn't: absent for the step)
+    if (RB_LOCAL.has(k) || k === '__magnet') continue;
+    keep.set[k] = [k in SETTINGS, SETTINGS[k]];
+    if (k in C) SETTINGS[k] = C[k]; else delete SETTINGS[k];
+  }
+  const keepMagnet = typeof View !== 'undefined' ? View.magnet : null; if (keepMagnet != null && C.__magnet != null) View.magnet = C.__magnet;
+  Input.down = D; Input.pressed = Pr; Input.released = Rl; Input.stick = { ax: 0, az: 0, deep: false }; Input.padAxis = axes; Input.touchMode = false;
+  const nat = {}; for (const k of RB_MATH) { nat[k] = Math[k]; Math[k] = DMath[k]; }
+  Math.random = rbRandom; Net.role = null; Game.screen = 'play'; Game.paused = false; Game.trivia = null;
+  RB.sim = true; RB.resim = !!resim;
+  try { updateMatch(STEP); }
+  catch (e) { RB.errors = (RB.errors || 0) + 1; RB.lastErr = String(e && e.stack || e).slice(0, 300); }   // (counted: a frame that throws is a bug; tests require none)
+  finally {
+    RB.sim = false; RB.resim = false;
+    Math.random = keep.rand; Net.role = keep.role; for (const k of RB_MATH) Math[k] = nat[k];
+    for (const k in keep.set) { const [had, v] = keep.set[k]; if (had) SETTINGS[k] = v; else delete SETTINGS[k]; }
+    if (keepMagnet != null) View.magnet = keepMagnet;
+    Input.down = keep.down; Input.pressed = keep.pressed; Input.released = keep.released; Input.stick = keep.stick; Input.padAxis = keep.axes; Input.touchMode = keep.touch;
+    if (Game.screen !== 'play') M.rbScreen = Game.screen;               // (the match asked for halftime / the final: the flow decides)
+    Game.screen = keep.scr; Game.paused = keep.paused; Game.trivia = keep.trivia;
+  }
+}
+// ---------------------------------------------------------------- what isn't the match
+// Effects, sounds, replays, achievements, commentary, the net and the camera. In a rollback step they use their own
+// random numbers. (Installed once; outside a rollback step they're as before.) In a replayed frame:
+//   * what runs every frame (the particles, the replay recorder, the camera) is skipped;
+//   * an event (a sound, a popup, a callout, the net, an achievement) plays only if it didn't already play when that
+//     frame was first played (the same call within 3 frames): a dunk you first see in a replayed frame (your friend's
+//     input arrived late) still swishes, once, and one that was already shown isn't shown again;
+//   * always: the match uses what it returns (the commentary line), so it runs as usual (its own random numbers).
+const RB_EVERY_FRAME = new Set(['FX.update', 'FX.updateReal', 'FX.reset', 'Replay.record', 'Replay.frame', 'Replay.tick', 'Replay.reset', 'updateCamera', 'updateBroadcastCam',
+  'buildCourt', 'buildCrowd', 'setVenue', 'buildGymFloor']);
+const RB_EVENTS = new Map();                                              // name|arguments -> the frames it played on
+function rbEventKey(name, args) {
+  let k = name;
+  for (let i = 0; i < args.length && i < 4; i++) {
+    const a = args[i], t = typeof a;
+    k += '|' + (t === 'number' ? Math.round(a / 8) : t === 'string' || t === 'boolean' ? a : a && t === 'object' && typeof M !== 'undefined' && M.players && M.players.includes(a) ? 'P' + M.players.indexOf(a) : '-');
+  }
+  return k;
+}
+function rbEventSeen(key, f) { const L = RB_EVENTS.get(key); if (L) for (const g of L) if (Math.abs(g - f) <= 3) return true; return false; }
+function rbEventMark(key, f) { let L = RB_EVENTS.get(key); if (!L) RB_EVENTS.set(key, L = []); L.push(f); if (L.length > 8) L.shift(); }
+function rbEventsTidy(f) { for (const [k, L] of RB_EVENTS) if (L[L.length - 1] < f - 120) RB_EVENTS.delete(k); }
+function rbPresent(obj, k, tag, always) {
+  const f = obj[k]; if (typeof f !== 'function' || f._rb) return;
+  const name = (tag || '') + k, every = RB_EVERY_FRAME.has(name);
+  const w = function () {
+    if (!RB.sim) return f.apply(this, arguments);
+    if (!always) {
+      if (RB.resim && (every || !RB.frame)) { if (!(RB.keepInResim && RB.keepInResim(name))) return; }   // (tests can keep some running, to find one that mustn't be skipped)
+      else if (!every && RB.frame != null) {
+        const key = rbEventKey(name, arguments);
+        if (RB.resim && rbEventSeen(key, RB.frame)) return;              // already played when this frame was first played
+        rbEventMark(key, RB.frame);
+      }
+    }
+    const r = Math.random; Math.random = FX_RANDOM;
+    try { return f.apply(this, arguments); } finally { Math.random = r; }
+  };
+  w._rb = true; try { Object.defineProperty(w, 'length', { value: f.length }); } catch (e) {}   // (the Studio tells sounds with arguments apart by length)
+  obj[k] = w;
+}
+function rbPresentGlobal(name, always) {                                  // a global function binding, by name
+  try {
+    const f = (0, eval)('typeof ' + name + ' === "function" ? ' + name + ' : null'); if (!f || f._rb) return;
+    const o = { [name]: f }; rbPresent(o, name, '', always); globalThis.__rbFn = o[name]; (0, eval)(name + ' = globalThis.__rbFn'); delete globalThis.__rbFn;
+  } catch (e) {}
+}
+{
+  for (const k of Object.keys(FX)) rbPresent(FX, k, 'FX.');
+  for (const k of Object.keys(SFX)) rbPresent(SFX, k, 'SFX.');
+  if (typeof Replay !== 'undefined') for (const k of Object.keys(Replay)) rbPresent(Replay, k, 'Replay.');
+  if (typeof Ach !== 'undefined') for (const k of Object.keys(Ach)) rbPresent(Ach, k, 'Ach.');
+  if (typeof Pad !== 'undefined') rbPresent(Pad, 'rumble');
+  rbPresent(Hoop.prototype, 'kick', 'hoop.');
+  rbPresentGlobal('pickCall', true); rbPresentGlobal('sigCall', true);   // (commentary pickers: they remember their last line, so they draw a varying number of times)
+  for (const n of ['toast', 'coachNote', 'updateCamera', 'buildCourt', 'buildCrowd', 'setVenue', 'buildGymFloor', 'updateBroadcastCam']) rbPresentGlobal(n);
+  // the hoops: in a rollback step only the rim spring moves (bounces read it); the net is drawing (rbNets, per frame)
+  const _hu = Hoop.prototype.update;
+  Hoop.prototype.update = function (dt) {
+    if (!RB.sim) return _hu.apply(this, arguments);
+    this.vy += (-this.dy * 380 - this.vy * 8) * dt; this.dy += this.vy * dt;
+  };
+  RB.netUpdate = _hu;
+}
+function rbNets(dt) {                                                     // the net's cords, once a drawn frame (the spring kept)
+  for (const h of hoops) { const dy = h.dy, vy = h.vy, r = Math.random; Math.random = FX_RANDOM; try { RB.netUpdate.call(h, dt); } finally { Math.random = r; h.dy = dy; h.vy = vy; } }
+}
+// ---------------------------------------------------------------- the match's checksum
+// Fields that only the screen writes or reads (the HUD, reflections, trails, the sideline cast) and the hoops' nets
+// are left out; everything else under M, the ball, the rim springs and the sprint gestures is in.
+const RB_LOOKS = new Set(['_coach', '_refl', '_hudF', '_hudPT', '_hudA', '_sv', '_vSq', '_vT', '_vOwn', 'ivd', 'camCut', '_smx', '_smy', '_smz', '_cvx', '_cvz', 'ix', 'iy', 'iz', 'ihip', 'irot', 'isq', 'ia', 'trail', 'cmdHook',
+  'canvas', 'spr', 'sprites', 'img', 'cache', 'rbScreen', 'coach', 'pendingClips', 'highlights']);
+// the definitions a match is built from (the teams, the players, their looks): never changed by a match, so saved
+// frames keep a reference to them without copying them, and the checksum doesn't walk them. Found by identity, not by
+// key name (a player's stats have a 'def' too: his defense). Marked for a match the first time it's saved.
+const RB_STATICS = new Set();
+function rbMarkStatics() {
+  RB_STATICS.clear();
+  const add = v => { if (!v || typeof v !== 'object' || RB_STATICS.has(v) || v instanceof Hoop) return; RB_STATICS.add(v); for (const k of Object.keys(v)) { const d = Object.getOwnPropertyDescriptor(v, k); if (d && 'value' in d) add(d.value); } };   // (getters aren't called: they may build something)
+  (M.teamDefs || []).forEach(add); add(M.teamDefs);
+  for (const p of M.players || []) { add(p.def); add(p.T); if (p.look && typeof p.look === 'object') add(p.look); }
+  for (const t of M.teams || []) add(t.def);
+}
+function rbWalk(roots, out) {
+  const seen = new Set();
+  const go = (v, path, d) => {
+    if (v == null || v === false || typeof v === 'function') return;   // (false and missing play the same)
+    if (typeof v !== 'object') { out.push(path + '=' + (typeof v === 'number' ? (Object.is(v, -0) ? '0' : String(v)) : typeof v === 'string' ? v : String(v))); return; }
+    if (v instanceof Hoop) { out.push(path + '=hoop' + hoops.indexOf(v)); return; }       // (its spring is under rims; the net is looks)
+    if (RB_STATICS.has(v)) { out.push(path + '=static'); return; }
+    if (seen.has(v) || d > 7) return; seen.add(v);
+    if (typeof HTMLElement !== 'undefined' && (v instanceof HTMLElement || v instanceof CanvasRenderingContext2D || (typeof ImageBitmap !== 'undefined' && v instanceof ImageBitmap))) return;
+    if (v instanceof Set || v instanceof Map) { out.push(path + '#' + v.size); return; }
+    for (const k of Object.keys(v)) { if (RB_LOOKS.has(k)) continue; go(v[k], path + '.' + k, d + 1); }
+  };
+  for (const [n, r] of roots) go(r, n, 0);
+  return out;
+}
+function rbStateLines() {
+  rbStaticsFresh();
+  return rbWalk([['M', M], ['ball', ball], ['rims', hoops.map(h => [h.dy, h.vy])], ['sprint', Sprint.map(S => [S.on, S.lastDir, S.lastT, S.held])], ['react', typeof React8 !== 'undefined' ? React8 : null]], []);
+}
+function rbHash(lines = rbStateLines()) {
+  let h = 2166136261;
+  for (const s of lines) { for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } h ^= 10; h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+// ---------------------------------------------------------------- a clean start
+// newMatch() resets what a match needs, but whatever an earlier game left on M and the ball (the last dunker, the
+// ball's spin, cool-downs) stays. Both players must start from exactly the same state, so a rollback match first
+// puts M, the ball, the crowd's memory (React8) and the sprint gestures back to how they were when the game loaded.
+const RB_PRISTINE = { M: JSON.parse(JSON.stringify(M)), ball: JSON.parse(JSON.stringify(ball)), react: typeof React8 !== 'undefined' ? JSON.parse(JSON.stringify(React8)) : null };
+function rbClean() {
+  for (const [o, P] of [[M, RB_PRISTINE.M], [ball, RB_PRISTINE.ball], [typeof React8 !== 'undefined' ? React8 : {}, RB_PRISTINE.react || {}]]) {
+    for (const k of Object.keys(o)) if (!(k in P)) delete o[k];
+    Object.assign(o, JSON.parse(JSON.stringify(P)));
+  }
+  for (const S of Sprint) for (const k of Object.keys(S)) delete S[k];
+  if (typeof _lastCall !== 'undefined') for (const k of Object.keys(_lastCall)) delete _lastCall[k];
+}
+// ---------------------------------------------------------------- the same math on every engine
+// Math.sin, cos, exp, pow, atan2 and hypot are allowed to differ in the last bit between browsers (Chrome's V8 and
+// Safari's JavaScriptCore do), and a last bit is enough for two machines to drift apart. During a rollback step they
+// are replaced by these, built only from + - * / and sqrt, which IEEE 754 makes exact everywhere. Accurate to about
+// 1e-16 (the native ones are about the same); offline play keeps the native functions.
+const DMath = (() => {
+  const SQRT = Math.sqrt, ROUND = Math.round, ABS = Math.abs, PI = 3.141592653589793, PIO2 = 1.5707963267948966;
+  const P1 = 1.57079632673412561417e+00, P2 = 6.07710050630396597660e-11, P2T = 2.02226624879595063154e-21;   // pi/2 in three parts (fdlibm)
+  const LN2H = 6.93147180369123816490e-01, LN2L = 1.90821492927058770002e-10, LN2 = 0.6931471805599453, SQRT2 = 1.4142135623730951;
+  const F = new Float64Array(1), U = new Uint32Array(F.buffer), LO = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1 ? 0 : 1, HI = 1 - LO;
+  const pow2 = k => { U[LO] = 0; U[HI] = (k + 1023) << 20; return F[0]; };   // 2^k, exact (-1022..1023)
+  // series coefficients (computed once, the same way everywhere)
+  const fact = n => { let f = 1; for (let i = 2; i <= n; i++) f *= i; return f; };
+  const S = [], C = [], E = []; for (let i = 0; i < 9; i++) { S.push((i & 1 ? -1 : 1) / fact(2 * i + 1)); C.push((i & 1 ? -1 : 1) / fact(2 * i)); }
+  for (let i = 0; i <= 15; i++) E.push(1 / fact(i));
+  const ks = r => { const z = r * r; let p = S[8]; for (let i = 7; i >= 0; i--) p = p * z + S[i]; return r * p; };
+  const kc = r => { const z = r * r; let p = C[8]; for (let i = 7; i >= 0; i--) p = p * z + C[i]; return p; };
+  const red = x => { const n = ROUND(x * 0.6366197723675814); return [((x - n * P1) - n * P2) - n * P2T, ((n % 4) + 4) % 4]; };
+  const sin = x => { if (!(x - x === 0)) return NaN; if (ABS(x) < 0.7853981633974483) return ks(x); const [r, q] = red(x); return q === 0 ? ks(r) : q === 1 ? kc(r) : q === 2 ? -ks(r) : -kc(r); };
+  const cos = x => { if (!(x - x === 0)) return NaN; if (ABS(x) < 0.7853981633974483) return kc(x); const [r, q] = red(x); return q === 0 ? kc(r) : q === 1 ? -ks(r) : q === 2 ? -kc(r) : ks(r); };
+  const tan = x => sin(x) / cos(x);
+  // atan on [0, 1]: two half-angle steps (|y| <= tan(pi/16)), then the series
+  const at01 = x => { let y = x / (1 + SQRT(1 + x * x)); y = y / (1 + SQRT(1 + y * y)); const z = y * y; let p = 1 / 25; for (let k = 11; k >= 0; k--) p = p * -z + 1 / (2 * k + 1); return 4 * y * p; };
+  const atan = x => { if (x !== x) return NaN; const a = ABS(x), r = a <= 1 ? at01(a) : PIO2 - at01(1 / a); return x < 0 ? -r : r; };
+  const atan2 = (y, x) => {
+    if (x !== x || y !== y) return NaN;
+    if (y === 0 && x === 0) return 1 / x < 0 ? (1 / y < 0 ? -PI : PI) : y;
+    const ax = ABS(x), ay = ABS(y); let t = ay <= ax ? at01(ay / ax) : PIO2 - at01(ax / ay);
+    if (x < 0) t = PI - t; return y < 0 || (y === 0 && 1 / y < 0) ? -t : t;
+  };
+  const asin = x => atan2(x, SQRT((1 - x) * (1 + x)));
+  const exp = x => {
+    if (x !== x) return NaN; if (x > 709.78) return Infinity; if (x < -745.2) return 0;
+    const k = ROUND(x / LN2), r = (x - k * LN2H) - k * LN2L; let p = E[15]; for (let i = 14; i >= 0; i--) p = p * r + E[i];
+    return k < -1020 ? p * pow2(k + 1000) * pow2(-1000) : k > 1023 ? p * pow2(k - 1) * 2 : p * pow2(k);
+  };
+  const log = x => {
+    if (x !== x || x < 0) return NaN; if (x === 0) return -Infinity; if (x === Infinity) return Infinity;
+    let e = 0; if (x < 2.2250738585072014e-308) { x *= 18014398509481984; e = -54; }   // subnormals: * 2^54
+    F[0] = x; e += ((U[HI] >>> 20) & 2047) - 1023; U[HI] = (U[HI] & 0x000fffff) | 0x3ff00000; let m = F[0];
+    if (m > SQRT2) { m /= 2; e++; }
+    const f = (m - 1) / (m + 1), z = f * f; let p = 1 / 23; for (let k = 10; k >= 0; k--) p = p * z + 1 / (2 * k + 1);
+    return e * LN2H + (2 * f * p + e * LN2L);
+  };
+  const pow = (a, b) => {
+    if (b === 0) return 1; if (a !== a || b !== b) return NaN;
+    if (b === (b | 0) && b > -65 && b < 65) { let r = 1, q = a, n = b < 0 ? -b : b; while (n) { if (n & 1) r *= q; q *= q; n >>= 1; } return b < 0 ? 1 / r : r; }
+    if (a === 0) return b > 0 ? 0 : Infinity; if (a < 0) return NaN;
+    return exp(b * log(a));
+  };
+  const log2 = x => log(x) / LN2;
+  function hypot(a, b, c) {
+    const n = arguments.length;
+    if (n === 2) { if (a === Infinity || a === -Infinity || b === Infinity || b === -Infinity) return Infinity; return SQRT(a * a + b * b); }
+    if (n === 3) { if (ABS(a) === Infinity || ABS(b) === Infinity || ABS(c) === Infinity) return Infinity; return SQRT(a * a + b * b + c * c); }
+    let s = 0; for (let i = 0; i < n; i++) { const v = +arguments[i]; if (ABS(v) === Infinity) return Infinity; s += v * v; } return SQRT(s);
+  }
+  return { sin, cos, tan, atan, atan2, asin, exp, log, pow, log2, hypot };
+})();
+const RB_MATH = Object.keys(DMath);
+// ---------------------------------------------------------------- saving and restoring a frame
+// rbSave() keeps a shallow copy of every object, array, Set and Map the match owns (everything reachable from M, the
+// ball and the sprint gestures, without the team definitions and the fields only the screen uses); rbLoad() puts
+// those values back into the same objects, so every reference anyone holds (a player in the renderer's caches, the
+// AI's player) still points at the right thing. Objects made after the save simply stop being referenced.
+function rbSkipKey(k) { return RB_LOOKS.has(k); }
+function rbSave() {
+  rbStaticsFresh();
+  const list = [], seen = new Set();
+  const go = v => {
+    if (v == null || typeof v !== 'object' || seen.has(v)) return; seen.add(v);
+    if (RB_STATICS.has(v) || v instanceof Hoop || (typeof HTMLElement !== 'undefined' && v instanceof HTMLElement) || (typeof CanvasRenderingContext2D !== 'undefined' && v instanceof CanvasRenderingContext2D)) return;
+    if (Array.isArray(v)) { list.push(v, v.slice()); for (let i = 0; i < v.length; i++) go(v[i]); return; }
+    if (v instanceof Set) { const a = [...v]; list.push(v, a); for (const x of a) go(x); return; }
+    if (v instanceof Map) { const a = [...v]; list.push(v, a); for (const [k, x] of a) { go(k); go(x); } return; }
+    const c = {}; for (const k of Object.keys(v)) { if (rbSkipKey(k)) continue; const x = v[k]; c[k] = x; if (x !== null && typeof x === 'object') { if (k === 'hist') { if (!seen.has(x)) { seen.add(x); list.push(x, x.slice()); } } else go(x); } }   // (a player's position history: records are never changed once added)
+    list.push(v, c);
+  };
+  go(M); go(ball); go(Sprint); if (typeof React8 !== 'undefined') go(React8);
+  return { list, rims: hoops.map(h => [h.dy, h.vy]) };
+}
+function rbLoad(S) {
+  const L = S.list;
+  for (let i = 0; i < L.length; i += 2) {
+    const o = L[i], c = L[i + 1];
+    if (Array.isArray(o)) { o.length = c.length; for (let j = 0; j < c.length; j++) o[j] = c[j]; }
+    else if (o instanceof Set) { o.clear(); for (const x of c) o.add(x); }
+    else if (o instanceof Map) { o.clear(); for (const [k, x] of c) o.set(k, x); }
+    else {
+      const now = Object.keys(o); let same = true, j = 0;                // the same keys in the same order? (usually)
+      for (const k of now) { if (rbSkipKey(k)) continue; if (!(k in c)) { same = false; break; } j++; }
+      if (same && j !== Object.keys(c).length) same = false;
+      if (same) { let i2 = 0; const ck = Object.keys(c); for (const k of now) { if (rbSkipKey(k)) continue; if (k !== ck[i2++]) { same = false; break; } } }
+      if (!same) for (const k of now) if (!rbSkipKey(k)) delete o[k];   // (rebuilt in the saved order: code that loops over keys sees the same order)
+      Object.assign(o, c);
+    }
+  }
+  hoops.forEach((h, i) => { h.dy = S.rims[i][0]; h.vy = S.rims[i][1]; });
+}
+// the checksum of a saved frame: every value in save order (numbers by their exact bits), objects by their place in the save
+const RB_HF = new Float64Array(1), RB_HU = new Uint32Array(RB_HF.buffer);
+function rbHashSaved(S) {
+  const L = S.list, id = new Map(); for (let i = 0; i < L.length; i += 2) id.set(L[i], i >> 1);
+  let h = 2166136261;
+  const mix = n => { h ^= n; h = Math.imul(h, 16777619); };
+  const val = v => {
+    if (v === undefined) return mix(1); if (v === null) return mix(2); if (v === true) return mix(3); if (v === false) return mix(4);
+    const t = typeof v;
+    if (t === 'number') { RB_HF[0] = v === 0 ? 0 : v; mix(RB_HU[0]); mix(RB_HU[1]); return; }
+    if (t === 'string') { mix(5); for (let i = 0; i < v.length; i++) mix(v.charCodeAt(i)); return; }
+    if (t === 'object') { const k = id.get(v); mix(k == null ? 6 : 7 + k); return; }   // (an object outside the save: a hoop, a definition)
+    mix(8);
+  };
+  for (let i = 0; i < L.length; i += 2) {
+    const o = L[i], c = L[i + 1]; mix(0xabc);
+    if (Array.isArray(o) || o instanceof Set) { mix(c.length); for (const x of c) val(x); }
+    else if (o instanceof Map) { mix(c.length); for (const [k, x] of c) { val(k); val(x); } }
+    else for (const k in c) { const x = c[k]; if (x === false || x === undefined) continue; val(k); val(x); }   // (false and missing play the same)
+  }
+  for (const r of S.rims) { val(r[0]); val(r[1]); }
+  return h >>> 0;
+}
+// a saved frame as text lines (tests: what differs between two sides)
+function rbSavedLines(S) {
+  const L = S.list, id = new Map(), out = []; for (let i = 0; i < L.length; i += 2) id.set(L[i], i >> 1);
+  const v = x => x === undefined ? 'undef' : x === null ? 'null' : typeof x === 'object' ? (id.has(x) ? '#' + id.get(x) : '#out:' + (x.constructor && x.constructor.name)) : typeof x + ':' + String(x);
+  for (let i = 0; i < L.length; i += 2) {
+    const o = L[i], c = L[i + 1], n = '#' + (i >> 1) + (o.constructor ? '<' + o.constructor.name + '>' : '');
+    if (Array.isArray(o) || o instanceof Set) c.forEach((x, j) => out.push(n + '[' + j + ']=' + v(x)));
+    else if (o instanceof Map) c.forEach(([k, x], j) => out.push(n + '{' + v(k) + '}=' + v(x)));
+    else for (const k in c) { if (c[k] === false || c[k] === undefined) continue; out.push(n + '.' + k + '=' + v(c[k])); }
+  }
+  return out;
+}
+function rbStaticsFresh() { if (RB.staticsOf !== M.teamDefs) { rbMarkStatics(); RB.staticsOf = M.teamDefs; } }   // (marked for the match being saved, once)
+// ================================================= v9.14: ROLLBACK NETCODE, PART 2: THE ONLINE MATCH
+// Same team vs CPU, Head to head and 1 on 1 (the match modes) are played with rollback: both players run the whole
+// match (rollback.js makes every frame the same on both machines) and send each other only their controls.
+//   * Your own controls play at once (after a short input delay, 1 frame on a good link and more on a slow one: it
+//     hides most corrections; rbDelayFor).
+//   * Your friend's controls for a frame you've already played are guessed (the buttons they were holding); when the
+//     real ones arrive and differ, the game goes back to that frame and plays the frames since again, in the same
+//     drawn frame (RBN.W = 10 frames at most; further behind than that, the game waits for them). The delay grows
+//     on a slow link (up to 9 frames) so the window covers the rest, instead of waits.
+//   * Inputs are tiny (one number a frame, runs of the same input as one) and each packet repeats every input the other
+//     side hasn't confirmed (48 at most), so a lost packet costs nothing. They travel on the direct link (unordered, no resends) like the old snapshots.
+//   * The side that runs ahead slows down a little until both are on the same frame (time sync).
+//   * Every second each side sends the checksum of a frame both have confirmed; a mismatch is a desync (reported in
+//     the network report, and the host's state is sent to put the guest right: rollback-sync.js).
+// The match starts from the host's start message (rbgo): the match setup, the seed and the agreed settings; both
+// sides build the same match from it. HORSE, Lightning and Barakah Run duos still use the host's snapshots, and so do
+// matches without a direct link (everything through the server: in-order delivery holds every input up behind a lost
+// one, and rollback would wait; there the snapshots keep your own player instant).
+const RBN = {
+  on: false, id: 0, me: 0, D: 2, W: 20, keep: 60, maxD: 9,
+  f: 0, acc: 0, states: new Map(), ins: [new Map(), new Map()], used: new Map(), conf: -1, lastIn: RB_IDLE,
+  rollTo: Infinity, peerF: -1, peerAck: -1, peerV: null, gotAt: 0, rtt: 0, lastPkt: null, hashes: new Map(), theirHash: null,
+  desync: null, gone: false, stats: null, cfg: null, over: false, hold: 0,
+  modes: new Set(['co', 'vs', 'one']),
+  direct() { return (typeof P2P !== 'undefined' && P2P.open) || (Net.transport === 'loop' && Net.loop && Net.loop.mode !== 'server'); },   // (the test link stands in for one)
+  eligible(mode) { return this.modes.has(mode) && this.direct() && !(typeof window !== 'undefined' && window.ISLAMDUNK_RB === false) && !/[?&]rb=0\b/.test(typeof location !== 'undefined' ? location.search : ''); },   // (?rb=0 / the test switch: the snapshot netcode)
+  // ---------------------------------------------------------------- starting
+  // host: the start message (what newMatch needs, all of it data), then the match at frame 0
+  hostStart() {
+    const s = Net.sel, gs = Net.guestSlot(), vb = s.venue ? { id: s.venue.id || null, backdrop: s.venue.backdrop || null } : null;
+    const cfg = { id: (this.id = (this.id + 1) % 1e6 || 1), mode: Net.mode, seed: (Math.random() * 2147483647) | 0, set: rbConfig(SETTINGS),
+      teams: [JSON.parse(JSON.stringify(teamAt(s.a))), JSON.parse(JSON.stringify(teamAt(s.b)))], venue: s.venue ? JSON.parse(JSON.stringify(s.venue)) : null,
+      humans: [{ team: 0, slot: 0, pad: 0 }, { team: gs.team, slot: gs.slot, pad: 1 }] };
+    Net.mid++; Net.evs = []; Game.lastMatch = null;
+    Net.setP({ rbgo: cfg, rbend: null, rb: null });
+    this.start(cfg, 0);
+  },
+  start(cfg, me) {
+    const keepRand = Math.random; let s = cfg.seed | 0;
+    const seeded = () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const keepSet = {}, C = cfg.set;                                       // (the host's settings, as in every frame: rbStep)
+    for (const k of new Set([...Object.keys(SETTINGS), ...Object.keys(C)])) { if (RB_LOCAL.has(k) || k === '__magnet') continue; keepSet[k] = [k in SETTINGS, SETTINGS[k]]; if (k in C) SETTINGS[k] = C[k]; else delete SETTINGS[k]; }
+    rbClean(); Math.random = seeded; RB.sim = true;                     // (the venue, the crowd and the effects roll their own numbers)
+    try { newMatch(cfg.teams[0], cfg.teams[1], { humans: cfg.humans, venue: cfg.venue }); }
+    finally { RB.sim = false; Math.random = keepRand; for (const k in keepSet) { const [had, v] = keepSet[k]; if (had) SETTINGS[k] = v; else delete SETTINGS[k]; } }
+    M.rbSeed = cfg.seed ^ 0x5bd1e995; M.rb = true; M.introT = 0; for (const q of M.players) q.hifzUsed = true;   // (no Noor questions in a rollback match yet)
+    RB.cfg = cfg.set;
+    Object.assign(this, { on: true, cfg, id: cfg.id, me, f: 0, acc: 0, rollTo: Infinity, conf: -1, peerF: -1, peerAck: -1, peerV: null, gotAt: nowMs(), rtt: 0, lastPkt: null,
+      desync: null, gone: false, over: false, hold: 0, theirHash: null, lastIn: RB_IDLE, hashedTo: -1, dbg: null, trace: null, lastSet: 1, dAt: 0, rtts: [], endF: null, hostGoneT: 0, needSync: false, pendingState: null });
+    RB_EVENTS.clear(); this.states.clear(); this.ins[0].clear(); this.ins[1].clear(); this.used.clear(); this.hashes.clear();
+    this.stats = { frames: 0, rollbacks: 0, rolled: 0, maxRoll: 0, stalls: 0, forced: 0, slowed: 0, mispredicted: 0, sent: 0, got: 0, hashes: 0, t0: nowMs() };
+    const ping = (typeof Lobby !== 'undefined' && Lobby.ping) || 0;          // (the lobby's round trip: a good first delay)
+    this.D = ping > 0 ? rbDelayFor(ping) : 2;
+    for (let f = 0; f < this.D; f++) this.ins[me].set(f, RB_IDLE);    // the input delay: nobody presses anything in the first frames
+    this.lastSet = this.D - 1;
+    M.online = false; Game.screen = 'play'; Game.paused = false; Game.trivia = null; Replay.reset();
+    if (/[?&]rbdebug=2/.test(location.search)) this.trace = new Map();
+    if (/[?&]rbdebug=[12]/.test(location.search)) { this.startLines = rbStateLines(); this.dbg = new Map(); this.dbgDump = +(new URLSearchParams(location.search).get('rbdump') || -1); }   // (tests: both sides must start alike)
+    FX.scale = 1; FX.stopF = 0;
+  },
+  stop() { this.on = false; RB.cfg = null; },
+  // ---------------------------------------------------------------- inputs
+  // this device's controls as a frame input: any keyboard keys of either player (one player per device), the
+  // gamepad, the touch stick and buttons (pushing the stick past its ring is sprint)
+  sample(edges) {
+    const d = Input.down, pr = edges ? Input.pressed : {}, rl = edges ? Input.released : {};
+    const B0 = BINDS[0], B1 = BINDS[1], K = [[...B0.up, ...B1.up], [...B0.down, ...B1.down], [...B0.left, ...B1.left], [...B0.right, ...B1.right],
+      [...B0.a, ...B1.a], [...B0.b, ...B1.b], [...B0.x, ...B1.x], [...DEF_KEYS[0], ...DEF_KEYS[1]], ['ShiftLeft', 'ShiftRight']];
+    let h = 0, p = 0, r = 0;
+    for (let i = 0; i < K.length; i++) { const bit = 1 << i, ks = K[i]; for (const k of ks) { if (d[k]) h |= bit; if (pr[k]) p |= bit; if (rl[k]) r |= bit; } }
+    let ax = 0, az = 0;
+    if (Input.stick && (Input.stick.ax || Input.stick.az)) { ax = Input.stick.ax; az = Input.stick.az; if (Input.touchMode && Input.stick.deep) h |= 1 << 8; }
+    else if (Input.padAxis[0] && (Input.padAxis[0].ax || Input.padAxis[0].az)) { ax = Input.padAxis[0].ax; az = Input.padAxis[0].az; }
+    const qx = Math.round(clamp(ax || 0, -1, 1) * 127), qz = Math.round(clamp(az || 0, -1, 1) * 127);
+    return rbIn(h, p, r, qx, qz);
+  },
+  // the other player's input for a frame: the real one, or a guess (what they were holding, no new presses)
+  remoteFor(f) {
+    const R = 1 - this.me, real = this.ins[R].get(f);
+    if (real) return real;
+    if (this.gone) return RB_IDLE;
+    let g = null; for (let k = f - 1; k >= f - 30 && !g; k--) g = this.ins[R].get(k);
+    return g ? rbIn(g.h, 0, 0, g.qx, g.qz) : RB_IDLE;
+  },
+  inputsFor(f) {
+    const mine = this.ins[this.me].get(f) || RB_IDLE, theirs = this.remoteFor(f);
+    this.used.set(f, theirs);
+    return this.me === 0 ? [mine, theirs] : [theirs, mine];
+  },
+  // ---------------------------------------------------------------- the network
+  peerPres() { const p = Net.role === 'host' ? (Net.guestPeer && Net.peers().find(q => q.peer === Net.guestPeer)) : Net.hostPeer(); return p && p.presence; },
+  send() {
+    const me = this.me, to = this.lastSet, d = [];                        // (the newest input sampled so far)
+    const firstMine = Math.max(this.peerAck == null ? 0 : this.peerAck + 1, 0);   // every input they haven't confirmed, oldest first
+    for (let k = firstMine; k <= to && d.length < 48; k++) { const I = this.ins[me].get(k); if (!I) break; d.push(rbPackIn(I)); }   // (never a gap: 0 is not "no input"; 48 at most a packet)
+    const last = [...this.hashes.entries()].pop();
+    const pkt = { i: this.id, s: firstMine, d: rbRunsOut(d), a: this.conf, F: this.f, v: this.peerF >= 0 ? this.f - this.peerF : 0, t: Math.round(nowMs() * 10) / 10 };   // v: how far ahead of them we are, as we see it
+    if (this.lastPkt) { pkt.et = this.lastPkt.t; pkt.ed = Math.round((nowMs() - this.gotAt) * 10) / 10; }
+    if (last) pkt.h = last;
+    Net.setP({ rb: pkt }); this.stats.sent++;
+  },
+  receive() {
+    const pres = this.peerPres(), pkt = pres && pres.rb;
+    if (!pkt || pkt.i !== this.id) return;
+    if (this.lastPkt && pkt.t <= this.lastPkt.t) return;                // the same packet again, or an older one arriving late
+    this.lastPkt = pkt; this.gotAt = nowMs(); this.stats.got++;
+    if (pkt.et != null) this.rtt = this.rtt ? lerp(this.rtt, nowMs() - pkt.et - (pkt.ed || 0), 0.2) : nowMs() - pkt.et - (pkt.ed || 0);
+    const R = 1 - this.me, I = this.ins[R];
+    const D = rbRunsIn(pkt.d);
+    for (let j = 0; j < D.length; j++) {
+      const f = pkt.s + j; if (I.has(f)) continue;
+      const v = rbUnpackIn(D[j]); I.set(f, v);
+      if (f < this.f) { const u = this.used.get(f); if (!u || !rbSameIn(u, v)) { this.rollTo = Math.min(this.rollTo, f); this.stats.mispredicted++; } }
+    }
+    while (I.has(this.conf + 1)) this.conf++;
+    this.peerAck = pkt.a; this.peerF = pkt.F; this.peerV = pkt.v;
+    if (pkt.h) { this.theirHash = pkt.h; this.checkHash(); }
+  },
+  checkHash() {
+    const H = this.theirHash; if (!H) return;
+    const mine = this.hashes.get(H[0]); if (mine == null) return;
+    this.stats.hashes++;
+    if (mine === H[1]) { if (this.desync && H[0] > this.desync.f) this.desync = null; return; }   // (matching again: put right)
+    if (!this.desync || nowMs() - this.desync.at > 600) {             // (again after 0.6 s if it isn't put right)
+      this.desync = { f: H[0], at: nowMs() }; try { console.warn('[rollback] desync at frame', H[0]); } catch (e) {}
+      if (typeof rbOnDesync === 'function') rbOnDesync(H[0]);
+    }
+  },
+  // ---------------------------------------------------------------- frames
+  stepFrame(f, resim) {
+    this.states.set(f, rbSave());
+    RB.frame = f;
+    if (this.trace) { const calls = [], _r = rbRandom; rbRandom = function () { calls.push((new Error().stack || '').split('\n').slice(2, 6).map(l => (l.match(/at ([\w$.<>]+)/) || [])[1] || '?').join('<')); return _r(); }; try { rbStep(this.inputsFor(f), resim); } finally { rbRandom = _r; } this.trace.set(f, calls); }   // (rbdebug=2: what drew each random number)
+    else rbStep(this.inputsFor(f), resim);
+    RB.frame = null;
+    if (this.endF == null && M.phase === 'over') this.endF = f;          // (the frame the match ended on)
+  },
+  // frames both players have confirmed are final: every 60th gets a checksum (of the saved state just after it), sent
+  // to the other side and compared there. (With ?rbdebug=1, every confirmed frame, for tests.)
+  confirmHashes() {
+    const upTo = Math.min(this.conf, this.f - 1), every = this.dbg ? 1 : 15;   // (a checksum every quarter second)
+    for (let k = (this.hashedTo == null ? -1 : this.hashedTo) + 1; k <= upTo; k++) {
+      this.hashedTo = k; if (k % every !== 0) continue;
+      const S = k + 1 === this.f ? rbSave() : this.states.get(k + 1); if (!S) continue;
+      const hv = rbHashSaved(S);
+      if (this.dbg) { this.dbg.set(k, hv); (this.dbgIn = this.dbgIn || new Map()).set(k, [this.ins[0].get(k), this.ins[1].get(k), this.used.get(k)].map(x => x ? rbPackIn(x) : '-').join(',')); (this.dbgS = this.dbgS || new Map()).set(k, S); (this.dbgIn = this.dbgIn || new Map()).set(k, [this.ins[0].get(k), this.ins[1].get(k), this.used.get(k)].map(x => x ? rbPackIn(x) : '-').join(',')); if (this.dbgS.size > 1500) this.dbgS.delete(this.dbgS.keys().next().value); }
+      if (k % 15 === 0) { this.hashes.set(k, hv); if (this.hashes.size > 16) this.hashes.delete(this.hashes.keys().next().value); this.checkHash(); }
+    }
+  },
+  rollback() {
+    const t = this.rollTo; this.rollTo = Infinity;
+    if (t >= this.f || !this.states.has(t)) return;
+    const before = rbSmoothBefore();
+    rbLoad(this.states.get(t));
+    if (this.endF != null && t <= this.endF) this.endF = null;           // (replayed: it may end on another frame, or not yet)
+    const n = this.f - t; this.stats.rollbacks++; this.stats.rolled += n; this.stats.maxRoll = Math.max(this.stats.maxRoll, n);
+    for (let k = t; k < this.f; k++) this.stepFrame(k, true);
+    rbSmoothAfter(before);
+  },
+  tidy() {                                                                 // what can't be needed again
+    const keepFrom = Math.min(this.conf + 1, this.f) - 2;
+    for (const k of this.states.keys()) if (k < keepFrom) this.states.delete(k); else break;
+    for (const m of [this.used, this.ins[0], this.ins[1]]) for (const k of m.keys()) if (k < this.f - this.keep && k < this.conf - this.keep) m.delete(k); else break;
+  },
+  // one drawn frame: receive, go back if a guess was wrong, then play the frames that are due
+  update(rdt) {
+    this.receive();
+    if (this.rollTo < this.f) this.rollback();
+    this.confirmHashes();
+    if (this.needSync && typeof rbSendState === 'function' && rbSendState()) this.needSync = false;   // (a desync: the host's state, now that it's final)
+    // the input delay follows the connection: the correction window (W frames) covers what the delay doesn't, so a
+    // slow link gets a little more delay instead of waits (slow motion). Twice a second, from the worst recent round trip.
+    if (this.rtt > 0 && nowMs() - (this.dAt || 0) > 500) {
+      this.dAt = nowMs(); this.rtts = (this.rtts || []).concat(this.rtt).slice(-6);
+      const hi = Math.max(...this.rtts);                                // (the worst round trip of the last 3 s)
+      const want = rbDelayFor(hi);
+      if (want > this.D) this.D = want; else if (want < this.D) this.D--;   // (up at once, down a frame every half second)
+    }
+    // time sync: each side sees the other's frames late by the same delay, so half the difference between how far
+    // ahead each of us looks to itself is how far ahead we really are (as in fighting games)
+    const ahead = this.peerF >= 0 && this.peerV != null ? ((this.f - this.peerF) - this.peerV) / 2 : 0;
+    this.acc += Math.min(rdt, 0.1);
+    if (ahead <= -2) this.acc += STEP;                                  // behind (a hiccup on this device): an extra frame a drawn frame until level
+    if (ahead >= 1 && this.acc >= STEP) { this.hold += rdt; if (this.hold > 0.1) { this.hold = 0; this.acc -= STEP; this.stats.slowed++; } } else this.hold = 0;   // (a frame skipped every 0.1 s while ahead)
+    let n = 0, edges = true;
+    while (this.acc >= STEP && n < 4) {
+      if (!this.gone && (!this.lastPkt || this.f < 180) && this.f - this.conf > this.W) { this.stats.stalls++; this.acc = Math.min(this.acc, STEP); break; }   // (the first 3 s: wait, the other side is still starting; guessing its first frames would split the games)
+      while (!this.gone && this.f - this.conf > this.W) {               // their input is very late: nobody waits. The frame
+        const R = 1 - this.me, k = this.conf + 1;                       // keeps the guess, and the host's state settles it if
+        this.ins[R].set(k, this.used.get(k) || this.remoteFor(k)); this.stats.forced++;   // the guess was wrong (a checksum, then rbSendState)
+        while (this.ins[R].has(this.conf + 1)) this.conf++;
+      }
+      const t = this.f + this.D;                                         // the frame this input is for
+      if (t > this.lastSet) {
+        const I = Game.paused ? RB_IDLE : this.sample(edges); edges = false;   // (in the pause menu the keys are the menu's)
+        for (let k = this.lastSet + 1; k < t; k++) this.ins[this.me].set(k, rbIn(I.h, 0, 0, I.qx, I.qz));   // (the delay grew: the frames between hold the same buttons)
+        this.ins[this.me].set(t, I); this.lastSet = t;
+      }
+      snapPrev();
+      this.stepFrame(this.f, false); this.f++; this.stats.frames++; n++;
+      this.acc -= STEP;
+    }
+    if (n) { Input.pressed = {}; Input.released = {}; } else Game.keepInput = true;
+    if (n >= 4) this.acc = 0;
+    this.send(); this.tidy(); if ((this.f & 63) === 0) rbEventsTidy(this.f);
+    Game.alpha = clamp(this.acc / STEP, 0, 1); Game.interp = true;
+    FX.scale = 1; FX.stopF = 0;
+    rbNets(rdt);
+    // the other player is gone (no input for 10 s, or they left): their player is the CPU's from here
+    if (!this.gone && nowMs() - this.gotAt > 10000) this.lose();
+  },
+  lose() {
+    this.gone = true;
+    for (const p of M.players) if (p.human === 1 - this.me && this.me === 0) p.human = -1;
+    FX.callout(Net.role === 'host' ? 'YOUR FRIEND LEFT' : 'THE HOST LEFT', '#ff9a8a', Net.role === 'host' ? 'CPU TAKES OVER' : '');
+    if (Net.role === 'guest') { this.stop(); Net.status = 'hostleft'; Game.screen = 'netwait'; Net.waitT = 99; }
+  },
+  // the match is over on a frame both players have confirmed: the final screen
+  play(rdt) {
+    if (Game.paused) pauseNav();                                        // (the menu only: the match keeps running online)
+    else if (menuHit('back') || Input.pressed.KeyP) { Game.paused = true; Game.idx = 0; }
+    if (M.phase === 'over' && this.endF != null && this.endF <= this.conf) {   // (their input for the last frame is in: the result is final)
+      if (!this.over) { this.over = true; this.overT = 2.2; rbFinishOnce(); }
+      this.overT -= rdt; if (this.overT <= 0) { Game.screen = 'final'; Game.paused = false; }
+    }
+    this.update(rdt);
+  },
+  report() {
+    const S = this.stats; if (!S) return null;
+    const secs = Math.max(1, (nowMs() - S.t0) / 1000);
+    return { frame: this.f, delay: this.D, behind: this.f - 1 - this.conf, rtt: Math.round(this.rtt), rollbacksPerSec: +(S.rollbacks / secs).toFixed(2), avgRoll: S.rollbacks ? +(S.rolled / S.rollbacks).toFixed(1) : 0,
+      maxRoll: S.maxRoll, stalls: S.stalls, forced: S.forced, slowed: S.slowed, mispredicted: S.mispredicted, hashesChecked: S.hashes, desync: this.desync ? this.desync.f : null };
+  }
+};
+// a frame input, and on the wire as one number: 9 bits held, 9 pressed, 9 released, then the stick (x, z: -127..127)
+// the input delay for a round trip: about 4 frames of the other player's input left to guess (corrections that small
+// are hard to see), never under 1 frame, never so little that the window can't cover the rest (no waits)
+function rbDelayFor(rtt) {
+  const oneWay = Math.ceil((rtt / 2 + 20) / (STEP * 1000));            // (frames, with a margin for jitter)
+  return clamp(Math.max(oneWay - 4, oneWay - RBN.W + 2), 1, RBN.maxD);
+}
+function rbIn(h, p, r, qx, qz) { return { h, p, r, qx, qz, mx: qx / 127, mz: qz / 127 }; }
+function rbPackIn(I) { return I.h + I.p * 512 + I.r * 262144 + (I.qx + 127) * 134217728 + (I.qz + 127) * 34359738368; }
+function rbUnpackIn(n) {
+  const qz = Math.floor(n / 34359738368); n -= qz * 34359738368;
+  const qx = Math.floor(n / 134217728); n -= qx * 134217728;
+  const r = Math.floor(n / 262144); n -= r * 262144;
+  const p = Math.floor(n / 512); return rbIn(n - p * 512, p, r, qx - 127, qz - 127);
+}
+// inputs on the wire: base 36, and a run of the same input as value*count ("3k9x1*7,3k9x2")
+function rbRunsOut(d) { const o = []; for (let i = 0; i < d.length;) { let n = 1; while (i + n < d.length && d[i + n] === d[i]) n++; o.push(d[i].toString(36) + (n > 1 ? '*' + n : '')); i += n; } return o.join(','); }
+function rbRunsIn(s) { const o = []; if (!s) return o; for (const t of String(s).split(',')) { const [v, n] = t.split('*'), x = parseInt(v, 36); for (let k = 0; k < (n ? +n : 1); k++) o.push(x); } return o; }
+function rbSameIn(a, b) { return a.h === b.h && a.p === b.p && a.r === b.r && a.qx === b.qx && a.qz === b.qz; }
+// the end of the match, once: the real end-of-match flow (records, the final screen) runs on the confirmed frame
+function rbFinishOnce() { if (RB.finish) { const f = RB.finish; RB.finish = null; try { f(); } catch (e) {} } }
+{
+  RB_IDLE.qx = 0; RB_IDLE.qz = 0;
+  P2P_FAST.add('rb'); if (typeof LOOP_FAST !== 'undefined') LOOP_FAST.add('rb');   // inputs go on the direct link (and the test link)
+  // inside a rollback step the match only marks itself over; the rest of finishMatch waits for a confirmed frame
+  const _fm = finishMatch;
+  finishMatch = function () {
+    if (!RB.sim) return _fm.apply(this, arguments);
+    M.phase = 'over'; M.winner = M.teams[0].score > M.teams[1].score ? 0 : 1;
+    const self = this, a = arguments; RB.finish = () => _fm.apply(self, a);   // (also when first reached in a replayed frame)
+  };
+  // the host starts a match mode with rollback
+  const _hs = Net.hostStart;
+  Net.hostStart = function () {
+    if (!this.guestPeer || !RBN.eligible(this.mode)) { RBN.stop(); return _hs.apply(this, arguments); }
+    RBN.hostStart();
+  };
+  // the network: while a rollback match runs, no snapshots (host) and no snapshot following (guest)
+  const _nu = Net.update;
+  Net.update = function (rdt) {
+    if (this.role === 'guest' && !RBN.on) {                              // the host's start message
+      const h = this.hostPeer(), g = h && h.presence && h.presence.rbgo;
+      if (g && g.id !== RBN.lastGo && !(h.presence.rbend === g.id)) { RBN.lastGo = g.id; Net.mode = g.mode; RBN.start(g, 1); return; }
+    }
+    if (!RBN.on) return _nu.apply(this, arguments);
+    if (Game.screen !== 'play') { RBN.receive(); RBN.send(); }          // (the final screen: the other side may still need our last inputs)
+    if (this.role === 'host') {                                          // still notice the guest leaving
+      const keep = this.snapDue; this.snapDue = () => false;
+      try { this.hostTick(rdt); } finally { this.snapDue = keep; }
+      if (!this.guestPeer && !RBN.gone) RBN.lose();
+    } else {
+      this.onPeers && this.onPeers();
+      const h = this.hostPeer();
+      if (h && h.presence && h.presence.rbend === RBN.id) { RBN.stop(); Lobby.guestBack(); return; }   // the host went back to the lobby
+      RBN.hostGoneT = h && h.presence && h.presence.role === 'host' ? 0 : RBN.hostGoneT + rdt;
+      if (RBN.hostGoneT > 2 && !RBN.gone) RBN.lose();                      // the host left the room
+    }
+  };
+  // the play screen
+  const _pu = playUpdate;
+  playUpdate = function (rdt) { if (RBN.on) return RBN.play(rdt); return _pu.apply(this, arguments); };
+  // back to the lobby / the title: the match is over for both
+  const _lb = Lobby.back;
+  Lobby.back = function () { if (RBN.on && Net.role === 'host') { Net.setP({ rbend: RBN.id }); } RBN.stop(); return _lb.apply(this, arguments); };
+  const _gt = goTitle;
+  goTitle = function () { if (RBN.on) { if (Net.role === 'host') Net.setP({ rbend: RBN.id }); RBN.stop(); } return _gt.apply(this, arguments); };
+  // no instant replays in a rollback match (they would stop one side's match)
+  const _rs = Replay.schedule;
+  Replay.schedule = function () { if (RBN.on) return; return _rs.apply(this, arguments); };
+}
+// ---------------------------------------------------------------- corrections slide instead of jumping
+// After going back, a player (or the loose ball) whose drawn position moved is drawn where he was and slides to where
+// he is over about 0.1 s. Big corrections (more than ~5 ft) still jump: sliding those would show the wrong play.
+function rbSmoothBefore() { return { p: M.players.map(q => [q.x, q.y, q.z]), b: [ball.x, ball.y, ball.z, ball.owner] }; }
+function rbSmoothAfter(B) {
+  M.players.forEach((q, i) => {
+    const [x, y, z] = B.p[i], dx = x - q.x, dy = y - q.y, dz = z - q.z;
+    if (Math.hypot(dx, dz) < 70 && Math.abs(dy) < 60) { q._smx = (q._smx || 0) + dx; q._smy = (q._smy || 0) + dy; q._smz = (q._smz || 0) + dz; }
+  });
+  if (!ball.owner && !B.b[3]) { const dx = B.b[0] - ball.x, dy = B.b[1] - ball.y, dz = B.b[2] - ball.z; if (Math.hypot(dx, dy, dz) < 70) { ball._smx = (ball._smx || 0) + dx; ball._smy = (ball._smy || 0) + dy; ball._smz = (ball._smz || 0) + dz; } }
+}
+{
+  const decay = (o, k) => { if (!o._smx && !o._smy && !o._smz) return; o._smx *= k; o._smy *= k; o._smz *= k; if (Math.abs(o._smx) + Math.abs(o._smy) + Math.abs(o._smz) < 0.2) o._smx = o._smy = o._smz = 0; };
+  const KEYS = ['x', 'ix', 'y', 'iy', 'z', 'iz'], AX = { x: '_smx', ix: '_smx', y: '_smy', iy: '_smy', z: '_smz', iz: '_smz' };
+  const shift = (o, kept) => { if (!o._smx && !o._smy && !o._smz) return; const v = {}; for (const k of KEYS) if (o[k] != null) { v[k] = o[k]; o[k] += o[AX[k]]; } kept.push([o, v]); };
+  const _r = render;
+  render = function (g) {
+    if (!RBN.on || !M.players) return _r.apply(this, arguments);
+    const k = Math.exp(-(Game.rdt || STEP) / 0.04);                       // (about 0.1 s to settle)
+    for (const q of M.players) decay(q, k); decay(ball, k);
+    const kept = []; for (const q of M.players) shift(q, kept); shift(ball, kept);
+    try { return _r.apply(this, arguments); } finally { for (const [o, v] of kept) Object.assign(o, v); }   // (the exact values back: x + d - d isn't always x)
+  };
+}
+// ================================================= v9.14: ROLLBACK NETCODE, PART 3: PUTTING A DESYNC RIGHT
+// A desync shouldn't happen (rb-determinism and rb-rollback check that the same inputs give the same match, on every
+// engine), but if one does, the match mustn't quietly become two different games. When the checksums of a confirmed
+// frame differ, the host sends its whole state for its newest confirmed frame (rbstate, on the reliable link), and
+// the guest rebuilds its match onto it and plays its frames since again. Both carry on from the same state.
+//   On the wire the state is the host's saved frame (rbSave): every object, array, Set and Map with references as
+//   indexes. The guest keeps its own M, ball, sprint gestures, crowd memory, players and their AI (the objects the
+//   rest of the game holds), fills them with the host's values, and makes everything else new.
+function rbAnchors() {                                                    // the objects both sides have, by role
+  const A = { M, ball, Sprint }; if (typeof React8 !== 'undefined') A.React8 = React8;
+  M.players.forEach((p, i) => { A['P' + i] = p; if (p.ai) A['A' + i] = p.ai; });
+  (M.teams || []).forEach((t, i) => { A['T' + i] = t; });
+  return A;
+}
+// the definitions both sides built the match from (the same start message): by name
+function rbStatics() {                                                    // every definition object, named by its path
+  const R = new Map();
+  const name = (v, n) => { if (!v || typeof v !== 'object' || R.has(v) || v instanceof Hoop) return; R.set(v, n); for (const k of Object.keys(v)) { const d = Object.getOwnPropertyDescriptor(v, k); if (d && 'value' in d) name(d.value, n + '/' + k); } };
+  name(M.teamDefs, 'TD');
+  M.players.forEach((p, i) => { name(p.def, 'D' + i); name(p.T, 'T' + i); if (p.look && typeof p.look === 'object') name(p.look, 'L' + i); });
+  (M.teams || []).forEach((t, i) => name(t.def, 'TT' + i));
+  return R;
+}
+function rbSerialize(S) {
+  const L = S.list, id = new Map(), ST = rbStatics(); for (let i = 0; i < L.length; i += 2) id.set(L[i], i >> 1);
+  const enc = v => {
+    if (v === undefined) return { u: 1 };
+    if (typeof v === 'number') return Number.isFinite(v) ? (Object.is(v, -0) ? 0 : v) : { n: String(v) };
+    if (v === null || typeof v !== 'object') return v;
+    if (id.has(v)) return { r: id.get(v) };
+    if (v instanceof Hoop) return { h: hoops.indexOf(v) };
+    if (ST.has(v)) return { s: ST.get(v) };
+    if (Object.getPrototypeOf(v) === Object.prototype && Object.values(v).every(x => x === null || typeof x !== 'object')) return { v: Object.assign({}, v) };   // (a position record: by value)
+    return { x: 1 };
+  };
+  const nodes = [];
+  for (let i = 0; i < L.length; i += 2) {
+    const o = L[i], c = L[i + 1];
+    if (Array.isArray(o)) nodes.push({ t: 'a', v: c.map(enc) });
+    else if (o instanceof Set) nodes.push({ t: 's', v: c.map(enc) });
+    else if (o instanceof Map) nodes.push({ t: 'm', v: c.map(([k, x]) => [enc(k), enc(x)]) });
+    else { const v = {}; for (const k in c) v[k] = enc(c[k]); nodes.push({ t: 'o', c: o.constructor && o.constructor.name, v }); }
+  }
+  const anchors = {}, A = rbAnchors(); for (const k in A) if (id.has(A[k])) anchors[k] = id.get(A[k]);
+  return { nodes, anchors, rims: S.rims };
+}
+function rbDeserialize(D) {
+  const A = rbAnchors(), protos = new Map();
+  for (const x of rbSave().list) if (x && typeof x === 'object' && x.constructor && !protos.has(x.constructor.name)) protos.set(x.constructor.name, Object.getPrototypeOf(x));
+  const byIdx = new Map(); for (const k in D.anchors) if (A[k]) byIdx.set(D.anchors[k], A[k]);
+  const ST = new Map(); for (const [o, name] of rbStatics()) ST.set(name, o);
+  const objs = D.nodes.map((n, i) => byIdx.get(i) || (n.t === 'a' ? [] : n.t === 's' ? new Set() : n.t === 'm' ? new Map() : Object.create(protos.get(n.c) || Object.prototype)));
+  const dec = (v, old) => {
+    if (v === null || typeof v !== 'object') return v;
+    if (v.u) return undefined; if (v.n) return Number(v.n);
+    if (v.r != null) return objs[v.r];
+    if (v.h != null) return hoops[v.h];
+    if (v.s != null) return ST.get(v.s);
+    if (v.v) return Object.assign({}, v.v);
+    return old;                                                           // (something else outside the match: keep ours)
+  };
+  D.nodes.forEach((n, i) => {
+    const o = objs[i];
+    if (n.t === 'a') { o.length = 0; n.v.forEach(x => o.push(dec(x))); }
+    else if (n.t === 's') { o.clear(); n.v.forEach(x => o.add(dec(x))); }
+    else if (n.t === 'm') { o.clear(); n.v.forEach(([k, x]) => o.set(dec(k), dec(x))); }
+    else {
+      const old = {}; for (const k of Object.keys(o)) { old[k] = o[k]; if (!rbSkipKey(k)) delete o[k]; }
+      for (const k in n.v) o[k] = dec(n.v[k], old[k]);
+    }
+  });
+  hoops.forEach((h, i) => { h.dy = D.rims[i][0]; h.vy = D.rims[i][1]; });
+}
+// the host: its newest confirmed frame, to the guest
+function rbSendState() {
+  const k = Math.min(RBN.conf, RBN.f - 1);
+  const S = k + 1 === RBN.f ? rbSave() : RBN.states.get(k + 1); if (!S) return false;
+  Net.setP({ rbstate: { i: RBN.id, k: k + 1, d: rbSerialize(S), n: (RBN.syncs = (RBN.syncs || 0) + 1) } });
+  RBN.stats.syncsSent = (RBN.stats.syncsSent || 0) + 1;
+  return true;
+}
+// the guest: the host's state for the start of frame k; our frames since are played again
+function rbApplyState(m) {
+  const R = RBN;
+  if (m.k > R.f) {                                                        // the host is ahead of us (this device fell behind): jump to it
+    rbDeserialize(m.d);
+    R.states.clear(); R.hashes.clear(); R.rollTo = Infinity; R.endF = null;
+    R.f = m.k; R.lastSet = Math.max(R.lastSet, m.k - 1); R.conf = Math.max(R.conf, m.k - 1); while (R.ins[1 - R.me].has(R.conf + 1)) R.conf++;
+    R.hashedTo = m.k - 1; R.desync = null; R.theirHash = null; R.stats.syncs = (R.stats.syncs || 0) + 1; R.stats.jumps = (R.stats.jumps || 0) + 1;
+    return;
+  }
+  try {                                                                   // what differed (the network report: to find the cause)
+    const mine = m.k === R.f ? rbSave() : R.states.get(m.k);
+    if (mine) { const a = rbSerialLines(rbSerialize(mine)), b = new Set(rbSerialLines(m.d)), d = a.filter(x => !b.has(x)).slice(0, 6); if (d.length) R.desyncLog = { f: m.k, mine: d }; }
+  } catch (e) {}
+  rbDeserialize(m.d);
+  R.states.clear(); R.hashes.clear(); R.rollTo = Infinity; R.endF = null;
+  for (let k = m.k; k < R.f; k++) R.stepFrame(k, true);
+  R.hashedTo = m.k - 1; R.desync = null; R.theirHash = null; R.stats.syncs = (R.stats.syncs || 0) + 1;
+}
+// a serialized frame as text lines (the same on both sides when they agree): node#, kind, key and value
+function rbSerialLines(D) {
+  const out = [], v = x => x === null || typeof x !== 'object' ? JSON.stringify(x) : x.r != null ? '#' + x.r : x.s ? 's:' + x.s : x.h != null ? 'hoop' + x.h : x.v ? JSON.stringify(x.v) : x.u ? 'undef' : '?';
+  D.nodes.forEach((n, i) => { const p = '#' + i + (n.c ? '<' + n.c + '>' : '');
+    if (n.t === 'o') { for (const k in n.v) out.push(p + '.' + k + '=' + v(n.v[k])); } else n.v.forEach((x, j) => out.push(p + '[' + j + ']=' + (Array.isArray(x) ? x.map(v).join(':') : v(x)))); });
+  return out;
+}
+function rbOnDesync(f) {
+  RBN.stats.desyncs = (RBN.stats.desyncs || 0) + 1;
+  if (Net.role === 'host') RBN.needSync = true;                        // (sent after this update's going back: the saved frames are final then)
+}
+{
+  const _nu = Net.update;
+  Net.update = function (rdt) {
+    const r = _nu.apply(this, arguments);
+    if (RBN.on && this.role === 'guest') {
+      const h = this.hostPeer(), m = h && h.presence && h.presence.rbstate;
+      if (m && m.i === RBN.id && m.n !== RBN.lastSync) { RBN.lastSync = m.n; rbApplyState(m); }
+    }
+    return r;
+  };
+  // the host: a desync seen by the guest only is still put right (the guest's checksum differs from ours)
+  const _rp = RBN.report;
+  RBN.report = function () { const r = _rp.apply(this, arguments); if (r && this.stats) { r.desyncs = this.stats.desyncs || 0; r.syncs = this.stats.syncs || 0; r.syncsSent = this.stats.syncsSent || 0; } return r; };
+}
+// the network report (lobby and pause): how the rollback match is going
+{
+  const _rp = NetDiag.report;
+  NetDiag.report = function () {
+    const txt = _rp.apply(this, arguments), r = typeof RBN !== 'undefined' && RBN.on ? RBN.report() : null;
+    const dl = RBN.on && RBN.desyncLog ? `\nLast desync (frame ${RBN.desyncLog.f}), this side had: ${RBN.desyncLog.mine.join('  ')}` : '';
+    const line = r ? `Netcode: rollback   Sync code: ${rbSyncCode() || '-'}   Input delay: ${r.delay} frame(s)   Corrections: ${r.rollbacksPerSec}/s, ${r.avgRoll} frames on average (max ${r.maxRoll})   Waits: ${r.stalls}   Desyncs put right: ${r.syncs || r.syncsSent || 0}`
+      : `Netcode: ${Net.mode && RBN.modes.has(Net.mode) ? 'snapshots (no direct link)' : 'snapshots'}`;
+    if (r) { const f = r.forced ? `   Late inputs played as guessed: ${r.forced}` : ''; return txt.replace('\nICE servers:', '\n' + line + f + dl + '\nICE servers:'); }
+    return txt.replace('\nICE servers:', '\n' + line + '\nICE servers:');
+  };
+}
+// ---------------------------------------------------------------- the sync check
+// Top right in a rollback match: the frame of the last second both sides have confirmed and a 4-letter code made from
+// that frame's checksum. On a call, read it out: the same frame shows the same code on both phones when the two games
+// are the same game. (A different code for more than a moment means a desync; the network report has the details.)
+function rbSyncCode() {
+  if (!RBN.on) return null;
+  let best = null; for (const [f, h] of RBN.hashes) if (f % 60 === 0 && (!best || f > best[0])) best = [f, h];
+  if (!best) return null;
+  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ', c = [0, 5, 10, 15].map(sh => A[(best[1] >>> sh) % A.length]).join('');
+  return Math.floor(best[0] / 60) + ' ' + c;
+}
+{
+  const _r = render;
+  render = function (g) {
+    _r.apply(this, arguments);
+    if (!RBN.on || Game.screen !== 'play') return;
+    const code = rbSyncCode(); if (!code) return;
+    g.save(); g.font = `11px ${BODY}`; g.textAlign = 'right'; g.fillStyle = RBN.desync ? 'rgba(255,140,120,0.85)' : 'rgba(255,255,255,0.55)';
+    g.fillText('SYNC ' + code, W - 12, H - 10); g.restore();
+  };
 }
 
 boot();

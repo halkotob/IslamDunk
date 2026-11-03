@@ -1,5 +1,37 @@
 # Changelog
 
+## 9.15.0: online: one game on both phones, with your own controls instant
+Rollback comes back (it went out in 9.14.2), with the host as the single source of truth, so the two players can't
+end up in different games, and nobody ever waits for the other.
+- **Why two iPhones saw different games.** A rollback frame used the host's values for a list of settings only.
+  Ball magnet (kept in View, not SETTINGS) and any setting one phone had never stored stayed each phone's own, so
+  two phones with different settings played two different games: in a test, 2 desyncs in 15 s; now 0. Every setting
+  now travels with the match except the ones for this screen, speaker and controller (sound, volumes, vibration,
+  text size, colors, motion, shake, flashes, hints, stick deadzone).
+- **Two more causes of different games, found while testing:** drawing a tomahawk dunk moved the ball by a hair
+  (it shifted the ball to draw it and shifted it back, and x + d - d isn't always x in floating point), so phones
+  drawing different numbers of frames drifted apart; and at kickoff the host could settle the guest's first frames
+  by guessing before the guest had started. Both fixed: on a lossy link, 8 of 8 twenty-second matches had no desync.
+- **The host decides.** Both sides compare a checksum every quarter second (was every second). If they differ,
+  the host sends its state and the guest takes it and replays its last frames; a phone that fell behind jumps
+  straight to the host's frame. In tests a difference lasts well under a second.
+- **Nobody waits.** If the other player's input is more than 20 frames late (a hiccup, a phone call screen, an app
+  in the background), the frame is played with the guess instead of freezing, and the host's state settles it.
+  The side that fell behind runs an extra frame per drawn frame until level. Before, both screens froze after
+  10 frames. (In the first 3 seconds the host still waits for the guest: it is still starting.)
+- **Corrections slide.** When a correction moves a player or the loose ball, it slides there over about 0.1 s
+  instead of jumping (more than ~5 ft still jumps).
+- **Sync check.** Bottom right in an online match: `SYNC 14 ZMRZ`, the last second both sides have confirmed and a
+  code made from the game at that moment. On a call, read it out: the same number shows the same code on both phones
+  when you're in the same game (red while a difference is being put right). The Network report shows it too, with
+  late inputs played as guessed and, after a repair, the first values that differed (to find any cause left).
+- **Touch:** pushing the stick past its ring sprints in an online match (it couldn't), and the touch button labels
+  follow the guest's own player (they followed the host's).
+- **Tests:** rb-settings (different settings on each device), rb-touch (both on touch, sprinting), rb-slow (the
+  guest 4x slower: both keep 54-55 frames a second and end on the same frame and code), rb-freeze (the guest stops
+  for 2 s: the host keeps 52 frames a second, then both are on the same frame), plus the 9.14 rollback tests.
+  rb-lag: your own press 18-38 ms on direct and relay links (both players mashing), no waits, no desyncs.
+
 ## 9.14.3: Review Studio: the Sounds tab plays only the sound you press
 - The Studio's game frame keeps a CPU match running behind the title, and once sound was on, its bounces, squeaks and
   crowd played under the sound being compared. The sound engine has a solo mode (`SFX.setSolo`): nothing plays on its

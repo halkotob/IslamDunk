@@ -139,7 +139,7 @@ function rbNets(dt) {                                                     // the
 // ---------------------------------------------------------------- the match's checksum
 // Fields that only the screen writes or reads (the HUD, reflections, trails, the sideline cast) and the hoops' nets
 // are left out; everything else under M, the ball, the rim springs and the sprint gestures is in.
-const RB_LOOKS = new Set(['_coach', '_refl', '_hudF', '_hudPT', '_hudA', '_sv', '_vSq', '_vT', '_vOwn', 'ivd', 'camCut', '_cvx', '_cvz', 'ix', 'iy', 'iz', 'ihip', 'irot', 'isq', 'ia', 'trail', 'cmdHook',
+const RB_LOOKS = new Set(['_coach', '_refl', '_hudF', '_hudPT', '_hudA', '_sv', '_vSq', '_vT', '_vOwn', 'ivd', 'camCut', '_smx', '_smy', '_smz', '_cvx', '_cvz', 'ix', 'iy', 'iz', 'ihip', 'irot', 'isq', 'ia', 'trail', 'cmdHook',
   'canvas', 'spr', 'sprites', 'img', 'cache', 'rbScreen', 'coach', 'pendingClips', 'highlights']);
 // the definitions a match is built from (the teams, the players, their looks): never changed by a match, so saved
 // frames keep a reference to them without copying them, and the checksum doesn't walk them. Found by identity, not by

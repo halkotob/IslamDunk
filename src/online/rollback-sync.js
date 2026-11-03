@@ -82,11 +82,28 @@ function rbSendState() {
 // the guest: the host's state for the start of frame k; our frames since are played again
 function rbApplyState(m) {
   const R = RBN;
-  if (m.k > R.f) { R.pendingState = m; return; }                         // (the host is ahead of us: once we get there)
+  if (m.k > R.f) {                                                        // the host is ahead of us (this device fell behind): jump to it
+    rbDeserialize(m.d);
+    R.states.clear(); R.hashes.clear(); R.rollTo = Infinity; R.endF = null;
+    R.f = m.k; R.lastSet = Math.max(R.lastSet, m.k - 1); R.conf = Math.max(R.conf, m.k - 1); while (R.ins[1 - R.me].has(R.conf + 1)) R.conf++;
+    R.hashedTo = m.k - 1; R.desync = null; R.theirHash = null; R.stats.syncs = (R.stats.syncs || 0) + 1; R.stats.jumps = (R.stats.jumps || 0) + 1;
+    return;
+  }
+  try {                                                                   // what differed (the network report: to find the cause)
+    const mine = m.k === R.f ? rbSave() : R.states.get(m.k);
+    if (mine) { const a = rbSerialLines(rbSerialize(mine)), b = new Set(rbSerialLines(m.d)), d = a.filter(x => !b.has(x)).slice(0, 6); if (d.length) R.desyncLog = { f: m.k, mine: d }; }
+  } catch (e) {}
   rbDeserialize(m.d);
   R.states.clear(); R.hashes.clear(); R.rollTo = Infinity; R.endF = null;
   for (let k = m.k; k < R.f; k++) R.stepFrame(k, true);
   R.hashedTo = m.k - 1; R.desync = null; R.theirHash = null; R.stats.syncs = (R.stats.syncs || 0) + 1;
+}
+// a serialized frame as text lines (the same on both sides when they agree): node#, kind, key and value
+function rbSerialLines(D) {
+  const out = [], v = x => x === null || typeof x !== 'object' ? JSON.stringify(x) : x.r != null ? '#' + x.r : x.s ? 's:' + x.s : x.h != null ? 'hoop' + x.h : x.v ? JSON.stringify(x.v) : x.u ? 'undef' : '?';
+  D.nodes.forEach((n, i) => { const p = '#' + i + (n.c ? '<' + n.c + '>' : '');
+    if (n.t === 'o') { for (const k in n.v) out.push(p + '.' + k + '=' + v(n.v[k])); } else n.v.forEach((x, j) => out.push(p + '[' + j + ']=' + (Array.isArray(x) ? x.map(v).join(':') : v(x)))); });
+  return out;
 }
 function rbOnDesync(f) {
   RBN.stats.desyncs = (RBN.stats.desyncs || 0) + 1;
@@ -99,7 +116,6 @@ function rbOnDesync(f) {
     if (RBN.on && this.role === 'guest') {
       const h = this.hostPeer(), m = h && h.presence && h.presence.rbstate;
       if (m && m.i === RBN.id && m.n !== RBN.lastSync) { RBN.lastSync = m.n; rbApplyState(m); }
-      if (RBN.pendingState && RBN.pendingState.k <= RBN.f) { const p = RBN.pendingState; RBN.pendingState = null; rbApplyState(p); }
     }
     return r;
   };
@@ -112,8 +128,31 @@ function rbOnDesync(f) {
   const _rp = NetDiag.report;
   NetDiag.report = function () {
     const txt = _rp.apply(this, arguments), r = typeof RBN !== 'undefined' && RBN.on ? RBN.report() : null;
-    const line = r ? `Netcode: rollback   Input delay: ${r.delay} frame(s)   Corrections: ${r.rollbacksPerSec}/s, ${r.avgRoll} frames on average (max ${r.maxRoll})   Waits: ${r.stalls}   Desyncs put right: ${r.syncs || r.syncsSent || 0}`
+    const dl = RBN.on && RBN.desyncLog ? `\nLast desync (frame ${RBN.desyncLog.f}), this side had: ${RBN.desyncLog.mine.join('  ')}` : '';
+    const line = r ? `Netcode: rollback   Sync code: ${rbSyncCode() || '-'}   Input delay: ${r.delay} frame(s)   Corrections: ${r.rollbacksPerSec}/s, ${r.avgRoll} frames on average (max ${r.maxRoll})   Waits: ${r.stalls}   Desyncs put right: ${r.syncs || r.syncsSent || 0}`
       : `Netcode: ${Net.mode && RBN.modes.has(Net.mode) ? 'snapshots (no direct link)' : 'snapshots'}`;
+    if (r) { const f = r.forced ? `   Late inputs played as guessed: ${r.forced}` : ''; return txt.replace('\nICE servers:', '\n' + line + f + dl + '\nICE servers:'); }
     return txt.replace('\nICE servers:', '\n' + line + '\nICE servers:');
+  };
+}
+// ---------------------------------------------------------------- the sync check
+// Top right in a rollback match: the frame of the last second both sides have confirmed and a 4-letter code made from
+// that frame's checksum. On a call, read it out: the same frame shows the same code on both phones when the two games
+// are the same game. (A different code for more than a moment means a desync; the network report has the details.)
+function rbSyncCode() {
+  if (!RBN.on) return null;
+  let best = null; for (const [f, h] of RBN.hashes) if (f % 60 === 0 && (!best || f > best[0])) best = [f, h];
+  if (!best) return null;
+  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ', c = [0, 5, 10, 15].map(sh => A[(best[1] >>> sh) % A.length]).join('');
+  return Math.floor(best[0] / 60) + ' ' + c;
+}
+{
+  const _r = render;
+  render = function (g) {
+    _r.apply(this, arguments);
+    if (!RBN.on || Game.screen !== 'play') return;
+    const code = rbSyncCode(); if (!code) return;
+    g.save(); g.font = `11px ${BODY}`; g.textAlign = 'right'; g.fillStyle = RBN.desync ? 'rgba(255,140,120,0.85)' : 'rgba(255,255,255,0.55)';
+    g.fillText('SYNC ' + code, W - 12, H - 10); g.restore();
   };
 }

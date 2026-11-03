@@ -1,13 +1,19 @@
 # Online: where things stand (pick up here)
 
-Last updated with 9.14.2. Read this first when continuing the online work.
+Last updated with 9.15.0. Read this first when continuing the online work.
 
 ## Done
 
-- **Rollback netcode: reverted in 9.14.2.** It shipped in 9.14.0 (commits 363e189..52b1c07) and the owner found
-  online play no longer felt live with it, so the match modes are back on the 9.13 snapshot netcode. The code and
-  its tests are in that history if parts are reused. A new plan for real-time online is being discussed; don't
-  re-enable rollback without it. (Anything below that says `Netcode: rollback` predates the revert.)
+- **Rollback with the host as the source of truth (9.15.0).** Rollback went out in 9.14.2 after the owner and a
+  friend, both on iPhones, saw two different games on a call. Likely cause, found and fixed: only a list of the
+  host's settings was used in a frame, so ball magnet (View.magnet) and settings one phone hadn't stored differed.
+  Now every non-screen setting travels; checksums every 0.25 s; the host's state repairs any difference (a phone
+  that fell behind jumps to it); nobody waits for late inputs (20-frame window, then the guess stands); corrections
+  slide; a `SYNC <second> <code>` check bottom right. Code: `src/online/rollback*.js`, tests `tests/rollback.mjs`.
+- **Next: the real test on two iPhones** (different networks, on a call): play a match, read out the SYNC line
+  now and then (same number = same code when in sync), and say whether it feels live. If anything is off, copy the
+  Network report on both phones (pause menu) and paste them: it shows the netcode, delay, corrections, late inputs
+  and, after a repair, the first values that differed.
 - **Relay (TURN) support in the game** (9.10.0): when `ONLINE_ICE_URL` is set, hosting or joining a lobby fetches
   1-hour TURN credentials from our Cloudflare Worker and adds them to the WebRTC config. Tested with a fake ICE
   endpoint (`net-ice`). The Worker itself (`worker/ice`) passes its tests (`node --test test/worker.test.mjs`).

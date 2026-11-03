@@ -2892,8 +2892,10 @@
   "text/online/rollback-net/rollback-desync-at-frame-vq0vlh": "9.14.0",
   "text/online/rollback-net/the-host-left-lgtrtr": "9.14.0",
   "text/online/rollback-sync/ice-servers-gqlut2": "9.14.0",
+  "text/online/rollback-sync/last-desync-frame-this-side-yyc3mz": "9.15.0",
+  "text/online/rollback-sync/late-inputs-played-as-guessed-d1swll": "9.15.0",
   "text/online/rollback-sync/netcode-di6lnf": "9.14.0",
-  "text/online/rollback-sync/netcode-rollback-input-delay-fra-o52nm9": "9.14.0",
+  "text/online/rollback-sync/netcode-rollback-sync-code-input-xibhm7": "9.15.0",
   "text/online/rollback/replay-cnns5w": "9.14.0",
   "text/online/v9111-net/answer-received-xurccq": "9.12.1",
   "text/online/v9111-net/answer-sent-6aat3r": "9.12.1",
@@ -4299,6 +4301,11 @@
    "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
    "version": "9.6.3",
    "was": "8.6.0"
+  },
+  "text/online/rollback-sync/netcode-rollback-input-delay-fra-o52nm9": {
+   "reason": "9.15: the network report's rollback line now starts with the sync code",
+   "version": "9.15.0",
+   "was": "9.14.0"
   },
   "text/screens/creator-suite/enter-edit-c-code-d-w617p3": {
    "reason": "v9.3: Duplicate moved from D to U; the hint text changed",
