@@ -1,0 +1,46 @@
+{
+ "version": "9.14.3",
+ "games": 60,
+ "rows": {
+  "veryeasy": {
+   "diff": "veryeasy",
+   "games": 60,
+   "poss": 2946,
+   "ptsPerPoss": 1.383,
+   "ptsSd": 1.078,
+   "secs": 6.66,
+   "secsSd": 3.58,
+   "tovPct": 19.8
+  },
+  "easy": {
+   "diff": "easy",
+   "games": 60,
+   "poss": 3111,
+   "ptsPerPoss": 1.546,
+   "ptsSd": 1.024,
+   "secs": 6.59,
+   "secsSd": 3.21,
+   "tovPct": 13.8
+  },
+  "medium": {
+   "diff": "medium",
+   "games": 60,
+   "poss": 3162,
+   "ptsPerPoss": 1.536,
+   "ptsSd": 1.053,
+   "secs": 6.28,
+   "secsSd": 3.07,
+   "tovPct": 16.5
+  },
+  "hard": {
+   "diff": "hard",
+   "games": 60,
+   "poss": 3429,
+   "ptsPerPoss": 1.506,
+   "ptsSd": 1.098,
+   "secs": 5.75,
+   "secsSd": 2.84,
+   "tovPct": 20.9
+  }
+ }
+}

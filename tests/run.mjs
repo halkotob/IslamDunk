@@ -78,6 +78,7 @@
 //                container, badge pills inside the card, 12 px gutters, no small text on phones (tests/hub-layout.mjs)
 //   league-*     v9.7.0: real league games, isolation, formats, boards, time, calibration, layout (tests/league.mjs)
 //   rb-*         v9.14: rollback netcode: determinism across pages and engines (tests/rollback.mjs)
+//   cpu-handle, cpu-league   v9.16 CPU dribble moves and dunks by ratings; league averages unchanged (tests/cpu-style.mjs)
 //   sfx-variants, crowd-tiers, sound-list, studio-coverage   v9.13 (tests/audio.mjs)
 //   studio, studio-anim, studio-csv, studio-excluded   v9.2.1-9.2.2 Review Studio (tests/studio.mjs; npm test builds dist/review first)
 //   v93          v9.3.0: a team's own court (editor rows, first on the venue screen, built gym and park floors, share
@@ -106,6 +107,7 @@ import { leagueTests } from './league.mjs';
 import { netTests } from './net.mjs';
 import { rollbackTests } from './rollback.mjs';
 import { audioTests } from './audio.mjs';
+import { cpuStyleTests } from './cpu-style.mjs';
 import { JUMUAH_HELPERS, JUMUAH_STAGES } from './jumuah-setup.js';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -2589,6 +2591,7 @@ Object.assign(T, hubTests({ newContext, open }));
 Object.assign(T, leagueTests({ newContext, open }));   // v9.7.0 the league (tests/league.mjs)   // v9.6.2 career hub fixtures (tests/hub-layout.mjs)
 Object.assign(T, netTests({ newContext, open }));   // v9.10 online latency (tests/net.mjs)
 Object.assign(T, rollbackTests({ newContext, open }));   // v9.14 rollback netcode (tests/rollback.mjs)
+Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
 Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)
 Object.assign(T, STUDIO_TESTS);   // the Review Studio (tests/studio.mjs)
 

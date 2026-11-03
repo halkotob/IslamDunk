@@ -1,5 +1,42 @@
 # Changelog
 
+## 9.16.0: every CPU player dribbles and dunks like his ratings say
+No change to what the CPU makes, the difficulty settings, the shot clock, the controls or the animations.
+- **Ball handling now differs by player.** Each CPU player has a handle, worked out from his Speed and Passing plus a
+  bump for playmakers (no new saved stat). Good handlers try a dribble move up to 1.6x as often as the average player
+  and poor handlers about half as often; the difficulty still sets the overall rate. Moves are at least 0.9 s apart.
+- **And the moves differ.** Handlers of 8 or more mix in more behind-the-backs, hesitations and spins, and sometimes
+  chain a second move straight into the first when the defender is still on them (never on Very easy, more often on
+  harder settings). Handlers of 4 or less only cross over. Nobody below average tries a behind-the-back or a spin
+  with a defender in his chest, and nobody makes three moves in a row.
+- **Sharpshooters set up the shot.** Behind the arc with a defender close, they step back twice as often (and on Hard
+  use the fadeaway twice as often), and after a move they look to shoot rather than drive. With a good look already,
+  they don't dribble first. "Good" counts the difficulty's misses, so on Very easy it takes a better look.
+- **Rim runners and big dunkers attack.** With the defender in front, they spin or drop-step into the lane, then look
+  for the rim.
+- **Dunks look like the dunker.** The best dunkers (Dunking 8+, quick) throw down windmills, 360s and tomahawks, each
+  with a favourite of his own; most others keep it to two hands and tomahawks. The dunk's timing is unchanged, so
+  what goes in is too, and the type is picked without drawing a random number (seeded games and rollback replays
+  play out as before). Poor dunkers (Dunking 5 or less) lay it in some of the time even with the lane open.
+- **Everywhere the CPU plays:** Quick Play, career, Barakah Run, 3 on 3, King of the Court and CPU teammates.
+  Mini-games are unchanged. In an online rollback match both phones run it the same way (the rollback determinism
+  tests pass with it).
+- **Measured** (`node tests/perf/loop-report.mjs 20`, which now prints a line per CPU player): on Medium the best
+  handler on each team makes 1.2-4.1x the moves of the worst (before: 0.8-1.4x, the worst often made more); on Hard
+  1.1-3.5x (before 0.6-1.2x). Two teams whose players are close in handle (Al-Falah, 8 vs 5.6) stay under 1.5x. The
+  sharpshooter's three-point share is 50-78 points above the rim runner's on the same team.
+- **League averages unchanged** (60 seeded CPU-vs-CPU games per difficulty, 9.14.3 vs this build): points per
+  possession -0.00 / -0.02 / +0.01 / +0.04 (Very easy to Hard), seconds per possession within +0.11 s, turnovers
+  -0.7 / +0.7 / -1.5 / -1.7 points. Final scores within 4 points: Medium 35 -> 31 of 60, Hard 23 -> 33 of 60.
+- **League stat lines:** a league game that can't be played falls back to calibrated stat lines; their assists now
+  match real games again (3.30 a player vs 3.24 in 500 real games; it was 2.60, already below the 3.11 of 9.15.0).
+- **Tried and changed:** taking an open three before any move cost Very easy about 0.1 points a possession (the CPU
+  misses more there), so the rule now only stops the move. A dunk type that changed the dunk's timing could change how
+  often it's blocked, so the type is now the look alone.
+- New tests: `cpu-handle` (a better handler moves more; never three moves in a row; an open sharpshooter shoots
+  without a move; mini-games and snapshot-netcode guests unchanged; dunk types follow the dunker) and `cpu-league`
+  (league averages against a 60-game baseline of 9.14.3; a 10-game run can't see ±0.05 or ±2 points, so it runs 16
+  games and allows three standard errors on top: an alarm for real shifts, with the exact check above).
 ## 9.15.0: online: one game on both phones, with your own controls instant
 Rollback comes back (it went out in 9.14.2), with the host as the single source of truth, so the two players can't
 end up in different games, and nobody ever waits for the other.

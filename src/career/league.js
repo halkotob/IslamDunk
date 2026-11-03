@@ -144,7 +144,7 @@ function lgCollect(job) { return { sa: M.teams[0].score, sb: M.teams[1].score, r
 const LG_CAL = {
   ppm: { 30: 10.8, 45: 9.67, 60: 9.33, 120: 9.1 }, rel: { 30: 0.3, 45: 0.29, 60: 0.22, 120: 0.19 }, quartersK: 0.98,
   first21: { lose: 0.77, loseSd: 0.17, over: 0.3 }, share: 0.5, shareSd: 0.14, dunkShare: 0.92,
-  rate: { fga: 0.689, tpa: 0.189, fta: 0.064, reb: 0.0994, ast: 0.1456, stl: 0.0691, blk: 0.0892, tov: 0.0682, dnk: 0.347, chg: 0.0192 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more)
+  rate: { fga: 0.689, tpa: 0.189, fta: 0.064, reb: 0.0994, ast: 0.184, stl: 0.0691, blk: 0.0892, tov: 0.0682, dnk: 0.347, chg: 0.0192 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more; v9.16: ast 0.1456 -> 0.184, real games 3.29 a player, 500 games)
   pct: { fg: 0.644, tp: 0.343, ft: 0.764 }
 };
 // v9.11: how much of his game is threes, by play style (as the CPU plays them now: v911-cpu-style.js)

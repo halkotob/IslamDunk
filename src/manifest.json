@@ -114,6 +114,7 @@
     "online/v98-net.js",
     "sim/v99-layups.js",
     "sim/v911-cpu-style.js",
+    "sim/v916-cpu-handle.js",
     "online/net-diag.js",
     "online/v911-predict.js",
     "screens/v912-polish.js",
