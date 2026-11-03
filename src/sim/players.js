@@ -295,7 +295,7 @@ function canDunk(p) {
 function dunkPath(a, s) {
   s = Math.min(s, 1);
   const u = Math.min(1, s / 0.8), e = 1 - (1 - u) * (1 - u);
-  return { x: lerp(a.sx, a.tx, e), z: lerp(a.sz, a.tz, e), y: Math.max(0, a.peak * (1 - ((s - 0.6) / 0.6) ** 2)) };
+  return { x: lerp(a.sx, a.tx, e), z: lerp(a.sz, a.tz, e), y: Math.max(0, a.peak * (1 - (typeof RB !== 'undefined' && RB.sim ? ((s - 0.6) / 0.6) * ((s - 0.6) / 0.6) : ((s - 0.6) / 0.6) ** 2))) };   // (v9.14: in an online match a plain multiply, the same bits on every engine; elsewhere ** as recorded)
 }
 function startDunk(p, opts) {
   const h = attackHoop(p.team), d = dxz(p, h);

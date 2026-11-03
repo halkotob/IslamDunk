@@ -32,7 +32,7 @@ const SPRINT_KEYS = [['ShiftLeft'], ['ShiftRight']];
 sprintStep = function (pad, c) {
   const d = Input.down, b = padBinds(pad), solo = soloKeys();
   const shift = SPRINT_KEYS[pad].some(k => d[k]) || (pad === 0 && solo && d.ShiftRight);
-  const dir = ['up', 'down', 'left', 'right'].some(k => b[k].some(x => d[x]));
+  const dir = ['up', 'down', 'left', 'right'].some(k => b[k].some(x => d[x])) || (typeof RB !== 'undefined' && RB.sim && Input.padAxis[pad] && Math.hypot(Input.padAxis[pad].ax, Input.padAxis[pad].az) > 0.3);   // (v9.15: in an online match the stick counts as a direction, so pushing the touch stick past its ring sprints)
   const stick = pad === 0 && Input.touchMode && TouchUI.sid != null && !!Input.stick.deep;
   c.turbo = !!(shift && dir) || stick;
 };

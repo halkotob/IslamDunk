@@ -119,6 +119,9 @@
     "screens/v912-polish.js",
     "online/v9111-net.js",
     "screens/v913-crowd.js",
+    "online/rollback.js",
+    "online/rollback-net.js",
+    "online/rollback-sync.js",
     "boot.js"
   ]
 }

@@ -199,7 +199,7 @@ color:#fff;background:rgba(12,20,30,.55);border:2px solid rgba(255,255,255,.55);
     for (const k of ['pass', 'turbo', 'cross', 'skill']) this.btns[k].style.display = room ? 'none' : '';
     if (room) { if (this.last !== 'room') { this.last = 'room'; this.btns.shoot.firstChild.textContent = 'TALK'; this.btns.shoot.classList.toggle('hint', !!Game.mus.near); } else this.btns.shoot.classList.toggle('hint', !!Game.mus.near); return; }
     // contextual labels
-    const me = M.players && M.players.find(p => p.human === 0); if (!me) return;
+    const me = M.players && M.players.find(p => p.human === (Net.role === 'guest' ? 1 : 0)); if (!me) return;   // (v9.15: online the guest's own player)
     const bo = ball.owner, offense = bo ? bo.team === me.team : (ball.pass && ball.pass.from.team === me.team);
     let pass = 'PASS', shoot = 'SHOOT', hintP = false, hintS = false;
     if (!offense) {

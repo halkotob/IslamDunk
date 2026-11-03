@@ -293,7 +293,7 @@ KIND_TXT.taunt = 'Taunt';
   updatePlayer = function (p, dt) {
     const r = _up.apply(this, arguments);
     if (p.swat && M.time - p.swat.t0 < 0.26 && onScreen(p.x)) { const hd = p.hands.n; FX.spark(hd.x, hd.y, hd.z, '#e8f7ff'); }
-    if (p.mv && ball.owner === p && (p.mv.kind === 'cross' || p.mv.kind === 'btb') && onScreen(p.x) && chance(0.6)) FX.spark(ball.x, ball.y, ball.z, 'rgba(255,255,255,0.7)');
+    if (p.mv && ball.owner === p && (p.mv.kind === 'cross' || p.mv.kind === 'btb') && onScreen(p.x) && fxChance(0.6)) FX.spark(ball.x, ball.y, ball.z, 'rgba(255,255,255,0.7)');
     return r;
   };
 }
@@ -301,7 +301,17 @@ KIND_TXT.taunt = 'Taunt';
 function tauntOpen(p, why) {
   if (!p || M.attract || M.practice || M.mini) return;
   M.taunt = { p, until: M.time + 3, why, used: false, deadOK: why === 'score' };
-  if (p.human < 0 && chance(why === 'block' ? 0.25 : 0.3)) setTimeout(() => { if (M.taunt && M.taunt.p === p && !M.taunt.used) doTaunt(p, pick(['sky', 'flex', 'wag', 'chest', 'takbir', 'dua'])); }, 500 + Math.random() * 500);
+  // a CPU player taunts back half a second to a second later, in match time (v9.14: was a timer, so the frame it landed on
+  // depended on the machine; an online match plays every frame the same on both)
+  if (p.human < 0 && chance(why === 'block' ? 0.25 : 0.3)) { const at = M.time + 0.5 + Math.random() * 0.5; if (M.players.some(q => q.human >= 0)) M.taunt.cpu = { at }; }   // (which taunt: picked when it comes. Only at a person: CPU-only games (the league) never got the timer's taunt, and are calibrated without it)
+}
+{
+  const _um = updateMatch;
+  updateMatch = function (dt) {
+    const r = _um.apply(this, arguments), T = M.taunt;
+    if (T && T.cpu && M.time >= T.cpu.at) { T.cpu = null; if (!T.used) doTaunt(T.p, pick(['sky', 'flex', 'wag', 'chest', 'takbir', 'dua'])); }
+    return r;
+  };
 }
 function myTaunt() { const t = (Profile.load().equip || {}).taunt || 'sky'; return Profile.has('taunt', t) || t === 'sky' ? t : 'sky'; }
 function doTaunt(p, id) {

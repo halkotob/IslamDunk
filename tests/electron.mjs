@@ -126,10 +126,12 @@ try {
   await win.evaluate(() => { Lobby.opts().game = 'vs'; Net.mode = 'vs'; Lobby.changed(); });
   await guest.evaluate(() => Lobby.setReady(1)); await sleep(700);
   await win.evaluate(() => Lobby.start());
-  await guest.waitForFunction(() => Game.screen === 'netplay', null, { timeout: 10000 }).catch(() => {});
-  await sleep(2000);
-  const on = await guest.evaluate(() => ({ screen: Game.screen, players: M.players.length, p2p: typeof P2P !== 'undefined' && P2P.open }));
-  check('online between two desktop windows', on.screen === 'netplay' && on.players === 4, JSON.stringify(on));
+  await guest.waitForFunction(() => typeof RBN !== 'undefined' && RBN.on && Game.screen === 'play', null, { timeout: 10000 }).catch(() => {});   // v9.14: a rollback match
+  await sleep(4000);
+  const on = await guest.evaluate(() => ({ screen: Game.screen, players: M.players.length, p2p: typeof P2P !== 'undefined' && P2P.open, rb: RBN.report() }));
+  const hostRep = await win.evaluate(() => RBN.report());
+  check('online between two desktop windows (rollback)', on.screen === 'play' && on.players === 4 && on.rb && on.rb.frame > 120 && hostRep && hostRep.frame > 120 && on.rb.desync == null && hostRep.desync == null && on.rb.hashesChecked > 0,
+    JSON.stringify({ guest: on, host: hostRep }));
   await app.close();
 
   const allErrs = firstErrs.concat(errs2, watchErrs);
