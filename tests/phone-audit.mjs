@@ -163,7 +163,7 @@ async function buttonOverlap(p) {
 
 export async function auditPhone(browser, base, device, { query = '?net=loop&lat=0&room=audit', shots = null } = {}) {
   const ctx = await browser.newContext(device);
-  await ctx.route(/fonts\.(googleapis|gstatic)\.com|gstatic\.com\/firebasejs/, r => r.abort());
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com|gstatic\.com\/firebasejs|islamdunk-ice\.[^/]*workers\.dev/, r => r.abort());   // (no live services; the TURN Worker fails at once: STUN only)
   await ctx.addInitScript(AUDIT_INIT);
   const p = await ctx.newPage(), errs = [];
   p.on('pageerror', e => errs.push(`${p.__screen || 'load'}: ${e.message}`));

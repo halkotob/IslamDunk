@@ -136,6 +136,7 @@ const SEED_INIT = `(() => { let s = 1; const rnd = () => { s |= 0; s = (s + 0x6D
 async function newContext(browser, opts = {}) {
   const ctx = await browser.newContext(opts.device || { viewport: { width: 1280, height: 720 } });
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());                       // system font, no network
+  await ctx.route(/islamdunk-ice\.[^/]*workers\.dev/, r => r.abort());                   // the live TURN Worker: fails at once (STUN only), like no relay; net-ice uses ?ice= fakes
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE_FIREBASE_APP }));
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-database\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE_FIREBASE_DB }));
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-auth\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE_FIREBASE_AUTH }));
