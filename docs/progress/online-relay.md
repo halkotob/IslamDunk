@@ -54,3 +54,4 @@ tier covers roughly 11,000+ relayed match-hours a month (only pairs without a pe
   `NODE_PATH=$PWD/node_modules xvfb-run -a npm run test:electron`.
 - `rb-determinism` compares against Safari's engine through `bun` when it is installed (it is in these containers).
 - Studio tests need `npm run build:review` (`npm test` does it).
+- Test browsers abort the live TURN Worker URL (`newContext` in `tests/run.mjs`, `lag-harness.mjs`, `phone-audit.mjs`): a test must never depend on it. `net-ice` tests the fetch with `?ice=` fakes.
