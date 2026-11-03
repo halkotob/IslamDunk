@@ -17,8 +17,7 @@ for (const b of BINDS) { b.t = []; b.s = []; }        // turbo and skill keys re
 // ---- sprint gesture
 const Sprint = [{}, {}];
 function sprintStep(pad, c) {
-  const S = Sprint[pad], b = padBinds(pad), d = Input.down, now = typeof RB !== 'undefined' && RB.sim ? M.time : nowMs() / 1000,   // (v9.14: a rollback step uses match time)
-    dirs = ['up', 'down', 'left', 'right'];
+  const S = Sprint[pad], b = padBinds(pad), d = Input.down, now = nowMs() / 1000, dirs = ['up', 'down', 'left', 'right'];
   if (S.pobj !== Input.pressed) {                                  // once per frame: look at new presses
     S.pobj = Input.pressed;
     for (const k of dirs) if (b[k].some(x => Input.pressed[x])) {

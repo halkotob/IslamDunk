@@ -1,5 +1,12 @@
 # Changelog
 
+## 9.14.2: online matches go back to the 9.13 netcode
+Rollback (9.14.0) is taken out: online play didn't feel live with it. Same team vs CPU, Head to head and 1 on 1 use
+the host's snapshots again, exactly as in 9.13.0 (the guest's own actions show at once, the rest follows the host).
+The relay from 9.14.1 stays on: pairs without a peer-to-peer link now get the relay instead of the server path,
+which is faster for the snapshots too. The rollback code is in the history (9.14.0, commits 363e189..52b1c07) for
+the next plan.
+
 ## 9.14.1: the online relay is on
 Players whose connection can't link peer to peer (strict routers, many mobile carriers, school and office
 networks) now get a direct link through Cloudflare's TURN relay, so they play with rollback too instead of the

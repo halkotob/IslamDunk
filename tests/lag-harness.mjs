@@ -115,7 +115,6 @@ const HOST_INIT = () => {
 export async function lagRun(browser, base, name, prof, opts = {}) {
   const q = `?net=loop&p2p=0&room=lag${Math.random().toString(36).slice(2, 7)}&mode=${prof.mode}&lat=${prof.lat}&jit=${prof.jit}&loss=${prof.loss}&bw=${prof.bw}`;
   const ctx = await browser.newContext({ viewport: { width: 960, height: 540 } });
-  if (!opts || !opts.rb) await ctx.addInitScript('window.ISLAMDUNK_RB = false;');   // (v9.14: the snapshot netcode, against its baseline)
   await ctx.route(/fonts\.(googleapis|gstatic)\.com|gstatic\.com\/firebasejs|islamdunk-ice\.[^/]*workers\.dev/, r => r.abort());   // (no live services; the TURN Worker fails at once: STUN only)
   const errs = [], open = async () => { const p = await ctx.newPage(); p.on('pageerror', e => errs.push(name + ': ' + e.message));
     await p.goto(base + '/' + q); await p.waitForFunction(() => typeof Net !== 'undefined' && Net.avail === 'yes', null, { timeout: 20000 }); return p; };

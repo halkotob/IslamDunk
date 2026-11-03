@@ -1,14 +1,13 @@
 # Online: where things stand (pick up here)
 
-Last updated with 9.14.1. Read this first when continuing the online work.
+Last updated with 9.14.2. Read this first when continuing the online work.
 
 ## Done
 
-- **Rollback netcode** (9.14.0, see CHANGELOG): Same team vs CPU, Head to head and 1 on 1 use rollback whenever
-  the two players have a direct WebRTC link (peer to peer, or through the TURN relay: both count as "direct").
-  Code: `src/online/rollback.js` (the deterministic frame, save/restore, checksums), `rollback-net.js` (inputs,
-  prediction, rollback, input delay, time sync, the match flow), `rollback-sync.js` (desync repair, network report
-  line). Tests: `tests/rollback.mjs` (`rb-*`).
+- **Rollback netcode: reverted in 9.14.2.** It shipped in 9.14.0 (commits 363e189..52b1c07) and the owner found
+  online play no longer felt live with it, so the match modes are back on the 9.13 snapshot netcode. The code and
+  its tests are in that history if parts are reused. A new plan for real-time online is being discussed; don't
+  re-enable rollback without it. (Anything below that says `Netcode: rollback` predates the revert.)
 - **Relay (TURN) support in the game** (9.10.0): when `ONLINE_ICE_URL` is set, hosting or joining a lobby fetches
   1-hour TURN credentials from our Cloudflare Worker and adds them to the WebRTC config. Tested with a fake ICE
   endpoint (`net-ice`). The Worker itself (`worker/ice`) passes its tests (`node --test test/worker.test.mjs`).

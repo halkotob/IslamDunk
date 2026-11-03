@@ -132,10 +132,3 @@ STUN only, as before. Settings → Sound & display → **Show network info** sho
 snapshot rate in a match; the lobby rates each player's connection and has **Network report** (also in the
 pause menu) to preview and copy the details. Nothing is sent anywhere. `node tools/lag-report.mjs` measures input-to-screen latency, corrections and snapshot gaps under five
 simulated networks (`tests/lag-harness.mjs`); `node tools/connect-report.mjs` times each step of connecting.
-
-**Netcode.** On a direct or relay link, the match modes (Same team vs CPU, Head to head, 1 on 1) use rollback
-(v9.14, `src/online/rollback*.js`): both players run the whole match from each other's inputs; a frame must come
-out bit-identical on every machine, so anything in the match must draw random numbers from `Math.random` only inside
-the match step (effects use `FX_RANDOM` / `fxChance`), never read the clock, the screen or this device's settings,
-and never schedule with `setTimeout`. `rb-determinism` and `rb-rollback` catch a slip. On the server path, and for
-HORSE, Lightning and Barakah Run duos, the host sends snapshots as before (`?rb=0` forces that for a match).
