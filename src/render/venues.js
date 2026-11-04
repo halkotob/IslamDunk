@@ -377,7 +377,7 @@ function venueThumb(v, tA, tB) {
 
 // ------------------------------------------------------- VENUE SELECT
 // After team select in Quick Play and online hosting.
-function venueOptions() { return [...VENUE_LIST.filter(v => v.id !== 'home' || careerReach() >= 0), { id: 'random', kind: 'random', name: 'Random' }]; }
+function venueOptions() { return [...VENUE_LIST.filter(v => venueListed(v) && (v.id !== 'home' || careerReach() >= 0)), { id: 'random', kind: 'random', name: 'Random' }]; }
 function openVenueSelect(next) { Game.venueNext = next; Game.screen = 'venue'; Game.idx = Game.venueIdx || 0; }
 function chooseVenue(i) {
   const opts = venueOptions(), o = opts[i];

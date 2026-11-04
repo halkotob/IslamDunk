@@ -4,6 +4,7 @@
 //   node tests/tomahawk-rec.mjs [page.html] > tests/fixtures/tomahawk-classic.json
 export const TOMAHAWK_REC = `((style) => {
   if (style && typeof SETTINGS !== 'undefined') SETTINGS.tomahawk = style;
+  if (typeof SETTINGS !== 'undefined') SETTINGS.dribble = 'classic';   // (v9.16.1: Stride is the default now; the 8.6.4 recording was made with Classic, whose bounces draw the random numbers it expects)
   window.__seed && window.__seed(4242);
   newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 60 } });
   for (let n = 0; n < 2000 && M.phase !== 'live'; n++) updateMatch(STEP);

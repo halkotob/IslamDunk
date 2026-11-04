@@ -22,10 +22,11 @@ const VENUE_LIST = [
   { id: 'home', kind: 'gym', size: 'home', name: 'Masjid Al-Amanah Gym' },
   { id: 'gymS', kind: 'gym', size: 'S', name: 'Masjid Multipurpose Room' },
   { id: 'gymM', kind: 'gym', size: 'M', name: 'Masjid Gym' },
-  { id: 'gymL', kind: 'gym', size: 'L', name: 'Community Center Gym' },
+  { id: 'gymL', kind: 'gym', size: 'L', name: 'Community Center Gym', retired: true },   // (v9.16.1: retired from menus and random picks; the id stays valid)
   ...BACKDROPS.map(b => ({ id: 'out_' + b, kind: 'outdoor', backdrop: b, name: BACKDROP_NAMES[b] })),
   ...Object.keys(ARENAS).map(k => ({ id: 'arena_' + k, kind: 'arena', tier: k, name: ARENAS[k].name, lock: ARENAS[k].lock }))
 ];
+const venueListed = v => !v.retired;
 function venueDisplayName(v, host) {
   if (v.kind === 'gym' && v.size !== 'home') return host.name + ({ S: ' Multipurpose Room', M: ' Gym', L: ' Community Gym' })[v.size];
   if (v.kind === 'outdoor') return host.name + ' ' + (BACKDROP_NAMES[v.backdrop] || 'Court').replace(' Court', '') + ' Court';
@@ -55,7 +56,7 @@ function careerVenue(stage, round, oppId, opp) {
   if (stage === 0 && round !== 1) return makeVenue(VENUE_LIST[1], { host: 0, crowd: 10 + Math.round(masjidLevelSafe() * 1.25), level: 0.3 });   // home
   if (stage === 0 || (stage === 1 && round === 0)) {                                              // away: the opponent's own masjid
     const R = seededRng(hash32(opp.name + opp.place)), outdoor = R() < 0.3;
-    const size = stage === 0 ? (R() < 0.45 ? 'S' : R() < 0.75 ? 'M' : 'L') : (R() < 0.5 ? 'M' : 'L');
+    const size0 = stage === 0 ? (R() < 0.45 ? 'S' : R() < 0.75 ? 'M' : 'L') : (R() < 0.5 ? 'M' : 'L'), size = size0 === 'L' ? 'M' : size0;   // (v9.16.1: the community center gym is retired; same draws, so the rest of the schedule is unchanged)
     const crowd = stage === 0 ? 10 + Math.floor(R() * 21) : 50 + Math.floor(R() * 101);
     if (outdoor) return makeVenue({ id: 'out_' + BACKDROPS[Math.floor(R() * 5)], kind: 'outdoor' }, { backdrop: BACKDROPS[Math.floor(R() * 5)], time: TIMES[Math.floor(R() * 3)], surface: ['asphalt', 'green', 'blue'][Math.floor(R() * 3)], crowd, host: 1, level: stage ? 0.5 : 0.32 });
     return makeVenue({ id: 'gym' + size, kind: 'gym', size }, { crowd, host: 1, level: stage ? 0.55 : 0.32 });

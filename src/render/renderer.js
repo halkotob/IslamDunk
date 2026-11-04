@@ -397,7 +397,7 @@ function drawPlayer(g, p) {
   // head: profile with nose, cel shade on the back of the head
   const [HX, HY] = L(hx, hy);
   const bigHead = M.fun && M.fun.bigHead && !M.gym, hs = 1.15 * (bigHead ? 1.7 : 1);   // arcade head (+15%)
-  g.save(); g.translate(HX, HY + 8); g.scale(hs, hs); g.translate(-HX, -HY - 8);
+  g.save(); g.translate(HX, HY + 8); if (p.headTilt) g.rotate(p.headTilt * f); g.scale(hs, hs); g.translate(-HX, -HY - 8);   // (v9.16.1: the nod tilts the head on the neck)
   drawGroup(g, [{ t: 'c', x: HX + 8.6 * f, y: HY + 0.8, r: 2.1, c: skin }, { t: 'p', c: skin, sh: cel(skin), lx: 3, ly: 2.5, p: circlePts(HX, HY, 9.5) }], f);
   drawBeard(g, HX, HY, f, beard, beardLen, hair);
   drawFace(g, HX, HY, f, p.expr ? p.expr.k : null, hair, def.glasses);

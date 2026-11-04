@@ -249,7 +249,7 @@ function bumpStep(dt) {
     if (s > 1.5) { o.stumble = Math.max(o.stumble || 0, 0.35); o.knock = { dx: tx / d * 18, dz: tz / d * 18, left: 0.12 }; /* v9.11: knocked back over 0.12 s (was 18 units in one frame) */ h.vx *= 0.75; h.vz *= 0.75; if (humanIn(h, o)) popOnce(o, 'bump', 'BUMPED', '#ffffff'); }
     else if (s < -1) { const side = sgn(-tz * h.vx + tx * h.vz) || 1; const vx = h.vx, vz = h.vz; h.vx = (vx * 0.3 - vz * 0.5 * side) * 0.6; h.vz = (vz * 0.3 + vx * 0.5 * side) * 0.6; h.stumble = Math.max(h.stumble || 0, 0.15); if (humanIn(h, o)) popOnce(h, 'bump', 'KNOCKED OFF HIS LINE', '#ffd76a'); }
     else { h.vx *= 0.6; h.vz *= 0.6; o.vx *= 0.5; o.vz *= 0.5; if (humanIn(h, o)) popOnce(h, 'bump', 'CONTACT', '#ffffff'); }
-    SFX.thud && SFX.thud(0.4); FX.dust((h.x + o.x) / 2, (h.z + o.z) / 2, 2); react(h, 'fist', 0.4);
+    SFX.thud && SFX.thud(0.4); FX.dust((h.x + o.x) / 2, (h.z + o.z) / 2, 2);   // (v9.16.1: no fist pump)
     return;
   }
 }

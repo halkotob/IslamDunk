@@ -31,7 +31,7 @@ const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const TOL_DB = 1.5;
 // the expected tier at each Review Studio crowd venue (audience drawn -> tier: 0 nobody, 1 up to 12, 2 up to 45, 3 up to 160, 4 more)
 export const EXPECT_TIERS = {
-  practice: 0, 'home-10': 1, 'home-22': 2, 'gymS-12': 1, 'gymS-22': 2, 'gymM-25': 2, 'gymM-80': 3, 'gymL-140': 3, 'outdoor-24': 2,
+  practice: 0, 'home-10': 1, 'home-22': 2, 'gymS-12': 1, 'gymS-22': 2, 'gymM-25': 2, 'gymM-80': 3, 'outdoor-24': 2,
   classic: 4, 'regional-early': 4, 'arena-regional': 4, 'arena-college': 4, 'arena-intl': 4, 'arena-grand': 4
 };
 // play every variant of every sound on a live AudioContext (no speakers needed: the context just runs)

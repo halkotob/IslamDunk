@@ -27,11 +27,12 @@
   add('Stand and move', 'walk/default', 'Walk', { n: 150, dist: 700, follow: true, cmd: run(0.3) });
   add('Stand and move', 'run/default', 'Run', { n: 120, dist: 800, follow: true, cmd: run(1) });
   add('Stand and move', 'sprint/default', 'Sprint (turbo)', { n: 120, dist: 900, follow: true, cmd: run(1, true) });
-  add('Dribble', 'dribble/classic', 'Dribble, Classic style', { n: 150, dist: 800, ball: true, needBall: true, follow: true, cmd: run(0.8), setup: () => { SETTINGS.dribble = 'classic'; } });
   add('Dribble', 'dribble/stride', 'Dribble, Stride style (NBA Jam pace)', { n: 150, dist: 800, ball: true, needBall: true, follow: true, cmd: run(0.8), setup: () => { SETTINGS.dribble = 'stride'; } });
-  add('Dribble', 'dribble/standing', 'Dribble in place', { n: 150, ball: true, needBall: true, setup: () => { SETTINGS.dribble = 'classic'; } });
-  for (const [k, nm] of [['cross', 'Crossover'], ['btb', 'Behind the back'], ['spin', 'Spin move'], ['hesi', 'Hesitation'], ['stepback', 'Step-back'], ['drop', 'Drop step']])
-    add('Dribble moves', 'move/' + k, nm, { n: 70, dist: 520, ball: true, needBall: true, follow: true, cmd: run(0.6), at: 12, start: c => startDribbleMove(c.me, k, 1) });
+  add('Dribble', 'dribble/standing', 'Dribble in place', { n: 150, ball: true, needBall: true, setup: () => { SETTINGS.dribble = 'stride'; } });
+  // (v9.16.1: the crossover from the far hand, between the legs from the near hand; 'drop' is now the hop step)
+  for (const [k, nm, hand] of [['cross', 'Crossover', 'f'], ['btl', 'Between the legs', 'n'], ['btb', 'Behind the back'], ['spin', 'Spin move'], ['hesi', 'Hesitation'], ['stepback', 'Step-back'], ['drop', 'Hop step (was the drop step)']]) {
+    const still = k === 'stepback' || k === 'drop';   // (standing start, fixed camera: the step back and the hop show how far they go)
+    add('Dribble moves', 'move/' + k, nm, { n: 70, dist: k === 'drop' ? 260 : 520, ball: true, needBall: true, follow: !still, cmd: still ? null : run(0.6), at: 12, start: c => { if (hand) { c.me.dh = hand; c.me.move = null; } startDribbleMove(c.me, k === 'btl' ? 'cross' : k, 1); } }); }
   add('Dribble moves', 'pickup/default', 'Pump fake: picks up the dribble', { n: 90, ball: true, needBall: true, at: 10, start: c => startFake(c.me) });
   for (const [k, d, nm] of [['jumper', 330, 'Jump shot'], ['fade', 260, 'Fadeaway'], ['floater', 200, 'Floater'], ['hook', 150, 'Hook shot'], ['layup', 80, 'Layup'], ['reverse', 60, 'Reverse layup'], ['upunder', 80, 'Up and under']])
     add('Shots', 'shoot/' + k, nm, { n: 110, dist: d, ball: true, needBall: true, hoop: true, at: 8, start: c => { startShot(c.me); applyShotType(c.me, k); if (typeof TYPE_JUMP !== 'undefined' && TYPE_JUMP[k]) c.me.jumpVy = TYPE_JUMP[k]; } });
@@ -48,7 +49,7 @@
   add('Dunks', 'dunk/twohand', 'Two-hand dunk', { n: 120, dist: 90, ball: true, needBall: true, hoop: true, at: 6, start: dunk('twohand') });
   add('Dunks', 'dunk/windmill', 'Windmill', { n: 130, dist: 150, ball: true, needBall: true, hoop: true, at: 6, start: dunk('windmill') });
   add('Dunks', 'dunk/360', '360', { n: 140, dist: 200, ball: true, needBall: true, hoop: true, at: 6, start: dunk('360') });
-  for (const st of (typeof TOMAHAWK_STYLES !== 'undefined' ? TOMAHAWK_STYLES : ['classic']))
+  for (const st of (typeof TOMAHAWK_KEPT !== 'undefined' ? TOMAHAWK_KEPT : typeof TOMAHAWK_STYLES !== 'undefined' ? TOMAHAWK_STYLES : ['classic']))   // (v9.16.1: Float only)
     add('Dunks', 'dunk/tomahawk-' + st, 'Tomahawk, ' + st[0].toUpperCase() + st.slice(1) + ' style', { n: 130, dist: 170, ball: true, needBall: true, hoop: true, at: 6, start: dunk('tomahawk', 170, st) });
   add('Dunks', 'dunk/alley', 'Alley-oop (catch and dunk)', { n: 150, dist: 190, ball: false, hoop: true, at: 6,
     setup: c => { const h = attackHoop(c.me.team); place(c.mate, h.x + h.dir * 420, h.z + 140); giveBall(c.mate, 'inbound'); },
@@ -66,9 +67,9 @@
   add('Defense', 'ankles/default', 'Ankle break (crossed up)', { n: 70, dist: 520, follow: true, cmd: run(0.5), at: 10, start: c => { c.me.stumble = 0.55; c.me.shook = 0.47; c.me.shookDir = { x: attackHoop(c.me.team).dir, z: 0 }; } });
   add('Falls', 'fall/default', 'Knocked down, and getting up', { n: 160, at: 8, start: c => knockDown(c.me, attackHoop(c.me.team).dir, 0) });
   add('Celebrate', 'celebrate/default', 'Celebration (arm up)', { n: 120, at: 4, start: c => { c.me.celebrate = 1.6; } });
-  for (const t of (typeof TAUNTS !== 'undefined' ? TAUNTS : []))
+  for (const t of (typeof TAUNTS !== 'undefined' ? TAUNTS : []).filter(t => !t.retired))
     add('Taunts', 'taunt/' + t.id, 'Taunt: ' + t.name, { n: t.id === 'sujood' ? 150 : 110, at: 6, start: c => { c.me.taunt = { k: t.id, t0: M.time, dur: t.id === 'sujood' ? 1.9 : 1.3 }; } });
-  for (const [k, nm] of [['armsUp', 'Arms up'], ['fist', 'Fist pump'], ['nod', 'Nod'], ['headDown', 'Head down'], ['handsHead', 'Hands on head']])
+  for (const [k, nm] of [['nod', 'Nod'], ['headDown', 'Head down'], ['handsHead', 'Hands on head']])   // (v9.16.1: Arms up and Fist pump retired)
     add('Reactions', 'react/' + k, 'Reaction: ' + nm, { n: 90, at: 6, start: c => react(c.me, k, 1.2) });
   RS.anims = () => A.map(a => ({ id: a.id, name: a.name, group: a.group, n: a.n, ball: a.ball, needBall: a.needBall, hoop: a.hoop }));
 

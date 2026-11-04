@@ -64,18 +64,15 @@ function trackDeficit() {
   makeFeel = function (h, sh, shooter, pts, hot, buzzer, clutchBuzzer) {
     const kind = _mf.apply(this, arguments);
     if (shooter) {
-      if (kind === 'dunk' || kind === 'bigdunk' || kind === 'poster') react(shooter, 'armsUp', 1.5);    // hyped after a dunk
       const tough = kind !== 'layup' && kind !== 'mid' || (sh && (sh.green || sh.sig)) || buzzer;
       const run = M.run && M.run.team === shooter.team ? M.run.n + 1 : 1; M.run = { team: shooter.team, n: run };
-      for (const q of M.players) if (q !== shooter && q.team === shooter.team && q.human < 0 && (tough || run >= 3)) react(q, run >= 3 ? 'armsUp' : 'fist', 0.9);   // teammates acknowledge it
-      if (run === 3 && chance(0.6)) react(shooter, 'fist', 1.1);                                         // scoring run: fist bump
       AchEvents.make(shooter, kind, buzzer || clutchBuzzer);
     }
     trackDeficit();
     return kind;
   };
   const _bf = blockFeel;
-  blockFeel = function (o, victim) { _bf.apply(this, arguments); react(o, 'armsUp', 0.9); react(victim, 'headDown', 0.8); AchEvents.block(o); };
+  blockFeel = function (o, victim) { _bf.apply(this, arguments); react(victim, 'headDown', 0.8);   /* (v9.16.1: no arms up for the blocker) */ AchEvents.block(o); };
   const _sf = stealFeel;
   stealFeel = function (p, clean) { _sf.apply(this, arguments); if (clean) AchEvents.steal(p); };
   const _gb = grantBoost;

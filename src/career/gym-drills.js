@@ -127,15 +127,7 @@ function drawGymBack(g, t, U = gymUp()) {
   for (const sx of [X(894), X(930)]) for (let i = 0; i < 12; i++) {
     const y = Y(base - 18 - i * 5.5); g.fillStyle = '#7b8794'; g.fillRect(sx, y, 30, 4); g.fillStyle = '#65717d'; g.fillRect(sx + 24, y - 12, 5, 12);
   }
-  // whiteboard with event flyers and a drawn play
-  x = X(990); const wy = Y(56);
-  g.fillStyle = '#b8bec6'; g.fillRect(x - 4, wy - 4, 158, 78); g.fillStyle = '#fbfbf8'; g.fillRect(x, wy, 150, 70);
-  const flyer = (fx, fy, col, l1, l2) => { g.fillStyle = col; g.fillRect(fx, fy, 34, 42); g.fillStyle = '#333'; g.font = `6px ${BODY}`; g.textAlign = 'left'; g.fillText(l1, fx + 3, fy + 12); g.fillText(l2, fx + 3, fy + 21); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(fx + 3, fy + 28, 26, 1.5); g.fillRect(fx + 3, fy + 33, 20, 1.5); };
-  flyer(x + 4, wy + 6, '#ffe38a', 'Youth halaqa', 'Fri after Isha'); flyer(x + 42, wy + 10, '#9dd6ff', 'Bake sale', 'Sun 1pm');
-  g.strokeStyle = '#2e5aa8'; g.lineWidth = 1.2; g.font = `9px ${BODY}`; g.fillStyle = '#2e5aa8'; g.fillText('O', x + 90, wy + 22); g.fillText('O', x + 118, wy + 44);
-  g.fillStyle = '#c0392b'; g.fillText('X', x + 100, wy + 30); g.fillText('X', x + 128, wy + 52);
-  g.beginPath(); g.moveTo(x + 94, wy + 24); g.quadraticCurveTo(x + 110, wy + 50, x + 132, wy + 60); g.stroke();
-  g.fillStyle = '#1c1c1c'; g.font = `7px ${BODY}`; g.fillText('BOX OUT!!', x + 84, wy + 64);
+  // (v9.16.1: the whiteboard with flyers and a drawn play is gone: the reviewer found it ugly)
   if (U.scoreboard) {
     x = X(840);
     g.fillStyle = '#16181c'; g.fillRect(x, Y(36), 150, 44); g.strokeStyle = '#6d747c'; g.lineWidth = 2; g.strokeRect(x, Y(36), 150, 44);

@@ -11,7 +11,8 @@
 //     (4 or less) only cross over, and nobody below 5.5 starts a behind-the-back or a spin with a defender within 40 px.
 //     Never three moves in a row.
 //   * sharpshooters: twice the step-back (and on Hard the fadeaway) with a defender within 70 px behind the arc, and a
-//     move is followed by the shot more often than a drive; with an open look behind the arc he makes no move first.
+//     move is followed by the shot more often than a drive; with a good open look behind the arc he shoots it (no move,
+//     no drive past it, from Medium up; v9.16.1).
 //   * rim runners and big dunkers: spin and drop-step into a drive when the defender is in front, then attack the rim.
 //   * dunks: the type follows Dunking, Speed and the style (big dunks and his own favourite for the best dunkers, the
 //     two-hander for the rest); a poor dunker (Dunking 5 or less) lays it in some of the time even with the lane open.
@@ -46,7 +47,13 @@ function cpuShootFirst(p, dd) {
     c.x = false;                                          // the move decision is made here (it replaces ai.js's flat rate)
     if (p.state !== 'free' || p.postUp) return;
     const cf = this.cfg(), dd = nearestOppDist(p.x, p.z, p.team);
-    if (cpuShootFirst(p, dd)) return;
+    if (cpuShootFirst(p, dd)) {                           // a good look: take it, no dribble move, no drive past it (v9.16.1)
+      const pl = this.plan;
+      // (the shot over the drive is a smart player's habit: from Medium up, by the difficulty's noise so career levels blend;
+      // on Very easy and Easy, where the CPU misses more, taking it cost 0.06-0.09 points a possession)
+      if ((pl.type === 'probe' || pl.type === 'drive') && p.state === 'free' && (cf.noise == null || cf.noise <= 0.2) && !(typeof lateMode === 'function' && lateMode(p.team))) { this.plan = { type: 'shoot', u: 1, ctx: 'handler' }; }   // (late in a game v863-cpu.js decides: a leader runs the clock)
+      return;
+    }
     // sharpshooters set up the shot: the fadeaway (Hard's skill use) twice as often with a defender close behind the arc
     if (cpuArch(p) === 'sharpshooter' && cf.skillUse > 0.05 && dd < 70 && isThree(p.x, p.z, attackHoop(p.team)) && chance(dt * cf.skillUse)) c.s = true;
     if (p.mv || (p.cd.mv || 0) > 0) return;

@@ -67,7 +67,7 @@ export function cpuStyleTests({ newContext, open }) {
       __seed(77); SETTINGS.difficulty = 'hard';
       newMatch(TEAMS[2], TEAMS[5], { humans: [] }); M.introT = 0; M.phase = 'live';
       const s = M.teams[0].players.find(q => cpuArch(q) === 'sharpshooter'), H = attackHoop(s.team);
-      M.cmdHook = q => { if (q === s) return false; zeroCmd(q.cmd); return true; };
+      M.cmdHook = q => { if (q === s) return false; zeroCmd(q.cmd); if (q === s.opps[0]) { q.x = s.x - H.dir * 47; q.z = s.z; q.vx = q.vz = 0; } return true; };   // (his man held 47 px off every frame)
       // his man sags 47 px off (close enough for a move, far enough to be open); the other defender is far away
       const pin = () => { s.opps[0].x = s.x - H.dir * 47; s.opps[0].z = s.z; s.opps[1].x = H.x + H.dir * 120; s.opps[1].z = 120; };
       s.mate.x = H.x + H.dir * 200; s.mate.z = 600;

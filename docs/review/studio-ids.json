@@ -4,21 +4,18 @@
   "anim/ankles/default": "9.2.2",
   "anim/block/default": "9.2.2",
   "anim/celebrate/default": "9.2.2",
-  "anim/dribble/classic": "9.2.2",
   "anim/dribble/standing": "9.2.2",
   "anim/dribble/stride": "9.2.2",
   "anim/dunk/360": "9.2.2",
   "anim/dunk/alley": "9.2.2",
-  "anim/dunk/tomahawk-classic": "9.2.2",
   "anim/dunk/tomahawk-float": "9.2.2",
-  "anim/dunk/tomahawk-power": "9.2.2",
-  "anim/dunk/tomahawk-smooth": "9.2.2",
   "anim/dunk/twohand": "9.2.2",
   "anim/dunk/windmill": "9.2.2",
   "anim/fall/default": "9.2.2",
   "anim/hang/default": "9.2.2",
   "anim/idle/default": "9.2.2",
   "anim/move/btb": "9.2.2",
+  "anim/move/btl": "9.16.1",
   "anim/move/cross": "9.2.2",
   "anim/move/drop": "9.2.2",
   "anim/move/hesi": "9.2.2",
@@ -29,8 +26,6 @@
   "anim/pass/chest": "9.2.2",
   "anim/pass/lead": "9.2.2",
   "anim/pickup/default": "9.2.2",
-  "anim/react/armsUp": "9.2.2",
-  "anim/react/fist": "9.2.2",
   "anim/react/handsHead": "9.2.2",
   "anim/react/headDown": "9.2.2",
   "anim/react/nod": "9.2.2",
@@ -45,14 +40,12 @@
   "anim/shove/default": "9.2.2",
   "anim/sprint/default": "9.2.2",
   "anim/steal/default": "9.2.2",
-  "anim/taunt/brush": "9.2.2",
   "anim/taunt/chest": "9.2.2",
   "anim/taunt/dua": "9.2.2",
   "anim/taunt/flex": "9.2.2",
   "anim/taunt/roof": "9.2.2",
   "anim/taunt/sky": "9.2.2",
   "anim/taunt/small": "9.2.2",
-  "anim/taunt/sujood": "9.2.2",
   "anim/taunt/takbir": "9.2.2",
   "anim/taunt/wag": "9.2.2",
   "anim/walk/default": "9.2.2",
@@ -1096,7 +1089,6 @@
   "sound/crowd/arena-intl": "9.13.0",
   "sound/crowd/arena-regional": "9.13.0",
   "sound/crowd/classic": "9.13.0",
-  "sound/crowd/gymL-140": "9.13.0",
   "sound/crowd/gymM-25": "9.13.0",
   "sound/crowd/gymM-80": "9.13.0",
   "sound/crowd/gymS-12": "9.13.0",
@@ -2014,13 +2006,10 @@
   "text/career/gym-drills/1v1-vs-nasser-dc3c50": "8.6.0",
   "text/career/gym-drills/5-racks-in-60-seconds-wleu94": "8.6.0",
   "text/career/gym-drills/amiri-scheherazade-new-noto-nask-gzxnox": "8.6.0",
-  "text/career/gym-drills/bake-sale-furfh7": "8.6.0",
-  "text/career/gym-drills/box-out-yg3e9s": "8.6.0",
   "text/career/gym-drills/cone-dribble-39avek": "8.6.0",
   "text/career/gym-drills/dribble-to-each-cone-in-w88gpl": "8.6.0",
   "text/career/gym-drills/first-to-11-after-a-wsp9hz": "phase1",
   "text/career/gym-drills/free-throws-81wjmg": "8.6.0",
-  "text/career/gym-drills/fri-after-isha-q37gv9": "8.6.0",
   "text/career/gym-drills/go-here-4sz147": "8.6.0",
   "text/career/gym-drills/half-court-to-11-after-fgog8h": "8.6.0",
   "text/career/gym-drills/nasser-won-1rdt0d": "8.6.0",
@@ -2028,12 +2017,10 @@
   "text/career/gym-drills/of-10-made-y6fgb2": "8.6.0",
   "text/career/gym-drills/points-out-of-20-x1f7er": "8.6.0",
   "text/career/gym-drills/sh-saleem-mwik05": "8.6.0",
-  "text/career/gym-drills/sun-1pm-optiot": "8.6.0",
   "text/career/gym-drills/three-point-challenge-x40y85": "8.6.0",
   "text/career/gym-drills/x-spw1d4": "8.6.0",
   "text/career/gym-drills/you-beat-nasser-3rlrn0": "8.6.0",
   "text/career/gym-drills/your-trophies-a8lwnw": "8.6.0",
-  "text/career/gym-drills/youth-halaqa-m2aupe": "8.6.0",
   "text/career/gym-routines/around-the-world-make-it-gbf0dq": "8.6.0",
   "text/career/gym-routines/around-the-world-vs-jz26sq": "8.6.0",
   "text/career/gym-routines/at-the-rim-50f23z": "8.6.0",
@@ -3975,6 +3962,8 @@
   "text/sim/v86-play/taunt-7vuvuj": "8.6.0",
   "text/sim/v86-play/taunt-kydatf": "8.6.0",
   "text/sim/v86-play/taunt-v4dl59": "8.6.0",
+  "text/sim/v9161-anim/hop-step-7ib7oa": "9.16.1",
+  "text/sim/v9161-anim/yes-yes-bar0w7": "9.16.1",
   "text/sim/v98-review/finger-roll-cljton": "9.8.0",
   "text/sim/v98-review/just-missed-ifat94": "9.8.0",
   "text/sim/v98-review/no-angle-6vi2tx": "9.8.0",
@@ -4172,6 +4161,46 @@
   "trivia/99": "phase1"
  },
  "removed": {
+  "anim/dribble/classic": {
+   "reason": "v9.16.1: retired after the first Studio review (Delete). Saves map to Stride / Float / the default taunt.",
+   "version": "9.16.1",
+   "was": "9.2.2"
+  },
+  "anim/dunk/tomahawk-classic": {
+   "reason": "v9.16.1: retired after the first Studio review (Delete). Saves map to Stride / Float / the default taunt.",
+   "version": "9.16.1",
+   "was": "9.2.2"
+  },
+  "anim/dunk/tomahawk-power": {
+   "reason": "v9.16.1: retired after the first Studio review (Delete). Saves map to Stride / Float / the default taunt.",
+   "version": "9.16.1",
+   "was": "9.2.2"
+  },
+  "anim/dunk/tomahawk-smooth": {
+   "reason": "v9.16.1: retired after the first Studio review (Delete). Saves map to Stride / Float / the default taunt.",
+   "version": "9.16.1",
+   "was": "9.2.2"
+  },
+  "anim/react/armsUp": {
+   "reason": "v9.16.1: retired after the first Studio review (Delete). Saves map to Stride / Float / the default taunt.",
+   "version": "9.16.1",
+   "was": "9.2.2"
+  },
+  "anim/react/fist": {
+   "reason": "v9.16.1: retired after the first Studio review (Delete). Saves map to Stride / Float / the default taunt.",
+   "version": "9.16.1",
+   "was": "9.2.2"
+  },
+  "anim/taunt/brush": {
+   "reason": "v9.16.1: retired after the first Studio review (Delete). Saves map to Stride / Float / the default taunt.",
+   "version": "9.16.1",
+   "was": "9.2.2"
+  },
+  "anim/taunt/sujood": {
+   "reason": "v9.16.1: retired after the first Studio review (Delete). Saves map to Stride / Float / the default taunt.",
+   "version": "9.16.1",
+   "was": "9.2.2"
+  },
   "dialogue/intro/gym/siddiq/0": {
    "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
    "version": "9.8.0",
@@ -4211,6 +4240,11 @@
    "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
    "version": "9.8.0",
    "was": "9.2.2"
+  },
+  "sound/crowd/gymL-140": {
+   "reason": "v9.16.1: the Community Center Gym is retired from menus and random picks (its id still loads).",
+   "version": "9.16.1",
+   "was": "9.13.0"
   },
   "text/career/barakah-run/cpu-shot-clock-is-2-oiav4c": {
    "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
@@ -4271,6 +4305,31 @@
    "reason": "v9.6.2: moved off the career hub (balances are chips, gym bests are on My Player > Records > Personal bests)",
    "version": "9.6.2",
    "was": "8.6.2"
+  },
+  "text/career/gym-drills/bake-sale-furfh7": {
+   "reason": "v9.16.1: the whiteboard was removed from the Al-Amanah gym (Studio review).",
+   "version": "9.16.1",
+   "was": "8.6.0"
+  },
+  "text/career/gym-drills/box-out-yg3e9s": {
+   "reason": "v9.16.1: the whiteboard was removed from the Al-Amanah gym (Studio review).",
+   "version": "9.16.1",
+   "was": "8.6.0"
+  },
+  "text/career/gym-drills/fri-after-isha-q37gv9": {
+   "reason": "v9.16.1: the whiteboard was removed from the Al-Amanah gym (Studio review).",
+   "version": "9.16.1",
+   "was": "8.6.0"
+  },
+  "text/career/gym-drills/sun-1pm-optiot": {
+   "reason": "v9.16.1: the whiteboard was removed from the Al-Amanah gym (Studio review).",
+   "version": "9.16.1",
+   "was": "8.6.0"
+  },
+  "text/career/gym-drills/youth-halaqa-m2aupe": {
+   "reason": "v9.16.1: the whiteboard was removed from the Al-Amanah gym (Studio review).",
+   "version": "9.16.1",
+   "was": "8.6.0"
   },
   "text/career/gym-routines/finish-at-the-rim-then-k8o04k": {
    "reason": "9.9: layups moved to Move; help lines reworded",

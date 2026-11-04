@@ -12,7 +12,7 @@ function reactPose(p, t) {
   const k = clamp((r.until - M.time) * 4, 0, 1);               // ease out at the end
   if (r.type === 'armsUp') Object.assign(t, { ns: lerp(t.ns, 3.0, k), fs: lerp(t.fs, 2.9, k), ne: 0.2, fe: 0.25, lean: t.lean - 0.08 * k });
   else if (r.type === 'fist') { t.ns = lerp(t.ns, 2.4, k); t.ne = lerp(t.ne, 1.9, k); t.lean -= 0.04 * k; }
-  else if (r.type === 'nod') t.lean += Math.max(0, Math.sin((r.until - M.time) * 16)) * 0.14 * k;
+  // (v9.16.1: 'nod' moves the head only: p.headTilt, sim/v9161-anim.js. 'armsUp' and 'fist' are retired: no code calls them)
   else if (r.type === 'headDown') Object.assign(t, { lean: t.lean + 0.3 * k, ns: lerp(t.ns, 0.2, k), fs: lerp(t.fs, 0.15, k), ne: lerp(t.ne, 0.1, k), fe: lerp(t.fe, 0.1, k) });
   else if (r.type === 'handsHead') Object.assign(t, { ns: lerp(t.ns, 2.5, k), fs: lerp(t.fs, 2.4, k), ne: lerp(t.ne, 2.5, k), fe: lerp(t.fe, 2.5, k) });
 }

@@ -311,7 +311,7 @@ function csLookRows(key) { return CREATOR_ROWS.find(r => r.key === key); }
 function csEditRows() {
   const e = CSUI.edit; if (!e) return [];
   if (e.kind === 'team') {
-    const t = e.rec, ch = csRosterChoices(), vs = ['', ...VENUE_LIST.map(v => v.id)];
+    const t = e.rec, ch = csRosterChoices(), vs = ['', ...VENUE_LIST.filter(v => venueListed(v) || v.id === t.venue).map(v => v.id)];
     const cyc = (arr, v, d) => arr[(Math.max(0, arr.indexOf(v)) + d + arr.length) % arr.length];
     const slot = s => ({ label: 'Player ' + (s + 1), get: () => csRefName(t.roster[s]), step: d => { const keys = ch.map(csRefKey), i = keys.indexOf(csRefKey(t.roster[s])); t.roster[s] = ch[((i < 0 ? 0 : i) + d + ch.length) % ch.length]; } });
     return [

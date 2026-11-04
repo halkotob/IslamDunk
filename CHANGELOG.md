@@ -1,5 +1,57 @@
 # Changelog
 
+## 9.16.1: dribble moves, shots and taunts look like what they're called
+From the first Review Studio pass (55 animations; 12 marked Fix, 8 Delete). Each move keeps its id, cost and
+cooldown; shot odds are unchanged.
+- **Crossover:** the ball now crosses low in front of the body from one hand to the other, with the hips and shoulders
+  going with it (it was more of a side step). Going from the near hand to the far one, it goes **between the legs**
+  instead (a new animation, picked by which hand has the ball, not by chance).
+- **Behind the back:** slower (0.44 s, was 0.36). The ball wraps around the back at the hips: one hand pushes it
+  behind, the other reaches back for it.
+- **Hesitation:** a rise-up as if to shoot (knees dip, the shoulders and the guide hand come up) with the dribble
+  alive, then the burst. It never picks the ball up.
+- **Step-back:** a real step back. Plant, push off the front foot, travel back about 50 units (at least 40 even with
+  the stick held forward), land with the ball high. The lean alone is gone.
+- **Hop step** (was the drop step): gather, hop into the paint, land on both feet with the dribble picked up. It
+  stays picked up, as after a pump fake: shoot or pass.
+- **Pump fake:** after the pickup the ball stays in both hands (no more dribbling animation and bounce sound, which
+  looked like a double dribble). The rule was already right; now the animation agrees.
+- **Floater:** a one-arm teardrop with a knee drive. **Hook:** one arm over the top, the body turned sideways.
+  **Up and under:** up and pump, step through to the other side of the rim, finish there (the odds are worked out
+  from where he planted, as before). These now show for every player, not only when it's his signature shot.
+- **Windmill:** turns the other way. **"Too small" taunt:** one hand, held lower. **Nod:** only the head moves, and
+  "YES, YES" shows over him.
+- **Retired (the reviewer's Delete), with old saves still loading:**
+  - Dribble Classic: Stride is now the dribble for everyone (Standing stays). A saved Classic loads as Stride, and
+    the Dribble setting is gone.
+  - Tomahawk Classic, Smooth and Power: Float (already the default) is the only one. Saved ones load as Float; the
+    setting is gone and the Dunk lab stays on Float.
+  - Taunts Sujood of thanks and Brush it off: no longer unlocked or offered. A saved one, or one sent by an older
+    host online, plays as Point to the sky. The other taunts keep their places in the list (online sends a taunt by
+    its place).
+  - Reactions Arms up and Fist pump: no longer played anywhere (clutch buckets, contact, big dunks, scoring runs,
+    blocks). The CLUTCH! callout stays.
+  - Community Center Gym: out of every venue menu and random pick, and career away games that drew it are in a
+    masjid gym (the same draws, so the rest of a schedule is unchanged). Its id still loads and draws for old saves.
+    The custom-team court build "Community gym" is a separate option and was left as it is.
+- **Masjid Al-Amanah Gym:** the whiteboard (flyers and a drawn play) is gone from the back wall, in matches and in
+  the career gym.
+- **Not removed:** the four career world scenes the review marked Delete (Home, The street, Masjid Al-Amanah front,
+  Corner Market). What uses each and what would break is in `docs/review/world-scenes-usage.md`.
+- **CPU sharpshooters take the good open look** (finishing the 9.16.0 brief: "a sharpshooter with an open look
+  behind the arc takes it before a dribble move"). 9.16.0 only stopped the dribble move; now, from Medium up, a good
+  open look also replaces a drive. On Very easy and Easy it doesn't (there it cost 0.06-0.09 points a possession, as
+  the CPU misses more), so the lower settings stay as they were. Late in a close game the late-game play decides, so a
+  CPU team with the lead still runs the clock.
+- Tests: `v99` measures open vs guarded layups over 200 tries (was 40: after the Stride default the seeded 40 came out
+  0.85 / 0.85 by chance; 200 give 0.91 / 0.70); `tomahawk` still checks the Classic dunk frame by frame against the
+  8.6.4 recording, but not the pose a second after landing (it caught the retired arms-up celebration).
+  `cpu-variety` counts shot contests per 100 shots a player defended (was a game: sharpshooters now take more open
+  shots, so their defenders got more chances); `v86`'s self alley-oop gets up to three tries (a CPU dunk misses about
+  1 in 10 on Medium, the same on 9.16.0).
+- `node tools/anim-clips.mjs <dir> [ids]` records Studio animations as GIFs at 667x300. New tests: `anim-moves`
+  (the pose measurements) and `anim-retired` (saves, taunts, venues, no Arms up / Fist pump calls, zero page errors
+  in a CPU match in every mode). The Studio lists the retired animations as removed, and adds Between the legs.
 ## 9.16.0: every CPU player dribbles and dunks like his ratings say
 No change to what the CPU makes, the difficulty settings, the shot clock, the controls or the animations.
 - **Ball handling now differs by player.** Each CPU player has a handle, worked out from his Speed and Passing plus a

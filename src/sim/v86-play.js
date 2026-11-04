@@ -341,7 +341,7 @@ function doTaunt(p, id) {
     const r = _os.apply(this, arguments);
     if (!sh || !sh.shooter || M.mini || M.attract || M.practice) return r;
     const p = sh.shooter, clutch = typeof clutchTime === 'function' && clutchTime() && !M.kotc;
-    if (clutch) { react(p, 'armsUp', 1.4); if (p.mate) react(p.mate, 'fist', 1.2); FX.callout('CLUTCH!', '#ffd76a', p.def.name.toUpperCase(), true); }
+    if (clutch) FX.callout('CLUTCH!', '#ffd76a', p.def.name.toUpperCase(), true);   // (v9.16.1: no arms-up / fist-pump reaction)
     if ((sh.dunk && (sh.big || M.lastPoster && M.lastPoster.p === p && M.time - M.lastPoster.t < 1)) || clutch || (sh.green && sh.pts === 3)) tauntOpen(p, 'score');
     return r;
   };

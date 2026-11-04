@@ -16,7 +16,7 @@ function scenarioOf(day) {
   const poss = diff >= 1 ? 1 : (R() < 0.75 ? 0 : 1), base = 38 + Math.floor(R() * 18);
   const twists = SCEN_TWISTS.filter(t => (t.poss == null || t.poss === poss) && !(t.id === 'by3' && diff < -3));
   const twist = pk(twists), slot = Math.floor(R() * 2);
-  const venues = VENUE_LIST.filter(v => !venueLocked(v)), vb = pk(venues);
+  const venues = VENUE_LIST.filter(v => venueListed(v) && !venueLocked(v)), vb = pk(venues);
   const title = diff < 0 ? 'Down ' + -diff + ', ' + time + ' seconds left' : diff === 0 ? 'Tied, ' + time + ' seconds left' : 'Up ' + diff + ', ' + time + ' seconds left';
   return { day, a, b, time, diff, poss, us: base + diff, them: base, twist, slot, vid: vb.id, title, L: pk([1.0, 1.2, 1.35, 1.5]) };
 }

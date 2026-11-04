@@ -67,7 +67,7 @@ STUDIO_TESTS['studio-anim'] = async ({ browser }) => {
       out.states[a.id] = [...seen].join(',');
     }
     const at = (id, o, f) => { rs.animStart(id, o); let x; for (let i = 0; i < f; i++) x = rs.animStep(); return x; };
-    const j1 = JSON.stringify(at('dunk/tomahawk-classic', {}, 40).joints), j2 = JSON.stringify(at('dunk/tomahawk-classic', {}, 40).joints);
+    const j1 = JSON.stringify(at('dunk/tomahawk-float', {}, 40).joints), j2 = JSON.stringify(at('dunk/tomahawk-float', {}, 40).joints);
     out.deterministic = j1 === j2;
     out.flipFace = at('run/default', { flip: true }, 20).face; out.face = at('run/default', {}, 20).face;
     out.who = at('dunk/twohand', { who: 'cast/saleem' }, 30).state;
@@ -80,7 +80,8 @@ STUDIO_TESTS['studio-anim'] = async ({ browser }) => {
   });
   const gameErr = await p.evaluate(() => window.__studio.gameErrors());
   await st.close();
-  const ok = r.n >= 50 && !r.bad.length && r.deterministic && r.face !== r.flipFace && r.who === 'dunk' && r.drawn > 2000 && r.sounds >= 15 && !r.soundErr.length && !st.errors.length && !gameErr.length;
+  const ok = r.n >= 45 &&   // (v9.16.1: 8 retired, 1 added)
+    !r.bad.length && r.deterministic && r.face !== r.flipFace && r.who === 'dunk' && r.drawn > 2000 && r.sounds >= 15 && !r.soundErr.length && !st.errors.length && !gameErr.length;
   return { ok, detail: [`${r.sounds} sounds play without errors; ${r.n} animations; deterministic ${r.deterministic}; faces ${r.face} / flipped ${r.flipFace}; Sh. Saleem dunk ${r.who}; ${r.drawn} px drawn`, ...r.bad, ...r.soundErr, ...st.errors, ...gameErr] };
 };
 

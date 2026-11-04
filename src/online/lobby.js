@@ -37,7 +37,7 @@ const Lobby = {
       if (g === 'one') R.push({ label: 'Your player', get: () => teamAt(o.a).players[o.ctrl | 0].name, step: () => { o.ctrl ^= 1; } });
       team('b', g === 'co' ? 'Opponent' : 'Friend’s masjid');
       if (g === 'one') R.push({ label: 'Friend’s player', get: () => teamAt(o.b).players[o.ctrlB | 0].name, step: () => { o.ctrlB ^= 1; } });
-      const vs = ['random', ...VENUE_LIST.filter(v => !venueLocked(v)).map(v => v.id)];
+      const vs = ['random', ...VENUE_LIST.filter(v => venueListed(v) && !venueLocked(v)).map(v => v.id)];
       R.push({ label: 'Venue', get: () => o.venue === 'random' ? 'Random' : (VENUE_LIST.find(v => v.id === o.venue) || {}).name || 'Random', step: d => { o.venue = cyc(vs, vs.includes(o.venue) ? o.venue : 'random', d); } });
       R.push({ label: g === 'one' ? 'Difficulty (timing)' : 'CPU difficulty', get: () => diffName(o.diff), step: d => { o.diff = cyc(DIFF_ORDER, o.diff, d); } });
       R.push({ label: 'Format', get: () => FORMAT_TXT[o.format], step: d => { o.format = cyc(FORMATS, o.format, d); } });
@@ -56,7 +56,7 @@ const Lobby = {
   restore() { if (this.saved) { Object.assign(SETTINGS, JSON.parse(this.saved)); this.saved = null; } },
   venue() {
     const o = this.opts(); let base = VENUE_LIST.find(v => v.id === o.venue);
-    if (!base || venueLocked(base)) { const ok = VENUE_LIST.filter(v => !venueLocked(v)); base = ok[rint(ok.length)]; }
+    if (!base || venueLocked(base) || !venueListed(base)) { const ok = VENUE_LIST.filter(v => venueListed(v) && !venueLocked(v)); base = ok[rint(ok.length)]; }
     return base.kind === 'classic' ? null : makeVenue(base, { backdrop: base.backdrop });
   },
   // ---- host

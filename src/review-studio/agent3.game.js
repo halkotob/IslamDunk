@@ -13,7 +13,6 @@
     ['gymS-22', 'Small masjid room, Quick Play (22)', () => [makeVenue(V('gymS'))]],
     ['gymM-25', 'Masjid gym, away early career (25)', () => [makeVenue(V('gymM'), { crowd: 25, level: 0.32 })]],
     ['gymM-80', 'Masjid gym, Quick Play (80)', () => [makeVenue(V('gymM'))]],
-    ['gymL-140', 'Community center gym (140)', () => [makeVenue(V('gymL'))]],
     ['outdoor-24', 'Outdoor court (24)', () => [makeVenue(V('out_' + BACKDROPS[0]), { crowd: 24, time: 'afternoon' })]],
     ['classic', 'Masjid League Arena (Quick Play default)', () => [null]],
     ['regional-early', 'Regional arena, career stage 1 (crowd 150)', () => [makeVenue(V('arena_regional'), { crowd: 150, fill: 0.25 })]],

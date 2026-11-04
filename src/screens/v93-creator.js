@@ -42,7 +42,7 @@ function ctVenue(T, hostSide) {
   csEditRows = function () {
     const R = _er.apply(this, arguments), e = CSUI.edit;
     if (!e || e.kind !== 'team') return R;
-    const t = e.rec, vs = ['', 'own', ...VENUE_LIST.map(v => v.id)], cyc = (arr, v, d) => arr[(Math.max(0, arr.indexOf(v)) + d + arr.length) % arr.length];
+    const t = e.rec, vs = ['', 'own', ...VENUE_LIST.filter(v => venueListed(v) || v.id === t.venue).map(v => v.id)], cyc = (arr, v, d) => arr[(Math.max(0, arr.indexOf(v)) + d + arr.length) % arr.length];
     const hi = R.findIndex(r => r.label === 'Home court');
     if (hi < 0) return R;
     R[hi] = { label: 'Home court', get: () => t.venue === 'own' ? 'Your own court' : t.venue ? (VENUE_LIST.find(v => v.id === t.venue) || {}).name || 'None' : 'None',
@@ -166,7 +166,7 @@ function ctThumb(T) {
     const R = _rows.apply(this, arguments), o = this.o, i = R.findIndex(r => r.label === 'Venue');
     if (i < 0 || !o) return R;
     const own = [['own:a', teamAt(o.a)], ['own:b', teamAt(o.b)]].filter(([, T]) => T && T.court);
-    const vs = ['random', ...own.map(x => x[0]), ...VENUE_LIST.filter(v => !venueLocked(v)).map(v => v.id)];
+    const vs = ['random', ...own.map(x => x[0]), ...VENUE_LIST.filter(v => venueListed(v) && !venueLocked(v)).map(v => v.id)];
     const name = id => { const x = own.find(q => q[0] === id); return x ? x[1].name + ' (own court)' : /^own:/.test(id) ? 'Home court' : id === 'random' ? 'Random' : (VENUE_LIST.find(v => v.id === id) || {}).name || 'Random'; };
     R[i] = { label: 'Venue', get: () => name(o.venue), step: d => { o.venue = vs[(Math.max(0, vs.indexOf(o.venue)) + d + vs.length) % vs.length]; } };
     return R;
