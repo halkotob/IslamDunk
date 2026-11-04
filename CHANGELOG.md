@@ -1,5 +1,16 @@
 # Changelog
 
+## 9.16.2: the step-back faces the basket
+Play-test: "I can't step back facing the basket". Holding the stick back turned the player around (he faces the way
+he moves), so the step-back went away from the hoop with his back to it.
+- **He faces the basket the whole step-back, and for half a second after**, so the shot that follows goes up facing
+  it. The same for the CPU's step-back.
+- **Back-left and back-right step back diagonally**: the stick's sideways part takes him about 35% of the travel to
+  that side (measured: 71 back and 35 sideways; straight back stays straight).
+- **The stick held back-diagonal is a step-back, not a behind-the-back**: step-back below -0.6 (it was -0.75),
+  behind-the-back from -0.6 to -0.2.
+- `anim-moves` checks it: facing the basket on every frame of the move (44 of 44; 0 of 44 on 9.16.1), the diagonal,
+  the CPU, and the new trigger range.
 ## 9.16.1: dribble moves, shots and taunts look like what they're called
 From the first Review Studio pass (55 animations; 12 marked Fix, 8 Delete). Each move keeps its id, cost and
 cooldown; shot odds are unchanged.

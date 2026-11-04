@@ -26,6 +26,7 @@ const smooth01 = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
     if (kind === 'cross') { mv.style = p.move && p.move.from === 'n' ? 'legs' : 'cross'; if (p.move) p.move.style = mv.style; }
     if (kind === 'btb' && p.move) p.move.dur = 0.4;
     mv.x0 = p.x; mv.z0 = p.z;
+    if (kind === 'stepback') { mv.diag = p._stepDiag || 0; p._stepDiag = 0; }   // (v9.16.2: back-left / back-right from the stick)
     return ok;
   };
   // ---- the step-back and the hop step travel on their own curve (the stick doesn't add to it)
@@ -38,7 +39,9 @@ const smooth01 = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
     p.vx = 0; p.vz = 0;
     if (mv.kind === 'stepback') {                          // plant (0-0.25), push off (0.25-0.8), land (0.8-1)
       const d = (smooth01((u - 0.25) / 0.55) - smooth01((u0 - 0.25) / 0.55)) * ANIM916.stepBack * mv.k;
-      p.x -= H.fx * d; p.z = clamp(p.z - H.fz * d, 8, COURT.D - 8);
+      const lat = d * 0.35 * (mv.diag || 0);            // (v9.16.2: a diagonal step-back goes sideways too, about 35% of the travel)
+      p.x += -H.fx * d + H.px * lat; p.z = clamp(p.z - H.fz * d + H.pz * lat, 8, COURT.D - 8);
+      p.face = sgn(H.h.x - p.x) || p.face;               // (v9.16.2: facing the basket the whole way: the stick held back doesn't turn him)
     } else {                                               // gather (0-0.2), the hop (0.2-0.75), land on both feet
       const s1 = smooth01((u - 0.2) / 0.55), s0 = smooth01((u0 - 0.2) / 0.55), d = (s1 - s0) * ANIM916.hopFwd, lat = (s1 - s0) * 14 * mv.side;
       p.x += H.fx * d + H.px * lat; p.z = clamp(p.z + H.fz * d + H.pz * lat, 8, COURT.D - 8);
@@ -70,6 +73,26 @@ const smooth01 = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
       const L = Math.hypot(U.ex - U.x, U.ez - U.z), k = L > 60 ? 60 / L : 1;
       p.x = U.x + (U.ex - U.x) * k * s; p.z = U.z + (U.ez - U.z) * k * s; p.vx = p.vz = 0;
     } else if (p.uu && (p.state !== 'shoot' || ball.owner !== p)) p.uu = null;
+    return r;
+  };
+}
+// ---- v9.16.2 (play-test: "I can't step back facing the basket"): the stick held back (a < -0.6) is a step-back, not a
+// behind-the-back (now -0.6 to -0.2); with a clear sideways part it steps back diagonally. He faces the basket through
+// the move and for half a second after, so the shot that follows goes up facing it too.
+{
+  const _cm = classifyMove;
+  classifyMove = function (p, mx, mz) {
+    const m = _cm.apply(this, arguments), L = Math.hypot(mx, mz);
+    if (L < 0.3 || p.postUp) return m;
+    const H = hoopDir(p), ux = mx / L, uz = mz / L, a = ux * H.fx + uz * H.fz, lat = ux * H.px + uz * H.pz;
+    if (a < -0.6) { p._stepDiag = a < -0.45 && Math.abs(lat) > 0.35 ? sgn(lat) : 0; return { kind: 'stepback', side: sgn(lat) || 1 }; }
+    return m;
+  };
+  const _up = updatePlayer;
+  updatePlayer = function (p, dt) {
+    const r = _up.apply(this, arguments);
+    if (ball.owner === p && (p.state === 'free' || p.state === 'windup' || p.state === 'fake') && ((p.mv && p.mv.kind === 'stepback') || (p.stepT != null && M.time - p.stepT < 0.5)))
+      p.face = sgn(attackHoop(p.team).x - p.x) || p.face;
     return r;
   };
 }

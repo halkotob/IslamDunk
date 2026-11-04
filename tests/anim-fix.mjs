@@ -3,6 +3,8 @@
 //                  from the near hand it goes between the legs; the behind-the-back lasts at least 0.40 s and both hands
 //                  reach the ball; the hesitation never leaves 'free' and keeps the dribble; the step-back travels back at
 //                  least 40 units (the stick pushing forward); the hop step lands on both feet and picks up the dribble;
+//                  v9.16.2: a step-back faces the basket every frame (stick held back, back-diagonal, CPU) and for the
+//                  shot after; a back-diagonal stick steps back and sideways; a < -0.6 is a step-back, -0.6..-0.2 a btb;
 //                  the windmill turns the other way (shoulder angle falls, not rises); the nod moves only the head;
 //                  after a pump fake the ball stays in both hands (no dribble frame) and the pick-up holds
 //   anim-retired   saved dribble Classic and tomahawk Classic / Smooth / Power load as Stride / Float, and their settings
@@ -53,6 +55,26 @@ export function animFixTests({ newContext, open }) {
       // step-back: net travel back, the stick pushing toward the hoop
       { const { me, h } = setup(520, 0.6); const x0 = me.x, z0 = me.z; startDribbleMove(me, 'stepback', 1); let n = 0; run(me, 40, () => { n++; if (!me.mv) return false; });
         out.stepBack = Math.round(((me.x - x0) * (h.dir) + 0 * (me.z - z0))); out.stepFrames = n; }
+      // v9.16.2: facing the basket through a step-back, with the stick held back (as a player would) and from the CPU;
+      // a back-diagonal stick steps back and sideways; the trigger: -0.65 is now a step-back, -0.4 still a behind-the-back
+      const faceRun = stick => {                         // a player's step-back: the stick decides it and is held through it
+        const { me, h } = setup(520, 0); const H = hoopDir(me), x0 = me.x, z0 = me.z;
+        M.cmdHook = q => { zeroCmd(q.cmd); if (q === me) { q.cmd.mx = stick[0]; q.cmd.mz = stick[1]; } return true; };
+        const m = classifyMove(me, stick[0], stick[1]); startDribbleMove(me, m.kind, m.side);
+        let off = 0, frames = 0, end = null;
+        run(me, 60, () => { if (me.mv || (me.stepT != null && M.time - me.stepT < 0.45)) { frames++; if (me.face !== sgn(h.x - me.x)) off++; } if (!me.mv && !end) end = { x: me.x, z: me.z }; });
+        const E = end || me;                              // (distances at the end of the move, not the walk after it)
+        return { kind: m.kind, off, frames, back: Math.round(-((E.x - x0) * H.fx + (E.z - z0) * H.fz)), side: Math.round(Math.abs((E.x - x0) * H.px + (E.z - z0) * H.pz)) };
+      };
+      { const { me } = setup(520, 0); const H = hoopDir(me);
+        const dir = (a, l) => [H.fx * a + H.px * l, H.fz * a + H.pz * l];
+        out.trigger = { back: classifyMove(me, ...dir(-1, 0)).kind, a065: classifyMove(me, ...dir(-0.65, Math.sqrt(1 - 0.4225))).kind, a04: classifyMove(me, ...dir(-0.4, Math.sqrt(1 - 0.16))).kind };
+        out.faceBack = faceRun(dir(-1, 0), false); out.faceDiag = faceRun(dir(-0.707, 0.707), false); }
+      { const { me } = setup(520, 0);                    // the CPU's step-back: its own brain runs (no command hook)
+        place(me.opps[0], me.x - attackHoop(me.team).dir * 40, me.z); me.opps[0].state = 'free';
+        M.cmdHook = null; const started = startDribbleMove(me, 'stepback', 1); let off = 0, frames = 0;
+        run(me, 40, () => { if (me.mv) { frames++; if (me.face !== sgn(attackHoop(me.team).x - me.x)) off++; } });
+        out.faceCpu = { started, off, frames }; }
       // hop step: lands on both feet, picks up the dribble, keeps the ball in the hands after
       { const { me } = setup(240, 0); startDribbleMove(me, 'drop', 1); let land = null;
         run(me, 40, () => { if (me.mv) land = { nh: me.j.nh.a, fh: me.j.fh.a, nk: me.j.nk.a, fk: me.j.fk.a }; else return false; });
@@ -80,6 +102,10 @@ export function animFixTests({ newContext, open }) {
     push(r.btbDur >= 0.4 && r.btb.fromHand < 12 && r.btb.toHand < 12, `behind the back: ${r.btbDur} s; closest hand to ball: first hand ${r.btb.fromHand}, second ${r.btb.toHand}`);
     push(r.hesi.states === 'free' && r.hesi.ballBounced, `hesitation: states ${r.hesi.states}; the dribble keeps bouncing ${r.hesi.ballBounced}`);
     push(r.stepBack >= 40, `step-back: ${r.stepBack} units back from the hoop (stick pushing forward), in ${r.stepFrames} frames`);
+    push(r.trigger.back === 'stepback' && r.trigger.a065 === 'stepback' && r.trigger.a04 === 'btb', `stick straight back: ${r.trigger.back}; back-diagonal (a -0.65): ${r.trigger.a065}; a -0.4: ${r.trigger.a04}`);
+    push(r.faceBack.frames > 10 && r.faceBack.off === 0, `step-back with the stick held back: faces the basket ${r.faceBack.frames - r.faceBack.off} of ${r.faceBack.frames} frames (the move and 0.45 s after); ${r.faceBack.back} back`);
+    push(r.faceDiag.off === 0 && r.faceDiag.back >= 30 && r.faceDiag.side >= 12 && r.faceBack.side < r.faceDiag.side / 2, `back-diagonal step-back: ${r.faceDiag.back} back and ${r.faceDiag.side} sideways (straight back: ${r.faceBack.side} sideways), facing the basket every frame (${r.faceDiag.off} off)`);
+    push(r.faceCpu.started && r.faceCpu.frames > 10 && r.faceCpu.off === 0, `the CPU's step-back faces the basket every frame (${r.faceCpu.off} off of ${r.faceCpu.frames})`);
     push(r.hop.hips < 0.15 && r.hop.knees < 0.15 && r.hop.picked && r.hop.held && r.hop.label === 'HOP STEP', `hop step: landing hips ${r.hop.hips} / knees ${r.hop.knees} apart; dribble picked up ${r.hop.picked}; ball held after ${r.hop.held}`);
     push(r.fake.picked && r.fake.maxOff < 10 && r.fake.lowest > 40 && r.fake.bounces === 0, `pump fake: picked up ${r.fake.picked}; ball at most ${r.fake.maxOff} from his hands, never lower than ${r.fake.lowest}; ${r.fake.bounces} dribble sounds`);
     push(r.windmill.n > 10 && r.windmill.last < r.windmill.first - 2, `windmill: shoulder ${r.windmill.first} -> ${r.windmill.last} through the throw (turns backward)`);
