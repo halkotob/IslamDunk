@@ -124,6 +124,7 @@
     "online/rollback.js",
     "online/rollback-net.js",
     "online/rollback-sync.js",
+    "screens/design-pass.js",
     "boot.js"
   ]
 }

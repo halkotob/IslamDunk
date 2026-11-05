@@ -26,17 +26,17 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | S3 | Only the game can get relay (TURN) credentials; usage alert | security | 3 | 4 | 2 | **28** | open |
 | Q3 | A folder of old saves that every release must load | testing | 3 | 4 | 2 | **28** | open |
 | B4 | Rollback: "1 on 1 (no CPU)" is played 2 on 2 with CPU teammates | code review | 4 | 3 | 2 | **28** | open |
-| VD1 | The logo's dunker pose reads close to a famous sportswear silhouette: check it before store submissions | visual design | 3 | 4 | 2 | **28** | open |
+| VD1 | The logo's dunker pose reads close to a famous sportswear silhouette: check it before store submissions | visual design | 3 | 4 | 2 | **28** | decided: pose stays (docs/adr/0001) |
 | Q7 | A daily live check of the relay Worker | testing | 2 | 3 | 1 | **25** | open |
 | B7 | Rollback: a tap can be lost when the input delay shrinks | code review | 3 | 2 | 1 | **25** | open |
 | B11 | A steal pressed during the steal cooldown is dropped (the buffer never fires) | code review | 3 | 2 | 1 | **25** | open |
 | B15 | Sprint timestamps carry over between matches: one tap can start a sprint at tip-off | code review | 3 | 2 | 1 | **25** | open |
 | U1 | Players see developer words: "Firebase config", "Diagnostic: exception", "the free server" | UX copy | 3 | 2 | 1 | **25** | open |
 | U5 | The unlock message lingers across screens and covers menu rows; clearer wording | UX copy | 3 | 2 | 1 | **25** | open |
-| D3 | The Dunk lab bar stayed on screen in the next match (check leaving it without Quit) | design | 3 | 2 | 1 | **25** | open, to confirm |
+| D3 | The Dunk lab bar stayed on screen in the next match (check leaving it without Quit) | design | 3 | 2 | 1 | **25** | done in 9.16.4 |
 | W1 | Link previews: description, Open Graph image and title for WhatsApp, iMessage and social | SEO and sharing | 4 | 1 | 1 | **25** | open |
 | W2 | The Pages site publishes the whole repo (docs, this list, tests); exclude them | SEO and sharing | 2 | 3 | 1 | **25** | open |
-| CD8 | Respectful depiction check with someone from the community: imama, kufi, beards, the sheikh and mufti titles | character design | 2 | 3 | 1 | **25** | open |
+| CD8 | Respectful depiction check with someone from the community: imama, kufi, beards, the sheikh and mufti titles | character design | 2 | 3 | 1 | **25** | decided: reviewed by the owners (docs/adr/0002) |
 | GT2 | "Why I missed" is off by default: show it during a new player's first games | game design | 3 | 2 | 1 | **25** | open |
 | P5 | Adaptive resolution ignores menus and the title, where a full match plays behind: let it count there too | performance | 3 | 2 | 1 | **25** | open |
 | ST5 | Steam needs unpacked app folders per OS (Windows, macOS, Linux for Steam Deck), not the NSIS/DMG/AppImage installers built today | Steam | 3 | 2 | 1 | **25** | open |
@@ -61,7 +61,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | B12 | Online Barakah Run duos: the host can tap the guest's power-up card | code review | 2 | 2 | 1 | **20** | open |
 | B17 | The CPU difficulty formula is copied in 3 places (match, pre-game label, league sims) | code review | 2 | 2 | 1 | **20** | open |
 | B19 | Player portraits: a cache that never shrinks and a JSON copy every frame | code review | 2 | 2 | 1 | **20** | open |
-| D2 | The in-match Defend and Steal buttons are faint on the court | design | 3 | 2 | 2 | **20** | open |
+| D2 | The in-match Defend and Steal buttons are faint on the court | design | 3 | 2 | 2 | **20** | done in 9.16.4 |
 | W3 | Search engines see only a canvas: a text description, a better title, game structured data | SEO and sharing | 3 | 1 | 1 | **20** | open |
 | G2 | Google Play: wrap the PWA (TWA) and start the 12-tester, 14-day closed test now | launch | 4 | 1 | 2 | **20** | open (needs W4) |
 | G4 | One-tap invite after a match: the highlight plus a "play me online" link with the code | launch | 4 | 1 | 2 | **20** | open |
@@ -99,7 +99,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | B18 | Dead code that looks live: v6 `preStep`, the old `drawHowTo`, the first `checkBlockJump` | code review | 2 | 1 | 1 | **15** | open |
 | U3 | "Options" on the title screen opens a screen called "Settings" | UX copy | 2 | 1 | 1 | **15** | open |
 | U4 | Unexplained short forms: BP, HB, Nat., "No upload"; the Arabic-only مصلى label | UX copy | 2 | 1 | 1 | **15** | open |
-| D1 | Final screen: the court banner text shows through behind "Final 21 – 18" | design | 2 | 1 | 1 | **15** | open |
+| D1 | Final screen: the court banner text shows through behind "Final 21 – 18" | design | 2 | 1 | 1 | **15** | done in 9.16.4 |
 | D4 | Settings: the Back row is cut off at the bottom of the panel on phones | design | 2 | 1 | 1 | **15** | open |
 | W4 | Load once, play offline: a service worker for the 2 MB page (670 KB compressed) | SEO and sharing | 3 | 2 | 3 | **15** | open |
 | P2 | Ship a minified script (196 KB smaller before compression, faster start), keep the readable copy | performance | 2 | 1 | 1 | **15** | open |
