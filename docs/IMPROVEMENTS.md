@@ -67,6 +67,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | CD3 | Teammates in the same kit look alike at play size: add one large personal mark (headband, sleeve, long shorts, knee pad) | character design | 3 | 2 | 2 | **20** | open |
 | VD2 | Vertical (9:16) highlight videos for TikTok, Reels and Shorts (today 1280×720 only) | visual design | 4 | 1 | 2 | **20** | open |
 | UX1 | Screens without arrow-key menus need the gamepad's View button to pick a target: show that hint, or give them focus order | UI | 3 | 2 | 2 | **20** | open |
+| PH1 | A stress test that fires the ball at the rim and glass at top speed and checks it never passes through | physics | 2 | 2 | 1 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
@@ -122,6 +123,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | X7 | Put the game canvas in a `<main>` landmark (axe: region) | accessibility | 1 | 1 | 1 | **10** | open |
 | ST2 | Steamworks in the desktop app: achievements, cloud saves, invite a Steam friend, Valve's free relay | Steam | 4 | 1 | 4 | **10** | open |
 | UI2 | Translations: Arabic (right to left), Urdu, Malay and Indonesian, Turkish, French; first move text into one table | UI | 4 | 1 | 4 | **10** | open |
+| PH2 | Restarts and inbounds that move players blend across one frame: refresh the interpolation after a move | physics | 1 | 1 | 1 | **10** | open |
 | B9 | Rollback: halftime is skipped (a known gap; the saved screen is never used) | code review | 2 | 1 | 3 | **9** | open |
 | D5 | The career hub is dense (5 zones); consider a calmer layout | design | 2 | 1 | 3 | **9** | open |
 | CD2 | A signature for each main character: a celebration, posture or accessory | character design | 2 | 1 | 3 | **9** | open |
@@ -648,6 +650,25 @@ animation are buffered for 0.18 s; prompts switch between keyboard, gamepad and 
   (`src/screens/v6-ui.js:102`).
 - Shot release is a hold-and-release timing skill by design; the Automatic release option is the accessible
   alternative (offline only, GD1).
+
+### Physics tuning skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/physics-tuning` and `references/timestep-and-ccd.md` against `src/screens/flow.js` (`sim`,
+`snapPrev`) and `src/sim/hoops-ball.js` (`updateBall`, `collideHoop`, `checkScore`).
+
+Already matches the skill's stability checklist: a fixed 60 Hz step (`STEP`) through an accumulator; at most 5
+steps a frame and the accumulator dropped after that, with frame time capped at 50 ms (no spiral after a hitch);
+all movement and collisions in the step; the drawing interpolates between the last two steps (`Game.alpha`,
+`snapPrev`); the ball keeps its previous position, so scoring is a crossing test (`ball.py >= ry && ball.y < ry`)
+that can't be skipped; floor and wall contacts clamp position and reflect velocity with damping; the net cloth uses
+2 substeps with 7 constraint passes.
+
+- **Tunnelling margins:** the rim contact tube is about 19 units across (`BALL_R` 8 + 1.3 each side of the rim
+  line) and the backboard catch zone 20 units deep, so the ball would need more than ~1,100 units a second to skip
+  through in one step; shots and passes stay below that, but nothing checks it (PH1).
+- **PH2:** `snapPrev()` runs before each step, so a player placed somewhere new during a step (inbounds, a restart)
+  is drawn partway between old and new spots for one frame; call it again right after such a move.
+- Slow motion and hit-stop change the simulation clock (`FX.scale`, `FX.stopF` in `sim()`); see A2 and GF1.
 
 ### Architecture (review of 5 Nov 2026)
 
