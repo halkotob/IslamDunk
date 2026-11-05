@@ -11,6 +11,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | B2 | Rollback: each phone uses its own owner's taunt for both players (desync) | code review | 4 | 4 | 1 | **40** | open, confirmed |
 | T1 | Run the tests automatically on every push to `main` | tech debt | 4 | 5 | 2 | **36** | open |
 | S2 | Firebase limits and abuse: 100 players at once on the free plan; no App Check | security | 5 | 4 | 2 | **36** | open |
+| G5 | Before any ads: block gambling, alcohol and dating ad categories | launch | 3 | 4 | 1 | **35** | before ads |
 | Q2 | Run the phone and online tests in WebKit (Safari's engine) too | testing | 4 | 4 | 2 | **32** | open |
 | B3 | Rollback: a dropped direct link is never retried during the match | code review | 4 | 4 | 2 | **32** | open |
 | S1 | Cap the rollback input runs (a modified game can freeze the other player) | security | 3 | 3 | 1 | **30** | open |
@@ -31,9 +32,11 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | T4 | One settings module that owns every saved setting | tech debt | 3 | 3 | 2 | **24** | open |
 | B5 | Rollback: the host has no "End game: back to lobby" and no "friend dropped" notice | code review | 3 | 3 | 2 | **24** | open |
 | B6 | Rollback: the starting state uses the browser's own maths (Safari vs Chrome can differ at frame 0) | code review | 3 | 3 | 2 | **24** | open |
+| G1 | Privacy-friendly analytics: players returning next day and week, online matches started and finished | launch | 4 | 2 | 2 | **24** | open |
 | A4 | Give the renderer its own view state | architecture | 3 | 4 | 3 | **21** | open |
 | Q8 | Fast match tests in Node, without a browser (after A1) | testing | 4 | 3 | 3 | **21** | open (after A1) |
 | X1 | Bigger tap targets in menus on phones (rows are about 23 px tall; 44 recommended) | accessibility | 4 | 3 | 3 | **21** | open |
+| P1 | Lighten the title screen on slow phones (12.6 s until usable, frames ~150 ms in Lighthouse's phone test) | performance | 4 | 3 | 3 | **21** | open |
 | T6 | Align the Playwright version with the test browsers | tech debt | 2 | 2 | 1 | **20** | open |
 | T8 | A short architecture overview, glossary and decision records | tech debt | 2 | 2 | 1 | **20** | open |
 | S5 | Drop malformed online messages instead of crashing the frame | security | 2 | 3 | 2 | **20** | open |
@@ -47,6 +50,8 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | B19 | Player portraits: a cache that never shrinks and a JSON copy every frame | code review | 2 | 2 | 1 | **20** | open |
 | D2 | The in-match Defend and Steal buttons are faint on the court | design | 3 | 2 | 2 | **20** | open |
 | W3 | Search engines see only a canvas: a text description, a better title, game structured data | SEO and sharing | 3 | 1 | 1 | **20** | open |
+| G2 | Google Play: wrap the PWA (TWA) and start the 12-tester, 14-day closed test now | launch | 4 | 1 | 2 | **20** | open (needs W4) |
+| G4 | One-tap invite after a match: the highlight plus a "play me online" link with the code | launch | 4 | 1 | 2 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
@@ -54,6 +59,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | A3 | One state codec for snapshots, rollback saves and checksums | architecture | 4 | 4 | 4 | **16** | open (after A1, A4) |
 | S4 | Longer join codes, the guest's name in the lobby, a way to remove a guest | security | 2 | 2 | 2 | **16** | open |
 | U2 | One way back per screen, and one name for leaving (Back, Cancel, Leave, Quit, EXIT) | UX copy | 3 | 1 | 2 | **16** | open |
+| G3 | Submit to CrazyGames (non-exclusive) and the YouTube Playables interest form | launch | 3 | 1 | 2 | **16** | open |
 | A6 | A screen registry instead of reassigning `render` / `gameUpdate` | architecture | 3 | 2 | 3 | **15** | open |
 | B13 | After a duo Barakah Run the end screen shows the solo best | code review | 2 | 1 | 1 | **15** | open |
 | B14 | A pop label can replace the foul callout's subtitle ("ON AHMED • 2 SHOTS") | code review | 2 | 1 | 1 | **15** | open |
@@ -64,11 +70,17 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | D1 | Final screen: the court banner text shows through behind "Final 21 – 18" | design | 2 | 1 | 1 | **15** | open |
 | D4 | Settings: the Back row is cut off at the bottom of the panel on phones | design | 2 | 1 | 1 | **15** | open |
 | W4 | Load once, play offline: a service worker for the 2 MB page (670 KB compressed) | SEO and sharing | 3 | 2 | 3 | **15** | open |
+| P2 | Ship a minified script (196 KB smaller before compression, faster start), keep the readable copy | performance | 2 | 1 | 1 | **15** | open |
+| P3 | Split the 669 ms startup task: set up career, world and studio code when first opened | performance | 3 | 2 | 3 | **15** | open |
+| P4 | The canvas jumps after load on computers (layout shift 0.31); size it before the first paint | performance | 2 | 1 | 1 | **15** | open |
+| X6 | Pinch zoom is off (axe: critical); keep it off for play, and make X2 the answer | accessibility | 2 | 1 | 1 | **15** | open |
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
 | W5 | robots.txt, a sitemap, and a short own domain for sharing | SEO and sharing | 2 | 1 | 2 | **12** | open |
+| G6 | A seasonal calendar for posts and updates: Ramadan, Eid, Jumu'ah challenges | launch | 3 | 1 | 3 | **12** | open |
 | B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |
 | U6 | Consistent apostrophes and online terms (game, lobby, code) | UX copy | 1 | 1 | 1 | **10** | open |
 | U7 | The lobby says "Waiting for your friend" twice; a shorter rules note | UX copy | 1 | 1 | 1 | **10** | open |
+| X7 | Put the game canvas in a `<main>` landmark (axe: region) | accessibility | 1 | 1 | 1 | **10** | open |
 | B9 | Rollback: halftime is skipped (a known gap; the saved screen is never used) | code review | 2 | 1 | 3 | **9** | open |
 | D5 | The career hub is dense (5 zones); consider a calmer layout | design | 2 | 1 | 3 | **9** | open |
 | T3 | Fold the 34 versioned patch files (`v6-…` to `v9161-…`) into their feature files | tech debt | 4 | 3 | 5 | **7** | open (gets easier after A1, A6) |
@@ -282,6 +294,57 @@ preview matters more than search ranking.
 - **W5:** no `robots.txt` or sitemap (minor for one page); a short own domain (e.g. islamdunk.com) is easier to share
   and say out loud.
 
+### Performance (Lighthouse 12.8.2, 5 Nov 2026)
+
+The built page served locally, Lighthouse desktop and mobile (mobile = a slowed-down phone and network). Scores:
+desktop accessibility 89, best practices 100, SEO 82 (performance not scored: the game draws on a canvas, which has
+no "largest paint"); mobile performance 48, accessibility 92, best practices 100, SEO 82.
+
+| Mobile | Value | Target |
+|---|---|---|
+| First paint | 4.0 s | under 1.8 s |
+| Usable (time to interactive) | 12.6 s | under 3.8 s |
+| Blocking time | 3,320 ms | under 200 ms |
+| Main-thread work | 11.5 s (8.3 s drawing the running title scene, 2.2 s script) | |
+| Page size | 675 KB compressed | |
+
+- **P1:** most of the cost is the title scene drawing every frame (court, crowd, players) at about 150 ms a frame on
+  the test phone, so a low-end phone runs the menus at a few frames a second and feels stuck at start. Draw the
+  static court and crowd once to an offscreen canvas, lower the crowd detail on slow devices (measure frame time for
+  the first second), and pause the attract animation while a menu is being used.
+- **P2:** `vite.config.js:31` sets `minify: false` ("ship the same readable script"); minifying saves 196 KB (30%) and
+  some of the 413 ms parse time. Keep a readable copy (or a source map) for reports.
+- **P3:** the first long task is 669 ms: everything is set up at load.
+- **P4:** desktop layout shift 0.31 from `canvas#game` resizing after load.
+- Lighthouse also flags 393 KB of script unused on the title screen; with one script that's expected (low value).
+
+### Automated accessibility scan (axe-core 4.10, 5 Nov 2026)
+
+The Axe plugin's server didn't connect in this session, so the same engine (axe-core) was run in a browser on the
+title screen at desktop, iPhone landscape and portrait. Only two rules fail, since everything is drawn on one canvas
+(the canvas has a label; the iOS install sheet and tip have proper roles and names):
+
+- **X6 (critical in axe):** `user-scalable=no, maximum-scale=1` in the viewport meta. Pinch zoom would break touch
+  play, so keep it, and let players enlarge text in the game instead (X2).
+- **X7 (moderate):** content outside landmarks: wrap the canvas in `<main>`.
+
+### Launch and growth (5 Nov 2026)
+
+From the game-trend `launching-on-zero-budget` skill; the full plan, with the store and portal terms checked today
+and their sources, is in [docs/reports/2026-11-05-launch-islam-dunk.md](reports/2026-11-05-launch-islam-dunk.md).
+
+- **G5:** ad networks can show gambling, alcohol or dating ads beside a masjid game; block those categories before
+  showing any ad (rewarded ads only, never mid-match).
+- **G1:** nothing measures whether players come back. Add simple, privacy-friendly counts (no personal data): first
+  visit, next-day and next-week return, online matches started and finished, desyncs.
+- **G2:** a new personal Google Play account needs 12 testers opted in for 14 days in a row before release, so start
+  that clock early with 20+ testers. Wrap the PWA with `pwa2play` (needs W4's service worker and `assetlinks.json`).
+- **G4:** after a match, one button shares the highlight and a link that opens the game straight into the
+  friend's lobby.
+- **G3:** CrazyGames is non-exclusive per current guides (confirm), free and reviews in days; avoid Poki's default
+  web-exclusive deal. YouTube Playables takes Canvas games through an interest form.
+- **G6:** Ramadan nights, Eid tournaments and weekly Jumu'ah challenges give fixed dates to post and update.
+
 ### Architecture (review of 5 Nov 2026)
 
 Full report with diagrams: https://claude.ai/artifact/2xwUSzQF3FH1K7WPRAkDf4
@@ -301,8 +364,7 @@ Full report with diagrams: https://claude.ai/artifact/2xwUSzQF3FH1K7WPRAkDf4
 
 ## Still to review
 
-- Performance (Lighthouse and frame time): with the Perf Profiler or Web Vitals Auditor plugin once added.
-- Automated accessibility scan: with the Axe Accessibility plugin once added.
+- The Axe plugin's own server (keyboard tests, fix suggestions) once it connects.
 
 ## Done
 
