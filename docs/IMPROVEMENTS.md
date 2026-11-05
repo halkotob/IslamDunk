@@ -19,6 +19,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | SV2 | An unreadable save silently looks like no career: keep the last good one and say so | save systems | 3 | 3 | 1 | **30** | open |
 | GT1 | A new player's first match starts on Medium: start on Easy and suggest stepping up after a win | game design | 4 | 2 | 1 | **30** | open |
 | GT6 | A playtest plan: first-time players, non-gamers (parents, younger kids), watch without coaching | game design | 4 | 2 | 1 | **30** | open |
+| SV3 | When an autosave fails (storage full, private browsing), say so once; today only the manual save reports it | save systems | 3 | 3 | 1 | **30** | open |
 | T2 | Catch errors on players' devices and add them to the Network report | tech debt | 3 | 4 | 2 | **28** | open |
 | S3 | Only the game can get relay (TURN) credentials; usage alert | security | 3 | 4 | 2 | **28** | open |
 | Q3 | A folder of old saves that every release must load | testing | 3 | 4 | 2 | **28** | open |
@@ -68,6 +69,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | VD2 | Vertical (9:16) highlight videos for TikTok, Reels and Shorts (today 1280×720 only) | visual design | 4 | 1 | 2 | **20** | open |
 | UX1 | Screens without arrow-key menus need the gamepad's View button to pick a target: show that hint, or give them focus order | UI | 3 | 2 | 2 | **20** | open |
 | PH1 | A stress test that fires the ball at the rim and glass at top speed and checks it never passes through | physics | 2 | 2 | 1 | **20** | open |
+| SV4 | Check a save's values when loading (numbers, known team and item ids) and fall back to the backup if broken | save systems | 2 | 3 | 2 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
@@ -83,6 +85,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | GF1 | Online rollback matches lose hit-stop and slow motion (reset each frame): play them as a visual-only hold | game feel | 3 | 1 | 2 | **16** | open |
 | IN1 | A Controls screen: keys already live in one table (`BINDS`), so remapping is data; save it and add Reset | input | 3 | 1 | 2 | **16** | open |
 | IN2 | Toggle instead of hold for Defend (guard stance) and Sprint | input | 3 | 1 | 2 | **16** | open |
+| SV5 | Desktop and Steam: save the career as a file in the app's data folder so Steam Cloud can sync it | save systems | 3 | 1 | 2 | **16** | open (with ST2) |
 | A6 | A screen registry instead of reassigning `render` / `gameUpdate` | architecture | 3 | 2 | 3 | **15** | open |
 | B13 | After a duo Barakah Run the end screen shows the solo best | code review | 2 | 1 | 1 | **15** | open |
 | B14 | A pop label can replace the foul callout's subtitle ("ON AHMED • 2 SHOTS") | code review | 2 | 1 | 1 | **15** | open |
@@ -712,6 +715,29 @@ as variants later (`sfxAddSamples`).
   overtime), switching at bar lines; a short stinger on a buzzer beater. Offer Vocal and percussion only and Off,
   and duck the music under the crowd swell on big plays with its own group, so the player's Music slider is never
   overwritten.
+
+### Save systems skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/save-systems` and `references/versioning-and-migration.md` against `src/career/career.js`
+(`saveCareer`, `readSave`, `loadCareer`, `migrateV5`, `migrateV6`), the manual slot (`src/career/career-screens.js`),
+and the other stored keys (`islamdunk.profile`, `islamdunk.progress`, settings).
+
+Already matches the skill: the career is plain data (`JSON.stringify(C)`), rebuilt on load over `freshCareer()`
+defaults; every save carries a version (`v: 1` envelope, `sv` schema inside, so older builds still load it); old
+saves are migrated field by field (`migrateV5`, `migrateV6`, the v3.3 and v4.x defaults); the autosave
+(`islamdunk.career.auto`) is separate from the manual slot (`islamdunk.career.slot1`), so it can't overwrite it;
+growing lists are trimmed (160 box scores, 10 timing samples); the manual save tells the player if it failed.
+
+- **SV1, SV2** (from before): no backup copy and no persistent-storage request; a save that fails to parse makes
+  the career look gone.
+- **SV3:** `saveCareer` returns `false` on a storage error, but the ~50 autosave calls ignore it, so a full
+  storage or private browsing loses progress silently.
+- **SV4:** the skill's load checklist: check required fields and number ranges, drop ids that no longer exist
+  (a removed team or store item), and use the backup if the save is broken; fail loudly rather than load a broken
+  state.
+- **SV5:** Steam Cloud syncs files under folders set in Steamworks (Auto-Cloud), not browser storage. In the
+  Electron build, write the career JSON to the app's data folder through the preload bridge (temp file, then
+  rename, keep a `.bak`), and list that folder in Auto-Cloud.
 
 ### Architecture (review of 5 Nov 2026)
 
