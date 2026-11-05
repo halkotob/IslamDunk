@@ -36,6 +36,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | W2 | The Pages site publishes the whole repo (docs, this list, tests); exclude them | SEO and sharing | 2 | 3 | 1 | **25** | open |
 | CD8 | Respectful depiction check with someone from the community: imama, kufi, beards, the sheikh and mufti titles | character design | 2 | 3 | 1 | **25** | open |
 | GT2 | "Why I missed" is off by default: show it during a new player's first games | game design | 3 | 2 | 1 | **25** | open |
+| P5 | Adaptive resolution ignores menus and the title, where a full match plays behind: let it count there too | performance | 3 | 2 | 1 | **25** | open |
 | T5 | Stop committing the built `index.html`; publish Pages from the build | tech debt | 3 | 3 | 2 | **24** | open |
 | T4 | One settings module that owns every saved setting | tech debt | 3 | 3 | 2 | **24** | open |
 | B5 | Rollback: the host has no "End game: back to lobby" and no "friend dropped" notice | code review | 3 | 3 | 2 | **24** | open |
@@ -45,7 +46,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | A4 | Give the renderer its own view state | architecture | 3 | 4 | 3 | **21** | open |
 | Q8 | Fast match tests in Node, without a browser (after A1) | testing | 4 | 3 | 3 | **21** | open (after A1) |
 | X1 | Bigger tap targets in menus on phones (rows are about 23 px tall; 44 recommended) | accessibility | 4 | 3 | 3 | **21** | open |
-| P1 | Lighten the title screen on slow phones; first check that adaptive resolution (`src/render/adaptive-res.js`) steps down on a real low-end phone | performance | 4 | 3 | 3 | **21** | open |
+| P1 | Slow phones: about 850 canvas draw calls a frame at up to 3× pixel density; draw the court and crowd once to an offscreen canvas | performance | 4 | 3 | 3 | **21** | open |
 | T6 | Align the Playwright version with the test browsers | tech debt | 2 | 2 | 1 | **20** | open |
 | T8 | A short architecture overview, glossary and decision records | tech debt | 2 | 2 | 1 | **20** | open |
 | S5 | Drop malformed online messages instead of crashing the frame | security | 2 | 3 | 2 | **20** | open |
@@ -70,6 +71,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | UX1 | Screens without arrow-key menus need the gamepad's View button to pick a target: show that hint, or give them focus order | UI | 3 | 2 | 2 | **20** | open |
 | PH1 | A stress test that fires the ball at the rim and glass at top speed and checks it never passes through | physics | 2 | 2 | 1 | **20** | open |
 | SV4 | Check a save's values when loading (numbers, known team and item ids) and fall back to the backup if broken | save systems | 2 | 3 | 2 | **20** | open |
+| P6 | A performance budget test: draw calls per frame and script ms per frame, checked on every run | performance | 2 | 2 | 1 | **20** | open (with Q6) |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
@@ -738,6 +740,34 @@ growing lists are trimmed (160 box scores, 10 timing samples); the manual save t
 - **SV5:** Steam Cloud syncs files under folders set in Steamworks (Auto-Cloud), not browser storage. In the
   Electron build, write the career JSON to the app's data folder through the preload bridge (temp file, then
   rename, keep a `.bak`), and list that folder in Auto-Cloud.
+
+### Performance optimization skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/performance-optimization` and `references/profiling-and-budgets.md`: measure first, find
+the bottleneck (script or drawing), then fix one thing. Measured in Chromium at iPhone landscape size and 3× pixel
+density, 3 s per screen, with the sampling profiler, timers around `render` and `gameUpdate`, and a count of
+canvas draw calls (`fillText`, `drawImage`, `fill`, `stroke`, `fillRect` on the game canvas).
+
+| Screen | Script: render (median, p95) | Script: update | Draw calls a frame | Frames drawn in 3 s |
+|---|---|---|---|---|
+| Title (a match plays behind) | 3.2 ms, 5.0 ms | 1.1 ms | 851 | 44 |
+| Match | 3.0 ms, 4.3 ms | 1.0 ms | 841 | 61 |
+| Career hub | 2.9 ms, 4.4 ms | 0.9 ms | 852 | 46 |
+
+- **Bottleneck: drawing, not script.** Script work is about 4 ms a frame on this computer (roughly 12–16 ms on a
+  phone 3–4× slower, inside a 16.7 ms budget only on a fast phone), and no single function stands out in the
+  profile (each under 1%) and garbage collection is negligible, but the browser managed 15–20 frames a second:
+  the time goes to rasterising about 850 drawing operations onto a 2,532 × 1,170 pixel canvas (software drawing
+  in this test, so a real GPU is faster; the ratio still points the same way). The skill's fix for this side is
+  fewer draw operations and fewer pixels.
+- **P1 (refined):** cache what doesn't move (the court, the arches, the crowd rows, which redraw each frame) to an
+  offscreen canvas and draw it with one `drawImage`; animate only the crowd members who react.
+- **P5:** adaptive resolution (`src/render/adaptive-res.js`) only measures play frames ("menus, pauses and tab
+  switches don't count"), yet the title and hub draw a full animated match or scene. Count those frames too, or
+  draw the title's background match at the lowest level.
+- **P6:** the skill's "set budgets so it stays fixed": a test that fails when draw calls per frame or script ms per
+  frame rise past a set ceiling (with Q6).
+- Still needed: the same numbers from a real low-end phone (Safari's Web Inspector timeline on an older iPhone).
 
 ### Architecture (review of 5 Nov 2026)
 
