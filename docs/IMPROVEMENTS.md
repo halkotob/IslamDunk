@@ -72,6 +72,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | PH1 | A stress test that fires the ball at the rim and glass at top speed and checks it never passes through | physics | 2 | 2 | 1 | **20** | open |
 | SV4 | Check a save's values when loading (numbers, known team and item ids) and fall back to the backup if broken | save systems | 2 | 3 | 2 | **20** | open |
 | P6 | A performance budget test: draw calls per frame and script ms per frame, checked on every run | performance | 2 | 2 | 1 | **20** | open (with Q6) |
+| AI2 | A stuck check for CPU players (same plan, no progress for ~2 s, then rethink) | game AI | 2 | 2 | 1 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
@@ -111,6 +112,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | VD3 | The splash is a still logo for 1.7 s: give it motion (a dunk, a glow) for the first 3 seconds | visual design | 2 | 1 | 1 | **15** | open |
 | GF2 | Phone vibration on big plays for Android (gamepads already rumble; iPhone browsers don't allow it) | game feel | 2 | 1 | 1 | **15** | open |
 | AU3 | Measure the whole mix's loudness over a match (phones: about -18 LUFS) and set the master level from it | audio | 2 | 1 | 1 | **15** | open |
+| AI1 | A debug view that draws each CPU player's current plan and target on court (for tuning and bug reports) | game AI | 2 | 1 | 1 | **15** | open |
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
 | W5 | robots.txt, a sitemap, and a short own domain for sharing | SEO and sharing | 2 | 1 | 2 | **12** | open |
 | G6 | A seasonal calendar for posts and updates: Ramadan, Eid, Jumu'ah challenges | launch | 3 | 1 | 3 | **12** | open |
@@ -768,6 +770,27 @@ canvas draw calls (`fillText`, `drawImage`, `fill`, `stroke`, `fillRect` on the 
 - **P6:** the skill's "set budgets so it stays fixed": a test that fails when draw calls per frame or script ms per
   frame rise past a set ceiling (with Q6).
 - Still needed: the same numbers from a real low-end phone (Safari's Web Inspector timeline on an older iPhone).
+
+### Game AI skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/game-ai` and its references (behavior trees, pathfinding) against `src/sim/ai.js`
+(`Brain`), `src/sim/v6-controls-ai.js`, `v863-cpu.js`, `v911-cpu-style.js` and `v916-cpu-handle.js`.
+
+The CPU already follows the skill's structure: the decision layer (`think`) is separate from motion (`exec`), as
+the skill asks; the situation is a small state machine (`ctx()`: handler, off-ball, defense, shot in the air, loose
+ball, dead ball) and a change of situation triggers a new decision at once; within a situation options are scored
+by utility (expected points against a shot-clock curve, `choose()` with difficulty noise), the skill's choice for
+"how strongly do I want each option"; decisions run on a reaction timer, not every frame (`cfg().react`, randomised
+±30%); the "sloped field" is an optional rubber band and difficulty changes reactions and decisions, never stats;
+CPU styles and handles vary by player; there's no pathfinding to get wrong (an open court).
+
+- **AI1:** the skill's verification step is "draw the path and current state on screen while tuning". A dev-panel
+  toggle that labels each CPU player's `plan.type` and draws a line to its target would make tuning and bug
+  reports faster (nothing draws it today).
+- **AI2:** the skill's "no stuck check" pitfall: if a plan makes no progress for about 2 s (a CPU pushing into a
+  defender, waiting on a pass that won't come), force a rethink.
+- The `Brain` methods are extended by later files (`thinkHandler`, `thinkDefense`, `update` each reassigned twice);
+  that belongs with A1 and T3.
 
 ### Architecture (review of 5 Nov 2026)
 
