@@ -60,7 +60,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | W3 | Search engines see only a canvas: a text description, a better title, game structured data | SEO and sharing | 3 | 1 | 1 | **20** | open |
 | G2 | Google Play: wrap the PWA (TWA) and start the 12-tester, 14-day closed test now | launch | 4 | 1 | 2 | **20** | open (needs W4) |
 | G4 | One-tap invite after a match: the highlight plus a "play me online" link with the code | launch | 4 | 1 | 2 | **20** | open |
-| AU2 | A limiter on the master volume (stacked sounds clip); sliders that follow loudness | audio | 2 | 2 | 1 | **20** | open |
+| AU2 | A limiter on the master output (stacked sounds clip) and volume sliders squared before use, so they change evenly | audio | 2 | 2 | 1 | **20** | open |
 | GD3 | A short "pickup game" option online for phone sessions (one 3-minute half, or first to 11) | game design | 3 | 1 | 1 | **20** | open |
 | ST1 | Steam: open the partner account and pay the app fee early (30-day tax check, 21-day wait), Coming Soon page for wishlists | Steam | 4 | 1 | 2 | **20** | open |
 | ST4 | Steam store page: capsules, a trailer from highlight clips, screenshots, the AI-content survey | Steam | 3 | 2 | 2 | **20** | open |
@@ -98,13 +98,14 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | P4 | The canvas jumps after load on computers (layout shift 0.31); size it before the first paint | performance | 2 | 1 | 1 | **15** | open |
 | X6 | Pinch zoom is off (axe: critical); keep it off for play, and make X2 the answer | accessibility | 2 | 1 | 1 | **15** | open |
 | GD2 | A reason to come back together: a record with each friend, recent players, co-op challenges | game design | 4 | 1 | 3 | **15** | open |
-| AU1 | Music: none today; a menu theme and match layers, with a vocal and percussion only option | audio | 4 | 1 | 3 | **15** | open |
+| AU1 | Music: none today; adaptive layers (percussion and vocal stems that rise with a close game and the final minute), with vocal-only and Off | audio | 4 | 1 | 3 | **15** | open |
 | CA1 | On the online guest the camera steps once per drawn frame (`updateCamera(rdt)`), so its easing differs at 30, 60 and 120 fps: time-based easing | camera | 2 | 1 | 1 | **15** | open |
 | G7 | itch.io: a free, non-exclusive page for the web build | launch | 2 | 1 | 1 | **15** | open |
 | CD6 | A one-line personality for each Quick Play player, shown on the team card | character design | 2 | 1 | 1 | **15** | open |
 | CD7 | A short cast sheet in `docs/` (silhouette, colours, landmarks, pose per player) so new players stay consistent | character design | 2 | 1 | 1 | **15** | open |
 | VD3 | The splash is a still logo for 1.7 s: give it motion (a dunk, a glow) for the first 3 seconds | visual design | 2 | 1 | 1 | **15** | open |
 | GF2 | Phone vibration on big plays for Android (gamepads already rumble; iPhone browsers don't allow it) | game feel | 2 | 1 | 1 | **15** | open |
+| AU3 | Measure the whole mix's loudness over a match (phones: about -18 LUFS) and set the master level from it | audio | 2 | 1 | 1 | **15** | open |
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
 | W5 | robots.txt, a sitemap, and a short own domain for sharing | SEO and sharing | 2 | 1 | 2 | **12** | open |
 | G6 | A seasonal calendar for posts and updates: Ramadan, Eid, Jumu'ah challenges | launch | 3 | 1 | 3 | **12** | open |
@@ -688,6 +689,29 @@ added on top as an offset; camera presets in the pause menu; Reduced motion scal
   for the eases (the spring is already time-based).
 - No other findings: no deadzone is needed (it's a broadcast camera, not a twitch follow), pitch and collision
   don't apply in 2D.
+
+### Audio design skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/audio-design` and `references/adaptive-music.md` against `src/core/utils-audio.js`,
+`src/core/sfx-variants.js`, `src/core/sfx-levels.js`, `src/screens/v913-crowd.js` and the volume settings
+(`sfxApplyVol`, `src/screens/v912-polish.js:152`).
+
+Already matches the skill: sounds go through groups (master, effects, crowd), with player sliders for each; the
+often-repeated sounds have 2–3 variants picked with no immediate repeat, each level-matched by a measured
+loudness table (`SFX_LEVELS`, K-weighted, checked by a test), which is the skill's "kill the machine-gun repeat";
+the crowd is a live bed that swells and settles with big plays (adaptive ambience); recorded samples can be added
+as variants later (`sfxAddSamples`).
+
+- **AU2:** the sliders feed gain directly (`SFX.master.gain.value = A.master`), so most of the audible change is in
+  the bottom of the slider; square the value first, as the skill shows. There's no limiter on the output: add a
+  `DynamicsCompressor` set as a limiter (fast attack, high ratio, threshold near -3 dB) before the destination.
+- **AU3:** the skill's target for handheld and mobile is about -18 LUFS integrated (±2), peaks at or below -1 dBTP.
+  `tools/sfx-levels.mjs` already measures loudness per sound; run it over a whole match recording.
+- **AU1 (expanded):** the reference's vertical layering suits a match: stems of percussion (daf, hand claps),
+  crowd chant and vocal (nasheed-style) that fade in with the game's intensity (score margin, the last minute,
+  overtime), switching at bar lines; a short stinger on a buzzer beater. Offer Vocal and percussion only and Off,
+  and duck the music under the crowd swell on big plays with its own group, so the player's Music slider is never
+  overwritten.
 
 ### Architecture (review of 5 Nov 2026)
 
