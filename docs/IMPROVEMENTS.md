@@ -12,6 +12,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | T1 | Run the tests automatically on every push to `main` | tech debt | 4 | 5 | 2 | **36** | open |
 | S2 | Firebase limits and abuse: 100 players at once on the free plan; no App Check | security | 5 | 4 | 2 | **36** | open |
 | G5 | Before any ads: block gambling, alcohol and dating ad categories | launch | 3 | 4 | 1 | **35** | before ads |
+| G8 | Online on portals: add itch.io's and CrazyGames' game origins to the relay Worker's `ALLOWED_ORIGINS` (today only GitHub Pages and localhost), and check the Firebase key isn't limited to one site | launch | 4 | 3 | 1 | **35** | open |
 | Q2 | Run the phone and online tests in WebKit (Safari's engine) too | testing | 4 | 4 | 2 | **32** | open |
 | B3 | Rollback: a dropped direct link is never retried during the match | code review | 4 | 4 | 2 | **32** | open |
 | SV1 | Protect career saves on iPhone: persistent storage, a backup copy, Export/Import save | save systems | 4 | 4 | 2 | **32** | open |
@@ -108,7 +109,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | GD2 | A reason to come back together: a record with each friend, recent players, co-op challenges | game design | 4 | 1 | 3 | **15** | open |
 | AU1 | Music: none today; adaptive layers (percussion and vocal stems that rise with a close game and the final minute), with vocal-only and Off | audio | 4 | 1 | 3 | **15** | open |
 | CA1 | On the online guest the camera steps once per drawn frame (`updateCamera(rdt)`), so its easing differs at 30, 60 and 120 fps: time-based easing | camera | 2 | 1 | 1 | **15** | open |
-| G7 | itch.io: a free, non-exclusive page for the web build | launch | 2 | 1 | 1 | **15** | open |
+| G7 | itch.io: an HTML page (Kind = HTML, "playable in browser"), `butler push` of the web folder to an `html` channel, desktop folders to `windows`, `osx`, `linux` | launch | 2 | 1 | 1 | **15** | open |
 | CD6 | A one-line personality for each Quick Play player, shown on the team card | character design | 2 | 1 | 1 | **15** | open |
 | CD7 | A short cast sheet in `docs/` (silhouette, colours, landmarks, pose per player) so new players stay consistent | character design | 2 | 1 | 1 | **15** | open |
 | VD3 | The splash is a still logo for 1.7 s: give it motion (a dunk, a glow) for the first 3 seconds | visual design | 2 | 1 | 1 | **15** | open |
@@ -825,6 +826,26 @@ Order of work, from the skill (times are Valve's at the time of writing):
   buttons are A/B/X/Y like the Xbox letters the game shows; PlayStation pads would need their own symbols.
 - **ST7:** commit the `.vdf` scripts without any login; the checker's `--json --strict` mode suits CI. The steamcmd
   login token must never be committed.
+
+### itch.io publish skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/itch-publish` and `references/butler-ci.md` as a readiness review (no itch.io page yet).
+
+The web build fits itch.io's HTML5 rules: `index.html` at the root, every path relative (no `src="/…"` or
+`href="/…"` in `dist/web/index.html`), one page plus `assets/` and `icons/`, far under 1,000 files and 500 MB; all
+outside requests are HTTPS (Firebase, Google Fonts, the relay Worker).
+
+- **G8 (new, affects every portal):** itch.io and CrazyGames run the game inside an iframe on their own domains.
+  The relay Worker only answers the origins in `ALLOWED_ORIGINS` (`worker/ice/wrangler.toml`:
+  `https://halkotob.github.io` and localhost), so players there would get no relay and the hardest network pairs
+  couldn't connect. Add each portal's game origin (itch.io serves HTML games from its `itch.zone` hosts; find the
+  exact origin from the first upload) and redeploy. Also check in the Google Cloud console whether the Firebase
+  browser key is restricted to certain websites; if it is, add the portal hosts.
+- **G7 (refined):** create the page as Draft with Kind = HTML, push the `dist/web` folder (plus `assets/`, `icons/`)
+  to an `html` channel and tick "playable in browser"; desktop builds as unpacked folders (not the NSIS, DMG or
+  AppImage installers) to `windows`, `osx`, `linux`; `--userversion` from `package.json`; answer the AI disclosure
+  as for Steam (ST6). In CI, `BUTLER_API_KEY` as a secret, never printed.
+- HTML5 pages on itch.io take payment only as donations; a paid version would need the downloadable builds.
 
 ### Architecture (review of 5 Nov 2026)
 
