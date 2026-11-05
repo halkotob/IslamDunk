@@ -23,6 +23,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | S3 | Only the game can get relay (TURN) credentials; usage alert | security | 3 | 4 | 2 | **28** | open |
 | Q3 | A folder of old saves that every release must load | testing | 3 | 4 | 2 | **28** | open |
 | B4 | Rollback: "1 on 1 (no CPU)" is played 2 on 2 with CPU teammates | code review | 4 | 3 | 2 | **28** | open |
+| VD1 | The logo's dunker pose reads close to a famous sportswear silhouette: check it before store submissions | visual design | 3 | 4 | 2 | **28** | open |
 | Q7 | A daily live check of the relay Worker | testing | 2 | 3 | 1 | **25** | open |
 | B7 | Rollback: a tap can be lost when the input delay shrinks | code review | 3 | 2 | 1 | **25** | open |
 | B11 | A steal pressed during the steal cooldown is dropped (the buffer never fires) | code review | 3 | 2 | 1 | **25** | open |
@@ -64,6 +65,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | ST1 | Steam: open the partner account and pay the app fee early (30-day tax check, 21-day wait), Coming Soon page for wishlists | Steam | 4 | 1 | 2 | **20** | open |
 | ST4 | Steam store page: capsules, a trailer from highlight clips, screenshots, the AI-content survey | Steam | 3 | 2 | 2 | **20** | open |
 | CD3 | Teammates in the same kit look alike at play size: add one large personal mark (headband, sleeve, long shorts, knee pad) | character design | 3 | 2 | 2 | **20** | open |
+| VD2 | Vertical (9:16) highlight videos for TikTok, Reels and Shorts (today 1280×720 only) | visual design | 4 | 1 | 2 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
@@ -96,6 +98,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | G7 | itch.io: a free, non-exclusive page for the web build | launch | 2 | 1 | 1 | **15** | open |
 | CD6 | A one-line personality for each Quick Play player, shown on the team card | character design | 2 | 1 | 1 | **15** | open |
 | CD7 | A short cast sheet in `docs/` (silhouette, colours, landmarks, pose per player) so new players stay consistent | character design | 2 | 1 | 1 | **15** | open |
+| VD3 | The splash is a still logo for 1.7 s: give it motion (a dunk, a glow) for the first 3 seconds | visual design | 2 | 1 | 1 | **15** | open |
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
 | W5 | robots.txt, a sitemap, and a short own domain for sharing | SEO and sharing | 2 | 1 | 2 | **12** | open |
 | G6 | A seasonal calendar for posts and updates: Ramadan, Eid, Jumu'ah challenges | launch | 3 | 1 | 3 | **12** | open |
@@ -104,6 +107,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | CD4 | Stance and idle pose are the same for everyone: posture that matches each personality | character design | 2 | 1 | 2 | **12** | open |
 | CD5 | Faces have joy, fierce and shock only: add disappointed (a miss, a loss) and focused (free throw) | character design | 2 | 1 | 2 | **12** | open |
 | GT7 | Check how often the Noor question stops play; an option to ask it at timeouts and halftime | game design | 2 | 1 | 2 | **12** | open |
+| VD4 | Results screen: animate the score count and Player of the Game, dim the court fully (with D1) | visual design | 2 | 1 | 2 | **12** | open |
 | B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |
 | U6 | Consistent apostrophes and online terms (game, lobby, code) | UX copy | 1 | 1 | 1 | **10** | open |
 | U7 | The lobby says "Waiting for your friend" twice; a shorter rules note | UX copy | 1 | 1 | 1 | **10** | open |
@@ -502,6 +506,38 @@ storytelling, playtesting, design principles), through its evaluation framework.
   from several testers = a real problem.
 - **GT4, GT5:** socialization and bragging rights outside a phone call: preset reactions in online matches and a
   daily scenario result to share.
+
+### Game designer skill (visual audit), in full (5 Nov 2026)
+
+Run with `.claude/skills/game-designer` and its `visual-catalog.md`; screenshots at iPhone landscape of the load
+splash, title, a CPU match at 0.2 s, 1.2 s and 3 s from tip-off, the first score, plus the earlier screen set.
+Scores (the skill's areas; the Phaser template, Play.fun safe-zone and EventBus items don't apply):
+
+| Area | Score | Notes |
+|---|:-:|---|
+| Background and atmosphere | 5 | Masjid arches, hanging lanterns, a full crowd in team colours, the star medallion at centre court |
+| Colour palette | 4 | Gold, teal and green throughout, team kits distinct; low-contrast greys in menus (X3) |
+| Animations | 4 | Running, dunks and celebrations animate; menus don't (UI1) |
+| Particles | 4 | Confetti, sparks, fire and impact rings on key plays |
+| Screen transitions | 2 | Hard cuts between screens (UI1) |
+| Typography | 3 | Strong callouts; phone body text at the 11 px floor (X2) |
+| Game feel / juice | 4 | Shake, hit-stop, camera punch, slow motion on replays |
+| Results screen | 3 | Clear winner and Continue, but the court shows through (D1) and nothing animates (VD4) |
+| Character prominence | 4 | Players about a third of the screen height on a phone at tip-off |
+| First impression (first 3 s) | 4 | "BISMILLAH! TIP-OFF" callout and the crowd at tip-off; the load splash is a still image (VD3) |
+| Thematic identity | 5 | A screenshot says "basketball in a masjid league" at once: kufi and imama, the arches, "TABARAKALLAH!" on a dunk |
+| Expression usage | 3 | Joy, fierce and shock on some plays (CD5) |
+
+The skill sets 4 as the bar; transitions (UI1), typography (X2), the results screen (VD4, D1) and expressions (CD5)
+are under it.
+
+- **VD1:** the logo mark (`src/render/logo.js`, "a dunker in a thawb and kufi taking off", ball arm up, legs split)
+  reads close to a well-known sportswear brand's silhouette at small sizes. App stores and Steam reject marks that
+  look like another brand's. Have someone compare them side by side, or give the mark a clearly different pose
+  (for example a two-hand dunk or the dunker seen from the side with the thawb).
+- **VD2:** the skill's target is "a viewer scrolling a feed with sound off". The highlight video is 1280×720
+  (`CLIP_W`, `CLIP_H` in `src/screens/clip-video.js:10`); short-video apps show 9:16, so a vertical version
+  framed on the dunk, with the callout large, suits the posting plan.
 
 ### Architecture (review of 5 Nov 2026)
 
