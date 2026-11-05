@@ -44,7 +44,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | A4 | Give the renderer its own view state | architecture | 3 | 4 | 3 | **21** | open |
 | Q8 | Fast match tests in Node, without a browser (after A1) | testing | 4 | 3 | 3 | **21** | open (after A1) |
 | X1 | Bigger tap targets in menus on phones (rows are about 23 px tall; 44 recommended) | accessibility | 4 | 3 | 3 | **21** | open |
-| P1 | Lighten the title screen on slow phones (12.6 s until usable, frames ~150 ms in Lighthouse's phone test) | performance | 4 | 3 | 3 | **21** | open |
+| P1 | Lighten the title screen on slow phones; first check that adaptive resolution (`src/render/adaptive-res.js`) steps down on a real low-end phone | performance | 4 | 3 | 3 | **21** | open |
 | T6 | Align the Playwright version with the test browsers | tech debt | 2 | 2 | 1 | **20** | open |
 | T8 | A short architecture overview, glossary and decision records | tech debt | 2 | 2 | 1 | **20** | open |
 | S5 | Drop malformed online messages instead of crashing the frame | security | 2 | 3 | 2 | **20** | open |
@@ -538,6 +538,48 @@ are under it.
 - **VD2:** the skill's target is "a viewer scrolling a feed with sound off". The highlight video is 1280×720
   (`CLIP_W`, `CLIP_H` in `src/screens/clip-video.js:10`); short-video apps show 9:16, so a vertical version
   framed on the dunk, with the callout large, suits the posting plan.
+
+### Improve-game skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/improve-game`: audit, scores, and an improvement plan (the skill's step 3). Building waits
+for the owner's choice, as the skill says. The Play.fun safe-zone row and `render_game_to_text()` don't apply, so
+the total is out of 60.
+
+| Area | Score | Diagnosis |
+|---|:-:|---|
+| Gameplay feel | 4 | Responsive (fixed 60 Hz step, 0.18 s press buffer), deep moves; first match too hard for newcomers (GT1) |
+| Visual polish | 4 | See the game designer table above |
+| Results and UI | 3 | Results screen bleed (D1), duplicate Back controls (U2), hard cuts (UI1), small phone targets (X1) |
+| Audio | 2 | Effects for every action with master, effects and crowd volumes and mute; no music (AU1), no limiter (AU2) |
+| Code structure | 2 | Global functions reassigned across many files (A1–A6, T3) |
+| Restart safety | 4 | No timers left in the simulation (all 28 `setTimeout` calls are in screens and online code); seeded tests replay matches and careers identically; auto-pause on tab switch (`src/screens/v912-polish.js:65`) |
+| Performance | 3 | Frame time capped at 50 ms, adaptive resolution exists; title scene cost on slow phones unmeasured on a device (P1) |
+| Player experience | 4 | Optional tutorial, Noor, Barakah Run, daily scenario; misses unexplained by default (GT2) |
+| Mobile | 4 | Touch layout audits, safe areas, fullscreen prompt; small menu targets (X1) and text (X2) |
+| Gameplay invariants | 5 | Scoring, fouls, shot clock, end of match covered by tests |
+| Character sizing | 4 | Players about a third of the screen height on phones; cast silhouettes alike (CD1) |
+| Tests | 4 | ~95 end-to-end tests plus rollback, league, studio and Electron suites; gaps Q2–Q8 |
+
+**Overall: 43 / 60.**
+
+**Improvement plan** (the skill's top 5–8, by player impact):
+
+1. **Online is the same game on both phones** (B1, B2, B3): the half-court and taunt desyncs, the link retry.
+   Files: `src/online/rollback-net.js`, `src/online/game-settings.js`, `src/sim/v86-play.js`.
+2. **A gentle first match** (GT1, GT2): Easy for a new player's first games, "why I missed" on for them.
+   Files: `src/core/config.js`, `src/screens/v912-polish.js`, `src/screens/profile.js`.
+3. **Career saves can't be lost** (SV1, SV2): persistent storage, a backup save, Export and Import.
+   Files: `src/career/career.js`, a new save-tools file before `boot.js`.
+4. **Phone readability** (X1, X2, U5): taller menu rows, a Large text option on phones, the unlock message out of
+   the way. Files: `src/screens/v95-access.js`, `src/screens/phone-pass.js`, `src/screens/menus.js`.
+5. **Music with a choice** (AU1, AU2): a limiter, then a menu theme and match layers with vocal-only and Off.
+   Files: `src/core/utils-audio.js`, `src/screens/v912-polish.js`, a new music file.
+6. **A cast you can tell apart** (CD1, CD3): heights, builds and one large mark per player (data only).
+   Files: `src/data/teams.js`.
+7. **Screen transitions** (UI1): a short fade between screens. Files: `src/screens/flow.js`, `src/screens/menus.js`.
+8. **Automatic tests on every push** (T1): catches breaks before players see them. Files: `.github/workflows/`.
+
+After a pass, running the skill again should find the next batch.
 
 ### Architecture (review of 5 Nov 2026)
 
