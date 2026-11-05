@@ -30,11 +30,13 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | D3 | The Dunk lab bar stayed on screen in the next match (check leaving it without Quit) | design | 3 | 2 | 1 | **25** | open, to confirm |
 | W1 | Link previews: description, Open Graph image and title for WhatsApp, iMessage and social | SEO and sharing | 4 | 1 | 1 | **25** | open |
 | W2 | The Pages site publishes the whole repo (docs, this list, tests); exclude them | SEO and sharing | 2 | 3 | 1 | **25** | open |
+| CD8 | Respectful depiction check with someone from the community: imama, kufi, beards, the sheikh and mufti titles | character design | 2 | 3 | 1 | **25** | open |
 | T5 | Stop committing the built `index.html`; publish Pages from the build | tech debt | 3 | 3 | 2 | **24** | open |
 | T4 | One settings module that owns every saved setting | tech debt | 3 | 3 | 2 | **24** | open |
 | B5 | Rollback: the host has no "End game: back to lobby" and no "friend dropped" notice | code review | 3 | 3 | 2 | **24** | open |
 | B6 | Rollback: the starting state uses the browser's own maths (Safari vs Chrome can differ at frame 0) | code review | 3 | 3 | 2 | **24** | open |
 | G1 | Privacy-friendly analytics: players returning next day and week, online matches started and finished | launch | 4 | 2 | 2 | **24** | open |
+| CD1 | Silhouette lineup fails: the 16 main players share one body; give heights, builds and 2–3 landmarks each | character design | 4 | 2 | 2 | **24** | open |
 | A4 | Give the renderer its own view state | architecture | 3 | 4 | 3 | **21** | open |
 | Q8 | Fast match tests in Node, without a browser (after A1) | testing | 4 | 3 | 3 | **21** | open (after A1) |
 | X1 | Bigger tap targets in menus on phones (rows are about 23 px tall; 44 recommended) | accessibility | 4 | 3 | 3 | **21** | open |
@@ -58,6 +60,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | GD3 | A short "pickup game" option online for phone sessions (one 3-minute half, or first to 11) | game design | 3 | 1 | 1 | **20** | open |
 | ST1 | Steam: open the partner account and pay the app fee early (30-day tax check, 21-day wait), Coming Soon page for wishlists | Steam | 4 | 1 | 2 | **20** | open |
 | ST4 | Steam store page: capsules, a trailer from highlight clips, screenshots, the AI-content survey | Steam | 3 | 2 | 2 | **20** | open |
+| CD3 | Teammates in the same kit look alike at play size: add one large personal mark (headband, sleeve, long shorts, knee pad) | character design | 3 | 2 | 2 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
@@ -68,7 +71,6 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | S4 | Longer join codes, the guest's name in the lobby, a way to remove a guest | security | 2 | 2 | 2 | **16** | open |
 | U2 | One way back per screen, and one name for leaving (Back, Cancel, Leave, Quit, EXIT) | UX copy | 3 | 1 | 2 | **16** | open |
 | G3 | Submit to CrazyGames (non-exclusive) and the YouTube Playables interest form | launch | 3 | 1 | 2 | **16** | open |
-| CD1 | Give the 16 main players heights and builds that match their style, so roles read by silhouette | character design | 3 | 1 | 2 | **16** | open |
 | A6 | A screen registry instead of reassigning `render` / `gameUpdate` | architecture | 3 | 2 | 3 | **15** | open |
 | B13 | After a duo Barakah Run the end screen shows the solo best | code review | 2 | 1 | 1 | **15** | open |
 | B14 | A pop label can replace the foul callout's subtitle ("ON AHMED • 2 SHOTS") | code review | 2 | 1 | 1 | **15** | open |
@@ -87,11 +89,15 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | AU1 | Music: none today; a menu theme and match layers, with a vocal and percussion only option | audio | 4 | 1 | 3 | **15** | open |
 | CA1 | The camera's easing depends on frame rate (floatier at 30 fps): use time-based smoothing | camera | 2 | 1 | 1 | **15** | open |
 | G7 | itch.io: a free, non-exclusive page for the web build | launch | 2 | 1 | 1 | **15** | open |
+| CD6 | A one-line personality for each Quick Play player, shown on the team card | character design | 2 | 1 | 1 | **15** | open |
+| CD7 | A short cast sheet in `docs/` (silhouette, colours, landmarks, pose per player) so new players stay consistent | character design | 2 | 1 | 1 | **15** | open |
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
 | W5 | robots.txt, a sitemap, and a short own domain for sharing | SEO and sharing | 2 | 1 | 2 | **12** | open |
 | G6 | A seasonal calendar for posts and updates: Ramadan, Eid, Jumu'ah challenges | launch | 3 | 1 | 3 | **12** | open |
 | UI1 | Menus jump-cut between screens: short fades or slides | UI | 2 | 1 | 2 | **12** | open |
 | IN1 | Change controls (keyboard and gamepad), expected on PC | input | 3 | 1 | 3 | **12** | open |
+| CD4 | Stance and idle pose are the same for everyone: posture that matches each personality | character design | 2 | 1 | 2 | **12** | open |
+| CD5 | Faces have joy, fierce and shock only: add disappointed (a miss, a loss) and focused (free throw) | character design | 2 | 1 | 2 | **12** | open |
 | B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |
 | U6 | Consistent apostrophes and online terms (game, lobby, code) | UX copy | 1 | 1 | 1 | **10** | open |
 | U7 | The lobby says "Waiting for your friend" twice; a shorter rules note | UX copy | 1 | 1 | 1 | **10** | open |
@@ -440,6 +446,32 @@ yet; electron-builder already makes Windows, macOS and Linux installers.
 **Performance note.** A frame-time check in the test browser (slowed 4×, iPhone size) measured `render` at
 12–17 ms median but only 3 frames a second overall: that browser draws without a graphics chip, so it overstates
 the cost. P1 needs a measurement on a real low-end phone before any work.
+
+### Character design skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/character-design` and its three references (patterns, sharp edges, validations). A
+lineup of all 16 Quick Play players was drawn with the game's own `drawPortrait`, in colour and as solid black
+silhouettes, plus a small version near play size.
+
+| Validation (from the skill) | Result |
+|---|---|
+| Silhouette test (lineup, distinct, readable at small size) | **Fails.** Every body is the same shape and height; the only outline difference is the headwear (5 kufi, 4 imama with a tail, 7 hair). Two players with the same headwear can't be told apart in silhouette. |
+| Cast visual differentiation (body types, shape language) | **Fails** ("samey cast", rated high). One build for all; teammates differ by beard, skin and headwear only, which disappears at play size. |
+| Colour palette per character | Team colours work as a faction palette (8 distinct kits), but within a team both players share it exactly. |
+| Expression coverage | Partial: `drawFace` (`src/render/renderer.js:457`) has joy, fierce and shock (set in `src/sim/animation.js:84`); no disappointed or focused. |
+| Body language and pose | One idle and stance for everyone. |
+| Design-backstory alignment | Archetypes (SHARPSHOOTER, LOCKDOWN, MUFTI) appear on cards but not in the body; Quick Play players have no personality line. Career brothers have stories. |
+| Cultural sensitivity (error level) | Dress and titles are presented with care (kufi, imama, sheikh, mufti, hafiz). The skill asks for a documented review with someone from the community before launch (CD8). |
+| Design document | None for the cast (CD7). |
+
+- **CD1:** career teams already use heights and builds (`bh`, `bw` with `HEIGHT_S` and `BUILD_W`,
+  `src/career/career.js:9`) and the renderer applies them (`src/render/renderer.js:325`), so the main cast can use
+  them with data only. Following the skill's size rule, the big shapes (height, build, headwear) say who, a medium
+  mark says the role, small details add personality.
+- **CD3:** one large mark per player that survives at phone size (a headband, a sleeve on one arm, long shorts, a
+  knee pad) also breaks the symmetric outline, which the skill asks for.
+- **CD4–CD6:** a personal stance (the sheikh upright, the guard low and bouncy), a disappointed and a focused face, a
+  one-line personality on the team card.
 
 ### Architecture (review of 5 Nov 2026)
 
