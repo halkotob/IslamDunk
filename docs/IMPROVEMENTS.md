@@ -7,31 +7,46 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 
 | # | Item | Source | Impact | Risk | Effort | Priority | Status |
 |---|------|--------|:-:|:-:|:-:|:-:|---|
+| B1 | Rollback: a half-court game is half court on the host only (two different games) | code review | 5 | 5 | 1 | **50** | open, confirmed |
+| B2 | Rollback: each phone uses its own owner's taunt for both players (desync) | code review | 4 | 4 | 1 | **40** | open, confirmed |
 | T1 | Run the tests automatically on every push to `main` | tech debt | 4 | 5 | 2 | **36** | open |
 | S2 | Firebase limits and abuse: 100 players at once on the free plan; no App Check | security | 5 | 4 | 2 | **36** | open |
 | Q2 | Run the phone and online tests in WebKit (Safari's engine) too | testing | 4 | 4 | 2 | **32** | open |
+| B3 | Rollback: a dropped direct link is never retried during the match | code review | 4 | 4 | 2 | **32** | open |
 | S1 | Cap the rollback input runs (a modified game can freeze the other player) | security | 3 | 3 | 1 | **30** | open |
 | T2 | Catch errors on players' devices and add them to the Network report | tech debt | 3 | 4 | 2 | **28** | open |
 | S3 | Only the game can get relay (TURN) credentials; usage alert | security | 3 | 4 | 2 | **28** | open |
 | Q3 | A folder of old saves that every release must load | testing | 3 | 4 | 2 | **28** | open |
+| B4 | Rollback: "1 on 1 (no CPU)" is played 2 on 2 with CPU teammates | code review | 4 | 3 | 2 | **28** | open |
 | Q7 | A daily live check of the relay Worker | testing | 2 | 3 | 1 | **25** | open |
+| B7 | Rollback: a tap can be lost when the input delay shrinks | code review | 3 | 2 | 1 | **25** | open |
 | T5 | Stop committing the built `index.html`; publish Pages from the build | tech debt | 3 | 3 | 2 | **24** | open |
 | T4 | One settings module that owns every saved setting | tech debt | 3 | 3 | 2 | **24** | open |
+| B5 | Rollback: the host has no "End game: back to lobby" and no "friend dropped" notice | code review | 3 | 3 | 2 | **24** | open |
+| B6 | Rollback: the starting state uses the browser's own maths (Safari vs Chrome can differ at frame 0) | code review | 3 | 3 | 2 | **24** | open |
 | A4 | Give the renderer its own view state | architecture | 3 | 4 | 3 | **21** | open |
 | Q8 | Fast match tests in Node, without a browser (after A1) | testing | 4 | 3 | 3 | **21** | open (after A1) |
+| X1 | Bigger tap targets in menus on phones (rows are about 23 px tall; 44 recommended) | accessibility | 4 | 3 | 3 | **21** | open |
 | T6 | Align the Playwright version with the test browsers | tech debt | 2 | 2 | 1 | **20** | open |
 | T8 | A short architecture overview, glossary and decision records | tech debt | 2 | 2 | 1 | **20** | open |
 | S5 | Drop malformed online messages instead of crashing the frame | security | 2 | 3 | 2 | **20** | open |
 | Q4 | Tests for the Firebase database rules (local emulator) | testing | 2 | 3 | 2 | **20** | open |
 | Q5 | Tests that send hostile online messages (with S1, S5) | testing | 2 | 3 | 2 | **20** | open |
+| B8 | P2P: answering a new offer leaves the old channel half open | code review | 2 | 3 | 2 | **20** | open |
+| X3 | Raise contrast of grey labels, calendar chips and the red EXIT (about 140 texts below 4.5:1) | accessibility | 3 | 2 | 2 | **20** | open |
+| X4 | An option for more time on the Noor question (15 s now) | accessibility | 2 | 2 | 1 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
+| X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
 | A2 | Make sound, effects and commentary consume match events | architecture | 4 | 4 | 4 | **16** | open |
 | A3 | One state codec for snapshots, rollback saves and checksums | architecture | 4 | 4 | 4 | **16** | open (after A1, A4) |
 | S4 | Longer join codes, the guest's name in the lobby, a way to remove a guest | security | 2 | 2 | 2 | **16** | open |
 | A6 | A screen registry instead of reassigning `render` / `gameUpdate` | architecture | 3 | 2 | 3 | **15** | open |
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
+| B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |
+| B9 | Rollback: halftime is skipped (a known gap; the saved screen is never used) | code review | 2 | 1 | 3 | **9** | open |
 | T3 | Fold the 34 versioned patch files (`v6-…` to `v9161-…`) into their feature files | tech debt | 4 | 3 | 5 | **7** | open (gets easier after A1, A6) |
+| X5 | Announce menus to screen readers (the game is one canvas) | accessibility | 2 | 1 | 4 | **6** | open |
 
 ## Details
 
@@ -114,6 +129,52 @@ Example cases:
 - Q4: with the Firebase emulator, a signed-in user can't write another player's entry, a room code must be 4 capital
   letters, a 65 KB field is refused.
 
+### Code review of the online hot spots (5 Nov 2026)
+
+Reviewed: `src/online/rollback.js`, `rollback-net.js`, `rollback-sync.js`, `p2p.js`, `lobby.js`, `src/sim/match.js`,
+`src/sim/v86-play.js`. B1 and B2 were checked by hand; the others are the reviewer's findings, to confirm while fixing.
+
+- **B1:** `RBN.start` (`rollback-net.js:44`) runs `newMatch` with `Net.role` still set, and the half-court setup
+  (`game-settings.js:38`, `halfCourtOn`) only applies when `Net.role === 'host'`. With Court: Half court, the host
+  plays half court and the guest full court: two different games from the first frame, repaired and diverging again.
+  A likely cause of "his game didn't match mine" if the court setting was on. Fix: decide the court in the start
+  message and build the same match on both sides.
+- **B2:** `humanCmd` (`v86-play.js:331`) picks the taunt with `myTaunt()`, from this device's profile, inside the
+  rollback step. Each phone applies its owner's taunt to whoever taunts; taunts slow the player for different times.
+  Fix: send each player's equipped taunt in the start message.
+- **B3:** while a rollback match runs, the `Net.update` wrapper (`rollback-net.js:279`) skips the earlier chain, so
+  `P2P.tick` never runs: a dropped direct link stays down and inputs go the slow way for the rest of the match (also
+  freezes the lobby ping and diagnostics).
+- **B4:** `RBN.hostStart` (`rollback-net.js:32`) builds full teams and ignores the 1-on-1 player picks.
+- **B5:** `RBN.start` sets `M.online = false`, which hides every online-only item (`lobby.js:167`, `:307`).
+- **B6:** `newMatch` in `RBN.start` runs without the shared maths (`DMath`) that each step uses.
+- **B7:** when the delay drops, a frame can go without sampling input while `Input.pressed` is still cleared
+  (`rollback-net.js:194`, `:203`).
+- **B8:** `P2P.answer` (`p2p.js:117`) closes the old connection directly instead of through `close()`.
+- **B9:** `rbStep` (`rollback.js:68`) keeps the requested screen in `M.rbScreen`, which nothing reads.
+- **B10:** `!RB.frame` (`rollback.js:100`) treats frame 0 as no frame.
+
+### Accessibility (WCAG 2.1 AA, 5 Nov 2026)
+
+Measured in a headless iPhone 13 (landscape, 750×342) on the 90 screens of the phone audit: tap areas, text size in
+screen pixels, and the contrast of each text against what is drawn behind it.
+
+Already good: reduced motion (follows the phone's setting), flashes off, camera shake off, colourblind-safe team
+colours, casual controls and auto shot release, full keyboard and gamepad play, larger text on computers, in-match
+touch buttons 66–83 px.
+
+- **X1:** menu rows and buttons are a median of 27 px on their short side (title menu 202×23, settings rows 291×23,
+  join-code letters 33×29); Apple and WCAG 2.5.5 recommend 44. Make rows taller on phones or widen each hit area
+  beyond the drawn row.
+- **X2:** 1,999 of 2,166 texts are drawn at 11 px on the phone, the floor; Settings → Text size says "Phone size"
+  and can't be changed (`v95-access.js:78`). Offer Large and Larger on phones too.
+- **X3:** about 140 texts on 42 screens are below 4.5:1, mostly secondary greys `#6d7a8c`, `#8494a8`, `#56657a` on
+  the dark panels (3.0–3.7:1), white on light calendar chips (2.1–3.0:1), the red EXIT (4.2:1) and gold Arabic labels
+  (3.4:1). Lightening the grey colours fixes most of them.
+- **X4:** the Noor question has a 15 s timer with no way to extend it (WCAG 2.2.1). Add "More time" in Accessibility.
+- **X5:** the game is one canvas with a label, so a screen reader announces nothing in menus. An `aria-live` line
+  naming the selected menu item would help; gameplay itself is out of scope.
+
 ### Architecture (review of 5 Nov 2026)
 
 Full report with diagrams: https://claude.ai/artifact/2xwUSzQF3FH1K7WPRAkDf4
@@ -133,8 +194,8 @@ Full report with diagrams: https://claude.ai/artifact/2xwUSzQF3FH1K7WPRAkDf4
 
 ## Still to review
 
-- Accessibility audit (`design:accessibility-review`): touch target sizes, contrast, text size, motion.
-- Code review of the hot-spot files (`code-review`).
+- Code review of the other hot spots: `src/render/renderer.js`, `src/sim/players.js`, `src/sim/v7-controls.js`,
+  `src/career/*`, `src/screens/menus.js`.
 
 ## Done
 
