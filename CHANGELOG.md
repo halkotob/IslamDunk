@@ -1,5 +1,19 @@
 # Changelog
 
+## 9.16.4: design pass, batch A
+The first batch from the design review (docs/IMPROVEMENTS.md D1, D2, D3), in `src/screens/design-pass.js`.
+- **Results screen over a dark court.** The court behind the winner, the score and Player of the Game is darkened
+  fully, and the last play's callouts and score pops are cleared, so nothing shows through (offline and the online
+  guest's results).
+- **Touch buttons readable on the court.** A darker fill and brighter outline, the hint lines ("hold: GUARD") fully
+  bright and a little larger, and after 2 s without a touch they fade to half strength (was 30%). The pressed colour
+  is unchanged. The phone baselines of `world-visual` were accepted for the darker buttons.
+- **The Dunk lab switches off whenever a match starts**, not only on the way to the title.
+- Owner decisions recorded: the logo's pose stays (`docs/adr/0001`); religious depiction is reviewed and respectful
+  religious celebrations are welcome (`docs/adr/0002`).
+- Known, not from this release: `rb-slow` (online with one very slow device) reports repaired desyncs on 9.16.2,
+  9.16.3 and 9.16.4 alike in this environment; it passed on 9.15.0. Added to the improvements list (Q9).
+
 ## 9.16.3: the CPU uses its skill moves
 Play-test: "the CPU doesn't do many skill moves". On 9.16.2 a CPU handler only tried a move with a defender within
 50 px, and signature moves were Hard only.
