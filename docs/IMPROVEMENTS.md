@@ -99,7 +99,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | X6 | Pinch zoom is off (axe: critical); keep it off for play, and make X2 the answer | accessibility | 2 | 1 | 1 | **15** | open |
 | GD2 | A reason to come back together: a record with each friend, recent players, co-op challenges | game design | 4 | 1 | 3 | **15** | open |
 | AU1 | Music: none today; a menu theme and match layers, with a vocal and percussion only option | audio | 4 | 1 | 3 | **15** | open |
-| CA1 | The camera's easing depends on frame rate (floatier at 30 fps): use time-based smoothing | camera | 2 | 1 | 1 | **15** | open |
+| CA1 | On the online guest the camera steps once per drawn frame (`updateCamera(rdt)`), so its easing differs at 30, 60 and 120 fps: time-based easing | camera | 2 | 1 | 1 | **15** | open |
 | G7 | itch.io: a free, non-exclusive page for the web build | launch | 2 | 1 | 1 | **15** | open |
 | CD6 | A one-line personality for each Quick Play player, shown on the team card | character design | 2 | 1 | 1 | **15** | open |
 | CD7 | A short cast sheet in `docs/` (silhouette, colours, landmarks, pose per player) so new players stay consistent | character design | 2 | 1 | 1 | **15** | open |
@@ -669,6 +669,25 @@ that can't be skipped; floor and wall contacts clamp position and reflect veloci
 - **PH2:** `snapPrev()` runs before each step, so a player placed somewhere new during a step (inbounds, a restart)
   is drawn partway between old and new spots for one frame; call it again right after such a move.
 - Slow motion and hit-stop change the simulation clock (`FX.scale`, `FX.stopF` in `sim()`); see A2 and GF1.
+
+### Camera systems skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/camera-systems` and `references/follow-and-framing.md` against
+`src/render/camera-depth.js` (`updateBroadcastCam`), `src/render/v7-cameras-depth.js` and `src/sim/match.js`.
+
+The match camera already does what the skill describes, and more: look-ahead in the direction of play plus the
+ball carrier's speed; bounds clamping (`camClamp`); multi-target framing that keeps all players in view, including
+where they're heading (`fitPlayers`); zoom out on fast breaks and wide spreads, a measured push-in on big dunks;
+a desired frame eased toward the target, then followed by a critically damped spring (no overshoot); intentional
+hard cuts that reset the spring (`M.camCut`, `snap`); a safety clamp if someone is about to leave the frame; shake
+added on top as an offset; camera presets in the pause menu; Reduced motion scales the push-ins.
+
+- **CA1 (corrected):** offline the camera runs inside the fixed 60 Hz step and is drawn interpolated, so the
+  `Math.min(1, dt * k)` easing is consistent there. The online guest calls `updateCamera(rdt)` once per drawn
+  frame (`src/online/net.js:405`), so its feel changes with the phone's frame rate; use `1 - Math.exp(-k * dt)`
+  for the eases (the spring is already time-based).
+- No other findings: no deadzone is needed (it's a broadcast camera, not a twitch follow), pitch and collision
+  don't apply in 2D.
 
 ### Architecture (review of 5 Nov 2026)
 
