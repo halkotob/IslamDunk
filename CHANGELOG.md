@@ -1,5 +1,45 @@
 # Changelog
 
+## 9.16.3: the CPU uses its skill moves
+Play-test: "the CPU doesn't do many skill moves". On 9.16.2 a CPU handler only tried a move with a defender within
+50 px, and signature moves were Hard only.
+- **Dribble moves with a defender in front of him or closing on him within 90 px** (was any defender within 50 px), at
+  a new per-difficulty rate. The 0.9 s gap, the chain rule (never three in a row) and the 9.16.0 handle scaling stay.
+- **The attack set-up:** driving at a defender in front with 4+ seconds on the shot clock, he makes one move first.
+  A good handler almost always does, a poor one rarely, and Very easy rarely at all.
+- **Signature moves from Easy up** (Easy 0.10, Medium 0.30, Hard 0.7 as before). He decides each time his move becomes
+  available, with a defender between him and the rim. It used to be a rate per second, but the spot where the move
+  works lasts about 0.15 s on his way to the rim, so even Hard made about 2 per 100 possessions.
+- **Kept out on purpose: a signature move in place of an open dunk.** Calling it whenever available reached 19.8 per
+  100 on Hard (Medium 10.6, Easy 3.8), but it swapped 91% dunks for hooks and fadeaways: Hard dunks fell from 58% of
+  his shots to 29%, Medium and Hard lost about 0.15 points a possession, and close games on Hard fell from 6 to 2 in
+  20. With the lane open he drives. So signature moves come in under the brief's targets (Easy 3-5, Medium 8-12,
+  Hard 15-20); steering the CPU to his move's spot would be the next step.
+- **Late in a game, a leader running the clock** makes no signature shot and no set-up move (v863-cpu.js decides
+  there). Without that, the leader used 4.5 s of the shot clock instead of the 6+ that `v863` checks (now 7.4).
+- **Fix:** career levels above World (harder than World, top Barakah Run levels) blended Hard with a table that has no
+  move or skill rates, which made them NaN: the CPU there made no dribble moves and no signature moves. Missing values
+  now keep Hard's.
+
+Measured, CPU vs CPU, per player per 100 of his team's possessions (`node tests/perf/loop-report.mjs 20`, which now has
+a signature-move column and a team-average line):
+
+| | Very easy | Easy | Medium | Hard |
+|---|---|---|---|---|
+| Dribble moves (target) | 1.2 → **5.3** (4-6) | 4.3 → **14.9** (12-16) | 13 → **29.2** (22-30) | 18.7 → **37** (30-40) |
+| Signature moves (target) | 0 → 0 | 0 → **1.5** (3-5) | 0 → **3.5** (8-12) | 2.2 → **6.5** (15-20) |
+| Hard dunks, % of shots | | | | 58 → 55 |
+
+Guard rails, 60 seeded games per difficulty against 9.16.2: points per possession Very easy ±0.00, Easy +0.053 (+0.006
+on a second 60 games), Medium +0.016, Hard +0.004; seconds per possession +0.12 / +0.01 / −0.11 / −0.05; turnovers
+−0.5 / −1.5 / −1.1 / −0.8 points; final scores within 4 points 31 / 31 / 24 / 30 of 60 (was 27 / 30 / 27 / 25).
+The best handler makes about 2-3x his teammate's moves (9.16.2 was already 1.5-2.6x; most of it is that he has the
+ball more), not the brief's 1.5x.
+
+Tests: `cpu-handle` adds a defender 80 px in front (24 moves in 60 s on Medium; 0 on 9.16.2) and 80 px behind him,
+standing (none), and Easy signature moves over 10 seeded games (33; 0 on 9.16.2); no third move in a row across them.
+`cpu-league` passes against its 9.14.3 baseline unchanged.
+
 ## 9.16.2: the step-back faces the basket
 Play-test: "I can't step back facing the basket". Holding the stick back turned the player around (he faces the way
 he moves), so the step-back went away from the hoop with his back to it.

@@ -56,7 +56,7 @@ const ROUND_NAMES = ['Quarterfinal', 'Semifinal', 'Final'];
 const HARD_PLUS = { react: 0.08, noise: 0.02, relErr: 0.015, contest: 0.02, antic: 1.0, steal: 0.95, shove: 0.4, trivia: 0.95, switchK: 0.86 };
 const LADDER = [0, 0.35, 1.0, 1.55, 2.0, 2.5];              // [easier than Local, Local, State, National, World, harder than World]
 function diffAt(L) {
-  const mix = (A, B, t) => { const o = {}; for (const k in A) o[k] = lerp(A[k], B[k], t); return o; };
+  const mix = (A, B, t) => { const o = {}; for (const k in A) o[k] = B[k] == null ? A[k] : lerp(A[k], B[k], t); return o; };   // (v9.16.3: a key HARD_PLUS doesn't set keeps Hard's value; it was NaN, so above World the CPU made no moves)
   if (L < 0) return mix(DIFF.veryeasy, DIFF.easy, clamp(L + 1, 0, 1));
   if (L <= 1) return mix(DIFF.easy, DIFF.medium, clamp(L, 0, 1));
   if (L <= 2) return mix(DIFF.medium, DIFF.hard, L - 1);

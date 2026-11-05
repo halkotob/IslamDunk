@@ -63,6 +63,23 @@ export function cpuStyleTests({ newContext, open }) {
         M.cmdHook = null; return { handle: +cpuHandle(h).toFixed(1), n };
       };
       out.low = decide(5, 120); out.high = decide(9, 120);
+      // (5) v9.16.3: the move trigger reaches 90 px: his man 80 px in front of him (Medium), and the same man 80 px behind
+      // him, standing (no move: not in front, not closing)
+      const at80 = (behind, secs) => {
+        __seed(4343); SETTINGS.difficulty = 'medium';
+        newMatch(TEAMS[3], TEAMS[0], { humans: [] }); M.introT = 0; M.phase = 'live';
+        const h = M.teams[0].players.find(q => cpuArch(q) !== 'sharpshooter') || M.teams[0].players[1], d = h.opps[0], o = h.opps[1], H = attackHoop(h.team);
+        M.cmdHook = q => { if (q === h) return false; zeroCmd(q.cmd); return true; };
+        let n = 0;
+        for (let i = 0; i < secs * 60; i++) {
+          giveBall(h, 'test'); h.state = 'free'; h.mv = null; h.cd.mv = 0; h.cd.cross = 0; h.postUp = null; h.ai.plan = { type: 'probe', ctx: 'handler' };
+          h.x = H.x + H.dir * 330; h.z = 350; d.x = h.x + (behind ? 80 : -80) * H.dir; d.z = 350; d.vx = d.vz = 0; d.state = 'free'; o.x = H.x - H.dir * 600; o.z = 600;
+          h.ai.update(STEP); if (h.cmd.x) { n++; h._mvStart = M.time; h.mvEnd = M.time - 1; }
+          M.time += STEP; M.shotClock = 10;
+        }
+        M.cmdHook = null; return n;
+      };
+      out.front80 = at80(false, 60); out.behind80 = at80(true, 60);
       // (3) a sharpshooter, wide open behind the arc: shoots, no move first
       __seed(77); SETTINGS.difficulty = 'hard';
       newMatch(TEAMS[2], TEAMS[5], { humans: [] }); M.introT = 0; M.phase = 'live';
@@ -108,14 +125,23 @@ export function cpuStyleTests({ newContext, open }) {
       const _s = startDribbleMove; let third = 0, moves = 0;
       startDribbleMove = function (q) { const ok = _s.apply(this, arguments); if (ok && q.human < 0 && !M.mini) { moves++; if (q.combo >= 2) third++; } return ok; };
       for (const diff of ['veryeasy', 'easy', 'medium', 'hard']) { SETTINGS.difficulty = diff; __seed(900 + diff.length); newMatch(TEAMS[3], TEAMS[7], { humans: [], fmt: { format: 'halves', len: 120 } }); for (let i = 0; i < 60 * 600 && M.phase !== 'over'; i++) { if (Game.screen === 'halftime') Game.screen = 'play'; updateMatch(STEP); } out.push(diff); }
-      startDribbleMove = _s;
-      return { third, moves, diffs: out.join(',') };
+      // (6) v9.16.3: Easy uses signature moves now (10 seeded games)
+      const _ls = logSig; let sig = 0;
+      logSig = function (q) { if (q.human < 0 && !M.mini) sig++; return _ls.apply(this, arguments); };
+      SETTINGS.difficulty = 'easy';
+      for (let g = 0; g < 10; g++) { __seed(950 + g); newMatch(TEAMS[g % 8], TEAMS[(g * 3 + 1) % 8 === g % 8 ? (g + 1) % 8 : (g * 3 + 1) % 8], { humans: [], fmt: { format: 'halves', len: 60 } }); for (let i = 0; i < 60 * 400 && M.phase !== 'over'; i++) { if (Game.screen === 'halftime') Game.screen = 'play'; updateMatch(STEP); } }
+      logSig = _ls; startDribbleMove = _s;
+      return { third, moves, diffs: out.join(','), easySig: sig };
     });
     await ctx.close();
     detail.push(`(1) decides on a move in 120 s at the same spot, Hard: handle ${r.low.handle}: ${r.low.n}, handle ${r.high.handle}: ${r.high.n} (${(r.high.n / Math.max(1, r.low.n)).toFixed(2)}x)`);
     if (!(r.high.n > r.low.n * 1.5)) bad.push('(1) the better handler does not make clearly more moves');
-    detail.push(`(2) ${runs.moves} CPU moves in 4 seeded games (${runs.diffs}): ${runs.third} third moves in a row`);
+    detail.push(`(2) ${runs.moves} CPU moves in 4 seeded games (and 10 Easy games) (${runs.diffs}): ${runs.third} third moves in a row`);
     if (runs.third || runs.moves < 20) bad.push('(2) a CPU player started a third move in a row (or too few moves to tell)');
+    detail.push(`(5) Medium, 60 s at the same spot: his man 80 px in front: ${r.front80} moves; 80 px behind him, standing: ${r.behind80}`);
+    if (!(r.front80 >= 5) || r.behind80) bad.push('(5) a defender at 80 px in front does not bring a move (or one behind him does)');
+    detail.push(`(6) Easy, 10 seeded games: ${runs.easySig} CPU signature moves`);
+    if (!(runs.easySig > 0)) bad.push('(6) no signature moves on Easy');
     detail.push(`(3) ${r.shooter.name} (Shooting 10), behind the arc (${r.shooter.three}), his man 47 px off, a good look (${r.shooter.open}): shot ${r.shooter.shot}, moved first ${r.shooter.moved}`);
     if (!r.shooter.three || !r.shooter.open || !r.shooter.shot || r.shooter.moved) bad.push('(3) the open sharpshooter did not shoot first');
     detail.push(`(4) the flat move rate decides in a mini-game: ${r.mini}, as an online guest: ${r.guest}; in a match the 9.16 spacing holds it back: ${!r.normal}`);

@@ -4,7 +4,7 @@
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.16.2';
+const VERSION = '9.16.3';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -39,10 +39,13 @@ function diffName(d) { return { veryeasy: 'Very easy', easy: 'Easy', medium: 'Me
 function diffStep(d, k) { const i = DIFF_ORDER.indexOf(d); return DIFF_ORDER[((i < 0 ? 2 : i) + k + DIFF_ORDER.length) % DIFF_ORDER.length]; }
 // Difficulty changes perception/decision/timing only — never player stats.
 // dk (v9.8): how strong the CPU's defense is at this level (blocks, steals, contests); 1 = medium
+// v9.16.3: skillUse (signature moves) from Easy up, the chance he calls his move when it's on; mvRate: the CPU handler's dribble-move rate per second with a defender
+// on him (v916-cpu-handle.js; cross stays the flat rate for mini-games and online guests); setup: how often he makes one
+// move before driving at a defender in front (times his handle)
 const DIFF = {
-  veryeasy: { react: 0.62, noise: 0.45, relErr: 0.26, contest: 0.34, antic: 0.0, steal: 0.15, shove: 0.04, trivia: 0.50, switchK: 0.45, cross: 0.05, double: false, skillUse: 0, read: 0, dk: 0.5 },
-  easy:   { react: 0.42, noise: 0.30, relErr: 0.17,  contest: 0.24, antic: 0.0, steal: 0.35, shove: 0.10, trivia: 0.60, switchK: 0.55, cross: 0.12, double: false, skillUse: 0, read: 0, dk: 0.85 },
-  medium: { react: 0.24, noise: 0.13, relErr: 0.08,  contest: 0.12, antic: 0.5, steal: 0.60, shove: 0.22, trivia: 0.75, switchK: 0.70, cross: 0.28, double: false, skillUse: 0, read: 0, dk: 1 },
-  hard:   { react: 0.11, noise: 0.04, relErr: 0.025, contest: 0.04, antic: 0.9, steal: 0.85, shove: 0.35, trivia: 0.90, switchK: 0.82, cross: 0.42, double: true, skillUse: 0.7, read: 1, dk: 1.3 }
+  veryeasy: { react: 0.62, noise: 0.45, relErr: 0.26, contest: 0.34, antic: 0.0, steal: 0.15, shove: 0.04, trivia: 0.50, switchK: 0.45, cross: 0.05, double: false, skillUse: 0, read: 0, dk: 0.5, mvRate: 0.065, setup: 0.15 },
+  easy:   { react: 0.42, noise: 0.30, relErr: 0.17,  contest: 0.24, antic: 0.0, steal: 0.35, shove: 0.10, trivia: 0.60, switchK: 0.55, cross: 0.12, double: false, skillUse: 0.10, read: 0, dk: 0.85, mvRate: 0.20, setup: 0.45 },
+  medium: { react: 0.24, noise: 0.13, relErr: 0.08,  contest: 0.12, antic: 0.5, steal: 0.60, shove: 0.22, trivia: 0.75, switchK: 0.70, cross: 0.28, double: false, skillUse: 0.30, read: 0, dk: 1, mvRate: 0.36, setup: 0.8 },
+  hard:   { react: 0.11, noise: 0.04, relErr: 0.025, contest: 0.04, antic: 0.9, steal: 0.85, shove: 0.35, trivia: 0.90, switchK: 0.82, cross: 0.42, double: true, skillUse: 0.7, read: 1, dk: 1.3, mvRate: 0.56, setup: 1 }
 };
 

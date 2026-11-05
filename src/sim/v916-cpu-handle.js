@@ -18,8 +18,11 @@
 //     two-hander for the rest); a poor dunker (Dunking 5 or less) lays it in some of the time even with the lane open.
 // What the CPU makes (dunk and shot success) is untouched, and so are mini-games (M.mini), snapshot-netcode guests (they
 // don't run the CPU) and human players. In a rollback match both phones run the CPU: Net.role is cleared for the step and
-// this code's per-player state (_mvStart, _after, _chainFor, _layT) is saved with the match, so both play it the same. Measured with tests/perf/loop-report.mjs (per-player lines); see CHANGELOG 9.16.0.
-const CPU_HANDLE_AVG = 5.6;                       // the league's average handle (quick-play rosters), so the move rate averages out
+// this code's per-player state (_mvStart, _after, _chainFor, _layT, and 9.16.3's _ownT, _setup) is saved with the match, so both play it the same. Measured with tests/perf/loop-report.mjs (per-player lines); see CHANGELOG 9.16.0.
+// v9.16.3 (play-test: "the CPU doesn't do many skill moves"): the move trigger reaches 90 px (a defender in front or
+// closing), at the difficulty's mvRate; an attack set-up (one move before driving at a defender in front, by handle);
+// signature moves from Easy up (cpuSkill below). CHANGELOG 9.16.3 has the numbers.
+const CPU_HANDLE_AVG = 5.6;                      // the league's average handle (quick-play rosters), so the move rate averages out
 function cpuHandle(p) {
   const s = p.st, key = [s.spd, s.pas, p.def && p.def.name, p.def && p.def.arch, p.def && p.def.look && p.def.look.style].join(',');
   if (p._hnd != null && p._hndK === key) return p._hnd;
@@ -44,6 +47,8 @@ function cpuShootFirst(p, dd) {
     _up.call(this, dt);
     const p = this.p, c = p.cmd;
     if (!cpuStyleOn(p) || ball.owner !== p) return;
+    if (M.time - (p._ownT == null ? -9 : p._ownT) > 0.2) p._setup = null;   // a new hold: the attack set-up can come again (v9.16.3)
+    p._ownT = M.time;
     c.x = false;                                          // the move decision is made here (it replaces ai.js's flat rate)
     if (p.state !== 'free' || p.postUp) return;
     const cf = this.cfg(), dd = nearestOppDist(p.x, p.z, p.team);
@@ -65,7 +70,22 @@ function cpuShootFirst(p, dd) {
       return;
     }
     if (M.time - (p._mvStart == null ? -9 : p._mvStart) < 0.9) return;
-    if (!(p.cd.cross > 0) && cf.cross && dd < 50 && chance(dt * cf.cross * cpuMoveK(p))) c.x = true;
+    if (p.cd.cross > 0) return;
+    // v9.16.3: a defender in front of him or closing on him within 90 px (was any defender within 50 px), at the
+    // difficulty's mvRate (was cf.cross, which stays the flat rate for mini-games and online guests)
+    const def = dd < 90 ? nearestOpp(p) : null;
+    if (!def) return;
+    const H = hoopDir(p), inFront = dxz(def, H.h) < H.d, rx = p.x - def.x, rz = p.z - def.z, R = Math.hypot(rx, rz) || 1;
+    const closing = ((def.vx || 0) - (p.vx || 0)) * rx / R + ((def.vz || 0) - (p.vz || 0)) * rz / R > 40;
+    if (!inFront && !closing && dd >= 50) return;
+    const rate = cf.mvRate != null ? cf.mvRate : cf.cross;
+    // the attack set-up: once a hold, with 4+ s on the shot clock, driving at a defender in front, one move first
+    // (a high handle almost always, a low handle rarely; the difficulty's setup scales it, so Very easy stays gentle)
+    const pl = this.plan || {};
+    if (p._setup == null && inFront && (pl.type === 'drive' || pl.type === 'dunk') && M.shotClock >= 4 && !(typeof lateMode === 'function' && lateMode(p.team)))
+      p._setup = chance(clamp((cpuHandle(p) - 3) / 5, 0.08, 0.95) * (cf.setup || 0)) ? 1 : 0;
+    if (p._setup === 1) { p._setup = 0; c.x = true; return; }
+    if (rate && chance(dt * rate * cpuMoveK(p))) c.x = true;
   };
   // after his move: a shooter looks to shoot, a rim runner to attack the rim
   BP.choose = function (opts) {
@@ -76,6 +96,34 @@ function cpuShootFirst(p, dd) {
       if (a.drive && (o.type === 'drive' || o.type === 'dunk')) o.u += 0.3;
     }
     return _ch.apply(this, arguments);
+  };
+}
+// v9.16.3: signature moves. cpuSkill (skill-expression.js) called it at skillUse per second while the move worked and a
+// defender was within 80 px, but a handler is in that spot for a split second on his way to the rim (about 3% of his
+// time with the ball on Hard; the window lasts about 0.15 s), so even Hard made about 2 per 100 possessions and every
+// other difficulty had none. Now he decides each time the move becomes available (sigAvailable: the right distance from
+// the rim with a defender on him) and a defender is between him and the rim, on that frame, with a chance of
+// 2.2 x skillUse (Easy 0.22, Medium 0.66, Hard 1); the window has to close for 0.3 s before it counts again.
+// (With the lane open he takes the drive: calling it every time it was available reached 19.8 a 100 on Hard but swapped
+// open dunks, 91% makes, for hooks and fadeaways: Hard dunks 58% of his shots to 29%, 0.15 points a possession lost.)
+function sigWorthIt(p) {
+  const h = attackHoop(p.team), def = nearestOpp(p);
+  return !!def && dxz(def, h) < dxz(p, h) - 10;
+}
+{
+  const _cs = cpuSkill;
+  cpuSkill = function (p, c, dt) {
+    if (!cpuStyleOn(p) || !p.def) return _cs.apply(this, arguments);
+    const lm = typeof lateMode === 'function' && lateMode(p.team);
+    if (lm && lm.mode === 'protect') return;        // a leader running the clock late doesn't take a signature shot (v863-cpu.js decides)
+    const cf = aiCfg(p.team), open = ball.owner === p && sigAvailable(p) && sigWorthIt(p);   // (sigAvailable already needs a defender on him, 140-180 px by the move)
+    if (!open) { if (p._sigWin) { p._sigWin = 0; p._sigOff = M.time; } return; }
+    if (!p._sigWin) {
+      p._sigWin = 1;
+      // (a flicker at the edge of the window keeps the roll it had)
+      if (M.time - (p._sigOff == null ? -9 : p._sigOff) >= 0.3) p._sigAt = cf.skillUse > 0.05 && chance(Math.min(1, cf.skillUse * 2.2)) ? M.time : null;   // (on the spot: the window lasts about 0.15 s)
+    }
+    if (p._sigAt != null && M.time >= p._sigAt) { p._sigAt = null; c.s = true; }
   };
 }
 // which move

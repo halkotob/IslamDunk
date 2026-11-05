@@ -6,6 +6,7 @@
 // v9.16: a per-player table for the CPU-vs-CPU rows: his handle (cpuHandle, or the same formula on older builds), shots by
 // type (three / mid / close / dunk, % of his shots), dribble moves per 100 of his team's possessions by type, the share
 // of his finishes inside 150 px that are dunks (the rest are layups and other close shots), assists and turnovers per 100 team possessions.
+// v9.16.3: signature moves (the Skills button) per 100 team possessions, and a team-average line per difficulty.
 import { chromium } from 'playwright'; import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
 const argv = process.argv.slice(2), opt = k => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
@@ -20,10 +21,12 @@ await p.goto(`http://127.0.0.1:${srv.address().port}/`); await p.waitForFunction
     // ---- per player (CPU players): moves, shots, rim finishes; summed over the games of a row
     const handleOf = q => typeof cpuHandle === 'function' ? cpuHandle(q) : (() => { const s = q.st, v = k => (s[k] == null ? 5 : s[k]); return Math.max(1, Math.min(10, 5 + (v('spd') - 6.5) * 1.2 + (v('pas') - 5) * 0.6 + (cpuArch(q) === 'playmaker' ? 1.2 : 0))); })();
     let PL = null;
-    const rec = q => { const k = q.def.name + '|' + M.teamDefs[q.team].name; return PL[k] || (PL[k] = { name: q.def.name, team: M.teamDefs[q.team].name, arch: cpuArch(q), handle: +handleOf(q).toFixed(1), poss: 0, mv: {}, moves: 0, shots: { three: 0, mid: 0, close: 0, dunk: 0 }, layup: 0, ast: 0, tov: 0, dunkTypes: {}, chain3: 0 }); };
+    const rec = q => { const k = q.def.name + '|' + M.teamDefs[q.team].name; return PL[k] || (PL[k] = { name: q.def.name, team: M.teamDefs[q.team].name, arch: cpuArch(q), handle: +handleOf(q).toFixed(1), poss: 0, mv: {}, moves: 0, shots: { three: 0, mid: 0, close: 0, dunk: 0 }, layup: 0, ast: 0, tov: 0, dunkTypes: {}, chain3: 0, sig: 0 }); };
     const cpuQ = q => PL && q && q.human < 0 && !M.mini;
     const _sdm = startDribbleMove;
     startDribbleMove = function (q, kind) { const ok = _sdm.apply(this, arguments); if (ok && cpuQ(q)) { const r = rec(q); r.mv[kind] = (r.mv[kind] || 0) + 1; r.moves++; if (q.combo >= 2) r.chain3++; } return ok; };
+    const _lsg = logSig;   // a signature move (the Skills button; the CPU calls it in cpuSkill)
+    logSig = function (q) { if (cpuQ(q)) rec(q).sig++; return _lsg.apply(this, arguments); };
     const _as = PossLog.addShot.bind(PossLog);
     PossLog.addShot = function (sh, h, pts, dunk) { if (cpuQ(sh) && pts > 1 && this.game) { const d = Math.hypot(sh.x - h.x, sh.z - h.z), r = rec(sh); r.shots[dunk ? 'dunk' : pts === 3 ? 'three' : d < 150 ? 'close' : 'mid']++; } return _as(sh, h, pts, dunk); };
     const _ast = applyShotType;
@@ -33,7 +36,7 @@ await p.goto(`http://127.0.0.1:${srv.address().port}/`); await p.waitForFunction
     const endGame = g => { if (!PL || !g) return; const poss = [0, 0]; for (const c of g.poss) poss[c.team]++; for (const q of M.players) if (q.human < 0) { const r = rec(q); r.poss += poss[q.team]; r.ast += q.stats.ast || 0; r.tov += q.stats.tov || 0; } };
     const players = () => Object.values(PL).map(r => { const P = Math.max(1, r.poss) / 100, S = Math.max(1, r.shots.three + r.shots.mid + r.shots.close + r.shots.dunk), rim = r.shots.dunk + r.layup;
       return { name: r.name, team: r.team, arch: r.arch, handle: r.handle, poss: r.poss, shots: S, three: Math.round(100 * r.shots.three / S), mid: Math.round(100 * r.shots.mid / S), close: Math.round(100 * r.shots.close / S), dunk: Math.round(100 * r.shots.dunk / S),
-        movesPer100: +(r.moves / P).toFixed(1), mv: Object.fromEntries(Object.entries(r.mv).map(([k, v]) => [k, +(v / P).toFixed(1)])), dunkOfRim: r.shots.dunk + r.shots.close ? Math.round(100 * r.shots.dunk / (r.shots.dunk + r.shots.close)) : 0, astPer100: +(r.ast / P).toFixed(1), tovPer100: +(r.tov / P).toFixed(1), dunkTypes: r.dunkTypes, chain3: r.chain3 }; });
+        movesPer100: +(r.moves / P).toFixed(1), mv: Object.fromEntries(Object.entries(r.mv).map(([k, v]) => [k, +(v / P).toFixed(1)])), dunkOfRim: r.shots.dunk + r.shots.close ? Math.round(100 * r.shots.dunk / (r.shots.dunk + r.shots.close)) : 0, astPer100: +(r.ast / P).toFixed(1), tovPer100: +(r.tov / P).toFixed(1), dunkTypes: r.dunkTypes, chain3: r.chain3, sigPer100: +(r.sig / P).toFixed(1) }; });
     const bots = {
       idle: () => true,
       rusher: (me, c, st) => {           // sprint at the rim, shoot (dunk) when close; chase and swipe on D
@@ -92,10 +95,17 @@ for (const [k, v] of Object.entries(r)) {
   if (!v.players) continue;
   const close = v.finals.filter(f => { const [a, b] = f.split('-').map(Number); return Math.abs(a - b) <= 4; }).length;
   console.log(`\n${k}: per player (${v.games} games; final scores within 4 points in ${close} of ${v.finals.length})`);
-  console.log('player'.padEnd(26), 'style'.padEnd(13), 'hndl', 'shots', ' 3PT  mid  cls  dnk', ' moves/100p (by type)'.padEnd(46), 'dnk/rim', 'ast/100', 'tov/100', 'chains of 3+');
+  console.log('player'.padEnd(26), 'style'.padEnd(13), 'hndl', 'shots', ' 3PT  mid  cls  dnk', ' moves/100p (by type)'.padEnd(46), 'dnk/rim', 'ast/100', 'tov/100', 'chains of 3+', 'sig/100p');
   for (const q of v.players.sort((a, b) => a.team.localeCompare(b.team) || b.handle - a.handle))
     console.log((q.name + ' (' + q.team.replace('Masjid ', '') + ')').padEnd(26).slice(0, 26), q.arch.padEnd(13), String(q.handle).padStart(4), String(q.shots).padStart(5), [q.three, q.mid, q.close, q.dunk].map(x => String(x).padStart(4)).join(' '),
-      (' ' + q.movesPer100 + ' (' + Object.entries(q.mv).map(([a, b]) => a + ' ' + b).join(', ') + ')').padEnd(46), String(q.dunkOfRim + '%').padStart(7), String(q.astPer100).padStart(7), String(q.tovPer100).padStart(7), String(q.chain3).padStart(5));
+      (' ' + q.movesPer100 + ' (' + Object.entries(q.mv).map(([a, b]) => a + ' ' + b).join(', ') + ')').padEnd(46), String(q.dunkOfRim + '%').padStart(7), String(q.astPer100).padStart(7), String(q.tovPer100).padStart(7), String(q.chain3).padStart(5), String(q.sigPer100).padStart(8));
+  // team averages (weighted by possessions): dribble moves and signature moves per 100 possessions per player, and the
+  // best handler's moves over his teammate's
+  const W = v.players.reduce((a, q) => a + q.poss, 0) || 1, avg = k => +(v.players.reduce((a, q) => a + q[k] * q.poss, 0) / W).toFixed(1);
+  const teams = {}; for (const q of v.players) (teams[q.team] = teams[q.team] || []).push(q);
+  const ratios = Object.values(teams).filter(t => t.length === 2).map(t => { t.sort((a, b) => b.handle - a.handle); return t[0].movesPer100 / Math.max(0.5, t[1].movesPer100); });
+  const med = ratios.sort((a, b) => a - b)[ratios.length >> 1];
+  console.log(`  average: dribble moves ${avg('movesPer100')} per 100 possessions, signature moves ${avg('sigPer100')}, best handler / teammate ${med == null ? '-' : med.toFixed(2)}x (median of teams)`);
 }
 if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify(r, null, 1));
 await b.close(); srv.close();
