@@ -66,6 +66,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | ST4 | Steam store page: capsules, a trailer from highlight clips, screenshots, the AI-content survey | Steam | 3 | 2 | 2 | **20** | open |
 | CD3 | Teammates in the same kit look alike at play size: add one large personal mark (headband, sleeve, long shorts, knee pad) | character design | 3 | 2 | 2 | **20** | open |
 | VD2 | Vertical (9:16) highlight videos for TikTok, Reels and Shorts (today 1280×720 only) | visual design | 4 | 1 | 2 | **20** | open |
+| UX1 | Screens without arrow-key menus need the gamepad's View button to pick a target: show that hint, or give them focus order | UI | 3 | 2 | 2 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
@@ -111,6 +112,8 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | GT7 | Check how often the Noor question stops play; an option to ask it at timeouts and halftime | game design | 2 | 1 | 2 | **12** | open |
 | VD4 | Results screen: animate the score count and Player of the Game, dim the court fully (with D1) | visual design | 2 | 1 | 2 | **12** | open |
 | GF3 | Small presses get no feedback: a tiny pop on a made free throw, a pass caught, a steal attempt | game feel | 2 | 1 | 2 | **12** | open |
+| UX2 | 16:10 (Steam Deck, many laptops) and ultrawide get black bars: let the height grow on 16:10 | UI | 2 | 1 | 2 | **12** | open |
+| UX3 | Buttons are fixed widths sized to English; translations will overflow (with UI2) | UI | 2 | 1 | 2 | **12** | open |
 | B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |
 | U6 | Consistent apostrophes and online terms (game, lobby, code) | UX copy | 1 | 1 | 1 | **10** | open |
 | U7 | The lobby says "Waiting for your friend" twice; a shorter rules note | UX copy | 1 | 1 | 1 | **10** | open |
@@ -605,6 +608,23 @@ when pressed and grow on hover; gamepads rumble on big plays.
   Vibration setting. Safari on iPhone has no vibration API.
 - **GF3:** the skill's "small tier" (a tick sound, a few particles) is missing on routine successes such as a made
   free throw or a clean catch.
+
+### Game UI/UX skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/game-ui-ux` and `references/layout-and-flow.md` against `src/screens/menus.js`, `flow.js`,
+`navigation.js`, `src/core/gamepad.js`, `src/core/mobile-fit.js` and `src/screens/phone-pass.js`.
+
+| Skill check | Islam Dunk |
+|---|---|
+| Layout and scaling | One logical canvas 540 high, with the width set from the screen's shape between 960 and 1200 (`mobile-fit.js:28`); positions are relative to the centre and edges. Phones (19.5:9) fill the screen; 16:10 and ultrawide get bars (UX2). |
+| Safe area | Handled: the page pads by the notch and home-bar insets (`index.html` body padding) and the touch layout avoids them. |
+| Focus navigation | Most menus move with arrow keys and the stick (`menuNav`, 19 screens). Others are tap-target screens; there the gamepad's View button opens a picker that walks every target (`Pad.pick`, `gamepad.js:82`), so nothing is unreachable, but nothing tells a gamepad player to press View (UX1). |
+| Screen flow | A screen name plus flags (`Game.screen`, `Game.paused`, `Game.trivia`, …) with one Back table (`navigation.js`); the skill's screen stack is A6. |
+| HUD updates | The canvas redraws every frame by design; the skill's event-driven HUD advice is for retained-mode UI and doesn't apply. |
+| Text size | Larger text on computers up to "Larger"; phones fixed at an 11 px floor (X2). The skill cites a 200% scaling target. |
+| Contrast and colour | See X3; team colours have a colourblind-safe option; possession isn't shown by colour alone (the ball marker). |
+| Touch targets | See X1. |
+| Localization | Text is in the drawing code and buttons have fixed widths (`btn(..., 150, 42, ...)` in `net.js` `drawJoinCode`, and others) (UX3, UI2). |
 
 ### Architecture (review of 5 Nov 2026)
 
