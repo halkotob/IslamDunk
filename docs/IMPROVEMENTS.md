@@ -20,6 +20,8 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | B4 | Rollback: "1 on 1 (no CPU)" is played 2 on 2 with CPU teammates | code review | 4 | 3 | 2 | **28** | open |
 | Q7 | A daily live check of the relay Worker | testing | 2 | 3 | 1 | **25** | open |
 | B7 | Rollback: a tap can be lost when the input delay shrinks | code review | 3 | 2 | 1 | **25** | open |
+| B11 | A steal pressed during the steal cooldown is dropped (the buffer never fires) | code review | 3 | 2 | 1 | **25** | open |
+| B15 | Sprint timestamps carry over between matches: one tap can start a sprint at tip-off | code review | 3 | 2 | 1 | **25** | open |
 | T5 | Stop committing the built `index.html`; publish Pages from the build | tech debt | 3 | 3 | 2 | **24** | open |
 | T4 | One settings module that owns every saved setting | tech debt | 3 | 3 | 2 | **24** | open |
 | B5 | Rollback: the host has no "End game: back to lobby" and no "friend dropped" notice | code review | 3 | 3 | 2 | **24** | open |
@@ -35,6 +37,9 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | B8 | P2P: answering a new offer leaves the old channel half open | code review | 2 | 3 | 2 | **20** | open |
 | X3 | Raise contrast of grey labels, calendar chips and the red EXIT (about 140 texts below 4.5:1) | accessibility | 3 | 2 | 2 | **20** | open |
 | X4 | An option for more time on the Noor question (15 s now) | accessibility | 2 | 2 | 1 | **20** | open |
+| B12 | Online Barakah Run duos: the host can tap the guest's power-up card | code review | 2 | 2 | 1 | **20** | open |
+| B17 | The CPU difficulty formula is copied in 3 places (match, pre-game label, league sims) | code review | 2 | 2 | 1 | **20** | open |
+| B19 | Player portraits: a cache that never shrinks and a JSON copy every frame | code review | 2 | 2 | 1 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
@@ -42,6 +47,10 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | A3 | One state codec for snapshots, rollback saves and checksums | architecture | 4 | 4 | 4 | **16** | open (after A1, A4) |
 | S4 | Longer join codes, the guest's name in the lobby, a way to remove a guest | security | 2 | 2 | 2 | **16** | open |
 | A6 | A screen registry instead of reassigning `render` / `gameUpdate` | architecture | 3 | 2 | 3 | **15** | open |
+| B13 | After a duo Barakah Run the end screen shows the solo best | code review | 2 | 1 | 1 | **15** | open |
+| B14 | A pop label can replace the foul callout's subtitle ("ON AHMED • 2 SHOTS") | code review | 2 | 1 | 1 | **15** | open |
+| B16 | League sims: a tie fix-up changes the score but not the box score | code review | 2 | 1 | 1 | **15** | open |
+| B18 | Dead code that looks live: v6 `preStep`, the old `drawHowTo`, the first `checkBlockJump` | code review | 2 | 1 | 1 | **15** | open |
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
 | B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |
 | B9 | Rollback: halftime is skipped (a known gap; the saved screen is never used) | code review | 2 | 1 | 3 | **9** | open |
@@ -154,6 +163,29 @@ Reviewed: `src/online/rollback.js`, `rollback-net.js`, `rollback-sync.js`, `p2p.
 - **B9:** `rbStep` (`rollback.js:68`) keeps the requested screen in `M.rbScreen`, which nothing reads.
 - **B10:** `!RB.frame` (`rollback.js:100`) treats frame 0 as no frame.
 
+### Code review of the game hot spots (5 Nov 2026)
+
+Reviewed: `src/render/renderer.js`, `src/sim/players.js`, `v7-controls.js`, `v6-contact.js`, `v8-resets.js`,
+`src/career/career-screens.js`, `barakah-run.js`, `league.js`, `src/screens/menus.js`. The reviewer's findings, to
+confirm while fixing.
+
+- **B11:** `trySteal` (`players.js:425`) buffers a press made during the 0.22 s cooldown in `p.buf.a`, but under the
+  v7 controls nothing reads it in time and the next `humanCmd` overwrites it.
+- **B15:** `sprintStep` (`v7-controls.js:20`) stores `S.held` / `S.lastT` and compares them with `M.time` in rollback
+  and wall time otherwise; a new match (or switching modes) leaves them stale, so sprint can stick on or start
+  from a single tap.
+- **B12:** `replayabilityScreen` draws tappable cards that call `pickRunPower` (`barakah-run.js:175`), which doesn't
+  check `Run.turn`.
+- **B17:** `Math.max(veryeasy ? -1 : 0, lv.opp + tier * 0.2)` in `career-screens.js:161`, `:493` and `league.js:44`.
+  Use `lgLevel` everywhere.
+- **B19:** `drawPortrait` (`menus.js:171`) builds its cache key with `JSON.stringify(def.look)` each frame and keeps
+  one Player per look forever (each arrow press in the creator adds one).
+- **B13:** duo runs are saved under `barakahDuo` (`barakah-run.js:61`) but the end screen reads the solo best.
+- **B14:** `renderer.js:630` overwrites `C.sub` when a pop overlaps the callout; only fill an empty one.
+- **B16:** `league.js:200` adds 2 to the team score on a tie but not to any player line.
+- **B18:** reassigned and never called: `v6-contact.js:359` `preStep`, `menus.js:294` `drawHowTo` (still lists the
+  removed Turbo key), `players.js:404` `checkBlockJump`. Delete them (part of T3).
+
 ### Accessibility (WCAG 2.1 AA, 5 Nov 2026)
 
 Measured in a headless iPhone 13 (landscape, 750×342) on the 90 screens of the phone audit: tap areas, text size in
@@ -194,8 +226,10 @@ Full report with diagrams: https://claude.ai/artifact/2xwUSzQF3FH1K7WPRAkDf4
 
 ## Still to review
 
-- Code review of the other hot spots: `src/render/renderer.js`, `src/sim/players.js`, `src/sim/v7-controls.js`,
-  `src/career/*`, `src/screens/menus.js`.
+- Performance (Lighthouse and frame time): with the Perf Profiler or Web Vitals Auditor plugin once added.
+- Automated accessibility scan: with the Axe Accessibility plugin once added.
+- Menu and message wording (`design:ux-copy`), screen design (`design:design-critique`), how the game page shows up
+  in search and when shared (`marketing:seo-audit`).
 
 ## Done
 
