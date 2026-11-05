@@ -78,6 +78,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | G3 | Submit to CrazyGames (non-exclusive) and the YouTube Playables interest form | launch | 3 | 1 | 2 | **16** | open |
 | GT4 | Quick online reactions ("MashaAllah!", "Pass!", "Good game") for players not on a call | game design | 3 | 1 | 2 | **16** | open |
 | GT5 | Bragging rights: share a daily scenario result as a "beat my score" code | game design | 3 | 1 | 2 | **16** | open |
+| GF1 | Online rollback matches lose hit-stop and slow motion (reset each frame): play them as a visual-only hold | game feel | 3 | 1 | 2 | **16** | open |
 | A6 | A screen registry instead of reassigning `render` / `gameUpdate` | architecture | 3 | 2 | 3 | **15** | open |
 | B13 | After a duo Barakah Run the end screen shows the solo best | code review | 2 | 1 | 1 | **15** | open |
 | B14 | A pop label can replace the foul callout's subtitle ("ON AHMED • 2 SHOTS") | code review | 2 | 1 | 1 | **15** | open |
@@ -99,6 +100,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | CD6 | A one-line personality for each Quick Play player, shown on the team card | character design | 2 | 1 | 1 | **15** | open |
 | CD7 | A short cast sheet in `docs/` (silhouette, colours, landmarks, pose per player) so new players stay consistent | character design | 2 | 1 | 1 | **15** | open |
 | VD3 | The splash is a still logo for 1.7 s: give it motion (a dunk, a glow) for the first 3 seconds | visual design | 2 | 1 | 1 | **15** | open |
+| GF2 | Phone vibration on big plays for Android (gamepads already rumble; iPhone browsers don't allow it) | game feel | 2 | 1 | 1 | **15** | open |
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
 | W5 | robots.txt, a sitemap, and a short own domain for sharing | SEO and sharing | 2 | 1 | 2 | **12** | open |
 | G6 | A seasonal calendar for posts and updates: Ramadan, Eid, Jumu'ah challenges | launch | 3 | 1 | 3 | **12** | open |
@@ -108,6 +110,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | CD5 | Faces have joy, fierce and shock only: add disappointed (a miss, a loss) and focused (free throw) | character design | 2 | 1 | 2 | **12** | open |
 | GT7 | Check how often the Noor question stops play; an option to ask it at timeouts and halftime | game design | 2 | 1 | 2 | **12** | open |
 | VD4 | Results screen: animate the score count and Player of the Game, dim the court fully (with D1) | visual design | 2 | 1 | 2 | **12** | open |
+| GF3 | Small presses get no feedback: a tiny pop on a made free throw, a pass caught, a steal attempt | game feel | 2 | 1 | 2 | **12** | open |
 | B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |
 | U6 | Consistent apostrophes and online terms (game, lobby, code) | UX copy | 1 | 1 | 1 | **10** | open |
 | U7 | The lobby says "Waiting for your friend" twice; a shorter rules note | UX copy | 1 | 1 | 1 | **10** | open |
@@ -580,6 +583,28 @@ the total is out of 60.
 8. **Automatic tests on every push** (T1): catches breaks before players see them. Files: `.github/workflows/`.
 
 After a pass, running the skill again should find the next batch.
+
+### Game feel skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/game-feel` and `references/feedback-recipes.md` against `src/render/game-feel.js`,
+`src/render/visuals-v76.js`, `src/render/renderer.js` and `src/screens/flow.js`.
+
+Already matches the skill: shake drives a camera offset, not the players, with a smooth eased dip and no random
+jitter (`shakeTick`); a new shake only replaces a weaker one; hit-stop is up to 4 frames, takes the larger of two
+overlapping requests (`FX.hitstop`) and lets input buffer through; feedback is tiered by importance (`MAKE_FEEL`:
+layups get no shake, posterizers the most, plus slow motion); juice returns to rest; Camera shake (Off, Reduced,
+Full), Flashes and Reduced motion settings exist, which the skill's accessibility section asks for; buttons shrink
+when pressed and grow on hover; gamepads rumble on big plays.
+
+- **GF1:** the rollback step sets `FX.scale = 1; FX.stopF = 0` every frame (`src/online/rollback-net.js:59`, `:207`)
+  because slow motion and hit-stop change the simulation clock (`sim()` in `src/screens/flow.js:5`), which would
+  break the shared timeline. So the promoted mode is the one without them. Make them visual only in online play:
+  hold the drawn pose and the camera for the hit-stop frames and slow the replay camera, while the match keeps
+  stepping (this is the A2 seam).
+- **GF2:** Android browsers support `navigator.vibrate`; a 20–40 ms pulse on dunks and blocks, behind the existing
+  Vibration setting. Safari on iPhone has no vibration API.
+- **GF3:** the skill's "small tier" (a tick sound, a few particles) is missing on routine successes such as a made
+  free throw or a clean catch.
 
 ### Architecture (review of 5 Nov 2026)
 
