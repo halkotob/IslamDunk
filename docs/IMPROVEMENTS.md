@@ -20,6 +20,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | GT1 | A new player's first match starts on Medium: start on Easy and suggest stepping up after a win | game design | 4 | 2 | 1 | **30** | open |
 | GT6 | A playtest plan: first-time players, non-gamers (parents, younger kids), watch without coaching | game design | 4 | 2 | 1 | **30** | open |
 | SV3 | When an autosave fails (storage full, private browsing), say so once; today only the manual save reports it | save systems | 3 | 3 | 1 | **30** | open |
+| ST6 | Steam's content survey: decide honestly what AI-made content ships (text, art); have the Noor questions checked by someone knowledgeable | Steam | 3 | 3 | 1 | **30** | open |
 | T2 | Catch errors on players' devices and add them to the Network report | tech debt | 3 | 4 | 2 | **28** | open |
 | S3 | Only the game can get relay (TURN) credentials; usage alert | security | 3 | 4 | 2 | **28** | open |
 | Q3 | A folder of old saves that every release must load | testing | 3 | 4 | 2 | **28** | open |
@@ -37,6 +38,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | CD8 | Respectful depiction check with someone from the community: imama, kufi, beards, the sheikh and mufti titles | character design | 2 | 3 | 1 | **25** | open |
 | GT2 | "Why I missed" is off by default: show it during a new player's first games | game design | 3 | 2 | 1 | **25** | open |
 | P5 | Adaptive resolution ignores menus and the title, where a full match plays behind: let it count there too | performance | 3 | 2 | 1 | **25** | open |
+| ST5 | Steam needs unpacked app folders per OS (Windows, macOS, Linux for Steam Deck), not the NSIS/DMG/AppImage installers built today | Steam | 3 | 2 | 1 | **25** | open |
 | T5 | Stop committing the built `index.html`; publish Pages from the build | tech debt | 3 | 3 | 2 | **24** | open |
 | T4 | One settings module that owns every saved setting | tech debt | 3 | 3 | 2 | **24** | open |
 | B5 | Rollback: the host has no "End game: back to lobby" and no "friend dropped" notice | code review | 3 | 3 | 2 | **24** | open |
@@ -77,7 +79,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
 | GD1 | Let a newcomer friend use Casual controls and automatic release online (per player) | game design | 4 | 2 | 3 | **18** | open |
-| ST3 | Steam Deck: every menu by controller, 1280×800 layout, PlayStation and Deck button labels | Steam | 4 | 2 | 3 | **18** | open |
+| ST3 | Steam Deck: text at least 9 px (12 recommended) at 1280×800, fill 16:10, a playable frame rate at default settings; Deck's A/B/X/Y already match the labels | Steam | 4 | 2 | 3 | **18** | open |
 | A2 | Make sound, effects and commentary consume match events | architecture | 4 | 4 | 4 | **16** | open |
 | A3 | One state codec for snapshots, rollback saves and checksums | architecture | 4 | 4 | 4 | **16** | open (after A1, A4) |
 | S4 | Longer join codes, the guest's name in the lobby, a way to remove a guest | security | 2 | 2 | 2 | **16** | open |
@@ -113,6 +115,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | GF2 | Phone vibration on big plays for Android (gamepads already rumble; iPhone browsers don't allow it) | game feel | 2 | 1 | 1 | **15** | open |
 | AU3 | Measure the whole mix's loudness over a match (phones: about -18 LUFS) and set the master level from it | audio | 2 | 1 | 1 | **15** | open |
 | AI1 | A debug view that draws each CPU player's current plan and target on court (for tuning and bug reports) | game AI | 2 | 1 | 1 | **15** | open |
+| ST7 | Keep the Steam build scripts (`app_build`, depot `.vdf`, no secrets) in the repo and check them with `check_steam_build.py --strict` in CI | Steam | 2 | 1 | 1 | **15** | open |
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
 | W5 | robots.txt, a sitemap, and a short own domain for sharing | SEO and sharing | 2 | 1 | 2 | **12** | open |
 | G6 | A seasonal calendar for posts and updates: Ramadan, Eid, Jumu'ah challenges | launch | 3 | 1 | 3 | **12** | open |
@@ -791,6 +794,37 @@ CPU styles and handles vary by player; there's no pathfinding to get wrong (an o
   defender, waiting on a pass that won't come), force a rethink.
 - The `Brain` methods are extended by later files (`thinkHandler`, `thinkDefense`, `update` each reassigned twice);
   that belongs with A1 and T3.
+
+### Steam publish skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/steam-publish` and `references/steampipe-build-scripts.md` as a readiness review: there's
+no Steamworks account, App ID or SDK yet, so the build checker (`scripts/check_steam_build.py`, read-only) has
+nothing to check; it ran (`--help`) and is ready for ST7.
+
+Order of work, from the skill (times are Valve's at the time of writing):
+1. Partner account, tax and bank (up to 30 days), the $100 Steam Direct fee (first titles wait 21 days after
+   paying before release), a separate build account with only the build permissions (ST1).
+2. App Admin: launch options per OS (`Islam Dunk.exe`, the `.app` bundle on macOS), depots per OS, all added to the
+   Developer Comp package, then Publish the configuration.
+3. The store page and content survey (ST4, ST6), review in about 3–5 business days (submit 7 ahead), then Post as
+   Coming Soon for at least 2 weeks.
+4. Build scripts, checked, uploaded with steamcmd, tested on a password-protected beta branch, then the build
+   review (every feature and OS the page lists must work).
+5. Release by hand with Release App.
+
+- **ST5:** `electron/electron-builder.yml` targets NSIS, DMG and AppImage (installers); Steam installs files from
+  depots, so build the unpacked folders (`--dir`, as `npm run build:electron` already does) for each OS and map
+  each to its own depot. A Linux depot runs natively on Steam Deck instead of through Proton.
+- **ST6:** Valve asks about generative AI in content that ships (art, audio, text) and how live AI is guarded;
+  tools used only to work faster need no listing, and some answers can't be edited after approval. Decide what to
+  declare before submitting. Independently, have the Noor questions (`src/data/trivia.js`) checked for accuracy
+  by someone knowledgeable before a wider launch.
+- **ST3 (refined):** the Deck checklist asks that the default controller setup reaches everything (the View picker
+  covers tap-only screens, UX1), that text entry works by controller (the join code and name screens have the
+  on-screen picker), text is at least 9 px tall at 1280×800, and the defaults run at 30 fps or better. Deck's
+  buttons are A/B/X/Y like the Xbox letters the game shows; PlayStation pads would need their own symbols.
+- **ST7:** commit the `.vdf` scripts without any login; the checker's `--json --strict` mode suits CI. The steamcmd
+  login token must never be committed.
 
 ### Architecture (review of 5 Nov 2026)
 
