@@ -80,6 +80,8 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | GT4 | Quick online reactions ("MashaAllah!", "Pass!", "Good game") for players not on a call | game design | 3 | 1 | 2 | **16** | open |
 | GT5 | Bragging rights: share a daily scenario result as a "beat my score" code | game design | 3 | 1 | 2 | **16** | open |
 | GF1 | Online rollback matches lose hit-stop and slow motion (reset each frame): play them as a visual-only hold | game feel | 3 | 1 | 2 | **16** | open |
+| IN1 | A Controls screen: keys already live in one table (`BINDS`), so remapping is data; save it and add Reset | input | 3 | 1 | 2 | **16** | open |
+| IN2 | Toggle instead of hold for Defend (guard stance) and Sprint | input | 3 | 1 | 2 | **16** | open |
 | A6 | A screen registry instead of reassigning `render` / `gameUpdate` | architecture | 3 | 2 | 3 | **15** | open |
 | B13 | After a duo Barakah Run the end screen shows the solo best | code review | 2 | 1 | 1 | **15** | open |
 | B14 | A pop label can replace the foul callout's subtitle ("ON AHMED • 2 SHOTS") | code review | 2 | 1 | 1 | **15** | open |
@@ -106,7 +108,6 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | W5 | robots.txt, a sitemap, and a short own domain for sharing | SEO and sharing | 2 | 1 | 2 | **12** | open |
 | G6 | A seasonal calendar for posts and updates: Ramadan, Eid, Jumu'ah challenges | launch | 3 | 1 | 3 | **12** | open |
 | UI1 | Menus jump-cut between screens: short fades or slides | UI | 2 | 1 | 2 | **12** | open |
-| IN1 | Change controls (keyboard and gamepad), expected on PC | input | 3 | 1 | 3 | **12** | open |
 | CD4 | Stance and idle pose are the same for everyone: posture that matches each personality | character design | 2 | 1 | 2 | **12** | open |
 | CD5 | Faces have joy, fierce and shock only: add disappointed (a miss, a loss) and focused (free throw) | character design | 2 | 1 | 2 | **12** | open |
 | GT7 | Check how often the Noor question stops play; an option to ask it at timeouts and halftime | game design | 2 | 1 | 2 | **12** | open |
@@ -114,6 +115,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | GF3 | Small presses get no feedback: a tiny pop on a made free throw, a pass caught, a steal attempt | game feel | 2 | 1 | 2 | **12** | open |
 | UX2 | 16:10 (Steam Deck, many laptops) and ultrawide get black bars: let the height grow on 16:10 | UI | 2 | 1 | 2 | **12** | open |
 | UX3 | Buttons are fixed widths sized to English; translations will overflow (with UI2) | UI | 2 | 1 | 2 | **12** | open |
+| IN3 | One-button alternatives for two-button moves (Turbo + Block swipe, chase-down) | input | 2 | 1 | 2 | **12** | open |
 | B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |
 | U6 | Consistent apostrophes and online terms (game, lobby, code) | UX copy | 1 | 1 | 1 | **10** | open |
 | U7 | The lobby says "Waiting for your friend" twice; a shorter rules note | UX copy | 1 | 1 | 1 | **10** | open |
@@ -625,6 +627,27 @@ Run with `.claude/skills/game-ui-ux` and `references/layout-and-flow.md` against
 | Contrast and colour | See X3; team colours have a colourblind-safe option; possession isn't shown by colour alone (the ball marker). |
 | Touch targets | See X1. |
 | Localization | Text is in the drawing code and buttons have fixed widths (`btn(..., 150, 42, ...)` in `net.js` `drawJoinCode`, and others) (UX3, UI2). |
+
+### Input systems skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/input-systems` and `references/buffering-and-accessibility.md` against
+`src/core/input.js`, `src/core/gamepad.js`, `src/core/skill-touch.js` and `src/sim/v7-controls.js`.
+
+Already matches the skill: gameplay reads named actions from a binding table (`BINDS`, `src/core/input.js:3`:
+up, down, left, right, a, b, t, x, s), not raw keys; keys are stored as physical codes (`e.code`), so WASD stays
+put on AZERTY; edge (`pressed`) and held (`down`) are separate, and `humanCmd` uses each correctly; the stick has a
+radial deadzone with a curve and the keyboard diagonal is normalised; a Deadzone setting exists; presses during an
+animation are buffered for 0.18 s; prompts switch between keyboard, gamepad and touch by the last device used
+(Xbox letters only, see ST3); keyboard focus loss clears held keys (`blur`); shot timing has an Automatic option.
+
+- **IN1:** the skill's "rebinding first-class" step. With `BINDS` in place it needs a capture screen ("press a key
+  for Shoot"), conflict detection, a saved copy, and Reset to default. The same for gamepad buttons.
+- **IN2:** the skill's accessibility checklist asks for toggle instead of hold; Defend ("hold: GUARD") and sprint
+  are hold actions.
+- **IN3:** "no required simultaneous inputs": the How to play screen lists "Turbo + Block: swipe"
+  (`src/screens/v6-ui.js:102`).
+- Shot release is a hold-and-release timing skill by design; the Automatic release option is the accessible
+  alternative (offline only, GD1).
 
 ### Architecture (review of 5 Nov 2026)
 
