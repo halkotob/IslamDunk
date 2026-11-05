@@ -22,6 +22,11 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | B7 | Rollback: a tap can be lost when the input delay shrinks | code review | 3 | 2 | 1 | **25** | open |
 | B11 | A steal pressed during the steal cooldown is dropped (the buffer never fires) | code review | 3 | 2 | 1 | **25** | open |
 | B15 | Sprint timestamps carry over between matches: one tap can start a sprint at tip-off | code review | 3 | 2 | 1 | **25** | open |
+| U1 | Players see developer words: "Firebase config", "Diagnostic: exception", "the free server" | UX copy | 3 | 2 | 1 | **25** | open |
+| U5 | The unlock message lingers across screens and covers menu rows; clearer wording | UX copy | 3 | 2 | 1 | **25** | open |
+| D3 | The Dunk lab bar stayed on screen in the next match (check leaving it without Quit) | design | 3 | 2 | 1 | **25** | open, to confirm |
+| W1 | Link previews: description, Open Graph image and title for WhatsApp, iMessage and social | SEO and sharing | 4 | 1 | 1 | **25** | open |
+| W2 | The Pages site publishes the whole repo (docs, this list, tests); exclude them | SEO and sharing | 2 | 3 | 1 | **25** | open |
 | T5 | Stop committing the built `index.html`; publish Pages from the build | tech debt | 3 | 3 | 2 | **24** | open |
 | T4 | One settings module that owns every saved setting | tech debt | 3 | 3 | 2 | **24** | open |
 | B5 | Rollback: the host has no "End game: back to lobby" and no "friend dropped" notice | code review | 3 | 3 | 2 | **24** | open |
@@ -40,20 +45,32 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | B12 | Online Barakah Run duos: the host can tap the guest's power-up card | code review | 2 | 2 | 1 | **20** | open |
 | B17 | The CPU difficulty formula is copied in 3 places (match, pre-game label, league sims) | code review | 2 | 2 | 1 | **20** | open |
 | B19 | Player portraits: a cache that never shrinks and a JSON copy every frame | code review | 2 | 2 | 1 | **20** | open |
+| D2 | The in-match Defend and Steal buttons are faint on the court | design | 3 | 2 | 2 | **20** | open |
+| W3 | Search engines see only a canvas: a text description, a better title, game structured data | SEO and sharing | 3 | 1 | 1 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
 | A2 | Make sound, effects and commentary consume match events | architecture | 4 | 4 | 4 | **16** | open |
 | A3 | One state codec for snapshots, rollback saves and checksums | architecture | 4 | 4 | 4 | **16** | open (after A1, A4) |
 | S4 | Longer join codes, the guest's name in the lobby, a way to remove a guest | security | 2 | 2 | 2 | **16** | open |
+| U2 | One way back per screen, and one name for leaving (Back, Cancel, Leave, Quit, EXIT) | UX copy | 3 | 1 | 2 | **16** | open |
 | A6 | A screen registry instead of reassigning `render` / `gameUpdate` | architecture | 3 | 2 | 3 | **15** | open |
 | B13 | After a duo Barakah Run the end screen shows the solo best | code review | 2 | 1 | 1 | **15** | open |
 | B14 | A pop label can replace the foul callout's subtitle ("ON AHMED • 2 SHOTS") | code review | 2 | 1 | 1 | **15** | open |
 | B16 | League sims: a tie fix-up changes the score but not the box score | code review | 2 | 1 | 1 | **15** | open |
 | B18 | Dead code that looks live: v6 `preStep`, the old `drawHowTo`, the first `checkBlockJump` | code review | 2 | 1 | 1 | **15** | open |
+| U3 | "Options" on the title screen opens a screen called "Settings" | UX copy | 2 | 1 | 1 | **15** | open |
+| U4 | Unexplained short forms: BP, HB, Nat., "No upload"; the Arabic-only مصلى label | UX copy | 2 | 1 | 1 | **15** | open |
+| D1 | Final screen: the court banner text shows through behind "Final 21 – 18" | design | 2 | 1 | 1 | **15** | open |
+| D4 | Settings: the Back row is cut off at the bottom of the panel on phones | design | 2 | 1 | 1 | **15** | open |
+| W4 | Load once, play offline: a service worker for the 2 MB page (670 KB compressed) | SEO and sharing | 3 | 2 | 3 | **15** | open |
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
+| W5 | robots.txt, a sitemap, and a short own domain for sharing | SEO and sharing | 2 | 1 | 2 | **12** | open |
 | B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |
+| U6 | Consistent apostrophes and online terms (game, lobby, code) | UX copy | 1 | 1 | 1 | **10** | open |
+| U7 | The lobby says "Waiting for your friend" twice; a shorter rules note | UX copy | 1 | 1 | 1 | **10** | open |
 | B9 | Rollback: halftime is skipped (a known gap; the saved screen is never used) | code review | 2 | 1 | 3 | **9** | open |
+| D5 | The career hub is dense (5 zones); consider a calmer layout | design | 2 | 1 | 3 | **9** | open |
 | T3 | Fold the 34 versioned patch files (`v6-…` to `v9161-…`) into their feature files | tech debt | 4 | 3 | 5 | **7** | open (gets easier after A1, A6) |
 | X5 | Announce menus to screen readers (the game is one canvas) | accessibility | 2 | 1 | 4 | **6** | open |
 
@@ -207,6 +224,64 @@ touch buttons 66–83 px.
 - **X5:** the game is one canvas with a label, so a screen reader announces nothing in menus. An `aria-live` line
   naming the selected menu item would help; gameplay itself is out of scope.
 
+### UX copy (5 Nov 2026)
+
+All text drawn on 103 screens at iPhone size was collected and read. The voice is warm and specific (Noor cards,
+halftime "Stretch, hydrate, and catch your breath", the not-found message says what to check), so this is about
+consistency and the few places where the game talks like a developer.
+
+- **U1:** `src/online/net.js` `drawOnline`: "Could not reach the online service. Check your connection and the Firebase
+  config.", "Online play needs a Firebase project. Paste its config into FIREBASE_CONFIG (see README).",
+  "Diagnostic: exception"; `drawNetWait` busy: "(the free server allows a limited number of players at once)".
+  Suggested: "Can't reach online play right now. Check your connection and try again." with a small "Details" line
+  for the report, and "Online play is busy right now. Try again in a few minutes."
+- **U5:** "Level 3: Ramadan Night ball, Taunt: Du’a, hands raised. Equip it in Options → Profile." stays up on later
+  screens and covers rows (the hub's My Masjid, Settings' Back). Suggested: "Level 3 reward: Ramadan Night ball and
+  the Du’a taunt. Equip them in Options → Profile.", drawn above the menus and gone after a few seconds.
+- **U2:** most screens have a "‹ Back" pill and a "Back" row (Settings also "‹ SETTINGS"); leaving is called Back,
+  Cancel, Leave, Quit to title, Back to title and EXIT. Keep the pill on every screen, drop the duplicate row; "Leave"
+  for online, "Quit" for a match, "Back" everywhere else.
+- **U3:** the title menu says Options; the screen says Settings. Use Settings in both.
+- **U4:** the hub shows "25 BP" and "10 HB" with no label (Barakah Points, Halal Bucks); trophies "Nat."; the clip
+  screen "No upload" (say "Stays on this device"); the career top bar's مصلى has no English (add "Musalla").
+- **U6:** "rak'ahs" (straight) beside "Du’a" (curly); online uses "Host a lobby", "Host a game to get a join code",
+  "Join with a code" for one idea.
+- **U7:** the lobby shows "Waiting for your friend…" in the players panel and again under Start.
+
+### Design critique (5 Nov 2026)
+
+Screens at iPhone 14 landscape: title, lobby, match, hub, final, settings. What works: the title screen's single gold
+primary action and court scene; the lobby's two-panel layout with the code large at the top; the match HUD stays
+out of the play area.
+
+- **D3:** in the audit the Dunk lab's bar ("Dunk lab: Float tomahawk … Quit") was still drawn over the next match.
+  Check whether leaving the Dunk lab any way other than Quit (Back, a menu) leaves it on.
+- **D2:** Defend and Steal (and their "hold: GUARD" / "hold: DOUBLE" hints) are faint grey on the wooden court;
+  Block is clearer. Raise their opacity or give them the same fill as Shoot.
+- **D1:** on the final screen the court's "BISMILLAH" and "TIP-OFF" banners show through behind the title and the
+  score line. Dim the court fully behind results.
+- **D4:** the Accessibility settings panel cuts the Back row in half at the bottom (and the unlock message covers it).
+- **D5:** the hub holds a calendar, currencies, trophies, the player card, the next game and the menu at once; the
+  gold Continue button still stands out, so this is a later polish.
+
+### SEO and sharing (5 Nov 2026)
+
+Technical check of the public page (`index.html` on Pages). For a game shared by link between friends, the link
+preview matters more than search ranking.
+
+- **W1:** no `<meta name="description">`, no Open Graph or Twitter tags, no share image: a link sent in WhatsApp or
+  iMessage shows only "Islam Dunk". Add a 1200×630 image (the title scene), a title such as "Islam Dunk: 2v2 masjid
+  league basketball" and a one-line description.
+- **W2:** Pages serves the repository root, so `docs/` (this list, with its security notes), `tests/`, `CHANGELOG.md`
+  and `MIGRATION.md` are public pages under halkotob.github.io/IslamDunk/. The game uses none of them: add them to
+  `exclude` in `_config.yml` (and fix S1/S3 before promoting, since they're described here).
+- **W3:** search engines see an empty canvas. Add a short text description of the game in the page (hidden behind the
+  canvas or in `<noscript>`) and a `VideoGame` structured data block.
+- **W4:** the page is 2 MB (670 KB compressed) with no service worker, so every visit downloads it again and nothing
+  works offline, though the manifest makes it installable. A service worker caches it after the first visit.
+- **W5:** no `robots.txt` or sitemap (minor for one page); a short own domain (e.g. islamdunk.com) is easier to share
+  and say out loud.
+
 ### Architecture (review of 5 Nov 2026)
 
 Full report with diagrams: https://claude.ai/artifact/2xwUSzQF3FH1K7WPRAkDf4
@@ -228,8 +303,6 @@ Full report with diagrams: https://claude.ai/artifact/2xwUSzQF3FH1K7WPRAkDf4
 
 - Performance (Lighthouse and frame time): with the Perf Profiler or Web Vitals Auditor plugin once added.
 - Automated accessibility scan: with the Axe Accessibility plugin once added.
-- Menu and message wording (`design:ux-copy`), screen design (`design:design-critique`), how the game page shows up
-  in search and when shared (`marketing:seo-audit`).
 
 ## Done
 
