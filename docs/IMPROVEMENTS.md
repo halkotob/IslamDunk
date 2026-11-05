@@ -14,7 +14,9 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | G5 | Before any ads: block gambling, alcohol and dating ad categories | launch | 3 | 4 | 1 | **35** | before ads |
 | Q2 | Run the phone and online tests in WebKit (Safari's engine) too | testing | 4 | 4 | 2 | **32** | open |
 | B3 | Rollback: a dropped direct link is never retried during the match | code review | 4 | 4 | 2 | **32** | open |
+| SV1 | Protect career saves on iPhone: persistent storage, a backup copy, Export/Import save | save systems | 4 | 4 | 2 | **32** | open |
 | S1 | Cap the rollback input runs (a modified game can freeze the other player) | security | 3 | 3 | 1 | **30** | open |
+| SV2 | An unreadable save silently looks like no career: keep the last good one and say so | save systems | 3 | 3 | 1 | **30** | open |
 | T2 | Catch errors on players' devices and add them to the Network report | tech debt | 3 | 4 | 2 | **28** | open |
 | S3 | Only the game can get relay (TURN) credentials; usage alert | security | 3 | 4 | 2 | **28** | open |
 | Q3 | A folder of old saves that every release must load | testing | 3 | 4 | 2 | **28** | open |
@@ -52,14 +54,21 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | W3 | Search engines see only a canvas: a text description, a better title, game structured data | SEO and sharing | 3 | 1 | 1 | **20** | open |
 | G2 | Google Play: wrap the PWA (TWA) and start the 12-tester, 14-day closed test now | launch | 4 | 1 | 2 | **20** | open (needs W4) |
 | G4 | One-tap invite after a match: the highlight plus a "play me online" link with the code | launch | 4 | 1 | 2 | **20** | open |
+| AU2 | A limiter on the master volume (stacked sounds clip); sliders that follow loudness | audio | 2 | 2 | 1 | **20** | open |
+| GD3 | A short "pickup game" option online for phone sessions (one 3-minute half, or first to 11) | game design | 3 | 1 | 1 | **20** | open |
+| ST1 | Steam: open the partner account and pay the app fee early (30-day tax check, 21-day wait), Coming Soon page for wishlists | Steam | 4 | 1 | 2 | **20** | open |
+| ST4 | Steam store page: capsules, a trailer from highlight clips, screenshots, the AI-content survey | Steam | 3 | 2 | 2 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
+| GD1 | Let a newcomer friend use Casual controls and automatic release online (per player) | game design | 4 | 2 | 3 | **18** | open |
+| ST3 | Steam Deck: every menu by controller, 1280×800 layout, PlayStation and Deck button labels | Steam | 4 | 2 | 3 | **18** | open |
 | A2 | Make sound, effects and commentary consume match events | architecture | 4 | 4 | 4 | **16** | open |
 | A3 | One state codec for snapshots, rollback saves and checksums | architecture | 4 | 4 | 4 | **16** | open (after A1, A4) |
 | S4 | Longer join codes, the guest's name in the lobby, a way to remove a guest | security | 2 | 2 | 2 | **16** | open |
 | U2 | One way back per screen, and one name for leaving (Back, Cancel, Leave, Quit, EXIT) | UX copy | 3 | 1 | 2 | **16** | open |
 | G3 | Submit to CrazyGames (non-exclusive) and the YouTube Playables interest form | launch | 3 | 1 | 2 | **16** | open |
+| CD1 | Give the 16 main players heights and builds that match their style, so roles read by silhouette | character design | 3 | 1 | 2 | **16** | open |
 | A6 | A screen registry instead of reassigning `render` / `gameUpdate` | architecture | 3 | 2 | 3 | **15** | open |
 | B13 | After a duo Barakah Run the end screen shows the solo best | code review | 2 | 1 | 1 | **15** | open |
 | B14 | A pop label can replace the foul callout's subtitle ("ON AHMED • 2 SHOTS") | code review | 2 | 1 | 1 | **15** | open |
@@ -74,15 +83,24 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | P3 | Split the 669 ms startup task: set up career, world and studio code when first opened | performance | 3 | 2 | 3 | **15** | open |
 | P4 | The canvas jumps after load on computers (layout shift 0.31); size it before the first paint | performance | 2 | 1 | 1 | **15** | open |
 | X6 | Pinch zoom is off (axe: critical); keep it off for play, and make X2 the answer | accessibility | 2 | 1 | 1 | **15** | open |
+| GD2 | A reason to come back together: a record with each friend, recent players, co-op challenges | game design | 4 | 1 | 3 | **15** | open |
+| AU1 | Music: none today; a menu theme and match layers, with a vocal and percussion only option | audio | 4 | 1 | 3 | **15** | open |
+| CA1 | The camera's easing depends on frame rate (floatier at 30 fps): use time-based smoothing | camera | 2 | 1 | 1 | **15** | open |
+| G7 | itch.io: a free, non-exclusive page for the web build | launch | 2 | 1 | 1 | **15** | open |
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
 | W5 | robots.txt, a sitemap, and a short own domain for sharing | SEO and sharing | 2 | 1 | 2 | **12** | open |
 | G6 | A seasonal calendar for posts and updates: Ramadan, Eid, Jumu'ah challenges | launch | 3 | 1 | 3 | **12** | open |
+| UI1 | Menus jump-cut between screens: short fades or slides | UI | 2 | 1 | 2 | **12** | open |
+| IN1 | Change controls (keyboard and gamepad), expected on PC | input | 3 | 1 | 3 | **12** | open |
 | B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |
 | U6 | Consistent apostrophes and online terms (game, lobby, code) | UX copy | 1 | 1 | 1 | **10** | open |
 | U7 | The lobby says "Waiting for your friend" twice; a shorter rules note | UX copy | 1 | 1 | 1 | **10** | open |
 | X7 | Put the game canvas in a `<main>` landmark (axe: region) | accessibility | 1 | 1 | 1 | **10** | open |
+| ST2 | Steamworks in the desktop app: achievements, cloud saves, invite a Steam friend, Valve's free relay | Steam | 4 | 1 | 4 | **10** | open |
+| UI2 | Translations: Arabic (right to left), Urdu, Malay and Indonesian, Turkish, French; first move text into one table | UI | 4 | 1 | 4 | **10** | open |
 | B9 | Rollback: halftime is skipped (a known gap; the saved screen is never used) | code review | 2 | 1 | 3 | **9** | open |
 | D5 | The career hub is dense (5 zones); consider a calmer layout | design | 2 | 1 | 3 | **9** | open |
+| CD2 | A signature for each main character: a celebration, posture or accessory | character design | 2 | 1 | 3 | **9** | open |
 | T3 | Fold the 34 versioned patch files (`v6-…` to `v9161-…`) into their feature files | tech debt | 4 | 3 | 5 | **7** | open (gets easier after A1, A6) |
 | X5 | Announce menus to screen readers (the game is one canvas) | accessibility | 2 | 1 | 4 | **6** | open |
 
@@ -344,6 +362,84 @@ and their sources, is in [docs/reports/2026-11-05-launch-islam-dunk.md](reports/
 - **G3:** CrazyGames is non-exclusive per current guides (confirm), free and reviews in days; avoid Poki's default
   web-exclusive deal. YouTube Playables takes Canvas games through an interest form.
 - **G6:** Ramadan nights, Eid tournaments and weekly Jumu'ah challenges give fixed dates to post and update.
+
+### Game development skills (5 Nov 2026)
+
+The project skills in `.claude/skills/` run over the game: game design theory, improve-game, game-feel, input,
+physics, camera, audio, saves, performance, UI/UX, game AI, character design, Steam and itch.io.
+
+**improve-game scores** (1 = missing, 3 = works but basic, 5 = polished):
+
+| Area | Score | Why |
+|---|:-:|---|
+| Gameplay feel | 4 | Fixed 60 Hz step with interpolation, input buffering, decaying shake, one hit-stop per impact |
+| Visual polish | 4 | Strong court, crowd and callouts; menus jump-cut (UI1) |
+| UI and menus | 3 | Small phone targets and text (X1, X2), duplicate Back controls (U2) |
+| Audio | 2 | Procedural effects with master, effects and crowd volumes; no music (AU1), no limiter (AU2) |
+| Code structure | 2 | See A1–A6 and T3 |
+| Restart safety | 4 | Seeded tests replay whole matches and careers |
+| Performance | 3 | P1; needs a measurement on a real low-end phone |
+| Player experience | 4 | Tutorial, Noor, Barakah Run, daily scenario, career calendar |
+| Mobile | 4 | Touch layout audits, safe areas, fullscreen prompt |
+| Online | 3 | Rollback is in, with the B1–B10 bugs |
+| Tests | 4 | ~95 end-to-end tests; gaps in Q2–Q8 |
+
+**Game design theory.** Online co-op is the feature to promote, so it should work for the friend who has never
+played. Online forces Timed release and Standard controls (`src/online/lobby.js` rules note), which leaves a
+newcomer missing every shot next to an experienced friend (GD1: make it a per-player choice in the start message,
+so both phones still simulate the same game). Online matches default to 2 halves; a 3-minute pickup game suits a
+phone call (GD3). Nothing remembers who you played with: a record with each friend, a recent-players list and co-op
+challenges give two friends a reason to return together (GD2). Rollback matches also skip the +15 online XP, since
+`RBN.start` sets `M.online = false` (`src/screens/profile.js:63`; part of B5).
+
+**Saves.** `saveCareer` (`src/career/career.js:196`) writes one key in place; `readSave` returns nothing for a save
+that fails to parse, so the career looks gone (SV2). On iPhone, Safari can delete a site's stored data after 7 days
+without a visit unless the game was added to the Home Screen: ask for persistent storage
+(`navigator.storage.persist()`), keep the previous save as a backup, and add Export and Import as a short code
+(SV1). The schema version (`v`, `sv`) and field-by-field migration are good.
+
+**Audio.** Effects are made in code (no samples) through master, effects and crowd volumes
+(`src/core/utils-audio.js`, `src/screens/v912-polish.js` `sfxApplyVol`). Many sounds at once (a dunk, the buzzer,
+the crowd) can clip: add a compressor as a limiter before the output, and map the volume sliders to loudness (AU2).
+There is no music (AU1). Many Muslim players avoid musical instruments, so offer a vocal and percussion only
+(nasheed-style) setting and Off, besides any instrumental track.
+
+**Characters.** The 8 Quick Play teams' 16 players share one body; career teams already use heights and builds
+(`bh`, `bw`, `HEIGHT_S` and `BUILD_W` in `src/career/career.js:9`). Using them for the main cast (a tall dunker, a
+slim guard, a broad lockdown defender) makes the archetype on each card (SHARPSHOOTER, LOCKDOWN) readable by
+silhouette (CD1). A signature celebration, posture or accessory per character makes them memorable (CD2).
+
+**Camera, physics, input, AI.**
+- Physics is in good shape: a fixed 60 Hz step with interpolation, at most 5 steps a frame, frame time capped at
+  50 ms (`src/screens/flow.js:5`). Slow motion and hit-stop change the simulation clock (`FX.scale`, `FX.stopF`),
+  which belongs with A2.
+- The gym camera eases by `dt * 4` each frame (`src/sim/match.js:135`), which is floatier at low frame rates; use
+  `1 - Math.exp(-4 * dt)` (CA1).
+- Input uses physical key codes (fine on AZERTY), a radial stick deadzone with a curve, and a 0.18 s press buffer.
+  There's no way to change controls (IN1).
+- The CPU `Brain` plans per role with per-difficulty settings and an optional rubber band; CPU style tests exist.
+  Nothing new to add.
+
+**UI.** Menus switch with no transition (UI1). All text is English and drawn on the canvas; translation needs the
+strings in one table first, and Arabic needs right-to-left drawing (UI2).
+
+**Steam and itch.io** (from `steam-publish` and `itch-publish`). `electron/main.cjs:9` says Steamworks isn't wired
+yet; electron-builder already makes Windows, macOS and Linux installers.
+- ST1: the partner account asks for identity, bank and tax details (tax checks take up to 30 days); each app costs
+  a $100 Steam Direct fee (recouped after $1,000 in sales), and Valve makes first titles wait 21 days after paying.
+  Publish the Coming Soon page weeks before release to collect wishlists.
+- ST2: a Steamworks module for Electron (for example `steamworks.js`) gives achievements (the game already has
+  them), Steam Cloud saves, rich presence and "invite a friend to my lobby". Steam's own networking relays matches
+  for free, so Steam players wouldn't use the TURN relay.
+- ST3: Steam Deck review checks that every screen works by controller alone, text reads at 1280×800, and the
+  button labels match the device; the game shows Xbox letters only (`hintKey` in `src/screens/v912-polish.js:285`).
+- ST4: store capsules in Valve's sizes, a trailer (the highlight videos are a start), screenshots, and an honest
+  content survey (Valve asks about AI-generated content).
+- G7: itch.io takes the HTML5 build as a zip, free and non-exclusive, uploaded with `butler`.
+
+**Performance note.** A frame-time check in the test browser (slowed 4×, iPhone size) measured `render` at
+12–17 ms median but only 3 frames a second overall: that browser draws without a graphics chip, so it overstates
+the cost. P1 needs a measurement on a real low-end phone before any work.
 
 ### Architecture (review of 5 Nov 2026)
 

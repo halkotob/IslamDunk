@@ -18,6 +18,7 @@ how this game differs from what the skill assumes.
 | `save-systems` | Career saves, versions and migration | awesome-gamedev-agent-skills |
 | `game-designer` | Visual polish and atmosphere review | game-creator (adapted note) |
 | `improve-game` | Score the game by area, then pick improvements | game-creator (adapted note) |
+| `game-design-theory` | Judge concepts and modes for player appeal (Rouse's Game Design: Theory & Practice) | jarrod-claude-skills |
 | `character-design` | Silhouettes, shape language, the cast | skills-for-antigravity |
 
 Sources and licenses (copies in `licenses/`):
@@ -25,6 +26,8 @@ Sources and licenses (copies in `licenses/`):
   Apache-2.0 (LICENSE and NOTICE included).
 - [opusgamelabs/game-creator](https://github.com/opusgamelabs/game-creator), MIT (stated in its README and each
   skill's front matter; the repo has no LICENSE file).
+- [jarrodmedrano/jarrod-claude-skills](https://github.com/jarrodmedrano/jarrod-claude-skills), MIT (stated in its README and
+  `package.json`; the repo has no LICENSE file).
 - [omer-metin/skills-for-antigravity](https://github.com/omer-metin/skills-for-antigravity), Apache-2.0.
 
 Only `steam-publish` includes a script (`scripts/check_steam_build.py`): it reads Steam build files and reports
