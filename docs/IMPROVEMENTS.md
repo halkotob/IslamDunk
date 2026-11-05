@@ -17,6 +17,8 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | SV1 | Protect career saves on iPhone: persistent storage, a backup copy, Export/Import save | save systems | 4 | 4 | 2 | **32** | open |
 | S1 | Cap the rollback input runs (a modified game can freeze the other player) | security | 3 | 3 | 1 | **30** | open |
 | SV2 | An unreadable save silently looks like no career: keep the last good one and say so | save systems | 3 | 3 | 1 | **30** | open |
+| GT1 | A new player's first match starts on Medium: start on Easy and suggest stepping up after a win | game design | 4 | 2 | 1 | **30** | open |
+| GT6 | A playtest plan: first-time players, non-gamers (parents, younger kids), watch without coaching | game design | 4 | 2 | 1 | **30** | open |
 | T2 | Catch errors on players' devices and add them to the Network report | tech debt | 3 | 4 | 2 | **28** | open |
 | S3 | Only the game can get relay (TURN) credentials; usage alert | security | 3 | 4 | 2 | **28** | open |
 | Q3 | A folder of old saves that every release must load | testing | 3 | 4 | 2 | **28** | open |
@@ -31,6 +33,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | W1 | Link previews: description, Open Graph image and title for WhatsApp, iMessage and social | SEO and sharing | 4 | 1 | 1 | **25** | open |
 | W2 | The Pages site publishes the whole repo (docs, this list, tests); exclude them | SEO and sharing | 2 | 3 | 1 | **25** | open |
 | CD8 | Respectful depiction check with someone from the community: imama, kufi, beards, the sheikh and mufti titles | character design | 2 | 3 | 1 | **25** | open |
+| GT2 | "Why I missed" is off by default: show it during a new player's first games | game design | 3 | 2 | 1 | **25** | open |
 | T5 | Stop committing the built `index.html`; publish Pages from the build | tech debt | 3 | 3 | 2 | **24** | open |
 | T4 | One settings module that owns every saved setting | tech debt | 3 | 3 | 2 | **24** | open |
 | B5 | Rollback: the host has no "End game: back to lobby" and no "friend dropped" notice | code review | 3 | 3 | 2 | **24** | open |
@@ -71,6 +74,8 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | S4 | Longer join codes, the guest's name in the lobby, a way to remove a guest | security | 2 | 2 | 2 | **16** | open |
 | U2 | One way back per screen, and one name for leaving (Back, Cancel, Leave, Quit, EXIT) | UX copy | 3 | 1 | 2 | **16** | open |
 | G3 | Submit to CrazyGames (non-exclusive) and the YouTube Playables interest form | launch | 3 | 1 | 2 | **16** | open |
+| GT4 | Quick online reactions ("MashaAllah!", "Pass!", "Good game") for players not on a call | game design | 3 | 1 | 2 | **16** | open |
+| GT5 | Bragging rights: share a daily scenario result as a "beat my score" code | game design | 3 | 1 | 2 | **16** | open |
 | A6 | A screen registry instead of reassigning `render` / `gameUpdate` | architecture | 3 | 2 | 3 | **15** | open |
 | B13 | After a duo Barakah Run the end screen shows the solo best | code review | 2 | 1 | 1 | **15** | open |
 | B14 | A pop label can replace the foul callout's subtitle ("ON AHMED • 2 SHOTS") | code review | 2 | 1 | 1 | **15** | open |
@@ -98,6 +103,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | IN1 | Change controls (keyboard and gamepad), expected on PC | input | 3 | 1 | 3 | **12** | open |
 | CD4 | Stance and idle pose are the same for everyone: posture that matches each personality | character design | 2 | 1 | 2 | **12** | open |
 | CD5 | Faces have joy, fierce and shock only: add disappointed (a miss, a loss) and focused (free throw) | character design | 2 | 1 | 2 | **12** | open |
+| GT7 | Check how often the Noor question stops play; an option to ask it at timeouts and halftime | game design | 2 | 1 | 2 | **12** | open |
 | B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |
 | U6 | Consistent apostrophes and online terms (game, lobby, code) | UX copy | 1 | 1 | 1 | **10** | open |
 | U7 | The lobby says "Waiting for your friend" twice; a shorter rules note | UX copy | 1 | 1 | 1 | **10** | open |
@@ -472,6 +478,30 @@ silhouettes, plus a small version near play size.
   knee pad) also breaks the symmetric outline, which the skill asks for.
 - **CD4–CD6:** a personal stance (the sheikh upright, the guard low and bouncy), a disappointed and a focused face, a
   one-line personality on the team card.
+
+### Game design theory skill, in full (5 Nov 2026)
+
+Run with `.claude/skills/game-design-theory` and its five references (player psychology, gameplay elements,
+storytelling, playtesting, design principles), through its evaluation framework.
+
+| Question (from the skill) | Islam Dunk |
+|---|---|
+| Player motivation | Challenge (CPU levels, dunk lab), socialization (online and local duos), bragging (achievements, bests, Barakah Run records), fantasy (the masjid league star), emotional peaks (clutch buzzers, posterizers). Socialization, the one to promote, ends when the match ends (GD2, GT4). |
+| Expectations: consistent rules | Offline lets you use Automatic release and Casual controls; online takes them away (GD1). |
+| Expectations: no hidden failure | Misses aren't explained unless "Why I missed" is turned on (`SETTINGS.missWhy`, off by default, `src/screens/v912-polish.js:315`) (GT2). |
+| Emergence | Strong: pump fakes, dribble moves, alley-oops, contact, blocks and steals combine in unplanned ways. |
+| Non-linearity | Strong: the career calendar, neighbourhood, Barakah Run paths and vows. |
+| Learning curve | The welcome dialog offers an optional 9-lesson tutorial (good), but Quick Play defaults to Medium with 2 halves (`SETTINGS.difficulty: 'medium'`, `src/core/config.js:25`). The skill's mantra is "your game is too hard": the first match should be easy (GT1). |
+| Immersion and "do, not watch" | Story scenes can be skipped (good). The Noor question pauses the action; measure how often (GT7). The unlock toast lingering across screens breaks immersion (U5). |
+| Storytelling | Career dialogue is short, skippable and in the game's own style; the neighbourhood tells story through places (the masjid, the store, Jumu'ah), which the skill prefers to cut-scenes. |
+| AI | Matches the skill's "sloped field": an optional rubber band, reaction and decision differences by level, never stat changes. |
+
+- **GT6:** the skill's playtest checklist asks for first-impression testers, non-gamers and silent observation. The
+  repo already records a new player's path (`tools/review-first-run.mjs`); add sessions with real people: a parent,
+  a 10-year-old, a friend who doesn't play games, each on their own phone, with you only watching. Same problem
+  from several testers = a real problem.
+- **GT4, GT5:** socialization and bragging rights outside a phone call: preset reactions in online matches and a
+  daily scenario result to share.
 
 ### Architecture (review of 5 Nov 2026)
 
