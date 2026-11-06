@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.16.4';
+const VERSION = '9.17.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -151,6 +151,36 @@ const TEAMS = [
     PL('Rami', 12, false, true, '#e2b894', 'hair', '#4a2c16', 9, 8, 5, 5, 7)] }
 ];
 
+// ================================================= v9.17: THE CAST (docs/IMPROVEMENTS.md CD1–CD5, CD2)
+// The look of the 16 main players, from the cast sheet the owners approved (5 Nov 2026). Looks only: vh/vw are
+// drawn heights and builds (bh/bw would also change contact strength and the CPU's style, so they're not used here),
+// and nothing below changes speed, reach or skill.
+//   vh, vw      height and build, 0..2 (HEIGHT_S / BUILD_W)
+//   beardLen    0..2, beardStyle, glasses, capColor: as in the creator
+//   band        headband (BAND_COLS: 1 white, 2 green), only on players without a kufi or imama
+//   sleeve      a shooting sleeve on the near ('n') or far ('f') arm; wrist: wristbands (team trim colour)
+//   shoes       sneaker colour
+//   stance      idle posture between plays (src/sim/cast-life.js)
+//   cele        signature celebration after his own big play or a win (src/sim/cast-life.js)
+const CAST_LOOKS = {
+  'Sh. Kareem':  { vh: 1, vw: 1, glasses: true, stance: 'upright', cele: 'heart' },
+  'Tariq':       { vh: 2, vw: 1, band: 1, stance: 'bouncy', cele: 'both' },
+  'Sh. Rashid':  { vh: 2, vw: 2, beardLen: 2, wrist: true, stance: 'low', cele: 'sky' },
+  'Samir':       { vh: 0, vw: 0, sleeve: 'n', stance: 'relaxed', cele: 'salute' },
+  'Sh. Nabil':   { vh: 1, vw: 0, wrist: true, stance: 'upright', cele: 'sky' },
+  'Faisal':      { vh: 2, vw: 2, shoes: '#e8c35a', stance: 'forward', cele: 'fist' },
+  'Sh. Jamal':   { vh: 2, vw: 1, beardStyle: 3, sleeve: 'f', stance: 'still', cele: 'sky' },
+  'Hakeem':      { vh: 0, vw: 0, wrist: true, stance: 'bouncy', cele: 'fist' },
+  'Sh. Mansour': { vh: 1, vw: 1, beardLen: 2, glasses: true, stance: 'behind', cele: 'heart' },
+  'Omar':        { vh: 2, vw: 1, shoes: '#18a39a', stance: 'bouncy', cele: 'both' },
+  'Sh. Waleed':  { vh: 1, vw: 2, wrist: true, stance: 'knees', cele: 'salute' },
+  'Amir':        { vh: 1, vw: 0, band: 2, stance: 'light', cele: 'sky' },
+  'Sh. Hassan':  { vh: 1, vw: 2, capColor: '#e8d9a8', wrist: true, stance: 'low', cele: 'takbir' },
+  'Bassam':      { vh: 2, vw: 2, sleeve: 'n', shoes: '#ff7a45', stance: 'forward', cele: 'fist' },
+  'Sh. Adnan':   { vh: 2, vw: 2, beardLen: 2, wrist: true, stance: 'still', cele: 'heart' },
+  'Rami':        { vh: 0, vw: 0, band: 1, stance: 'bouncy', cele: 'both' }
+};
+for (const T of TEAMS) for (const d of T.players) if (CAST_LOOKS[d.name]) Object.assign(d, CAST_LOOKS[d.name]);
 // ------------------------------------------------------------ TRIVIA BANK
 // Answer index 0 is always correct; options are shuffled at display time.
 const TRIVIA = [
@@ -2484,14 +2514,14 @@ function drawGroup(g, segs, f) {
 function drawPlayer(g, p) {
   const T = p.T, def = p.def, lk = def.look, [bx, by] = P(p.x, p.y, p.z);
   const sc = p.spin ? Math.cos(p.spin) : 1, fs = p.face * (Math.abs(sc) < 0.2 ? 0.2 * sgn(sc) : sc), f = sgn(fs);
-  const sq = p.sq || 0, sw = (lk ? BUILD_W[lk.build] : def.bw != null ? BUILD_W[def.bw] : 1) * (1 - sq * 0.06), sh = (lk ? HEIGHT_S[lk.height] : def.bh != null ? HEIGHT_S[def.bh] : 1) * (1 + sq * 0.08);   // CPU bodies: bh/bw
+  const sq = p.sq || 0, sw = (lk ? BUILD_W[lk.build] : def.vw != null ? BUILD_W[def.vw] : def.bw != null ? BUILD_W[def.bw] : 1) * (1 - sq * 0.06), sh = (lk ? HEIGHT_S[lk.height] : def.vh != null ? HEIGHT_S[def.vh] : def.bh != null ? HEIGHT_S[def.bh] : 1) * (1 + sq * 0.08);   // CPU bodies: bh/bw (v9.17: the main cast's vh/vw are looks only)
   const uncle = !!(M.fun && M.fun.uncle && !M.gym && p.team !== 9);
   const thobe = p.outfit === 'thobe', robe = uncle ? T.c1 : lk ? (lk.teamMatch ? T.c1 : THOBES_ALL[lk.thobe]) : (def.thobe || '#f4f4ef'), hemK = (lk ? lk.thobeLen % 2 : 0) && !uncle ? 0.5 : 0.82;
   const trim = lk && !uncle && (lk.thobeLen >= 2 || lk.teamMatch) ? (lk.teamMatch ? T.c2 : '#c9a24a') : null;   // trimmed thobes / team colors
-  const shoe = lk ? SNEAKERS[lk.shoes] : '#e8ecf0', hair = lk ? HAIRS[lk.hair] : def.hair;
+  const shoe = lk ? SNEAKERS[lk.shoes] : def.shoes || '#e8ecf0', hair = lk ? HAIRS[lk.hair] : def.hair;
   const cap = lk ? CAPKEYS[lk.cap] : def.hat, capCol = lk ? (lk.teamMatch && lk.cap ? T.c2 : CAPCOLS_ALL[lk.capColor]) : (def.capColor || '#f7f7f2');
   const beard = lk ? lk.beard : def.beardStyle != null ? def.beardStyle : def.sheikh || def.elder ? 3 : 2;
-  const beardLen = lk ? lk.beardLen : def.elder ? 2 : def.sheikh ? 1 : 0;
+  const beardLen = lk ? lk.beardLen : def.beardLen != null ? def.beardLen : def.elder ? 2 : def.sheikh ? 1 : 0;
   const top = thobe ? robe : T.c1, skin = def.skin, dim = c => shade(c, -0.22), cel = c => shade(c, -0.16);
   const J = p.j, hipH = p.hipH, lean = J.lean.a, cl = p.cloth || { x: 0, y: 0 };
   const L = (lx, ly) => [lx * fs, -ly];
@@ -2526,6 +2556,8 @@ function drawPlayer(g, p) {
       out.push({ t: 'l', p: [...L(shX, shY), ...L(ex, ey), ...L(ex2, ey2), ...L(ex2 + cl.x * 0.45 - 1, ey2 - 1.5 + cl.y * 0.3)], w: 9, c: c(top), sh: cel(c(top)) });   // sleeve flares and trails
     } else {
       out.push({ t: 'l', p: [...L(ex, ey), ...L(hx2, hy2)], w: 6.8, c: c(skin), sh: far ? null : cel(skin) });
+      if (!lk && def.sleeve === side) out.push({ t: 'l', p: [...L(ex, ey), ...L(lerp(ex, hx2, 0.86), lerp(ey, hy2, 0.86))], w: 7.2, c: c(def.sleeveCol || '#eef1f4'), sh: far ? null : cel(def.sleeveCol || '#eef1f4') });   // v9.17: a shooting sleeve
+      if (!lk && def.wrist && def.sleeve !== side) out.push({ t: 'l', p: [...L(lerp(ex, hx2, 0.68), lerp(ey, hy2, 0.68)), ...L(lerp(ex, hx2, 0.9), lerp(ey, hy2, 0.9))], w: 7.8, c: c(def.wristCol || T.c2) });   // v9.17: wristbands
       out.push({ t: 'l', p: [...L(shX, shY), ...L(ex, ey)], w: 9.6, c: c(top), sh: cel(c(top)) });
     }
     const [a, b] = L(hx2, hy2); out.push({ t: 'c', x: a, y: b, r: 4.5, c: c(skin) });
@@ -2603,36 +2635,37 @@ function drawBeard(g, HX, HY, f, style, len, col) {
     g.globalAlpha = 0.38; g.moveTo(HX - 5.5 * f, HY + 1); g.quadraticCurveTo(HX, HY + 10.5, HX + 8.5 * f, HY + 4); g.lineTo(HX + 8 * f, HY + 2.5); g.quadraticCurveTo(HX + 1 * f, HY + 6.5, HX - 5.5 * f, HY + 1);
     g.fill(); g.globalAlpha = 1; return;
   }
-  if (style === 2) { g.moveTo(HX - 6 * f, HY); g.lineTo(HX - 5 * f, HY + 6); g.quadraticCurveTo(HX + 1 * f, HY + 11.5, HX + 8.5 * f, HY + 7.5); g.lineTo(HX + 9 * f, HY + 3.5); g.quadraticCurveTo(HX + 2 * f, HY + 6.5, HX - 6 * f, HY); }
+  if (style === 2) { g.moveTo(HX - 6 * f, HY); g.lineTo(HX - 5 * f, HY + 6); g.quadraticCurveTo(HX + 1 * f, HY + 11.5, HX + 8.5 * f, HY + 7.5); g.lineTo(HX + 9 * f, HY + 3.5); g.quadraticCurveTo(HX + 2 * f, HY + 4.8, HX - 6 * f, HY); }
   else {
     const tip = [12, 15.5, 20][len] || 15.5, point = len > 0;
     g.moveTo(HX - 6.5 * f, HY - 1); g.lineTo(HX - 6 * f, HY + 6);
     if (point) { g.quadraticCurveTo(HX - 2 * f, HY + tip - 2, HX + 3.5 * f, HY + tip); g.quadraticCurveTo(HX + 7 * f, HY + tip - 5, HX + 9.5 * f, HY + 5); }
     else g.bezierCurveTo(HX - 4 * f, HY + tip + 1, HX + 8 * f, HY + tip, HX + 9.5 * f, HY + 5);
-    g.lineTo(HX + 9.2 * f, HY + 3); g.quadraticCurveTo(HX + 2 * f, HY + 6.5, HX - 6.5 * f, HY - 1);
+    g.lineTo(HX + 9.2 * f, HY + 3); g.quadraticCurveTo(HX + 2 * f, HY + 4.6, HX - 6.5 * f, HY - 1);   // (v9.17: higher on the cheek)
   }
   g.closePath(); g.fill();
+  if (style === 2 || style === 3) {                                   // v9.17: sideburns up to the hair, and a full moustache
+    g.beginPath(); g.moveTo(HX - 6.6 * f, HY + 0.5); g.lineTo(HX - 7.6 * f, HY - 6.4); g.lineTo(HX - 4.4 * f, HY - 6.6); g.lineTo(HX - 3.6 * f, HY + 0.2); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(HX + 2.6 * f, HY + 3.4); g.quadraticCurveTo(HX + 5.6 * f, HY + 1.5, HX + 8.6 * f, HY + 3.0); g.quadraticCurveTo(HX + 5.8 * f, HY + 3.7, HX + 2.6 * f, HY + 3.4); g.fill();
+  }
   g.strokeStyle = shade(col === '#161616' || col === '#1c1c1c' ? '#3a3a3a' : col, -0.35); g.lineWidth = 1; g.stroke();
   if (style === 3) { g.strokeStyle = col; g.lineWidth = 2.2; g.beginPath(); g.moveTo(HX + 6 * f, HY + 3.4); g.quadraticCurveTo(HX + 8 * f, HY + 2.6, HX + 10 * f, HY + 3.6); g.stroke(); }
 }
 // Faces: a simple neutral eye and brow (no expressions), sized to read on phones.
 function drawFace(g, HX, HY, f, expr, hair, glasses) {
   const ex = HX + 4.8 * f, ey = HY - 1.2;
-  const fierce = expr === 'fierce', shocked = expr === 'shock', joyful = expr === 'joy';
-  g.fillStyle = '#1a120c'; g.beginPath(); g.ellipse(ex, ey, shocked ? 1.55 : 1.35, shocked ? 2.2 : 1.9, 0, 0, Math.PI * 2); g.fill();
+  const fierce = expr === 'fierce', shocked = expr === 'shock', joyful = expr === 'joy', sad = expr === 'sad', focus = expr === 'focus';   // (v9.17: sad, focus)
+  g.fillStyle = '#1a120c'; g.beginPath(); g.ellipse(ex, ey + (focus ? 0.3 : 0), shocked ? 1.55 : 1.35, shocked ? 2.2 : focus ? 1.45 : sad ? 1.7 : joyful ? 1.6 : 1.9, 0, 0, Math.PI * 2); g.fill();
   g.fillStyle = 'rgba(255,255,255,0.8)'; g.beginPath(); g.arc(ex + 0.45 * f, ey - 0.6, 0.45, 0, Math.PI * 2); g.fill();
   g.strokeStyle = shade(hair || '#1a1410', -0.2); g.lineWidth = 1.5; g.lineCap = 'round';
   g.beginPath();
   if (fierce) { g.moveTo(ex - 2.2 * f, ey - 4.1); g.lineTo(ex + 2.3 * f, ey - 2.9); }
+  else if (sad) { g.moveTo(ex - 2.2 * f, ey - 3.0); g.lineTo(ex + 2.3 * f, ey - 4.3); }   // inner brow up
+  else if (focus) { g.moveTo(ex - 2.2 * f, ey - 3.2); g.lineTo(ex + 2.3 * f, ey - 3.2); }   // level, a little low
+  else if (joyful) { g.moveTo(ex - 2.2 * f, ey - 4.1); g.quadraticCurveTo(ex, ey - 5.0, ex + 2.3 * f, ey - 4.3); }   // raised, arched
   else { g.moveTo(ex - 2.2 * f, ey - 3.6); g.lineTo(ex + 2.3 * f, ey - (shocked ? 4.4 : 3.9)); }
   g.stroke();
-  if (joyful || fierce || shocked) {
-    g.strokeStyle = '#3b2017'; g.lineWidth = joyful ? 1.1 : 1.4; g.beginPath();
-    if (joyful) g.arc(HX + 4 * f, HY + 3.2, 2.3, 0.15, Math.PI - 0.15);
-    else if (shocked) g.arc(HX + 4 * f, HY + 5.1, 1.6, 0, Math.PI * 2);
-    else { g.moveTo(HX + 2 * f, HY + 4.5); g.lineTo(HX + 6.3 * f, HY + 3.8); }
-    g.stroke();
-  }
+  // (v9.17: no mouths: the owners chose eyes and brows only, since a beard covers the mouth)
   if (!glasses) return;
   g.strokeStyle = '#2a2a2a'; g.lineWidth = 1.1; g.beginPath(); g.arc(ex, ey, 2.9, 0, Math.PI * 2); g.moveTo(ex - 2.8 * f, ey - 0.3); g.lineTo(HX - 4 * f, HY - 2.5); g.stroke();
 }
@@ -16462,20 +16495,22 @@ const REWARDS = [
   [17, 'thobe', 't3', 'Sand thawb', '#d8c39a'], [18, 'ball', 'crescent', 'Crescent ball'], [19, 'kufi', 'k3', 'Indigo kufi', '#3b3b8f'],
   [20, 'title', 'mvp', 'Masjid MVP'], [21, 'shoe', 's3', 'Gold sneakers', '#e8c35a'], [22, 'cele', 'salute', 'Salute the crowd'],
   [23, 'thobe', 't4', 'Plum thawb', '#5a2d5f'], [24, 'ball', 'pearl', 'Pearl ball'], [25, 'title', 'king', 'King of the Court'],
-  [26, 'kufi', 'k4', 'Pearl kufi', '#efe9dc'], [27, 'cele', 'sujood', 'Sujood of thanks'], [28, 'shoe', 's4', 'Crescent white sneakers', '#f6f6f2'],
+  [26, 'kufi', 'k4', 'Pearl kufi', '#efe9dc'], [28, 'shoe', 's4', 'Crescent white sneakers', '#f6f6f2'],
   [29, 'ball', 'gold', 'Golden ball'], [30, 'title', 'legend', 'Ummah Legend']
 ].map(([lv, kind, id, name, col]) => ({ lv, kind, id, name, col }));
 const PROFILE_MAX = 30;
 const KIND_TXT = { title: 'Title', ball: 'Ball skin', thobe: 'Thawb colour (career creator)', kufi: 'Kufi colour (career creator)', shoe: 'Sneakers (career creator)', cele: 'Celebration' };
 const BALL_SKINS = { classic: ['#ffc070', '#e7822e', '#b4521a', '#3a1a08'], night: ['#5a6fb0', '#22305e', '#10173a', '#e8c35a'], sand: ['#f3dcae', '#d2ae72', '#9c7a45', '#5a3c18'],
   green: ['#55c08a', '#1e7a4c', '#0f4a2c', '#e8c35a'], crescent: ['#f6f2e6', '#d8cfb8', '#a99e84', '#2f7f86'], pearl: ['#ffffff', '#e8eef2', '#b9c6cf', '#8a6fb0'], gold: ['#fff1b0', '#e8c35a', '#a8812e', '#5a3c10'] };
-const CELE_TXT = { raise: 'Arm raised', heart: 'Hand on heart', fist: 'Fist pump', both: 'Both arms up', salute: 'Salute the crowd', sujood: 'Sujood of thanks' };
+const CELE_TXT = { raise: 'Arm raised', heart: 'Hand on heart', fist: 'Fist pump', both: 'Both arms up', salute: 'Salute the crowd' };
 const Profile = {
   d: null,
   load() {
     if (this.d) return this.d;
     let o = null; try { o = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch (e) {}
     this.d = Object.assign({ xp: 0, equip: { title: 'none', ball: 'classic', cele: 'raise' }, stats: { games: 0, wins: 0, minis: {}, crowns: 0 }, tut: false }, o || {});
+    if (this.d.equip && this.d.equip.cele === 'sujood') this.d.equip.cele = 'raise';   // (v9.17: that celebration was removed)
+    if (this.d.equip && this.d.equip.taunt === 'sujood') this.d.equip.taunt = 'sky';
     return this.d;
   },
   save() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(this.d)); } catch (e) {} },
@@ -16586,20 +16621,10 @@ function swatchLocked(kind, i) { if (i < PROFILE_BASE[kind]) return false; const
     const t = _pt.apply(this, arguments);
     if (!(p.celebrate > 0) || p.state !== 'free' || ball.owner === p || p.human !== (Net.role === 'guest' ? 1 : 0) || M.attract) return t;
     const c = Profile.load().equip.cele;
-    if (c === 'heart') { t.ns = 1.15; t.ne = 2.1; }
-    else if (c === 'fist') { t.ns = 2.3; t.ne = 1.9; t.nk += 0.3; t.fk += 0.3; }
-    else if (c === 'both') { t.ns = 3.0; t.fs = 3.0; t.ne = 0.2; t.fe = 0.2; }
-    else if (c === 'salute') { t.ns = 2.6; t.ne = 2.4; t.lean -= 0.05; }
-    else if (c === 'sujood') { t.nk = 2.2; t.fk = 2.2; t.nh = 1.6; t.fh = 1.6; t.lean = 1.15; t.ns = 1.4; t.fs = 1.4; t.ne = 0.4; t.fe = 0.4; }
+    if (typeof CAST_CELES !== 'undefined' && CAST_CELES[c]) Object.assign(t, CAST_CELES[c]);   // (v9.17: the same poses as the cast's: hand on the chest, fist by the shoulder, salute at the brow)
     return t;
   };
-  const _os = onScore;
-  onScore = function (h) {
-    const sh = ball.shot && ball.shot.hoop === h ? ball.shot : null;
-    const r = _os.apply(this, arguments);
-    if (sh && sh.shooter && sh.shooter.human >= 0 && Profile.load().equip.cele === 'sujood' && sh.shooter.celebrate > 0) sh.shooter.celebrate = Math.max(sh.shooter.celebrate, 1.1);
-    return r;
-  };
+
 }
 // ---- the profile screen (Options → Profile)
 const ProfileUI = { idx: 0 };
@@ -18716,7 +18741,7 @@ function drawReviewPanel(g) {
 // * Blocked and missed dunks fly: no more easy put-backs from the rim's shadow.
 // * Swats: a full arm swing on blocks, and the blocker gets a moment after.
 // * Celebrations and taunts: after a block, a big dunk or a clutch bucket you have 3 seconds:
-//   tap MOVE (H) to taunt. Taunts unlock in Options → Profile (sujood, du'a, takbir and more).
+//   tap MOVE (H) to taunt. Taunts unlock in Options → Profile (du'a, takbir and more).
 function driOf(p) {
   const s = (p && p.st) || {};
   return s.dri != null ? s.dri : clamp(Math.round((s.spd || 5) * 0.5 + (s.stl || 5) * 0.2 + (s.pas != null ? s.pas : 5) * 0.3), 1, 10);
@@ -18921,7 +18946,7 @@ const TAUNTS = [
   { id: 'dua', name: 'Du’a, hands raised', pop: 'DU’A', lv: 3 },
   { id: 'flex', name: 'Flex', pop: 'STRONG BELIEVER', lv: 5 },
   { id: 'wag', name: 'Finger wag', pop: 'NOT IN HERE', lv: 7 },
-  { id: 'sujood', name: 'Sujood of thanks', pop: 'SUJOOD OF THANKS', lv: 9, dead: true },
+  { id: 'retired', name: '', pop: '', lv: 9, retired: true },              // (v9.17: removed; the place is kept, online play sends a taunt by its place)
   { id: 'chest', name: 'Chest pound', pop: 'HEART OF A LION', lv: 12 },
   { id: 'brush', name: 'Brush it off', pop: 'BRUSH IT OFF', lv: 15 },
   { id: 'takbir', name: 'Takbir', pop: 'ALLAHU AKBAR', lv: 18 },
@@ -18972,7 +18997,6 @@ KIND_TXT.taunt = 'Taunt';
         case 'dua': Object.assign(t, { ns: 1.25, fs: 1.25, ne: 1.5, fe: 1.5, lean: 0.06, nk: 0.25, fk: 0.25 }); break;
         case 'flex': Object.assign(t, { ns: 1.57, fs: 1.57, ne: 2.35 + w * 0.12, fe: 2.35 + w * 0.12, lean: 0.12, nk: 0.5, fk: 0.5 }); break;
         case 'wag': Object.assign(t, { ns: 2.5, ne: 0.2 + w * 0.3, fs: 0.3, fe: 0.4 }); break;
-        case 'sujood': Object.assign(t, { nk: 2.2, fk: 2.2, nh: 1.6, fh: 1.6, lean: 1.15, ns: 1.4, fs: 1.4, ne: 0.4, fe: 0.4 }); break;
         case 'chest': Object.assign(t, { ns: 0.8, ne: 2.5 + Math.abs(w) * 0.35, fs: 0.3, fe: 0.5, lean: -0.08 }); break;
         case 'brush': Object.assign(t, { fs: 0.9, fe: 2.6 + w * 0.35, ns: 0.3, ne: 0.4, lean: 0.02 }); break;
         case 'takbir': Object.assign(t, { ns: 2.25, fs: 2.25, ne: 2.45, fe: 2.45, lean: -0.04 }); break;
@@ -19021,9 +19045,9 @@ function myTaunt() { const t = (Profile.load().equip || {}).taunt || 'sky'; retu
 function doTaunt(p, id) {
   const T = M.taunt; if (!T || T.p !== p || T.used || M.time > T.until) return;
   let def = TAUNTS.find(x => x.id === id) || TAUNTS[0];
-  if (def.dead && M.phase === 'live' && !T.deadOK) def = TAUNTS[0];                 // sujood only after a basket, never with the ball live
+  if (def.retired || def.dead && M.phase === 'live' && !T.deadOK) def = TAUNTS[0];
   T.used = true;
-  p.taunt = { k: def.id, t0: M.time, dur: def.id === 'sujood' ? 1.9 : 1.3 }; p.celebAfter = 0;
+  p.taunt = { k: def.id, t0: M.time, dur: 1.3 }; p.celebAfter = 0;
   FX.pop(p.x, p.y + 150, p.z, def.pop, '#ffd76a'); SFX.cheer(0.9, 0.08); FX.hype && FX.hype(1);
 }
 {
@@ -24833,9 +24857,9 @@ SETTINGS.tomahawk = 'float';
 (() => { try { const v = localStorage.getItem('islamdunk.tomahawk'); if (v && !TOMAHAWK_KEPT.includes(v)) localStorage.setItem('islamdunk.tomahawk', 'float'); } catch (e) {} })();
 { const i = SET_ITEMS.findIndex(s => s.label === 'Tomahawk style'); if (i >= 0) SET_ITEMS.splice(i, 1); }
 setTomahawk = function () { SETTINGS.tomahawk = 'float'; try { localStorage.setItem('islamdunk.tomahawk', 'float'); } catch (e) {} };
-// Taunts "Sujood of thanks" and "Brush it off": not unlocked, not in the picker; a saved or online one becomes the default.
+// Taunt "Brush it off" (and the removed one in its place, v9.17): not unlocked, not in the picker; a saved or online one becomes the default.
 // (The entries stay in TAUNTS: online play sends a taunt by its place in the list.)
-for (const t of TAUNTS) if (t.id === 'sujood' || t.id === 'brush') t.retired = true;
+for (const t of TAUNTS) if (t.id === 'retired' || t.id === 'brush') t.retired = true;
 for (let i = REWARDS.length - 1; i >= 0; i--) { const r = REWARDS[i]; if (r.kind === 'taunt' && (TAUNTS.find(t => t.id === r.id) || {}).retired) REWARDS.splice(i, 1); }
 {
   const _mt = myTaunt;
@@ -27317,6 +27341,191 @@ const TOUCH_IDLE_MIN = 0.5;
       return r;
     };
   }
+}
+// ================================================= v9.17: THE CAST COMES TO LIFE (CD4 stances, CD5 faces, CD2 celebrations)
+// Driven by the cast data in src/data/cast.js. Everything here is posture and faces: joint targets and p.expr,
+// stepped with the match on its own clock (M.time), so both phones in an online match draw the same thing. No rule,
+// timing or AI decision changes.
+//   Stances: between plays, standing still without the ball and not guarding the ball handler.
+//   Faces: disappointed for a second after his own miss and when his team loses; focused at the free-throw line.
+//   Celebrations: his own signature after a made basket, a dunk or a win (the owners chose no sujood in the cast's
+//   celebrations); Takbir only standing still, otherwise the arm-raised celebration. Your own player
+//   keeps the celebration you equipped (Options → Profile) offline; in an online match everyone uses his cast
+//   celebration, so the two phones match (the equipped one is read from each device's own profile).
+const CAST_STANCES = {
+  upright: (t) => { t.lean = -0.02; t.nk = 0.14; t.fk = 0.14; t.ns = 0.12; t.fs = 0.08; },
+  still: (t) => { t.lean = 0; t.nk = 0.12; t.fk = 0.12; t.ns = 0.08; t.fs = 0.06; t.ne = 0.25; t.fe = 0.3; },
+  bouncy: (t, p) => { const b = 0.16 + 0.12 * Math.sin(M.time * 7.5 + p.def.num); t.nk += b; t.fk += b; t.nh += b * 0.45; t.fh += b * 0.45; },
+  light: (t, p) => { const b = 0.08 * Math.sin(M.time * 5 + p.def.num); t.nk += 0.1 + b; t.fk += 0.1 - b; },
+  low: (t) => { t.nk += 0.45; t.fk += 0.45; t.nh += 0.25; t.fh += 0.25; t.lean += 0.12; t.ns = 0.7; t.fs = 0.6; t.ne = 0.3; t.fe = 0.35; },
+  forward: (t) => { t.lean += 0.18; t.nk += 0.22; t.fk += 0.22; t.nh += 0.12; t.fh += 0.12; },
+  relaxed: (t, p) => { t.lean = 0.02; t.nk = 0.16; t.fk = 0.2; t.fs = -0.3; t.fe = 1.75; t.lean += 0.015 * Math.sin(M.time * 2 + p.def.num); },   // a hand on his hip
+  knees: (t) => { t.lean = 0.55; t.nk = 0.75; t.fk = 0.7; t.nh = 0.6; t.fh = 0.55; t.ns = 0.9; t.fs = 0.85; t.ne = 0.15; t.fe = 0.2; },   // hands on knees
+  behind: (t) => { t.lean = -0.03; t.nk = 0.12; t.fk = 0.12; t.ns = -0.42; t.fs = -0.38; t.ne = 0.35; t.fe = 0.35; }                      // hands behind his back
+};
+// full arm and body targets for each celebration, from a neutral stand (so nothing from another pose leaks in)
+// (angles are absolute: 0 = straight down, positive = forward; a forearm points at shoulder + elbow)
+const CAST_CELES = {
+  heart:  { ns: 0.55, ne: 3.5, fs: 0.1, fe: 0.4, lean: -0.02 },                       // palm flat on his chest
+  fist:   { ns: 1.3, ne: 1.6, fs: 0.1, fe: 0.4, lean: -0.03, nk: 0.45, fk: 0.45 },     // fist up beside his shoulder, knees bent
+  both:   { ns: 3.0, fs: 3.0, ne: 0.2, fe: 0.2, lean: -0.04 },
+  salute: { ns: 1.9, ne: 1.9, fs: 0.1, fe: 0.4, lean: -0.05 },                         // fingertips at his brow
+  sky:    { ns: 3.15, ne: 0.05, fs: 0.3, fe: 0.4, lean: -0.05 },                       // one finger to the sky
+  takbir: { ns: 2.25, fs: 2.25, ne: 2.45, fe: 2.45, lean: -0.04, nk: 0.15, fk: 0.15 }  // hands raised beside his ears
+};
+function castCele(p, sp) {
+  let c = p.def && p.def.cele; if (!c || !CAST_CELES[c]) return null;
+  if (c === 'takbir' && sp > 15) c = 'sky';                                   // takbir: standing, not running
+  return CAST_CELES[c];
+}
+{
+  const _pt = poseTargets;
+  poseTargets = function (p, sp) {
+    const t = _pt.apply(this, arguments), d = p.def;
+    if (!d || p.state !== 'free') return t;
+    const holding = ball.owner === p || p.fakeHold;
+    if (holding) return t;
+    const mine = !M.rb && p.human === (typeof Net !== 'undefined' && Net.role === 'guest' ? 1 : 0);
+    if (p.celebrate > 0) {
+      if (mine) return t;                                                     // offline: the celebration you equipped
+      const C = castCele(p, sp); if (C) { Object.assign(t, C); t.K = Math.max(t.K, 900); }
+      return t;
+    }
+    const tn = p.taunt; if (tn && M.time - tn.t0 < tn.dur) return t;
+    if (p.react && M.time <= p.react.until && p.react.type !== 'nod') return t;   // (a nod moves the head only: the stance stays)
+    if (!d.stance || sp > 15) return t;
+    const bo = ball.owner; if (bo && bo.team !== p.team && dxz(p, bo) < 160) return t;   // guarding: the defensive stance wins
+    const S = CAST_STANCES[d.stance]; if (S) S(t, p);
+    return t;
+  };
+}
+// faces: a missed shot, a loss, the free-throw line
+{
+  const _os = onScore;
+  onScore = function (h) { if (ball.shot) ball.shot._made = true; return _os.apply(this, arguments); };
+  const _um = updateMatch;
+  updateMatch = function () {
+    const before = ball.shot, wasOver = M.phase === 'over';
+    const r = _um.apply(this, arguments);
+    if (!M.players) return r;
+    if (before && before !== ball.shot && !before._made && before.shooter && !before.dunk && M.phase !== 'over') {
+      const s = before.shooter; if (!s.expr || s.expr.k === 'joy') s.expr = { k: 'sad', t: 1.0 };
+    }
+    if (M.ft && M.ft.shooter && M.phase !== 'over') { const s = M.ft.shooter; if (!s.expr || s.expr.k === 'focus') s.expr = { k: 'focus', t: 0.15 }; }
+    if (!wasOver && M.phase === 'over' && M.winner != null && !M.practice) {
+      for (const q of M.players) {
+        if (q.team === M.winner) { q._castWin = true; q.celebrate = Math.max(q.celebrate || 0, 2.4); }
+        else q.expr = { k: 'sad', t: 2.0 };
+      }
+    }
+    return r;
+  };
+}
+// headbands for the cast (the creator's headband code reads the player's look only)
+{
+  let cur = null;
+  const _dp = drawPlayer;
+  drawPlayer = function (g, p) { cur = p; try { return _dp.apply(this, arguments); } finally { cur = null; } };
+  const _dcp = drawCapPattern;
+  drawCapPattern = function (g, HX, HY, f, cap, col) {
+    const r = _dcp.apply(this, arguments), d = cur && cur.def, b = d && !d.look && d.band && typeof BAND_COLS !== 'undefined' ? BAND_COLS[d.band] : null;
+    if (b && cap === 'hair') {
+      g.strokeStyle = OUTLINE; g.lineWidth = 3.6; g.beginPath(); g.moveTo(HX - 9.6 * f, HY - 6.4); g.quadraticCurveTo(HX, HY - 9.0, HX + 8.6 * f, HY - 7.6); g.stroke();
+      g.strokeStyle = b; g.lineWidth = 2.4; g.stroke();
+    }
+    return r;
+  };
+}
+// ================================================= v9.17: DESIGN PASS, BATCH C: MOTION (docs/IMPROVEMENTS.md VD3, VD4, UI1)
+//   VD3 the opening logo: within the same 1.7 s, the dunker rises in and lands softly, the emblem pulses once as he
+//       lands, and a gold glint sweeps across ISLAM DUNK. Reduced motion: the plain fade, as before. A tap still skips.
+//   VD4 the results screen: the final score counts up and the Player of the Game panel slides in, under a second in
+//       all; a tap or a key finishes it at once, and Continue works from the first frame.
+//   UI1 menus: a 0.15 s rise from dark when the screen changes between menus. Never in a match (play, the gym, the
+//       neighbourhood, halftime), and none with Reduced motion.
+const easeOutBack = u => { const c = 1.6; return 1 + (c + 1) * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); };
+const easeOutCubic = u => 1 - Math.pow(1 - u, 3);
+
+// ---- VD3: the opening logo
+const SPLASH_SPLIT = 212;                                 // between the emblem (above) and the wordmark (below), at top 120, scale 1
+let splashWord = null;                                    // the wordmark, drawn once into its own canvas for the glint
+function splashWordCanvas() {
+  if (splashWord && splashWord.w === W) return splashWord.c;
+  const c = document.createElement('canvas'); c.width = (W + 800) * 2; c.height = H * 2; const g = c.getContext('2d');
+  g.scale(2, 2); g.translate(400, 0); g.beginPath(); g.rect(-400, SPLASH_SPLIT, W + 800, H); g.clip(); drawLogoMark(g, W / 2, 120, 1.0, {});
+  splashWord = { w: W, c }; return c;
+}
+{
+  const _ds = drawSplash;
+  drawSplash = function (g) {
+    if (REDUCED_MOTION || typeof document === 'undefined') return _ds.apply(this, arguments);
+    const t = Game.splashT || 0, a = clamp(Math.min(t / 0.25, (1.7 - t) / 0.35), 0, 1);
+    g.fillStyle = '#060b14'; g.fillRect(-400, 0, W + 800, H);
+    g.save(); g.globalAlpha = a;
+    // the emblem: rises 46 px with a soft overshoot, lands at 0.55 s, a single pulse as he lands
+    const u = clamp(t / 0.55, 0, 1), rise = (1 - easeOutBack(u)) * 46, pu = clamp((t - 0.5) / 0.3, 0, 1), pulse = 1 + Math.sin(pu * Math.PI) * 0.07;
+    g.save(); g.beginPath(); g.rect(-400, -50, W + 800, SPLASH_SPLIT + 50); g.clip();
+    const ey = 120 + 30 * 1.6; g.translate(W / 2, ey + rise); g.scale(pulse, pulse); g.translate(-W / 2, -ey);
+    g.globalAlpha = a * clamp(t / 0.3, 0, 1); drawLogoMark(g, W / 2, 120, 1.0, {}); g.restore();
+    // the wordmark, with a glint sweeping across it from 0.6 s to 1.15 s
+    g.save(); g.beginPath(); g.rect(-400, SPLASH_SPLIT, W + 800, H); g.clip(); drawLogoMark(g, W / 2, 120, 1.0, {}); g.restore();
+    const gu = (t - 0.6) / 0.55;
+    if (gu > 0 && gu < 1) {
+      const src = splashWordCanvas(), tmp = document.createElement('canvas'); tmp.width = src.width; tmp.height = src.height; const tg = tmp.getContext('2d');
+      tg.drawImage(src, 0, 0); tg.globalCompositeOperation = 'source-atop';
+      const gx = (W / 2 - 260 + gu * 520 + 400) * 2, band = tg.createLinearGradient(gx - 70, 0, gx + 70, 0);
+      band.addColorStop(0, 'rgba(255,250,225,0)'); band.addColorStop(0.5, 'rgba(255,250,225,0.85)'); band.addColorStop(1, 'rgba(255,250,225,0)');
+      tg.fillStyle = band; tg.save(); tg.translate(gx, H); tg.transform(1, 0, -0.35, 1, 0, 0); tg.translate(-gx, -H); tg.fillRect(gx - 70, 0, 140, tmp.height); tg.restore();
+      g.drawImage(tmp, -400, 0, W + 800, H);
+    }
+    g.textAlign = 'center'; g.fillStyle = 'rgba(246,236,210,0.7)'; g.font = `11px ${FONT}`;
+    if (g.letterSpacing !== undefined) g.letterSpacing = '3px';
+    g.globalAlpha = a * clamp((t - 0.7) / 0.3, 0, 1); g.fillText('A ' + STUDIO.short + ' PRODUCTION', W / 2, 420);
+    if (g.letterSpacing !== undefined) g.letterSpacing = '0px';
+    g.restore();
+  };
+}
+
+// ---- VD4: the results screen
+const RESULTS_ANIM = 0.85;
+{
+  const _gu = gameUpdate;
+  gameUpdate = function (rdt) {
+    if (Game.screen === 'final') {
+      const before = Game.finalT || 0;
+      Game.finalT = before + rdt;
+      if (before < RESULTS_ANIM && (Input.pressed.Space || Input.pressed.Enter || (Input.taps && Input.taps.length))) Game.finalT = RESULTS_ANIM;   // a tap finishes it
+    } else Game.finalT = 0;
+    return _gu.apply(this, arguments);
+  };
+  const _df = drawFinalScreen;
+  drawFinalScreen = function (g) {
+    const k = clamp((Game.finalT || 0) / RESULTS_ANIM, 0, 1);
+    if (REDUCED_MOTION || k >= 1 || !M.teams || M.scenario) return _df.apply(this, arguments);
+    const sc = [M.teams[0].score, M.teams[1].score], c = easeOutCubic(clamp(k / 0.8, 0, 1));
+    M.teams[0].score = Math.round(sc[0] * c); M.teams[1].score = Math.round(sc[1] * c);        // (drawn only: put back below)
+    try {
+      const slide = (1 - easeOutCubic(clamp((k - 0.15) / 0.6, 0, 1))) * 120, PG = [-400, 135, 762, 290];   // the Player of the Game panel's band
+      g.save(); g.beginPath(); g.rect(-400, 0, W + 800, H); g.rect(PG[0], PG[1], PG[2], PG[3]); g.clip('evenodd'); _df.apply(this, arguments); g.restore();
+      g.save(); g.beginPath(); g.rect(PG[0], PG[1], PG[2], PG[3]); g.clip(); g.translate(-slide, 0); g.globalAlpha = clamp((k - 0.1) / 0.4, 0, 1); _df.apply(this, arguments); g.restore();
+    } finally { M.teams[0].score = sc[0]; M.teams[1].score = sc[1]; }
+  };
+}
+
+// ---- UI1: a quick rise from dark between menus
+const SCREEN_FADE = 0.15, NO_FADE = new Set(['play', 'netplay', 'gym', 'world', 'halftime', 'splash']);
+{
+  let last = null, at = -1;
+  const _r = render;
+  render = function (g) {
+    const r = _r.apply(this, arguments);
+    const s = Game.screen, now = typeof performance !== 'undefined' ? performance.now() / 1000 : 0;
+    if (s !== last) { if (last && !NO_FADE.has(last) && !NO_FADE.has(s) && !REDUCED_MOTION) at = now; last = s; }
+    const k = at >= 0 ? (now - at) / SCREEN_FADE : 1;
+    if (k < 1) { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1 - easeOutCubic(clamp(k, 0, 1)); g.fillStyle = '#060b14'; g.fillRect(0, 0, g.canvas.width, g.canvas.height); g.restore(); }
+    else at = -1;
+    return r;
+  };
 }
 
 boot();
