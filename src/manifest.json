@@ -125,6 +125,7 @@
     "online/rollback.js",
     "online/rollback-net.js",
     "online/rollback-sync.js",
+    "online/v9171-rb-start.js",
     "screens/design-pass.js",
     "sim/cast-life.js",
     "screens/motion-pass.js",

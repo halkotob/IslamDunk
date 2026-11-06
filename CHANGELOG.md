@@ -1,5 +1,46 @@
 # Changelog
 
+## 9.17.1: online, both phones play the same game
+docs/IMPROVEMENTS.md B1, B2, B4, and the play-test report "the player models tweaking out on his side". In an online
+match with rollback each phone builds the match itself from the host's start message, but some of the match came
+from each phone's own device instead. The desync repair then put the guest right a moment later, which showed as
+players jumping, not as an error. Now everything the match needs is in the start message
+(`src/online/v9171-rb-start.js`):
+- **Half court is half court on both phones.** The host played half court and the guest full court from the first
+  frame. The host's Court setting now travels in the message.
+- **A taunt plays the taunter's own taunt on both phones.** Each phone played its own owner's equipped taunt on
+  whoever taunted. The guest now sends its equipped taunt with its lobby presence, and the message carries both. An
+  unknown or retired taunt plays as Sky.
+- **1 on 1 (no CPU) has no CPU.** It was played 2 on 2 with CPU teammates on both phones. Now it's the two picked
+  players, one a team.
+- **Fun modes too** (found in the audit): Big heads, Uncle League and Low gravity counted only if this device had
+  unlocked them, so a host with Big heads on and a guest who hadn't unlocked it played different games. The host's
+  choice now travels in the message.
+- The rest of the match setup already came from the message (teams and their looks, venue, the host's settings), and
+  the Noor power-ups are off in a rollback match. The snapshot path (`?rb=0`, no direct link) is unchanged.
+
+Measured, a loopback match per mode and court, 600 frames of scripted play on both sides, the match checksum compared
+every 60 frames (`rb-same`):
+
+| | co full | co half | vs full | vs half | one full | one half |
+|---|---|---|---|---|---|---|
+| Desyncs repaired, 9.16.4 | 0 | 1 | 0 | 1 | 0 | 1 |
+| Desyncs repaired, 9.17.1 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Players on the floor, 9.16.4 / 9.17.1 | 4 / 4 | 4 / 4 | 4 / 4 | 4 / 4 | 4 / **2** | 4 / **2** |
+
+On 9.16.4 the half-court phones differed from frame 0 (the first player at x 848 on the host, 630 on the guest).
+A guest taunt with different equipped taunts was 1 repaired desync each time (the host played its own "flex" for the
+guest's "chest"), and 0 now. Big heads on at the host only was 1, and 0 now.
+
+Tests: `rb-same` (the six above; any repair is a failure), `rb-taunt` (the guest's taunt on both phones; an unknown
+and a retired id play as Sky), `rb-fun`, `rb-one` (2 players on both phones, `M.one` the same), all in
+`tests/rb-same.mjs`.
+
+Still open, not from this release: `rb-slow` (the guest's CPU 4x slower) still fails, with 3 to 5 desyncs repaired in
+12 s on 9.17.1 and 4 on 9.16.4 in the same environment (host 48-49 frames a second, needs 50). Q9 in the improvements
+list. `rb-lag` passes or fails from run to run here on its Bad mobile line (400 ms, 10% loss: 4 desyncs repaired),
+as since 9.15.0; its other four connections have none. Not yet done: the two-phone try (host on Wi-Fi, guest on mobile data: Half court, a taunt from each side, a 1 on 1).
+
 ## 9.17.0: the cast comes to life, and motion (design batches B and C)
 The second and third batches from the design review (docs/IMPROVEMENTS.md CD1–CD5, CD2, VD3, VD4, UI1). Looks and
 motion only: no speed, reach, skill, timing or AI change.

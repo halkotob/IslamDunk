@@ -107,6 +107,7 @@ import { hubTests } from './hub-layout.mjs';
 import { leagueTests } from './league.mjs';
 import { netTests } from './net.mjs';
 import { rollbackTests } from './rollback.mjs';
+import { rbSameTests } from './rb-same.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
 import { animFixTests } from './anim-fix.mjs';
@@ -2600,6 +2601,7 @@ Object.assign(T, hubTests({ newContext, open }));
 Object.assign(T, leagueTests({ newContext, open }));   // v9.7.0 the league (tests/league.mjs)   // v9.6.2 career hub fixtures (tests/hub-layout.mjs)
 Object.assign(T, netTests({ newContext, open }));   // v9.10 online latency (tests/net.mjs)
 Object.assign(T, rollbackTests({ newContext, open }));   // v9.14 rollback netcode (tests/rollback.mjs)
+Object.assign(T, rbSameTests({ newContext, open }));    // v9.17.1 both phones play the same game (tests/rb-same.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
 Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)
