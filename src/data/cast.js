@@ -16,7 +16,7 @@ const CAST_LOOKS = {
   'Samir':       { vh: 0, vw: 0, sleeve: 'n', stance: 'relaxed', cele: 'salute' },
   'Sh. Nabil':   { vh: 1, vw: 0, wrist: true, stance: 'upright', cele: 'sky' },
   'Faisal':      { vh: 2, vw: 2, shoes: '#e8c35a', stance: 'forward', cele: 'fist' },
-  'Sh. Jamal':   { vh: 2, vw: 1, beardStyle: 3, sleeve: 'f', stance: 'still', cele: 'sujood' },
+  'Sh. Jamal':   { vh: 2, vw: 1, beardStyle: 3, sleeve: 'f', stance: 'still', cele: 'sky' },
   'Hakeem':      { vh: 0, vw: 0, wrist: true, stance: 'bouncy', cele: 'fist' },
   'Sh. Mansour': { vh: 1, vw: 1, beardLen: 2, glasses: true, stance: 'behind', cele: 'heart' },
   'Omar':        { vh: 2, vw: 1, shoes: '#18a39a', stance: 'bouncy', cele: 'both' },
@@ -24,7 +24,7 @@ const CAST_LOOKS = {
   'Amir':        { vh: 1, vw: 0, band: 2, stance: 'light', cele: 'sky' },
   'Sh. Hassan':  { vh: 1, vw: 2, capColor: '#e8d9a8', wrist: true, stance: 'low', cele: 'takbir' },
   'Bassam':      { vh: 2, vw: 2, sleeve: 'n', shoes: '#ff7a45', stance: 'forward', cele: 'fist' },
-  'Sh. Adnan':   { vh: 2, vw: 2, beardLen: 2, wrist: true, stance: 'still', cele: 'sujood' },
+  'Sh. Adnan':   { vh: 2, vw: 2, beardLen: 2, wrist: true, stance: 'still', cele: 'heart' },
   'Rami':        { vh: 0, vw: 0, band: 1, stance: 'bouncy', cele: 'both' }
 };
 for (const T of TEAMS) for (const d of T.players) if (CAST_LOOKS[d.name]) Object.assign(d, CAST_LOOKS[d.name]);

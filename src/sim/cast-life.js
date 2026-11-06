@@ -4,8 +4,8 @@
 // timing or AI decision changes.
 //   Stances: between plays, standing still without the ball and not guarding the ball handler.
 //   Faces: disappointed for a second after his own miss and when his team loses; focused at the free-throw line.
-//   Celebrations: his own signature after a made basket, a dunk or a win. Sujood of thanks only when the match is
-//   won (everyone has stopped), Takbir only standing still; otherwise the arm-raised celebration. Your own player
+//   Celebrations: his own signature after a made basket, a dunk or a win (the owners chose no sujood in the cast's
+//   celebrations); Takbir only standing still, otherwise the arm-raised celebration. Your own player
 //   keeps the celebration you equipped (Options → Profile) offline; in an online match everyone uses his cast
 //   celebration, so the two phones match (the equipped one is read from each device's own profile).
 const CAST_STANCES = {
@@ -27,14 +27,10 @@ const CAST_CELES = {
   both:   { ns: 3.0, fs: 3.0, ne: 0.2, fe: 0.2, lean: -0.04 },
   salute: { ns: 1.9, ne: 1.9, fs: 0.1, fe: 0.4, lean: -0.05 },                         // fingertips at his brow
   sky:    { ns: 3.15, ne: 0.05, fs: 0.3, fe: 0.4, lean: -0.05 },                       // one finger to the sky
-  takbir: { ns: 2.25, fs: 2.25, ne: 2.45, fe: 2.45, lean: -0.04, nk: 0.15, fk: 0.15 }, // hands raised beside his ears
-  // sujood of thanks: knees, shins and toes on the floor, thighs upright, forehead and nose down, palms flat beside
-  // the head with the elbows raised off the floor
-  sujood: { nh: 0, fh: 0, nk: 1.57, fk: 1.57, lean: 1.9, ns: 1.3, fs: 1.3, ne: -2.31, fe: -2.31 }
+  takbir: { ns: 2.25, fs: 2.25, ne: 2.45, fe: 2.45, lean: -0.04, nk: 0.15, fk: 0.15 }  // hands raised beside his ears
 };
 function castCele(p, sp) {
   let c = p.def && p.def.cele; if (!c || !CAST_CELES[c]) return null;
-  if (c === 'sujood' && !(M.phase === 'over' && p._castWin)) c = 'sky';      // sujood of thanks: when the win is sealed and play has stopped
   if (c === 'takbir' && sp > 15) c = 'sky';                                   // takbir: standing, not running
   return CAST_CELES[c];
 }

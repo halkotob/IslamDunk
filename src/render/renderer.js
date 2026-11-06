@@ -75,6 +75,10 @@ const BODY = '"Trebuchet MS","Segoe UI",Verdana,sans-serif';
 const GOLD = '#e8c35a', TEAL = '#0e4a45', LAPIS = '#1c3f7a', IVORY = '#f6ecd2', NIGHT = '#0b1330';
 let courtCv = null, crowd = [];
 function P(x, y, z) { const k = depthK(z); return [W / 2 + (x - cam.x - W / 2) * k + FX.sx, FLOOR_TOP + z * ZS - y * k + FX.sy]; }
+function mixHex(a, b, t) {                                           // v9.17: two #rrggbb colours mixed, as #rrggbb
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16), ch = sh => Math.round(lerp((pa >> sh) & 255, (pb >> sh) & 255, t));
+  return '#' + ((1 << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).slice(1);
+}
 function shade(hex, amt) {
   const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
   r = clamp(Math.round(r * (1 + amt)), 0, 255); g = clamp(Math.round(g * (1 + amt)), 0, 255); b = clamp(Math.round(b * (1 + amt)), 0, 255);
@@ -402,7 +406,7 @@ function drawPlayer(g, p) {
   g.save(); g.translate(HX, HY + 8); if (p.headTilt) g.rotate(p.headTilt * f); g.scale(hs, hs); g.translate(-HX, -HY - 8);   // (v9.16.1: the nod tilts the head on the neck)
   drawGroup(g, [{ t: 'c', x: HX + 8.6 * f, y: HY + 0.8, r: 2.1, c: skin }, { t: 'p', c: skin, sh: cel(skin), lx: 3, ly: 2.5, p: circlePts(HX, HY, 9.5) }], f);
   drawBeard(g, HX, HY, f, beard, beardLen, hair);
-  drawFace(g, HX, HY, f, p.expr ? p.expr.k : null, hair, def.glasses);
+  drawFace(g, HX, HY, f, p.expr ? p.expr.k : null, hair, def.glasses, skin, beard);
   drawCap(g, HX, HY, f, cap === 'kufiEmb' || cap === 'kufiStripe' ? 'kufi' : cap, capCol, hair); drawCapPattern(g, HX, HY, f, cap, capCol);
   g.restore();
   drawGroup(g, armSegs('n', false), f);
@@ -443,20 +447,24 @@ function drawBeard(g, HX, HY, f, style, len, col) {
     g.globalAlpha = 0.38; g.moveTo(HX - 5.5 * f, HY + 1); g.quadraticCurveTo(HX, HY + 10.5, HX + 8.5 * f, HY + 4); g.lineTo(HX + 8 * f, HY + 2.5); g.quadraticCurveTo(HX + 1 * f, HY + 6.5, HX - 5.5 * f, HY + 1);
     g.fill(); g.globalAlpha = 1; return;
   }
-  if (style === 2) { g.moveTo(HX - 6 * f, HY); g.lineTo(HX - 5 * f, HY + 6); g.quadraticCurveTo(HX + 1 * f, HY + 11.5, HX + 8.5 * f, HY + 7.5); g.lineTo(HX + 9 * f, HY + 3.5); g.quadraticCurveTo(HX + 2 * f, HY + 6.5, HX - 6 * f, HY); }
+  if (style === 2) { g.moveTo(HX - 6 * f, HY); g.lineTo(HX - 5 * f, HY + 6); g.quadraticCurveTo(HX + 1 * f, HY + 11.5, HX + 8.5 * f, HY + 7.5); g.lineTo(HX + 9 * f, HY + 3.5); g.quadraticCurveTo(HX + 2 * f, HY + 4.8, HX - 6 * f, HY); }
   else {
     const tip = [12, 15.5, 20][len] || 15.5, point = len > 0;
     g.moveTo(HX - 6.5 * f, HY - 1); g.lineTo(HX - 6 * f, HY + 6);
     if (point) { g.quadraticCurveTo(HX - 2 * f, HY + tip - 2, HX + 3.5 * f, HY + tip); g.quadraticCurveTo(HX + 7 * f, HY + tip - 5, HX + 9.5 * f, HY + 5); }
     else g.bezierCurveTo(HX - 4 * f, HY + tip + 1, HX + 8 * f, HY + tip, HX + 9.5 * f, HY + 5);
-    g.lineTo(HX + 9.2 * f, HY + 3); g.quadraticCurveTo(HX + 2 * f, HY + 6.5, HX - 6.5 * f, HY - 1);
+    g.lineTo(HX + 9.2 * f, HY + 3); g.quadraticCurveTo(HX + 2 * f, HY + 4.6, HX - 6.5 * f, HY - 1);   // (v9.17: higher on the cheek)
   }
   g.closePath(); g.fill();
+  if (style === 2 || style === 3) {                                   // v9.17: sideburns up to the hair, and a full moustache
+    g.beginPath(); g.moveTo(HX - 6.6 * f, HY + 0.5); g.lineTo(HX - 7.6 * f, HY - 6.4); g.lineTo(HX - 4.4 * f, HY - 6.6); g.lineTo(HX - 3.6 * f, HY + 0.2); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(HX + 2.6 * f, HY + 3.4); g.quadraticCurveTo(HX + 5.6 * f, HY + 1.5, HX + 8.6 * f, HY + 3.0); g.quadraticCurveTo(HX + 5.8 * f, HY + 3.7, HX + 2.6 * f, HY + 3.4); g.fill();
+  }
   g.strokeStyle = shade(col === '#161616' || col === '#1c1c1c' ? '#3a3a3a' : col, -0.35); g.lineWidth = 1; g.stroke();
   if (style === 3) { g.strokeStyle = col; g.lineWidth = 2.2; g.beginPath(); g.moveTo(HX + 6 * f, HY + 3.4); g.quadraticCurveTo(HX + 8 * f, HY + 2.6, HX + 10 * f, HY + 3.6); g.stroke(); }
 }
 // Faces: a simple neutral eye and brow (no expressions), sized to read on phones.
-function drawFace(g, HX, HY, f, expr, hair, glasses) {
+function drawFace(g, HX, HY, f, expr, hair, glasses, skin, beard) {
   const ex = HX + 4.8 * f, ey = HY - 1.2;
   const fierce = expr === 'fierce', shocked = expr === 'shock', joyful = expr === 'joy', sad = expr === 'sad', focus = expr === 'focus';   // (v9.17: sad, focus)
   g.fillStyle = '#1a120c'; g.beginPath(); g.ellipse(ex, ey + (focus ? 0.3 : 0), shocked ? 1.55 : 1.35, shocked ? 2.2 : focus ? 1.45 : sad ? 1.7 : 1.9, 0, 0, Math.PI * 2); g.fill();
@@ -468,7 +476,25 @@ function drawFace(g, HX, HY, f, expr, hair, glasses) {
   else if (focus) { g.moveTo(ex - 2.2 * f, ey - 3.2); g.lineTo(ex + 2.3 * f, ey - 3.2); }   // level, a little low
   else { g.moveTo(ex - 2.2 * f, ey - 3.6); g.lineTo(ex + 2.3 * f, ey - (shocked ? 4.4 : 3.9)); }
   g.stroke();
-  if (joyful || fierce || shocked || sad || focus) {
+  if (beard >= 2 && skin) {                                            // v9.17: with a beard the mouth has its own lips, so every face reads
+    const mx = HX + 4.4 * f, my = HY + 5.1, lip = shade(mixHex(skin, '#c0584a', 0.35), -0.12), dark = '#2a120c';
+    g.lineCap = 'round';
+    if (joyful) {                                                        // an open smile with teeth
+      g.fillStyle = lip; g.beginPath(); g.ellipse(mx, my - 0.2, 2.9, 2.1, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = dark; g.beginPath(); g.moveTo(mx - 2.3, my - 0.9); g.quadraticCurveTo(mx, my + 2.9, mx + 2.3, my - 0.9); g.closePath(); g.fill();
+      g.strokeStyle = '#f6f2ea'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(mx - 1.8, my - 0.5); g.lineTo(mx + 1.8, my - 0.5); g.stroke();
+    } else if (shocked) {
+      g.fillStyle = lip; g.beginPath(); g.ellipse(mx, my, 2.4, 2.6, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = dark; g.beginPath(); g.ellipse(mx, my + 0.2, 1.4, 1.7, 0, 0, Math.PI * 2); g.fill();
+    } else {
+      g.fillStyle = lip; g.beginPath(); g.ellipse(mx, my, 2.7, focus ? 0.9 : 1.25, 0, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = dark; g.lineWidth = 1.1; g.beginPath();
+      if (sad) { g.moveTo(mx - 2.3, my + 0.9); g.quadraticCurveTo(mx, my - 1.0, mx + 2.3, my + 0.9); }         // corners down
+      else if (fierce) { g.moveTo(mx - 2.3, my - 0.2); g.lineTo(mx + 2.3, my + 0.5); }
+      else { g.moveTo(mx - 2.2, my); g.lineTo(mx + 2.2, my); }                                                // closed, or pressed (focus)
+      g.stroke();
+    }
+  } else if (joyful || fierce || shocked || sad || focus) {
     g.strokeStyle = '#3b2017'; g.lineWidth = joyful ? 1.1 : 1.4; g.beginPath();
     if (joyful) g.arc(HX + 4 * f, HY + 3.2, 2.3, 0.15, Math.PI - 0.15);
     else if (sad) g.arc(HX + 4 * f, HY + 6.4, 2.0, Math.PI + 0.45, -0.45);   // a small frown
