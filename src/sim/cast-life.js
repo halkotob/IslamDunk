@@ -48,7 +48,7 @@ function castCele(p, sp) {
       return t;
     }
     const tn = p.taunt; if (tn && M.time - tn.t0 < tn.dur) return t;
-    if (p.react && M.time <= p.react.until) return t;
+    if (p.react && M.time <= p.react.until && p.react.type !== 'nod') return t;   // (a nod moves the head only: the stance stays)
     if (!d.stance || sp > 15) return t;
     const bo = ball.owner; if (bo && bo.team !== p.team && dxz(p, bo) < 160) return t;   // guarding: the defensive stance wins
     const S = CAST_STANCES[d.stance]; if (S) S(t, p);
