@@ -322,14 +322,14 @@ function drawGroup(g, segs, f) {
 function drawPlayer(g, p) {
   const T = p.T, def = p.def, lk = def.look, [bx, by] = P(p.x, p.y, p.z);
   const sc = p.spin ? Math.cos(p.spin) : 1, fs = p.face * (Math.abs(sc) < 0.2 ? 0.2 * sgn(sc) : sc), f = sgn(fs);
-  const sq = p.sq || 0, sw = (lk ? BUILD_W[lk.build] : def.bw != null ? BUILD_W[def.bw] : 1) * (1 - sq * 0.06), sh = (lk ? HEIGHT_S[lk.height] : def.bh != null ? HEIGHT_S[def.bh] : 1) * (1 + sq * 0.08);   // CPU bodies: bh/bw
+  const sq = p.sq || 0, sw = (lk ? BUILD_W[lk.build] : def.vw != null ? BUILD_W[def.vw] : def.bw != null ? BUILD_W[def.bw] : 1) * (1 - sq * 0.06), sh = (lk ? HEIGHT_S[lk.height] : def.vh != null ? HEIGHT_S[def.vh] : def.bh != null ? HEIGHT_S[def.bh] : 1) * (1 + sq * 0.08);   // CPU bodies: bh/bw (v9.17: the main cast's vh/vw are looks only)
   const uncle = !!(M.fun && M.fun.uncle && !M.gym && p.team !== 9);
   const thobe = p.outfit === 'thobe', robe = uncle ? T.c1 : lk ? (lk.teamMatch ? T.c1 : THOBES_ALL[lk.thobe]) : (def.thobe || '#f4f4ef'), hemK = (lk ? lk.thobeLen % 2 : 0) && !uncle ? 0.5 : 0.82;
   const trim = lk && !uncle && (lk.thobeLen >= 2 || lk.teamMatch) ? (lk.teamMatch ? T.c2 : '#c9a24a') : null;   // trimmed thobes / team colors
-  const shoe = lk ? SNEAKERS[lk.shoes] : '#e8ecf0', hair = lk ? HAIRS[lk.hair] : def.hair;
+  const shoe = lk ? SNEAKERS[lk.shoes] : def.shoes || '#e8ecf0', hair = lk ? HAIRS[lk.hair] : def.hair;
   const cap = lk ? CAPKEYS[lk.cap] : def.hat, capCol = lk ? (lk.teamMatch && lk.cap ? T.c2 : CAPCOLS_ALL[lk.capColor]) : (def.capColor || '#f7f7f2');
   const beard = lk ? lk.beard : def.beardStyle != null ? def.beardStyle : def.sheikh || def.elder ? 3 : 2;
-  const beardLen = lk ? lk.beardLen : def.elder ? 2 : def.sheikh ? 1 : 0;
+  const beardLen = lk ? lk.beardLen : def.beardLen != null ? def.beardLen : def.elder ? 2 : def.sheikh ? 1 : 0;
   const top = thobe ? robe : T.c1, skin = def.skin, dim = c => shade(c, -0.22), cel = c => shade(c, -0.16);
   const J = p.j, hipH = p.hipH, lean = J.lean.a, cl = p.cloth || { x: 0, y: 0 };
   const L = (lx, ly) => [lx * fs, -ly];
@@ -364,6 +364,8 @@ function drawPlayer(g, p) {
       out.push({ t: 'l', p: [...L(shX, shY), ...L(ex, ey), ...L(ex2, ey2), ...L(ex2 + cl.x * 0.45 - 1, ey2 - 1.5 + cl.y * 0.3)], w: 9, c: c(top), sh: cel(c(top)) });   // sleeve flares and trails
     } else {
       out.push({ t: 'l', p: [...L(ex, ey), ...L(hx2, hy2)], w: 6.8, c: c(skin), sh: far ? null : cel(skin) });
+      if (!lk && def.sleeve === side) out.push({ t: 'l', p: [...L(ex, ey), ...L(lerp(ex, hx2, 0.86), lerp(ey, hy2, 0.86))], w: 7.2, c: c(def.sleeveCol || '#eef1f4'), sh: far ? null : cel(def.sleeveCol || '#eef1f4') });   // v9.17: a shooting sleeve
+      if (!lk && def.wrist && def.sleeve !== side) out.push({ t: 'l', p: [...L(lerp(ex, hx2, 0.68), lerp(ey, hy2, 0.68)), ...L(lerp(ex, hx2, 0.9), lerp(ey, hy2, 0.9))], w: 7.8, c: c(def.wristCol || T.c2) });   // v9.17: wristbands
       out.push({ t: 'l', p: [...L(shX, shY), ...L(ex, ey)], w: 9.6, c: c(top), sh: cel(c(top)) });
     }
     const [a, b] = L(hx2, hy2); out.push({ t: 'c', x: a, y: b, r: 4.5, c: c(skin) });
@@ -456,17 +458,21 @@ function drawBeard(g, HX, HY, f, style, len, col) {
 // Faces: a simple neutral eye and brow (no expressions), sized to read on phones.
 function drawFace(g, HX, HY, f, expr, hair, glasses) {
   const ex = HX + 4.8 * f, ey = HY - 1.2;
-  const fierce = expr === 'fierce', shocked = expr === 'shock', joyful = expr === 'joy';
-  g.fillStyle = '#1a120c'; g.beginPath(); g.ellipse(ex, ey, shocked ? 1.55 : 1.35, shocked ? 2.2 : 1.9, 0, 0, Math.PI * 2); g.fill();
+  const fierce = expr === 'fierce', shocked = expr === 'shock', joyful = expr === 'joy', sad = expr === 'sad', focus = expr === 'focus';   // (v9.17: sad, focus)
+  g.fillStyle = '#1a120c'; g.beginPath(); g.ellipse(ex, ey + (focus ? 0.3 : 0), shocked ? 1.55 : 1.35, shocked ? 2.2 : focus ? 1.45 : sad ? 1.7 : 1.9, 0, 0, Math.PI * 2); g.fill();
   g.fillStyle = 'rgba(255,255,255,0.8)'; g.beginPath(); g.arc(ex + 0.45 * f, ey - 0.6, 0.45, 0, Math.PI * 2); g.fill();
   g.strokeStyle = shade(hair || '#1a1410', -0.2); g.lineWidth = 1.5; g.lineCap = 'round';
   g.beginPath();
   if (fierce) { g.moveTo(ex - 2.2 * f, ey - 4.1); g.lineTo(ex + 2.3 * f, ey - 2.9); }
+  else if (sad) { g.moveTo(ex - 2.2 * f, ey - 3.0); g.lineTo(ex + 2.3 * f, ey - 4.3); }   // inner brow up
+  else if (focus) { g.moveTo(ex - 2.2 * f, ey - 3.2); g.lineTo(ex + 2.3 * f, ey - 3.2); }   // level, a little low
   else { g.moveTo(ex - 2.2 * f, ey - 3.6); g.lineTo(ex + 2.3 * f, ey - (shocked ? 4.4 : 3.9)); }
   g.stroke();
-  if (joyful || fierce || shocked) {
+  if (joyful || fierce || shocked || sad || focus) {
     g.strokeStyle = '#3b2017'; g.lineWidth = joyful ? 1.1 : 1.4; g.beginPath();
     if (joyful) g.arc(HX + 4 * f, HY + 3.2, 2.3, 0.15, Math.PI - 0.15);
+    else if (sad) g.arc(HX + 4 * f, HY + 6.4, 2.0, Math.PI + 0.45, -0.45);   // a small frown
+    else if (focus) { g.moveTo(HX + 2.6 * f, HY + 4.3); g.lineTo(HX + 5.6 * f, HY + 4.3); }   // lips pressed
     else if (shocked) g.arc(HX + 4 * f, HY + 5.1, 1.6, 0, Math.PI * 2);
     else { g.moveTo(HX + 2 * f, HY + 4.5); g.lineTo(HX + 6.3 * f, HY + 3.8); }
     g.stroke();

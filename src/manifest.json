@@ -3,6 +3,7 @@
   "files": [
     "core/config.js",
     "data/teams.js",
+    "data/cast.js",
     "data/trivia.js",
     "core/utils-audio.js",
     "core/input.js",
@@ -125,6 +126,7 @@
     "online/rollback-net.js",
     "online/rollback-sync.js",
     "screens/design-pass.js",
+    "sim/cast-life.js",
     "boot.js"
   ]
 }
