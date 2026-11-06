@@ -127,6 +127,7 @@
     "online/rollback-sync.js",
     "screens/design-pass.js",
     "sim/cast-life.js",
+    "screens/motion-pass.js",
     "boot.js"
   ]
 }
