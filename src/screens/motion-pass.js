@@ -1,4 +1,4 @@
-// ================================================= v9.17.1: DESIGN PASS, BATCH C: MOTION (docs/IMPROVEMENTS.md VD3, VD4, UI1)
+// ================================================= v9.17: DESIGN PASS, BATCH C: MOTION (docs/IMPROVEMENTS.md VD3, VD4, UI1)
 //   VD3 the opening logo: within the same 1.7 s, the dunker rises in and lands softly, the emblem pulses once as he
 //       lands, and a gold glint sweeps across ISLAM DUNK. Reduced motion: the plain fade, as before. A tap still skips.
 //   VD4 the results screen: the final score counts up and the Player of the Game panel slides in, under a second in

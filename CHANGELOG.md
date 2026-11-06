@@ -1,5 +1,28 @@
 # Changelog
 
+## 9.17.0: the cast comes to life, and motion (design batches B and C)
+The second and third batches from the design review (docs/IMPROVEMENTS.md CD1–CD5, CD2, VD3, VD4, UI1). Looks and
+motion only: no speed, reach, skill, timing or AI change.
+- **A look for each of the 16 main players** (`src/data/cast.js`): their own heights and builds, and one or two
+  landmarks each (glasses, headbands, shooting sleeves, wristbands, coloured shoes, cap colours, longer beards).
+  Heights and builds are drawn only, so contact strength and the CPU's style are unchanged.
+- **Fuller beards** for everyone: the beard joins the hair with sideburns and has a moustache.
+- **Faces by the eyes and brows only.** No mouths anywhere (`docs/adr/0002`). New expressions: disappointed after his
+  own miss and on a loss, focused at the free-throw line.
+- **Idle stances** between plays, matched to each player (upright, bouncy, low, hands on hips, hands on knees,
+  hands behind the back…), never while holding the ball or guarding it.
+- **Signature celebrations** after his own big play and a win: hand on heart, fist, both arms, salute, finger to the
+  sky, takbir (standing only). In an online match everyone uses his cast celebration, so both phones show the same.
+- **Sujood removed from the game** (owner decision, `docs/adr/0002`): the taunt and the profile celebration are gone.
+  Saved profiles that had it equipped switch to Arms raised and Finger to the sky. The taunt's place in the online
+  list is kept, so older and newer versions still agree on the others.
+- **Opening logo in motion:** the dunker rises in and lands softly, the emblem pulses once and a gold glint sweeps
+  across ISLAM DUNK, all within the same 1.7 s. Reduced motion keeps the plain fade.
+- **Results screen:** the score counts up and Player of the Game slides in, in under a second; a tap or a key
+  finishes it at once.
+- **Menus fade up from dark (0.15 s)** when the screen changes; never in a match, and none with Reduced motion.
+- Baselines accepted: `jumuah-visual` (the new beards) and the phone HUD shots.
+
 ## 9.16.4: design pass, batch A
 The first batch from the design review (docs/IMPROVEMENTS.md D1, D2, D3), in `src/screens/design-pass.js`.
 - **Results screen over a dark court.** The court behind the winner, the score and Player of the Game is darkened
