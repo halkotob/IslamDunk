@@ -12,7 +12,7 @@
 // * Blocked and missed dunks fly: no more easy put-backs from the rim's shadow.
 // * Swats: a full arm swing on blocks, and the blocker gets a moment after.
 // * Celebrations and taunts: after a block, a big dunk or a clutch bucket you have 3 seconds:
-//   tap MOVE (H) to taunt. Taunts unlock in Options → Profile (sujood, du'a, takbir and more).
+//   tap MOVE (H) to taunt. Taunts unlock in Options → Profile (du'a, takbir and more).
 function driOf(p) {
   const s = (p && p.st) || {};
   return s.dri != null ? s.dri : clamp(Math.round((s.spd || 5) * 0.5 + (s.stl || 5) * 0.2 + (s.pas != null ? s.pas : 5) * 0.3), 1, 10);
@@ -217,7 +217,7 @@ const TAUNTS = [
   { id: 'dua', name: 'Du’a, hands raised', pop: 'DU’A', lv: 3 },
   { id: 'flex', name: 'Flex', pop: 'STRONG BELIEVER', lv: 5 },
   { id: 'wag', name: 'Finger wag', pop: 'NOT IN HERE', lv: 7 },
-  { id: 'sujood', name: 'Sujood of thanks', pop: 'SUJOOD OF THANKS', lv: 9, dead: true },
+  { id: 'retired', name: '', pop: '', lv: 9, retired: true },              // (v9.17: removed; the place is kept, online play sends a taunt by its place)
   { id: 'chest', name: 'Chest pound', pop: 'HEART OF A LION', lv: 12 },
   { id: 'brush', name: 'Brush it off', pop: 'BRUSH IT OFF', lv: 15 },
   { id: 'takbir', name: 'Takbir', pop: 'ALLAHU AKBAR', lv: 18 },
@@ -268,7 +268,6 @@ KIND_TXT.taunt = 'Taunt';
         case 'dua': Object.assign(t, { ns: 1.25, fs: 1.25, ne: 1.5, fe: 1.5, lean: 0.06, nk: 0.25, fk: 0.25 }); break;
         case 'flex': Object.assign(t, { ns: 1.57, fs: 1.57, ne: 2.35 + w * 0.12, fe: 2.35 + w * 0.12, lean: 0.12, nk: 0.5, fk: 0.5 }); break;
         case 'wag': Object.assign(t, { ns: 2.5, ne: 0.2 + w * 0.3, fs: 0.3, fe: 0.4 }); break;
-        case 'sujood': Object.assign(t, { nk: 2.2, fk: 2.2, nh: 1.6, fh: 1.6, lean: 1.15, ns: 1.4, fs: 1.4, ne: 0.4, fe: 0.4 }); break;
         case 'chest': Object.assign(t, { ns: 0.8, ne: 2.5 + Math.abs(w) * 0.35, fs: 0.3, fe: 0.5, lean: -0.08 }); break;
         case 'brush': Object.assign(t, { fs: 0.9, fe: 2.6 + w * 0.35, ns: 0.3, ne: 0.4, lean: 0.02 }); break;
         case 'takbir': Object.assign(t, { ns: 2.25, fs: 2.25, ne: 2.45, fe: 2.45, lean: -0.04 }); break;
@@ -317,9 +316,9 @@ function myTaunt() { const t = (Profile.load().equip || {}).taunt || 'sky'; retu
 function doTaunt(p, id) {
   const T = M.taunt; if (!T || T.p !== p || T.used || M.time > T.until) return;
   let def = TAUNTS.find(x => x.id === id) || TAUNTS[0];
-  if (def.dead && M.phase === 'live' && !T.deadOK) def = TAUNTS[0];                 // sujood only after a basket, never with the ball live
+  if (def.retired || def.dead && M.phase === 'live' && !T.deadOK) def = TAUNTS[0];
   T.used = true;
-  p.taunt = { k: def.id, t0: M.time, dur: def.id === 'sujood' ? 1.9 : 1.3 }; p.celebAfter = 0;
+  p.taunt = { k: def.id, t0: M.time, dur: 1.3 }; p.celebAfter = 0;
   FX.pop(p.x, p.y + 150, p.z, def.pop, '#ffd76a'); SFX.cheer(0.9, 0.08); FX.hype && FX.hype(1);
 }
 {

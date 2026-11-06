@@ -3972,10 +3972,10 @@
   "text/taunt/chest": "8.6.0",
   "text/taunt/dua": "8.6.0",
   "text/taunt/flex": "8.6.0",
+  "text/taunt/retired": "9.16.4",
   "text/taunt/roof": "8.6.0",
   "text/taunt/sky": "8.6.0",
   "text/taunt/small": "8.6.0",
-  "text/taunt/sujood": "8.6.0",
   "text/taunt/takbir": "8.6.0",
   "text/taunt/wag": "8.6.0",
   "trivia/0": "phase1",
@@ -4789,6 +4789,11 @@
   "text/sim/v86-minis/you-and-qz9ny3": {
    "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
    "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/taunt/sujood": {
+   "reason": "Sujood taunt removed (owner decision, ADR 0002)",
+   "version": "9.16.4",
    "was": "8.6.0"
   }
  }

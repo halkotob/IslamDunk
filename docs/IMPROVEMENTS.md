@@ -9,12 +9,13 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 |---|------|--------|:-:|:-:|:-:|:-:|---|
 | B1 | Rollback: a half-court game is half court on the host only (two different games) | code review | 5 | 5 | 1 | **50** | open, confirmed |
 | B2 | Rollback: each phone uses its own owner's taunt for both players (desync) | code review | 4 | 4 | 1 | **40** | open, confirmed |
+| B20 | Rollback: your own equipped celebration (Options → Profile) is read from each phone's own profile; 9.17.0 uses cast celebrations online, but check every profile cosmetic that changes a pose inside a rollback match | code review | 4 | 4 | 1 | **40** | open |
+| B3 | Rollback: a dropped direct link is never retried during the match | code review | 4 | 4 | 2 | **32** | open |
 | T1 | Run the tests automatically on every push to `main` | tech debt | 4 | 5 | 2 | **36** | open |
 | S2 | Firebase limits and abuse: 100 players at once on the free plan; no App Check | security | 5 | 4 | 2 | **36** | open |
 | G5 | Before any ads: block gambling, alcohol and dating ad categories | launch | 3 | 4 | 1 | **35** | before ads |
 | G8 | Online on portals: add itch.io's and CrazyGames' game origins to the relay Worker's `ALLOWED_ORIGINS` (today only GitHub Pages and localhost), and check the Firebase key isn't limited to one site | launch | 4 | 3 | 1 | **35** | open |
 | Q2 | Run the phone and online tests in WebKit (Safari's engine) too | testing | 4 | 4 | 2 | **32** | open |
-| B3 | Rollback: a dropped direct link is never retried during the match | code review | 4 | 4 | 2 | **32** | open |
 | SV1 | Protect career saves on iPhone: persistent storage, a backup copy, Export/Import save | save systems | 4 | 4 | 2 | **32** | open |
 | Q9 | `rb-slow` (online, one very slow device) reports repaired desyncs since at least 9.16.2; passed on 9.15.0: find the cause | testing | 4 | 4 | 2 | **32** | open |
 | S1 | Cap the rollback input runs (a modified game can freeze the other player) | security | 3 | 3 | 1 | **30** | open |
@@ -46,7 +47,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | B5 | Rollback: the host has no "End game: back to lobby" and no "friend dropped" notice | code review | 3 | 3 | 2 | **24** | open |
 | B6 | Rollback: the starting state uses the browser's own maths (Safari vs Chrome can differ at frame 0) | code review | 3 | 3 | 2 | **24** | open |
 | G1 | Privacy-friendly analytics: players returning next day and week, online matches started and finished | launch | 4 | 2 | 2 | **24** | open |
-| CD1 | Silhouette lineup fails: the 16 main players share one body; give heights, builds and 2–3 landmarks each | character design | 4 | 2 | 2 | **24** | open |
+| CD1 | Silhouette lineup fails: the 16 main players share one body; give heights, builds and 2–3 landmarks each | character design | 4 | 2 | 2 | **24** | done in 9.17.0 |
 | A4 | Give the renderer its own view state | architecture | 3 | 4 | 3 | **21** | open |
 | Q8 | Fast match tests in Node, without a browser (after A1) | testing | 4 | 3 | 3 | **21** | open (after A1) |
 | X1 | Bigger tap targets in menus on phones (rows are about 23 px tall; 44 recommended) | accessibility | 4 | 3 | 3 | **21** | open |
@@ -70,7 +71,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | GD3 | A short "pickup game" option online for phone sessions (one 3-minute half, or first to 11) | game design | 3 | 1 | 1 | **20** | open |
 | ST1 | Steam: open the partner account and pay the app fee early (30-day tax check, 21-day wait), Coming Soon page for wishlists | Steam | 4 | 1 | 2 | **20** | open |
 | ST4 | Steam store page: capsules, a trailer from highlight clips, screenshots, the AI-content survey | Steam | 3 | 2 | 2 | **20** | open |
-| CD3 | Teammates in the same kit look alike at play size: add one large personal mark (headband, sleeve, long shorts, knee pad) | character design | 3 | 2 | 2 | **20** | open |
+| CD3 | Teammates in the same kit look alike at play size: add one large personal mark (headband, sleeve, long shorts, knee pad) | character design | 3 | 2 | 2 | **20** | done in 9.17.0 |
 | VD2 | Vertical (9:16) highlight videos for TikTok, Reels and Shorts (today 1280×720 only) | visual design | 4 | 1 | 2 | **20** | open |
 | UX1 | Screens without arrow-key menus need the gamepad's View button to pick a target: show that hint, or give them focus order | UI | 3 | 2 | 2 | **20** | open |
 | PH1 | A stress test that fires the ball at the rim and glass at top speed and checks it never passes through | physics | 2 | 2 | 1 | **20** | open |
@@ -113,7 +114,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | G7 | itch.io: an HTML page (Kind = HTML, "playable in browser"), `butler push` of the web folder to an `html` channel, desktop folders to `windows`, `osx`, `linux` | launch | 2 | 1 | 1 | **15** | open |
 | CD6 | A one-line personality for each Quick Play player, shown on the team card | character design | 2 | 1 | 1 | **15** | open |
 | CD7 | A short cast sheet in `docs/` (silhouette, colours, landmarks, pose per player) so new players stay consistent | character design | 2 | 1 | 1 | **15** | open |
-| VD3 | The splash is a still logo for 1.7 s: give it motion (a dunk, a glow) for the first 3 seconds | visual design | 2 | 1 | 1 | **15** | open |
+| VD3 | The splash is a still logo for 1.7 s: give it motion (a dunk, a glow) for the first 3 seconds | visual design | 2 | 1 | 1 | **15** | done in 9.17.0 |
 | GF2 | Phone vibration on big plays for Android (gamepads already rumble; iPhone browsers don't allow it) | game feel | 2 | 1 | 1 | **15** | open |
 | AU3 | Measure the whole mix's loudness over a match (phones: about -18 LUFS) and set the master level from it | audio | 2 | 1 | 1 | **15** | open |
 | AI1 | A debug view that draws each CPU player's current plan and target on court (for tuning and bug reports) | game AI | 2 | 1 | 1 | **15** | open |
@@ -121,11 +122,11 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
 | W5 | robots.txt, a sitemap, and a short own domain for sharing | SEO and sharing | 2 | 1 | 2 | **12** | open |
 | G6 | A seasonal calendar for posts and updates: Ramadan, Eid, Jumu'ah challenges | launch | 3 | 1 | 3 | **12** | open |
-| UI1 | Menus jump-cut between screens: short fades or slides | UI | 2 | 1 | 2 | **12** | open |
-| CD4 | Stance and idle pose are the same for everyone: posture that matches each personality | character design | 2 | 1 | 2 | **12** | open |
-| CD5 | Faces have joy, fierce and shock only: add disappointed (a miss, a loss) and focused (free throw) | character design | 2 | 1 | 2 | **12** | open |
+| UI1 | Menus jump-cut between screens: short fades or slides | UI | 2 | 1 | 2 | **12** | done in 9.17.0 |
+| CD4 | Stance and idle pose are the same for everyone: posture that matches each personality | character design | 2 | 1 | 2 | **12** | done in 9.17.0 |
+| CD5 | Faces have joy, fierce and shock only: add disappointed (a miss, a loss) and focused (free throw) | character design | 2 | 1 | 2 | **12** | done in 9.17.0 |
 | GT7 | Check how often the Noor question stops play; an option to ask it at timeouts and halftime | game design | 2 | 1 | 2 | **12** | open |
-| VD4 | Results screen: animate the score count and Player of the Game, dim the court fully (with D1) | visual design | 2 | 1 | 2 | **12** | open |
+| VD4 | Results screen: animate the score count and Player of the Game, dim the court fully (with D1) | visual design | 2 | 1 | 2 | **12** | done in 9.17.0 |
 | GF3 | Small presses get no feedback: a tiny pop on a made free throw, a pass caught, a steal attempt | game feel | 2 | 1 | 2 | **12** | open |
 | UX2 | 16:10 (Steam Deck, many laptops) and ultrawide get black bars: let the height grow on 16:10 | UI | 2 | 1 | 2 | **12** | open |
 | UX3 | Buttons are fixed widths sized to English; translations will overflow (with UI2) | UI | 2 | 1 | 2 | **12** | open |
@@ -139,7 +140,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | PH2 | Restarts and inbounds that move players blend across one frame: refresh the interpolation after a move | physics | 1 | 1 | 1 | **10** | open |
 | B9 | Rollback: halftime is skipped (a known gap; the saved screen is never used) | code review | 2 | 1 | 3 | **9** | open |
 | D5 | The career hub is dense (5 zones); consider a calmer layout | design | 2 | 1 | 3 | **9** | open |
-| CD2 | A signature for each main character: a celebration, posture or accessory | character design | 2 | 1 | 3 | **9** | open |
+| CD2 | A signature for each main character: a celebration, posture or accessory | character design | 2 | 1 | 3 | **9** | done in 9.17.0 |
 | T3 | Fold the 34 versioned patch files (`v6-…` to `v9161-…`) into their feature files | tech debt | 4 | 3 | 5 | **7** | open (gets easier after A1, A6) |
 | X5 | Announce menus to screen readers (the game is one canvas) | accessibility | 2 | 1 | 4 | **6** | open |
 
