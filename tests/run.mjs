@@ -1,7 +1,8 @@
 // Islam Dunk regression suite (headless Chromium via Playwright).
 //
-//   npm test                         builds dist/web, then tests it
-//   node tests/run.mjs [--page dist/web/index.html] [--ref path/to/reference/index.html] [--only name,name]
+//   npm test                         builds dist/web, then the fast tier (the runner at the end of this file)
+//   npm run test:full                every test (CI: .github/workflows/test.yml)
+//   node tests/run.mjs [--page dist/web/index.html] [--ref path/to/reference/index.html] [--only name,prefix-*,tag] [--full] [--workers N] [--list]
 //
 // Tests:
 //   cpu-parity   seeded CPU-vs-CPU games (2v2 timed, first-to, half court, 1 on 1). With --ref, the same
@@ -1558,7 +1559,7 @@ T['online-fb'] = ({ browser, base }) => onlineFlow(browser, base, { games: ['vs'
 T['online-custom'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&lat=30&jit=5&room=c', games: ['vs', 'co', 'one'], custom: true });
 T['online-server'] = ({ browser, base }) => onlineFlow(browser, base, { query: '?net=loop&p2p=0&lat=60&jit=15&room=srv', games: ['vs', 'one', 'co', 'lightning', 'horse', 'kotc'], noor: true });   // v9.10: every game on the server path (compact snapshots)
 
-T['mobile'] = async ({ browser, base }) => {
+T['mobile'] = async ({ browser, base, tier }) => {
   const detail = []; let ok = true;
   for (const [name, dev] of [['iPhone 13 landscape', devices['iPhone 13 landscape']], ['iPhone 13 portrait', devices['iPhone 13']]]) {
     const errs = [], ctx = await newContext(browser, { device: dev }), p = await open(ctx, base + '/', errs, name);
@@ -1584,7 +1585,10 @@ T['mobile'] = async ({ browser, base }) => {
   // v8.6.2: phone text audit. Every screen (career save loaded, a match started) on iPhone landscape and 667x300:
   // no text past the canvas edge, nothing under MIN_CSS_PX on screen, touch buttons clear of the scoreboard, no page errors.
   // The in-match HUD is saved to docs/review/img for each size.
-  for (const [dn, dev] of PHONES) {
+  // (v9.17.2: the full tier only. It takes about 95 s a phone size on 2 cores, and a busy CPU catches a moving
+  // popup past the edge; the fast tier keeps the layout, touch and Noor checks above)
+  if (tier === 'fast') detail.push('phone text audit: full tier only (npm run test:full)');
+  else for (const [dn, dev] of PHONES) {
     const tag = dn.startsWith('iPhone') ? 'iphone' : '667x300';
     const { out, errs } = await auditPhone(browser, base, dev, { shots: s => s === 'match HUD' ? path.join(ROOT, 'docs/review/img', `phone-hud-${tag}.png`) : null });
     const bad = out.flatMap(s => s.found);
@@ -2608,18 +2612,78 @@ Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, c
 Object.assign(T, STUDIO_TESTS);   // the Review Studio (tests/studio.mjs)
 
 // ------------------------------------------------------------------ runner
+// v9.17.2: two tiers and parallel workers.
+//   npm test               the fast tier: every test but the HEAVY ones (mobile without its phone text audit)
+//   npm run test:full      every test, the phone audit at both sizes (CI runs this on every push)
+//   --only a,b             names, prefixes or globs (online-*, rb-*), or an area tag (online, phone, cpu, career, studio);
+//                          --only runs what it names whatever the tier
+//   --list                 print what would run, and stop
+//   --workers N            parallel workers, each with its own browser (default: cores - 1, at least 2, at most 4)
+// SERIAL tests check frame rates or real-time networking, so they run alone after the parallel batch.
+const FULL = process.argv.includes('--full');
+const HEAVY = new Set([
+  // the brief's list
+  'online-lag', 'online-loop', 'online-server', 'defense', 'cpu-variety', 'tomahawk',
+  // over 13 s each when run alone on the 2-core container (v9.17.1 times), so the fast tier fits 3 minutes there
+  'league-calibration', 'lag-profiles', 'studio', 'cpu-league', 'hub-layout', 'career-run', 'world-robust', 'world-visual',
+  'league-formats', 'league-determinism', 'league-layout', 'league-time', 'cpu-handle', 'v863', 'career-intro', 'v867',
+  'gamepad', 'phase5', 'career', 'v95', 'v99',
+  // the online tests that have to run alone (SERIAL), except rb-one, rb-fun and rb-freeze
+  'rb-lag', 'rb-same', 'rb-determinism', 'rb-flow', 'rb-rollback', 'rb-taunt', 'rb-online', 'rb-resync', 'rb-settings',
+  'rb-touch', 'rb-slow', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
+// alone, after the parallel batch: frame-rate and speed checks, and the rollback and real-time online tests, which a
+// busy CPU makes desync (9.17.2 on 2 workers: rb-settings, rb-touch and rb-one each repaired 1-3 desyncs they don't alone)
+const SERIAL = new Set(['rb-slow', 'rb-lag', 'rb-freeze', 'lag-profiles', 'online-lag', 'league-time', 'net-rate',
+  'online-loop', 'online-server', 'online-fb', 'online-room', 'online-custom', 'net-modes', 'net-version', 'net-report']);
+const isSerial = n => SERIAL.has(n) || n.startsWith('rb-');
+const TAGS = {
+  online: n => /^(online-|net-|rb-|lag-)/.test(n),
+  phone: n => /^(mobile|gamepad|adaptive-res|world-pad|rb-touch)$/.test(n) || /phone|touch/.test(n),
+  cpu: n => /^(cpu-|defense$|v863$|tomahawk$|league-calibration$)/.test(n),
+  career: n => /^(career|world-|jumuah|hub-|calendar|league-|shot-clock$)/.test(n),
+  studio: n => /^studio/.test(n)
+};
+const glob = p => new RegExp('^' + p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+const pick = (n, q) => TAGS[q] ? TAGS[q](n) : /[*?]/.test(q) ? glob(q).test(n) : n === q || (q.endsWith('-') && n.startsWith(q));
+const all = Object.keys(T);
+const unknown = ONLY.filter(q => !all.some(n => pick(n, q)));
+if (unknown.length) { console.log(`--only: no test matches ${unknown.join(', ')}`); process.exit(2); }
+const names = ONLY.length ? all.filter(n => ONLY.some(q => pick(n, q))) : all.filter(n => FULL || !HEAVY.has(n));
+const TIER = FULL ? 'full' : 'fast';
+if (process.argv.includes('--list')) { console.log(names.map(n => n + (HEAVY.has(n) ? '  (full tier)' : '') + (isSerial(n) ? '  (alone)' : '')).join('\n') + `\n${names.length} tests`); process.exit(0); }
+const cores = (await import('node:os')).cpus().length;
+const WORKERS = Math.max(1, +arg('--workers', 0) || Math.min(4, Math.max(2, cores - 1)));
+// the longest first (times from the last run, tests/output/test-times.json), so a long test doesn't start last
+const TIMES_FILE = path.join(ROOT, 'tests/output/test-times.json');
+let past = {}; try { past = JSON.parse(fs.readFileSync(TIMES_FILE, 'utf8')); } catch (e) {}
+const byTime = L => L.slice().sort((a, b) => (past[b] || 10) - (past[a] || 10));
+const par = byTime(names.filter(n => !isSerial(n))), ser = byTime(names.filter(n => isSerial(n)));
+
 const { srv, base } = await serve();
-const browser = await chromium.launch();
-const names = Object.keys(T).filter(n => !ONLY.length || ONLY.includes(n));
+console.log(`Testing ${path.relative(ROOT, PAGE)}${REF ? ' against reference ' + REF : ''}: ${TIER} tier, ${names.length} tests (${par.length} on ${WORKERS} workers, then ${ser.length} alone)\n`);
+const T0 = Date.now(), took = {}, results = {};
 let failed = 0;
-console.log(`Testing ${path.relative(ROOT, PAGE)}${REF ? ' against reference ' + REF : ''}\n`);
-for (const n of names) {
+async function runOne(n, browser) {
   const t0 = Date.now();
-  let r; try { r = await T[n]({ browser, base }); } catch (e) { r = { ok: false, detail: [String(e && e.stack || e)] }; }
-  if (!r.ok) failed++;
-  console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${n}  (${((Date.now() - t0) / 1000).toFixed(1)} s)`);
-  for (const d of r.detail || []) console.log('      ' + d);
+  let r; try { r = await T[n]({ browser, base, tier: TIER }); } catch (e) { r = { ok: false, detail: [String(e && e.stack || e)] }; }
+  if (!r || !r.ok) failed++;
+  took[n] = (Date.now() - t0) / 1000; results[n] = !!(r && r.ok);
+  // one block a test, printed when it finishes
+  console.log([`${r && r.ok ? 'PASS' : 'FAIL'}  ${n}  (${took[n].toFixed(1)} s)`, ...((r && r.detail) || []).map(d => '      ' + d)].join('\n'));
 }
-await browser.close(); srv.close();
+async function worker(queue) {
+  const browser = await chromium.launch();
+  try { for (let n; (n = queue.shift()) != null;) await runOne(n, browser); } finally { await browser.close(); }
+}
+const queue = par.slice();
+await Promise.all(Array.from({ length: Math.min(WORKERS, queue.length) }, () => worker(queue)));
+if (ser.length) await worker(ser.slice());
+srv.close();
+const wall = (Date.now() - T0) / 1000;
+try { fs.mkdirSync(path.dirname(TIMES_FILE), { recursive: true }); fs.writeFileSync(TIMES_FILE, JSON.stringify(Object.assign(past, took), null, 1)); } catch (e) {}
+const slow = Object.entries(took).sort((a, b) => b[1] - a[1]).slice(0, 10);
+console.log(`\nSlowest: ${slow.map(([n, t]) => `${n} ${t.toFixed(0)} s`).join(', ')}`);
+console.log(`Total: ${wall.toFixed(0)} s wall, ${Object.values(took).reduce((a, b) => a + b, 0).toFixed(0)} s of tests, ${WORKERS} workers, ${TIER} tier`);
+if (TIER === 'fast' && !ONLY.length && wall > 180) console.log(`WARNING: the fast tier took ${(wall / 60).toFixed(1)} min (target: 3). Move the slowest into HEAVY in tests/run.mjs.`);
 console.log(`\n${names.length - failed}/${names.length} passed`);
 process.exit(failed ? 1 : 0);

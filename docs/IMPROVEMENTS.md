@@ -11,13 +11,13 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | B2 | Rollback: each phone uses its own owner's taunt for both players (desync) | code review | 4 | 4 | 1 | **40** | open, confirmed |
 | B20 | Rollback: your own equipped celebration (Options → Profile) is read from each phone's own profile; 9.17.0 uses cast celebrations online, but check every profile cosmetic that changes a pose inside a rollback match | code review | 4 | 4 | 1 | **40** | open |
 | B3 | Rollback: a dropped direct link is never retried during the match | code review | 4 | 4 | 2 | **32** | open |
-| T1 | Run the tests automatically on every push to `main` | tech debt | 4 | 5 | 2 | **36** | open |
+| T1 | Run the tests automatically on every push to `main` | tech debt | 4 | 5 | 2 | **36** | done in 9.17.2 (`npm run test:full` in `.github/workflows/test.yml`) |
 | S2 | Firebase limits and abuse: 100 players at once on the free plan; no App Check | security | 5 | 4 | 2 | **36** | open |
 | G5 | Before any ads: block gambling, alcohol and dating ad categories | launch | 3 | 4 | 1 | **35** | before ads |
 | G8 | Online on portals: add itch.io's and CrazyGames' game origins to the relay Worker's `ALLOWED_ORIGINS` (today only GitHub Pages and localhost), and check the Firebase key isn't limited to one site | launch | 4 | 3 | 1 | **35** | open |
 | Q2 | Run the phone and online tests in WebKit (Safari's engine) too | testing | 4 | 4 | 2 | **32** | open |
 | SV1 | Protect career saves on iPhone: persistent storage, a backup copy, Export/Import save | save systems | 4 | 4 | 2 | **32** | open |
-| Q9 | `rb-slow` (online, one very slow device) reports repaired desyncs since at least 9.16.2; passed on 9.15.0: find the cause | testing | 4 | 4 | 2 | **32** | open |
+| Q9 | `rb-slow` (online, one very slow device) reports repaired desyncs since at least 9.16.2; passed on 9.15.0: find the cause. 9.17.2: a busy CPU (two tests at once on 2 cores) makes `rb-settings`, `rb-touch` and `rb-one` repair 1-3 desyncs too, so the cause is load, not the slow-device setup | testing | 4 | 4 | 2 | **32** | open |
 | S1 | Cap the rollback input runs (a modified game can freeze the other player) | security | 3 | 3 | 1 | **30** | open |
 | SV2 | An unreadable save silently looks like no career: keep the last good one and say so | save systems | 3 | 3 | 1 | **30** | open |
 | GT1 | A new player's first match starts on Medium: start on Easy and suggest stepping up after a win | game design | 4 | 2 | 1 | **30** | open |

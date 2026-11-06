@@ -1,5 +1,45 @@
 # Changelog
 
+## 9.17.2: the test suite in two tiers, `npm test` in 2.5 minutes
+Play-test of the workflow: "the test suite takes forever, always". It ran all 93 tests one after another: about 43
+minutes on the 2-core container.
+- **`npm test` is the fast tier:** 48 tests, the check before pushing to `main`. **`npm run test:full`** runs all 93,
+  and CI runs it on every push (`.github/workflows/test.yml`, T1). No test was deleted and no assertion changed;
+  `--list` shows what a run would do (48 fast + 45 full-only = 93).
+- **Parallel:** tests run on workers, each with its own browser (cores - 1, at least 2, at most 4), longest first
+  (the times from the last run, `tests/output/test-times.json`).
+- **Run alone, after the parallel batch:** the frame-rate and speed checks (`rb-freeze`, `rb-slow`, `league-time`),
+  the lag tests, every rollback test, and the real-time online ones. With two tests at once on 2 cores, `rb-settings`,
+  `rb-touch` and `rb-one` repaired 1-3 desyncs they never show alone. That's the Q9 problem showing under load, not
+  a test fault, so it's added to Q9.
+- **The fast tier is sized by measurement, not the brief's list.** The brief's heavy list (mobile, online-lag,
+  online-loop, online-server, defense, cpu-variety, tomahawk) was about 425 s of the 2,575. Leaving the rest in
+  would have made the fast tier 7.3 minutes on 2 workers. So the full tier also holds everything over 13 s when run
+  alone (league calibration 357 s, lag profiles 305 s, the Studio 180 s, CPU league 105 s, the career run, the hub
+  layout, world visuals and robustness, the league tests...) and the rollback and online tests that must run alone,
+  except `rb-one`, `rb-fun` and `rb-freeze`.
+- **Mobile's phone text audit runs in the full tier only.** It takes about 95 s per phone size even alone, and under
+  load it caught a moving "+1" popup past the screen edge on the clip screens. The fast tier keeps mobile's layout,
+  touch and Noor-card checks; the full tier also audits both phone sizes, as before.
+- **`--only`** takes names, prefixes and globs (`rb-*`, `net-`) and area tags: `online`, `phone`, `cpu`, `career`,
+  `studio`. It runs what it names, whatever the tier. The end of a run prints the 10 slowest tests and the total, and
+  warns if the fast tier passes 3 minutes.
+- **Fixed sleeps kept:** almost all are measurement windows ("play 15 s on this connection"). I replaced the
+  900 ms wait after the guest's Ready with a wait on `Lobby.guestReady()`, but `rb-online` (2% loss) then started
+  its match about 5 s late. The sleep covers more than Ready, so it's back.
+
+Measured on the 2-core cloud container (on a Mac with more cores both should be shorter; not measured here):
+
+| | before | after |
+|---|---|---|
+| `npm test` | all 93 tests, about 43 min | 48 tests, **2.5 min** (148-153 s, 3 runs in a row, identical results) |
+| `npm run test:full` | - | 93 tests, 37.5 min (20 min parallel, 18 min alone) |
+
+A deliberately broken assertion in `formats`, run beside four other tests, still failed the run (exit 1).
+Not met: the full tier's 10 minutes. On 2 cores half of it is the tests that have to run alone, and most of those
+run on real-time network timing (`lag-profiles` alone is 5 minutes), so a faster CPU won't shorten them much. The
+full tier still has its known failures (`rb-slow`, `rb-lag`: Q9), so CI will report them until Q9 is fixed.
+
 ## 9.17.1: online, both phones play the same game
 docs/IMPROVEMENTS.md B1, B2, B4, and the play-test report "the player models tweaking out on his side". In an online
 match with rollback each phone builds the match itself from the host's start message, but some of the match came
