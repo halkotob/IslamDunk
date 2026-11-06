@@ -18,20 +18,22 @@ const REWARDS = [
   [17, 'thobe', 't3', 'Sand thawb', '#d8c39a'], [18, 'ball', 'crescent', 'Crescent ball'], [19, 'kufi', 'k3', 'Indigo kufi', '#3b3b8f'],
   [20, 'title', 'mvp', 'Masjid MVP'], [21, 'shoe', 's3', 'Gold sneakers', '#e8c35a'], [22, 'cele', 'salute', 'Salute the crowd'],
   [23, 'thobe', 't4', 'Plum thawb', '#5a2d5f'], [24, 'ball', 'pearl', 'Pearl ball'], [25, 'title', 'king', 'King of the Court'],
-  [26, 'kufi', 'k4', 'Pearl kufi', '#efe9dc'], [27, 'cele', 'sujood', 'Sujood of thanks'], [28, 'shoe', 's4', 'Crescent white sneakers', '#f6f6f2'],
+  [26, 'kufi', 'k4', 'Pearl kufi', '#efe9dc'], [28, 'shoe', 's4', 'Crescent white sneakers', '#f6f6f2'],
   [29, 'ball', 'gold', 'Golden ball'], [30, 'title', 'legend', 'Ummah Legend']
 ].map(([lv, kind, id, name, col]) => ({ lv, kind, id, name, col }));
 const PROFILE_MAX = 30;
 const KIND_TXT = { title: 'Title', ball: 'Ball skin', thobe: 'Thawb colour (career creator)', kufi: 'Kufi colour (career creator)', shoe: 'Sneakers (career creator)', cele: 'Celebration' };
 const BALL_SKINS = { classic: ['#ffc070', '#e7822e', '#b4521a', '#3a1a08'], night: ['#5a6fb0', '#22305e', '#10173a', '#e8c35a'], sand: ['#f3dcae', '#d2ae72', '#9c7a45', '#5a3c18'],
   green: ['#55c08a', '#1e7a4c', '#0f4a2c', '#e8c35a'], crescent: ['#f6f2e6', '#d8cfb8', '#a99e84', '#2f7f86'], pearl: ['#ffffff', '#e8eef2', '#b9c6cf', '#8a6fb0'], gold: ['#fff1b0', '#e8c35a', '#a8812e', '#5a3c10'] };
-const CELE_TXT = { raise: 'Arm raised', heart: 'Hand on heart', fist: 'Fist pump', both: 'Both arms up', salute: 'Salute the crowd', sujood: 'Sujood of thanks' };
+const CELE_TXT = { raise: 'Arm raised', heart: 'Hand on heart', fist: 'Fist pump', both: 'Both arms up', salute: 'Salute the crowd' };
 const Profile = {
   d: null,
   load() {
     if (this.d) return this.d;
     let o = null; try { o = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch (e) {}
     this.d = Object.assign({ xp: 0, equip: { title: 'none', ball: 'classic', cele: 'raise' }, stats: { games: 0, wins: 0, minis: {}, crowns: 0 }, tut: false }, o || {});
+    if (this.d.equip && this.d.equip.cele === 'sujood') this.d.equip.cele = 'raise';   // (v9.17: that celebration was removed)
+    if (this.d.equip && this.d.equip.taunt === 'sujood') this.d.equip.taunt = 'sky';
     return this.d;
   },
   save() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(this.d)); } catch (e) {} },
@@ -142,20 +144,10 @@ function swatchLocked(kind, i) { if (i < PROFILE_BASE[kind]) return false; const
     const t = _pt.apply(this, arguments);
     if (!(p.celebrate > 0) || p.state !== 'free' || ball.owner === p || p.human !== (Net.role === 'guest' ? 1 : 0) || M.attract) return t;
     const c = Profile.load().equip.cele;
-    if (c === 'heart') { t.ns = 1.15; t.ne = 2.1; }
-    else if (c === 'fist') { t.ns = 2.3; t.ne = 1.9; t.nk += 0.3; t.fk += 0.3; }
-    else if (c === 'both') { t.ns = 3.0; t.fs = 3.0; t.ne = 0.2; t.fe = 0.2; }
-    else if (c === 'salute') { t.ns = 2.6; t.ne = 2.4; t.lean -= 0.05; }
-    else if (c === 'sujood') { t.nk = 2.2; t.fk = 2.2; t.nh = 1.6; t.fh = 1.6; t.lean = 1.15; t.ns = 1.4; t.fs = 1.4; t.ne = 0.4; t.fe = 0.4; }
+    if (typeof CAST_CELES !== 'undefined' && CAST_CELES[c]) Object.assign(t, CAST_CELES[c]);   // (v9.17: the same poses as the cast's: hand on the chest, fist by the shoulder, salute at the brow)
     return t;
   };
-  const _os = onScore;
-  onScore = function (h) {
-    const sh = ball.shot && ball.shot.hoop === h ? ball.shot : null;
-    const r = _os.apply(this, arguments);
-    if (sh && sh.shooter && sh.shooter.human >= 0 && Profile.load().equip.cele === 'sujood' && sh.shooter.celebrate > 0) sh.shooter.celebrate = Math.max(sh.shooter.celebrate, 1.1);
-    return r;
-  };
+
 }
 // ---- the profile screen (Options → Profile)
 const ProfileUI = { idx: 0 };

@@ -244,9 +244,9 @@ SETTINGS.tomahawk = 'float';
 (() => { try { const v = localStorage.getItem('islamdunk.tomahawk'); if (v && !TOMAHAWK_KEPT.includes(v)) localStorage.setItem('islamdunk.tomahawk', 'float'); } catch (e) {} })();
 { const i = SET_ITEMS.findIndex(s => s.label === 'Tomahawk style'); if (i >= 0) SET_ITEMS.splice(i, 1); }
 setTomahawk = function () { SETTINGS.tomahawk = 'float'; try { localStorage.setItem('islamdunk.tomahawk', 'float'); } catch (e) {} };
-// Taunts "Sujood of thanks" and "Brush it off": not unlocked, not in the picker; a saved or online one becomes the default.
+// Taunt "Brush it off" (and the removed one in its place, v9.17): not unlocked, not in the picker; a saved or online one becomes the default.
 // (The entries stay in TAUNTS: online play sends a taunt by its place in the list.)
-for (const t of TAUNTS) if (t.id === 'sujood' || t.id === 'brush') t.retired = true;
+for (const t of TAUNTS) if (t.id === 'retired' || t.id === 'brush') t.retired = true;
 for (let i = REWARDS.length - 1; i >= 0; i--) { const r = REWARDS[i]; if (r.kind === 'taunt' && (TAUNTS.find(t => t.id === r.id) || {}).retired) REWARDS.splice(i, 1); }
 {
   const _mt = myTaunt;

@@ -159,7 +159,7 @@ export function animFixTests({ newContext, open }) {
       return o;
     });
     await ctx.close();
-    const kept = 'sky,dua,flex,wag,sujood,chest,brush,takbir,small,roof';
+    const kept = 'sky,dua,flex,wag,retired,chest,brush,takbir,small,roof';   // (v9.17: Sujood of thanks removed, its place kept)
     push(r.order === kept, `taunt places unchanged (${r.order})`);
     push(!r.rewards.includes('sujood') && !r.rewards.includes('brush'), `retired taunts not unlockable (rewards: ${r.rewards.join(', ')})`);
     push(r.myTaunt === 'sky' && !r.picker.includes('sujood') && !r.picker.includes('brush'), `an equipped Sujood of thanks plays as ${r.myTaunt}; the picker offers ${r.picker.join(', ')}`);
