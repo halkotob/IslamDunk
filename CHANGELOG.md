@@ -1,5 +1,53 @@
 # Changelog
 
+## 9.17.3: a career can't be lost
+docs/IMPROVEMENTS.md SV1, SV2, SV3. Each save went to one place, written over in place. A save that didn't parse
+looked like no career at all, and the next autosave wrote over what was left. The ~50 autosaves ignored a failed
+write, and nothing asked the browser to keep the data (Safari on iPhone can clear a site's storage after 7 days
+without a visit unless it's on the Home Screen). Now (`src/career/v9173-save-safe.js`):
+- **A backup of the last good save.** Before the career autosave, the profile (XP, unlocks) and the custom teams are
+  written, the previous value is kept as a backup if it reads correctly (one each, with its date). A career save is
+  1.1 KB at the start and 38.7 KB after a full season (box scores, the calendar). With its backup and the manual slot
+  that's about 120 KB, under 3% of the about 5 MB a browser keeps for a site. If a backup would bring storage within
+  a tenth of that limit, it's skipped and the player is told; the real save always goes first.
+- **A save that can't be read is never lost.** Its text is kept aside (`.broken`). With a good backup, the backup
+  loads and the player is told once, after any match: "Your latest save couldn't be read. Loaded the one before it
+  (from 7 Nov 2026)." With none, the Career menu says "We couldn't read your career: Export it". The export
+  carries the unreadable text too, and starting a new career no longer writes over it.
+- **A failed save says so, once:** "Couldn't save: storage is full or this browser is in private mode." It shows
+  once a session, and again only if saving fails after a save has worked. It never blocks and never appears during
+  a match.
+- **The browser is asked to keep the data** (`navigator.storage.persist()`), once, at the first career save. If it
+  says no on a phone or tablet not started from the Home Screen: "Add to Home Screen to keep your career safe.",
+  shown once ever. Desktop browsers and the desktop app aren't told (the advice doesn't apply there).
+- **Export and Import**, on the career's Save and load screen, in the Career menu and on the Profile screen ("Export
+  or import career"). Export makes one `.json` file (`islamdunk-save-<date>.json`) with the career, the manual slot,
+  the profile and your teams, a version and a checksum. Copy code puts the same text on the clipboard. Import takes
+  the file or a pasted code, checks it, shows one line ("Yusuf, Masjid Al-Amanah: season 1, week 9, 5-2, profile,
+  your teams"), and on Import writes the career to the manual slot, never over the autosave. The profile and teams
+  are written with their old values kept as backups. Every button works by touch, and left/right/Enter (keyboard
+  or gamepad) move between them; Choose file opens the device's file picker.
+- The save format (`v`, `sv`) and the manual slot are unchanged.
+- **CI:** the full tier (9.17.2) never ran: `ubuntu-latest` is now Ubuntu 26.04, which the pinned Playwright has no
+  Chromium for. The workflow now runs on `ubuntu-24.04`.
+
+| Case | 9.17.2 | 9.17.3 |
+|---|---|---|
+| Damaged autosave | read as no career ("New career / Back"), and the new career's first save wrote over it | the backup loads, one message; the damaged text kept |
+| Autosave and backup both damaged | the same | "We couldn't read your career: Export it"; both kept (`.broken`, `.bak.broken`) through a new career |
+| Storage full / private mode, 6 saves | 6 silent failures | 6 failures, 1 message (one more after a save works and a later one fails); no errors |
+| `persist()` | never | once, at the first save |
+| Export, wipe, import | none | the same career (in the manual slot), profile and teams, compared field for field; a changed checksum is refused |
+| Saves from 8.6.0, 9.0.0, 9.14.3 | load | load, stored text unchanged |
+
+Tests (`tests/save-safe.mjs`, fast tier): `save-backup`, `save-broken`, `save-full`, `save-export`, `save-old`,
+all with no page errors. The old saves are real ones, made by the 8.6.0, 9.0.0 and 9.14.3 builds from this repo's
+history (`tests/fixtures/old-saves.json`). `career-run` now also reports the size of the season's save.
+The Studio has the two new screens ("career: export", "career: import (a file picked)"); both pass the phone text
+audit at all three sizes. The regenerated census (it was last made at 9.13.0) also shows two screens with overlapping
+text, "hub: corner menu" (5) and "online: network report" (14). They're the same on 9.17.2, so they came in between
+9.13 and 9.17 and are left for their own fix.
+
 ## 9.17.2: the test suite in two tiers, `npm test` in 2.5 minutes
 Play-test of the workflow: "the test suite takes forever, always". It ran all 93 tests one after another: about 43
 minutes on the 2-core container.

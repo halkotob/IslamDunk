@@ -146,11 +146,12 @@ function buyStat(i) {
   if (C.bp < cost) { SFX.bad(); return; }
   C.bp -= cost; C.lv[k]++; SFX.good(); saveCareer();
 }
-const SAVE_ITEMS = () => ['Save to manual slot', 'Load manual slot', Game.confirmNew ? 'Press again to start over' : 'Start a new career', 'Back'];
+const SAVE_ITEMS = () => ['Save to manual slot', 'Load manual slot', Game.confirmNew ? 'Press again to start over' : 'Start a new career', 'Export career', 'Import career', 'Back'];   // (Export, Import: v9173-save-safe.js)
 function savesSelect(i) {
   if (i === 0) Game.saveMsg = saveCareer(SAVE_SLOT) ? 'Saved to the manual slot.' : 'Could not save on this device.';
   else if (i === 1) { if (loadCareer(SAVE_SLOT)) { saveCareer(); Game.saveMsg = 'Manual save loaded.'; setupPractice('free'); } else Game.saveMsg = 'No manual save found.'; }
   else if (i === 2) { if (!Game.confirmNew) { Game.confirmNew = true; return; } Game.confirmNew = false; C = freshCareer(); Game.creator = { idx: 0, isNew: true }; setupPractice('free'); Game.screen = 'creator'; }
+  else if (i === 3 || i === 4) { saveCareer(); const home = () => { Game.screen = 'saves'; Game.idx = i; Game.saveMsg = ''; }; if (i === 3) openSaveExport(home); else openSaveImport(home); }
   else careerHub();
 }
 
@@ -226,7 +227,7 @@ function careerUpdate(rdt) {
     case 'scout': if (menuHit('ok')) { Game.screen = 'pregame'; SFX.blip(); } else if (menuHit('back')) careerHub(); break;
     case 'csummary': summaryUpdate(); break;
     case 'cbracket': if (menuHit('ok') || menuHit('back')) careerHub(); break;
-    case 'saves': menuNav(4, savesSelect); if (menuHit('back')) careerHub(); break;
+    case 'saves': menuNav(SAVE_ITEMS().length, savesSelect); if (menuHit('back')) careerHub(); break;
     case 'gym': gymUpdate(rdt); break;
     case 'shop': shopUpdate(); break;
     case 'musalla': musallaUpdate(rdt); break;
@@ -556,6 +557,6 @@ function drawSaves(g) {
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('Save and load', W / 2, 110);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('Your career also saves automatically after every game, drill, and purchase.', W / 2, 138);
   drawMenu(g, SAVE_ITEMS(), Game.idx, 210, savesSelect);
-  if (Game.saveMsg) { g.fillStyle = '#9dffb0'; g.font = `14px ${BODY}`; g.fillText(Game.saveMsg, W / 2, 400); }
+  if (Game.saveMsg) { g.fillStyle = '#9dffb0'; g.font = `14px ${BODY}`; g.fillText(Game.saveMsg, W / 2, 590); }   // (below the six items, v9.17.3)
 }
 

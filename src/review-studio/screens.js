@@ -128,6 +128,8 @@ export const SCREEN_OF = {
   "run end": "runend",
   "run badges": "runbadges",
   "custom teams: import": "csimport",
+  "career: export": "saveexport",
+  "career: import (a file picked)": "saveimport",
   "custom teams: share": "csshare",
   "custom teams: edit a team": "csedit",
   "custom teams: edit a player": "csedit",

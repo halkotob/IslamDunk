@@ -109,6 +109,7 @@ import { leagueTests } from './league.mjs';
 import { netTests } from './net.mjs';
 import { rollbackTests } from './rollback.mjs';
 import { rbSameTests } from './rb-same.mjs';
+import { saveSafeTests } from './save-safe.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
 import { animFixTests } from './anim-fix.mjs';
@@ -142,6 +143,8 @@ const SEED_INIT = `(() => { let s = 1; const rnd = () => { s |= 0; s = (s + 0x6D
 async function newContext(browser, opts = {}) {
   const ctx = await browser.newContext(opts.device || { viewport: { width: 1280, height: 720 } });
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());                       // system font, no network
+  // (v9.17.3: the one-time "Add to Home Screen" note counts as seen, so it isn't in screenshots; save-full clears it)
+  await ctx.addInitScript(() => { try { if (!localStorage.getItem('islamdunk.persistNote')) localStorage.setItem('islamdunk.persistNote', '1'); } catch (e) {} });
   await ctx.route(/islamdunk-ice\.[^/]*workers\.dev/, r => r.abort());                   // the live TURN Worker: fails at once (STUN only), like no relay; net-ice uses ?ice= fakes
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE_FIREBASE_APP }));
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-database\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE_FIREBASE_DB }));
@@ -2120,13 +2123,14 @@ T['career-run'] = async ({ browser, base }) => {
     } } catch (e) { out.err = String(e && e.stack || e).slice(0, 300) + ' | screen ' + Game.screen + ' stage ' + C.stage + ' M.careerStage ' + M.careerStage + ' games ' + out.games.length; }
     out.done1 = C.season === 2; out.d = calText(C.cal.d) + ' Y' + calDate(C.cal.d).y; out.trophies = C.titles.filter(t => t.s === 1).length;
     out.byStage = [0, 1, 2, 3].map(st => { const G = out.games.filter(g => g.s === 1 && g.st === st); return G.length ? STAGES[st].name + ': ' + G[0].date + ' .. ' + G[G.length - 1].date + ' (' + G.length + ')' : ''; });
+    out.saveSize = JSON.stringify(C).length;   // (v9.17.3: reported, not checked)
     return out;
   });
   await ctx.close();
   const s1 = r.games.filter(g => g.s === 1), s2 = r.games.filter(g => g.s === 2);
   const ok = r.intro === 'introout' && r.hub === 'hub' && s1.length === 20 && r.trophies === 4 && s2.length >= 1 && r.back === 0
     && r.strip.length > 20 && r.strip.every(n => n === 4) && r.games.every(g => g.wd === 'Wed' || g.wd === 'Sat') && new Set(r.games.map(g => g.d)).size === r.games.length && !r.noContinue && !r.err && !errs.length;
-  return { ok, detail: [r.err || '', `games: season 1 ${s1.length}, season 2 ${s2.length}; titles ${r.trophies}; hub visits ${r.strip.length}, strip always 4: ${r.strip.every(n => n === 4)}; date went back: ${r.back}`,
+  return { ok, detail: [r.err || '', `games: season 1 ${s1.length}, season 2 ${s2.length}; titles ${r.trophies}; career save ${(r.saveSize / 1024).toFixed(1)} KB; hub visits ${r.strip.length}, strip always 4: ${r.strip.every(n => n === 4)}; date went back: ${r.back}`,
     ...r.byStage, 'season 2 first game: ' + (s2[0] && s2[0].date), 'last day: ' + r.d, 'screens: ' + JSON.stringify(r.screens), r.noContinue ? 'no Continue: ' + r.noContinue : '', ...errs].filter(Boolean) };
 };
 
@@ -2606,6 +2610,7 @@ Object.assign(T, leagueTests({ newContext, open }));   // v9.7.0 the league (tes
 Object.assign(T, netTests({ newContext, open }));   // v9.10 online latency (tests/net.mjs)
 Object.assign(T, rollbackTests({ newContext, open }));   // v9.14 rollback netcode (tests/rollback.mjs)
 Object.assign(T, rbSameTests({ newContext, open }));    // v9.17.1 both phones play the same game (tests/rb-same.mjs)
+Object.assign(T, saveSafeTests({ newContext, open }));  // v9.17.3 a career can't be lost (tests/save-safe.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
 Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)
@@ -2640,7 +2645,7 @@ const TAGS = {
   online: n => /^(online-|net-|rb-|lag-)/.test(n),
   phone: n => /^(mobile|gamepad|adaptive-res|world-pad|rb-touch)$/.test(n) || /phone|touch/.test(n),
   cpu: n => /^(cpu-|defense$|v863$|tomahawk$|league-calibration$)/.test(n),
-  career: n => /^(career|world-|jumuah|hub-|calendar|league-|shot-clock$)/.test(n),
+  career: n => /^(career|world-|jumuah|hub-|calendar|league-|save-|shot-clock$)/.test(n),
   studio: n => /^studio/.test(n)
 };
 const glob = p => new RegExp('^' + p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');

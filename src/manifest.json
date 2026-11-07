@@ -129,6 +129,7 @@
     "screens/design-pass.js",
     "sim/cast-life.js",
     "screens/motion-pass.js",
+    "career/v9173-save-safe.js",
     "boot.js"
   ]
 }
