@@ -20,6 +20,7 @@ how this game differs from what the skill assumes.
 | `improve-game` | Score the game by area, then pick improvements | game-creator (adapted note) |
 | `game-design-theory` | Judge concepts and modes for player appeal (Rouse's Game Design: Theory & Practice) | jarrod-claude-skills |
 | `character-design` | Silhouettes, shape language, the cast | skills-for-antigravity |
+| `game-design` | Core loop, progression, difficulty, player motivation checklist | antigravity-awesome-skills |
 
 Sources and licenses (copies in `licenses/`):
 - [gamedev-skills/awesome-gamedev-agent-skills](https://github.com/gamedev-skills/awesome-gamedev-agent-skills),
@@ -29,6 +30,7 @@ Sources and licenses (copies in `licenses/`):
 - [jarrodmedrano/jarrod-claude-skills](https://github.com/jarrodmedrano/jarrod-claude-skills), MIT (stated in its README and
   `package.json`; the repo has no LICENSE file).
 - [omer-metin/skills-for-antigravity](https://github.com/omer-metin/skills-for-antigravity), Apache-2.0.
+- [benjaminasterA/antigravity-awesome-skills](https://github.com/benjaminasterA/antigravity-awesome-skills), MIT.
 
 Only `steam-publish` includes a script (`scripts/check_steam_build.py`): it reads Steam build files and reports
 problems; it doesn't upload or connect to anything. `itch-publish` describes downloading itch.io's `butler` tool,

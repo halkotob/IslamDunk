@@ -42,6 +42,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | GT2 | "Why I missed" is off by default: show it during a new player's first games | game design | 3 | 2 | 1 | **25** | open |
 | P5 | Adaptive resolution ignores menus and the title, where a full match plays behind: let it count there too | performance | 3 | 2 | 1 | **25** | open |
 | ST5 | Steam needs unpacked app folders per OS (Windows, macOS, Linux for Steam Deck), not the NSIS/DMG/AppImage installers built today | Steam | 3 | 2 | 1 | **25** | open |
+| GDS2 | A one-page game design document (pitch, core loop, modes, progression, art, audio) for the owners and new helpers | game design | 3 | 2 | 1 | **25** | open |
 | T5 | Stop committing the built `index.html`; publish Pages from the build | tech debt | 3 | 3 | 2 | **24** | open |
 | T4 | One settings module that owns every saved setting | tech debt | 3 | 3 | 2 | **24** | open |
 | B5 | Rollback: the host has no "End game: back to lobby" and no "friend dropped" notice | code review | 3 | 3 | 2 | **24** | open |
@@ -78,6 +79,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | SV4 | Check a save's values when loading (numbers, known team and item ids) and fall back to the backup if broken | save systems | 2 | 3 | 2 | **20** | open |
 | P6 | A performance budget test: draw calls per frame and script ms per frame, checked on every run | performance | 2 | 2 | 1 | **20** | open (with Q6) |
 | AI2 | A stuck check for CPU players (same plan, no progress for ~2 s, then rethink) | game AI | 2 | 2 | 1 | **20** | open |
+| GDS3 | Between Quick Play matches, offer (never force) one level down after two heavy losses and one up after three big wins | game design | 3 | 2 | 2 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
 | X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
@@ -119,6 +121,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | AU3 | Measure the whole mix's loudness over a match (phones: about -18 LUFS) and set the master level from it | audio | 2 | 1 | 1 | **15** | open |
 | AI1 | A debug view that draws each CPU player's current plan and target on court (for tuning and bug reports) | game AI | 2 | 1 | 1 | **15** | open |
 | ST7 | Keep the Steam build scripts (`app_build`, depot `.vdf`, no secrets) in the repo and check them with `check_steam_build.py --strict` in CI | Steam | 2 | 1 | 1 | **15** | open |
+| GDS1 | Profile level 27 unlocks nothing since sujood was removed: put Finger to the sky there | game design | 2 | 1 | 1 | **15** | open |
 | A5 | One player intent per frame from every device | architecture | 3 | 3 | 4 | **12** | open (after A1) |
 | W5 | robots.txt, a sitemap, and a short own domain for sharing | SEO and sharing | 2 | 1 | 2 | **12** | open |
 | G6 | A seasonal calendar for posts and updates: Ramadan, Eid, Jumu'ah challenges | launch | 3 | 1 | 3 | **12** | open |
@@ -131,6 +134,8 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | UX2 | 16:10 (Steam Deck, many laptops) and ultrawide get black bars: let the height grow on 16:10 | UI | 2 | 1 | 2 | **12** | open |
 | UX3 | Buttons are fixed widths sized to English; translations will overflow (with UI2) | UI | 2 | 1 | 2 | **12** | open |
 | IN3 | One-button alternatives for two-button moves (Turbo + Block swipe, chase-down) | input | 2 | 1 | 2 | **12** | open |
+| GDS4 | A few cosmetics earned by feats (first posterizer, first buzzer-beater), not only by XP | game design | 2 | 1 | 2 | **12** | open |
+| GDS5 | After level 30 XP does nothing: keep a count of levels past 30 (a star on the profile card) | game design | 2 | 1 | 2 | **12** | open |
 | B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |
 | U6 | Consistent apostrophes and online terms (game, lobby, code) | UX copy | 1 | 1 | 1 | **10** | open |
 | U7 | The lobby says "Waiting for your friend" twice; a shorter rules note | UX copy | 1 | 1 | 1 | **10** | open |
@@ -848,6 +853,41 @@ outside requests are HTTPS (Firebase, Google Fonts, the relay Worker).
   AppImage installers) to `windows`, `osx`, `linux`; `--userversion` from `package.json`; answer the AI disclosure
   as for Steam (ST6). In CI, `BUTLER_API_KEY` as a secret, never printed.
 - HTML5 pages on itch.io take payment only as donations; a paid version would need the downloadable builds.
+
+### Game design skill (antigravity-awesome-skills), in full (7 Nov 2026)
+
+Run with `.claude/skills/game-design` through its six parts. Much of what it asks was already found by the game
+design theory and improve-game runs above (GT1, GT6, GD1, GD2); this lists what it adds.
+
+| Part of the skill | Islam Dunk | Verdict |
+|---|---|---|
+| Core loop, the 30-second test | Get the ball → beat your man (moves, fakes, screens, passes) → shoot or dunk → callout, crowd, score pop → back on defence. Every possession is about 10–20 s with a clear payoff | Passes |
+| Design document | `docs/art-style.md` covers art only; the design lives in the CHANGELOG, the code and this list (GDS2) | Missing |
+| Motivation: achiever | 30 profile levels, achievements, career badges and goals, Barakah Run records. Everything after level 30 stops counting (GDS5) | Strong |
+| Motivation: explorer | The neighbourhood, the musalla, Jumu'ah, masjid projects, story beats | Good |
+| Motivation: socializer | Online and local duos; ends when the match ends (GD2, GT4) | Weak spot |
+| Motivation: competitor | CPU levels, online, King of the Court, bests | Good |
+| Reward schedules | All fixed: one cosmetic per level on a known track, XP for every match (60, plus up to 40 for a win). No random drops, which is right for a family game: no loot boxes. Feats could unlock a few things too (GDS4) | Good, keep fixed |
+| Difficulty: selection | Very easy to Hard, chosen in Quick Play | Yes |
+| Difficulty: dynamic | An optional rubber band (the leading CPU reacts 12% slower when 6+ ahead), never stat changes | Yes, within a match |
+| Difficulty: between matches | Nothing suggests a better level after a run of results (GDS3); a newcomer's first match is on Medium (GT1) | Gap |
+| Progression: skill, power, content, story | All four: the player learns moves; career stats and badges (career only, Halal Bucks stay cosmetic); the calendar, neighbourhood and modes open up; career story | Strong |
+| Pacing: early wins, rest beats | Rest beats yes (halftime, the hub, the gym between games). Early wins not guaranteed (GT1) | Mostly |
+| Anti-pattern: punish excessively | A loss still pays 60 XP; a Barakah Run has a shield | Avoided |
+| Anti-pattern: design in isolation | Tests replay matches, but no real first-time players have been watched (GT6) | Open |
+
+- **GDS1:** `REWARDS` in `src/screens/profile.js` has no level 27 since 9.17.0 (sujood was removed). Finger to the
+  sky (`sky`, already in `CAST_CELES`) fits there and is respectful; it needs a `CELE_TXT` entry. Takbir could be
+  offered too if the owners want it (standing only, as in the cast).
+- **GDS2:** one page, kept current: the pitch in one line, the core loop, each mode in a sentence, how you progress
+  (profile, career, Barakah Run), the art and audio direction, and the hard rules from `docs/adr/`. Helps the
+  co-owner, playtesters and any new contributor; pairs with T8 (the code overview).
+- **GDS3:** Quick Play only, as a one-line prompt on the results screen ("Try Easy next time?" / "Ready for
+  Hard?"), dismissable and remembered. Extends GT1 past the first match. Online and career are unaffected.
+- **GDS4:** feats are fixed, not random (no loot-box feel): e.g. first posterizer → a ball skin, first buzzer-beater
+  → a title. Gives achievers a goal that isn't only playing more matches.
+- **GDS5:** reaching level 30 takes about 15,700 XP (100+ matches); after that a match earns XP that does nothing.
+  A "+3" star count on the profile card keeps it counting without new art.
 
 ### Architecture (review of 5 Nov 2026)
 
