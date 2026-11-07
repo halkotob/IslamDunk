@@ -870,9 +870,9 @@ design theory and improve-game runs above (GT1, GT6, GD1, GD2); this lists what 
 | Reward schedules | All fixed: one cosmetic per level on a known track, XP for every match (60, plus up to 40 for a win). No random drops, which is right for a family game: no loot boxes. Feats could unlock a few things too (GDS4) | Good, keep fixed |
 | Difficulty: selection | Very easy to Hard, chosen in Quick Play | Yes |
 | Difficulty: dynamic | An optional rubber band (the leading CPU reacts 12% slower when 6+ ahead), never stat changes | Yes, within a match |
-| Difficulty: between matches | Nothing suggests a better level after a run of results (GDS3); a newcomer's first match is on Medium (GT1) | Gap |
+| Difficulty: between matches | Since 9.17.4 a newcomer starts on Easy and is offered Medium after the first win (GT1); after that, nothing suggests a better level from a run of results (GDS3) | Partly |
 | Progression: skill, power, content, story | All four: the player learns moves; career stats and badges (career only, Halal Bucks stay cosmetic); the calendar, neighbourhood and modes open up; career story | Strong |
-| Pacing: early wins, rest beats | Rest beats yes (halftime, the hub, the gym between games). Early wins not guaranteed (GT1) | Mostly |
+| Pacing: early wins, rest beats | Rest beats (halftime, the hub, the gym between games) and, since 9.17.4, a friendly first match (GT1) | Yes |
 | Anti-pattern: punish excessively | A loss still pays 60 XP; a Barakah Run has a shield | Avoided |
 | Anti-pattern: design in isolation | Tests replay matches, but no real first-time players have been watched (GT6) | Open |
 
@@ -883,7 +883,7 @@ design theory and improve-game runs above (GT1, GT6, GD1, GD2); this lists what 
   (profile, career, Barakah Run), the art and audio direction, and the hard rules from `docs/adr/`. Helps the
   co-owner, playtesters and any new contributor; pairs with T8 (the code overview).
 - **GDS3:** Quick Play only, as a one-line prompt on the results screen ("Try Easy next time?" / "Ready for
-  Hard?"), dismissable and remembered. Extends GT1 past the first match. Online and career are unaffected.
+  Hard?"), dismissable and remembered. Extends 9.17.4's first-win offer (`src/screens/v9174-first-match.js`, same hint row and keys) to every Quick Play match, in both directions. Online and career are unaffected.
 - **GDS4:** feats are fixed, not random (no loot-box feel): e.g. first posterizer → a ball skin, first buzzer-beater
   → a title. Gives achievers a goal that isn't only playing more matches.
 - **GDS5:** reaching level 30 takes about 15,700 XP (100+ matches); after that a match earns XP that does nothing.
