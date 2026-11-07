@@ -210,7 +210,9 @@ const SFX_VARIANTS = {};             // id -> { A: { label, fn }, B..D, and any 
     try { return vv.fn ? vv.fn.apply(this, args) : this.playSample(vv, args); }
     finally { depth--; this.out = real; setTimeout(() => { try { g.disconnect(); } catch (e) {} }, 4000); }
   };
-  for (const id of SFX_IDS) S[id] = function () { return S.play.call(this, id, depth > 0 ? (SFX_VARIANTS[id][curK] ? curK : 'A') : S.variantOf(id), arguments); };
+  S.dispatcher = id => function () { return S.play.call(this, id, depth > 0 ? (SFX_VARIANTS[id][curK] ? curK : 'A') : S.variantOf(id), arguments); };
+  for (const id of SFX_IDS) S[id] = S.dispatcher(id);
+  S.kit = { tn, nz, ring, thump, metal, sub, swell };                     // (v9.17.5: sfx-moments.js builds its sounds from these)
 
   // ---- recorded samples: more variants of the same ID (loaded when first played; one of the files at random, no repeat)
   S.playSample = function (vv) {

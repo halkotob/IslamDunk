@@ -61,7 +61,7 @@ export function audioTests({ newContext, open }) {
       SFX.picks.bounce = 'E'; o.sample = o.sample && SFX.variantOf('bounce') === 'E'; delete SFX.picks.bounce; delete SFX_VARIANTS.bounce.E;
       return o;
     });
-    if (shape.ids !== 23) bad.push(`${shape.ids} sound IDs (want 23)`);
+    if (shape.ids !== 40) bad.push(`${shape.ids} sound IDs (want 40: 23, and 17 since v9.17.5)`);
     if (shape.missing.length) bad.push('missing: ' + shape.missing.join(', '));
     if (shape.noLevel.length) bad.push('no level: ' + shape.noLevel.join(', '));
     const styleOk = shape.style.def === 'A' && shape.style.B === 'B' && shape.style.C === 'C' && shape.style.D === 'D' && shape.style.A === 'A';
@@ -109,7 +109,7 @@ export function audioTests({ newContext, open }) {
     // a live AudioContext, Chromium
     const live = await p.evaluate(PLAY_ALL);
     detail.push(`Chromium, live AudioContext (${live.state}): ${live.n} variants played, ${live.errs.length} errors`);
-    if (live.errs.length || live.n < 92) bad.push(...live.errs.slice(0, 10), live.n < 92 ? `only ${live.n} played` : '');
+    if (live.errs.length || live.n < 160) bad.push(...live.errs.slice(0, 10), live.n < 160 ? `only ${live.n} played` : '');
     await ctx.close();
     // WebKit, when installed
     let wk = null; try { wk = await webkit.launch(); } catch (e) { detail.push('WebKit: not installed here (Playwright could not launch it: ' + String(e.message || e).split('\n')[0].slice(0, 120) + '); Chromium only'); }
@@ -119,7 +119,7 @@ export function audioTests({ newContext, open }) {
       await p2.goto(base + '/'); await p2.waitForFunction(() => typeof SFX_VARIANTS !== 'undefined', null, { timeout: 30000 });
       const r2 = await p2.evaluate(PLAY_ALL);
       detail.push(`WebKit, live AudioContext (${r2.state}): ${r2.n} variants played, ${r2.errs.length + we.length} errors`);
-      if (r2.errs.length || we.length || r2.n < 92) bad.push(...r2.errs.slice(0, 10).map(e => 'WebKit ' + e), ...we.map(e => 'WebKit pageerror ' + e));
+      if (r2.errs.length || we.length || r2.n < 160) bad.push(...r2.errs.slice(0, 10).map(e => 'WebKit ' + e), ...we.map(e => 'WebKit pageerror ' + e));
       await wk.close();
     }
     return { ok: !bad.filter(Boolean).length && !pe.length, detail: [...detail, ...bad.filter(Boolean), ...pe] };
@@ -181,8 +181,12 @@ export function audioTests({ newContext, open }) {
     if (want !== have) bad.push('docs/audio/sound-list.csv is out of date: run node tools/sound-list.mjs');
     const calls = soundCalls(ROOT), src = manifestFiles(ROOT).filter(x => /sfx-variants/.test(x)).map(x => fs.readFileSync(path.join(ROOT, 'src', x), 'utf8')).join('\n');
     const ids = JSON.parse((src.match(/const SFX_IDS = (\[[^\]]+\])/) || [])[1].replace(/'/g, '"'));
+    // (v9.17.5: and the ones core/sfx-moments.js adds)
+    const mom = fs.readFileSync(path.join(ROOT, 'src/core/sfx-moments.js'), 'utf8').match(/const SFX_MOMENTS = (\[[^\]]+\])/);
+    if (mom) ids.push(...JSON.parse(mom[1].replace(/'/g, '"').replace(/\s+/g, ' ')));
     const listedMissing = NO_SOUND.map(r => r[1]).join(' ');
-    for (const id of Object.keys(calls)) if (!ids.includes(id) && !listedMissing.includes('SFX.' + id)) bad.push(`SFX.${id} is called (${calls[id].map(c => c.file + ':' + c.line).join(', ')}) but no such sound exists, and it isn't listed as missing`);
+    void listedMissing;   // (v9.17.5: a call to a sound that doesn't exist is never excused, even if it's listed as missing: that hid SFX.catch)
+    for (const id of Object.keys(calls)) if (!ids.includes(id)) bad.push(`SFX.${id} is called (${calls[id].map(c => c.file + ':' + c.line).join(', ')}) but no such sound exists`);
     for (const id of ids) if (!calls[id]) bad.push(`${id}: never triggered by the game`);
     const n = Object.values(calls).reduce((a, x) => a + x.length, 0);
     return { ok: !bad.length, detail: [`${n} trigger sites for ${Object.keys(calls).length} sound IDs; ${NO_SOUND.length} events with no sound listed`, ...bad] };

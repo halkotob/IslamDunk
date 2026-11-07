@@ -1,5 +1,236 @@
 # Changelog
 
+## 9.17.5: a sound for every moment (no music)
+docs/audio/sound-list.csv listed 21 events with no sound of their own. 16 have one now; the 5 ambience rows (the
+neighbourhood, inside the masjid, the career hub, menus over the attract match, the practice gym) stay silent on
+purpose. No music anywhere: a stinger is two or three notes, under a second. Bug fixed: Lightning called `SFX.catch`,
+which didn't exist (a guard kept it silent).
+- **17 new sound ids** (`src/core/sfx-moments.js`), each in the four styles (A Current, B Real, C Arcade, D Soft),
+  procedural like the rest. They're in the Studio's Sounds tab for review, and Sound style and per-sound picks apply.
+- **In a match:**
+  - `shotTick`: a quiet tick as each of the shot clock's last 3 seconds starts, a little higher each time.
+  - `ftStep`: stepping to the free throw line. `ftAttempt`: a soft "ready" tap for each attempt.
+  - `hotSpot`: a short rising shimmer when a hot spot appears.
+  - `crowdTurnover`, `crowdBlock`, `crowdBadMiss`: a few voices, scaled by the venue's crowd level. They play only
+    when nobody in the crowd is drawn; when people are drawn they still groan and "ooh" themselves, so the two
+    never stack.
+  - `catch`: Lightning's fed ball.
+- **Between plays:**
+  - `halftimeStinger`: two neutral notes.
+  - `winStinger` and `lossStinger` on the final screen, after the buzzer and cheer. The loss is two calm falling
+    notes, never mocking.
+  - `earnTick`: the career summary's Barakah Points and Halal Bucks lines now come in one at a time, 0.12 s apart,
+    with a soft tick each (no coins, no jackpot). Enter still continues at once.
+  - `triviaLow`: a gentle tick for each of the trivia timer's last 5 seconds.
+- **Menus and career:**
+  - `uiBack`: Back or Esc out of a screen, either way.
+  - `uiConfirm`: Yes or No in a confirmation, distinct from the menu blip.
+  - `toast`: a message at the bottom of the screen, quieter than the blip.
+  - `calChime`: a soft two-note chime for a new month, Ramadan, Eid or a holiday. No adhan, Quran or takbir.
+- **The practice gym's crowd level is 0** (it inherited the classic court's 1 and was silent only because nobody is
+  drawn there), so the new crowd sounds stay out of it.
+- **Online:** in a rollback match the new match sounds come from the match itself, so both phones play them on the
+  same frame and replayed frames are silent. A guest in the older snapshot mode derives the shot clock ticks from
+  the host's snapshots and hears the host's hot spot (added to the sounds `net.js` mirrors).
+
+Measured (`npm run sfx:levels`, the loudest 200 ms, K-weighted). The swish is −30.5 dB:
+
+| | level (dB) | under the swish |
+|---|---|---|
+| shotTick, ftStep | −50 | 19.5 |
+| ftAttempt, calChime | −43 | 12.5 |
+| hotSpot, catch, halftimeStinger | −42 | 11.5 |
+| winStinger / lossStinger | −41 / −42.5 | 10.5 / 12 |
+| crowd turnover / block / bad miss (at crowd level 1) | −52 / −53 / −53 | 21.5+ |
+| earnTick, triviaLow | −54, −53 | 22.5+ |
+| uiConfirm, uiBack, toast (the blip is −46.8) | −46, −53, −57 | 15.5, 22.5, 26.5 |
+
+Each new id's B, C and D land within 0.1 dB of its A (each variant has a fixed trim, so its correction in
+`SFX_LEVELS` is about 0, inside the existing −6 to +5.1 dB range). The existing 23 sounds' levels are unchanged
+(re-measured, identical). The loudest sample peak is 1.09 K-weighted, so nothing clips. The crowd reaction by venue
+(a block): the practice gym silent, the home gym −72.9 dB, a small gym −72.5, an arena −63.8. "No sound" rows in
+`docs/audio/sound-list.csv`: **21 → 5**.
+
+Tests (`tests/sfx-moments.mjs`):
+- `sfx-moments`: each sound fires exactly once per occurrence through the game's own code. The shot clock gives 3,
+  2, 1. Free throws give one step and one tap per attempt. The crowd reacts with nobody drawn, and not when people
+  are. Also covered: the stingers, the 5 summary lines, the 5 trivia ticks, Esc and the corner Back, Yes/No, a toast,
+  a new month and Eid al-Adha.
+- `sfx-calls`: every `SFX.<name>` used in src/ exists. `sound-list` no longer excuses a call to a missing sound
+  that's listed as missing, which is how `SFX.catch` slipped through.
+- `sfx-crowd`: practice gym < home gym < arena.
+- `sfx-quiet`: Sound off renders silence; style D plays its own variant of all 17.
+- `rb-sounds` (full tier, run alone): rollback matches play the same match sounds on the same frames, and a snapshot
+  guest hears the ticks and the hot spot.
+- `sfx-variants` now expects 40 ids and 160 variants (was 23 and 92).
+- Known limit, as for every match sound since 9.15: a phone plays a sound the first time it plays a frame, so a
+  frame it guessed wrong (then replayed silently) can leave one sound on one phone only. That happened once in 11
+  runs (one sound), so `rb-sounds` allows at most one difference a run and names it. Holding sounds until a frame
+  is confirmed would close it at the cost of delay.
+
+## 9.17.4: the first match is friendly
+docs/IMPROVEMENTS.md GT1, GT2. A newcomer's first Quick Play match was Medium (the difficulty starts there every
+launch; it isn't stored), and Miss breakdown was off, so a missed shot was never explained to someone who didn't
+know why. Now (`src/screens/v9174-first-match.js`):
+- **A new player's first Quick Play match is on Easy.** "New" means no games on this device and the Difficulty
+  setting never changed (new key `islamdunk.difficulty.chosen`, set by the Difficulty rows in Settings and the
+  mini-games menu). Nothing on screen calls it an easy mode.
+- **After a first win**, the result screen's hint row shows one line: "You won on Easy." with a "Try Medium? (↑)"
+  button. Press the button, Up or M to take it ("Next match: Medium."); Enter continues as always, so leaving takes
+  no extra tap. It's offered once: taking it or leaving the screen ends it for good. After a loss, nothing.
+- **Miss breakdown is on for a player's first 5 games**, then off. The next result screen says once: "Miss breakdown
+  is now off. Turn it on in Settings." It's now three-state (`islamdunk.misswhy`: unset, '1', '0'), and a choice
+  made in Settings is never changed. The default applies to Quick Play-style matches. Career, online, King of the
+  Court and the mini-games keep Off unless the player turned it on, and keep their own difficulty.
+- No new screens, no popups in a match.
+- docs/IMPROVEMENTS.md also marks B1, B2, B4 (9.17.1) and GT1, GT2 done.
+
+| | 9.17.3 | 9.17.4 |
+|---|---|---|
+| Fresh profile, first Quick Play match | Medium | **Easy** (the CPU uses the Easy table) |
+| Miss breakdown, games 1-5 of a new player | off | **on** (each missed jump shot gets its line) |
+| Miss breakdown after game 5 | off | off, with one note on the next result screen |
+| A profile with games, or a picked difficulty | Medium | Medium (unchanged) |
+| An explicit Miss breakdown Off / On | kept | kept, through every game |
+| `npm run review:first-run` | 31 steps, 31 taps, 1,127 words | 31 steps, 31 taps, 1,125 words, the same screens |
+
+The two words are the match itself: the first-run path's scripted first match is now on Easy and ended 10-25 instead
+of 2-29, so the player's stat line is shorter. No text was added.
+
+Tests (`tests/first-match.mjs`, fast tier): `first-easy` (fresh vs played vs picked), `first-stepup` (a win offers it
+once and Up sets Medium; a second win and a new session after dismissing don't; a loss shows nothing), `first-misswhy`
+(unset on through game 5 then off with exactly one note; explicit '0' off and '1' on through 7 games; career, King
+of the Court and a mini-game stay off and on Medium), all with no page errors.
+
+## 9.17.3: a career can't be lost
+docs/IMPROVEMENTS.md SV1, SV2, SV3. Each save went to one place, written over in place. A save that didn't parse
+looked like no career at all, and the next autosave wrote over what was left. The ~50 autosaves ignored a failed
+write, and nothing asked the browser to keep the data (Safari on iPhone can clear a site's storage after 7 days
+without a visit unless it's on the Home Screen). Now (`src/career/v9173-save-safe.js`):
+- **A backup of the last good save.** Before the career autosave, the profile (XP, unlocks) and the custom teams are
+  written, the previous value is kept as a backup if it reads correctly (one each, with its date). A career save is
+  1.1 KB at the start and 38.7 KB after a full season (box scores, the calendar). With its backup and the manual slot
+  that's about 120 KB, under 3% of the about 5 MB a browser keeps for a site. If a backup would bring storage within
+  a tenth of that limit, it's skipped and the player is told; the real save always goes first.
+- **A save that can't be read is never lost.** Its text is kept aside (`.broken`). With a good backup, the backup
+  loads and the player is told once, after any match: "Your latest save couldn't be read. Loaded the one before it
+  (from 7 Nov 2026)." With none, the Career menu says "We couldn't read your career: Export it". The export
+  carries the unreadable text too, and starting a new career no longer writes over it.
+- **A failed save says so, once:** "Couldn't save: storage is full or this browser is in private mode." It shows
+  once a session, and again only if saving fails after a save has worked. It never blocks and never appears during
+  a match.
+- **The browser is asked to keep the data** (`navigator.storage.persist()`), once, at the first career save. If it
+  says no on a phone or tablet not started from the Home Screen: "Add to Home Screen to keep your career safe.",
+  shown once ever. Desktop browsers and the desktop app aren't told (the advice doesn't apply there).
+- **Export and Import**, on the career's Save and load screen, in the Career menu and on the Profile screen ("Export
+  or import career"). Export makes one `.json` file (`islamdunk-save-<date>.json`) with the career, the manual slot,
+  the profile and your teams, a version and a checksum. Copy code puts the same text on the clipboard. Import takes
+  the file or a pasted code, checks it, shows one line ("Yusuf, Masjid Al-Amanah: season 1, week 9, 5-2, profile,
+  your teams"), and on Import writes the career to the manual slot, never over the autosave. The profile and teams
+  are written with their old values kept as backups. Every button works by touch, and left/right/Enter (keyboard
+  or gamepad) move between them; Choose file opens the device's file picker.
+- The save format (`v`, `sv`) and the manual slot are unchanged.
+- **CI:** the full tier (9.17.2) never ran: `ubuntu-latest` is now Ubuntu 26.04, which the pinned Playwright has no
+  Chromium for. The workflow now runs on `ubuntu-24.04`.
+
+| Case | 9.17.2 | 9.17.3 |
+|---|---|---|
+| Damaged autosave | read as no career ("New career / Back"), and the new career's first save wrote over it | the backup loads, one message; the damaged text kept |
+| Autosave and backup both damaged | the same | "We couldn't read your career: Export it"; both kept (`.broken`, `.bak.broken`) through a new career |
+| Storage full / private mode, 6 saves | 6 silent failures | 6 failures, 1 message (one more after a save works and a later one fails); no errors |
+| `persist()` | never | once, at the first save |
+| Export, wipe, import | none | the same career (in the manual slot), profile and teams, compared field for field; a changed checksum is refused |
+| Saves from 8.6.0, 9.0.0, 9.14.3 | load | load, stored text unchanged |
+
+Tests (`tests/save-safe.mjs`, fast tier): `save-backup`, `save-broken`, `save-full`, `save-export`, `save-old`,
+all with no page errors. The old saves are real ones, made by the 8.6.0, 9.0.0 and 9.14.3 builds from this repo's
+history (`tests/fixtures/old-saves.json`). `career-run` now also reports the size of the season's save.
+The Studio has the two new screens ("career: export", "career: import (a file picked)"); both pass the phone text
+audit at all three sizes. The regenerated census (it was last made at 9.13.0) also shows two screens with overlapping
+text, "hub: corner menu" (5) and "online: network report" (14). They're the same on 9.17.2, so they came in between
+9.13 and 9.17 and are left for their own fix.
+
+## 9.17.2: the test suite in two tiers, `npm test` in 2.5 minutes
+Play-test of the workflow: "the test suite takes forever, always". It ran all 93 tests one after another: about 43
+minutes on the 2-core container.
+- **`npm test` is the fast tier:** 48 tests, the check before pushing to `main`. **`npm run test:full`** runs all 93,
+  and CI runs it on every push (`.github/workflows/test.yml`, T1). No test was deleted and no assertion changed;
+  `--list` shows what a run would do (48 fast + 45 full-only = 93).
+- **Parallel:** tests run on workers, each with its own browser (cores - 1, at least 2, at most 4), longest first
+  (the times from the last run, `tests/output/test-times.json`).
+- **Run alone, after the parallel batch:** the frame-rate and speed checks (`rb-freeze`, `rb-slow`, `league-time`),
+  the lag tests, every rollback test, and the real-time online ones. With two tests at once on 2 cores, `rb-settings`,
+  `rb-touch` and `rb-one` repaired 1-3 desyncs they never show alone. That's the Q9 problem showing under load, not
+  a test fault, so it's added to Q9.
+- **The fast tier is sized by measurement, not the brief's list.** The brief's heavy list (mobile, online-lag,
+  online-loop, online-server, defense, cpu-variety, tomahawk) was about 425 s of the 2,575. Leaving the rest in
+  would have made the fast tier 7.3 minutes on 2 workers. So the full tier also holds everything over 13 s when run
+  alone (league calibration 357 s, lag profiles 305 s, the Studio 180 s, CPU league 105 s, the career run, the hub
+  layout, world visuals and robustness, the league tests...) and the rollback and online tests that must run alone,
+  except `rb-one`, `rb-fun` and `rb-freeze`.
+- **Mobile's phone text audit runs in the full tier only.** It takes about 95 s per phone size even alone, and under
+  load it caught a moving "+1" popup past the screen edge on the clip screens. The fast tier keeps mobile's layout,
+  touch and Noor-card checks; the full tier also audits both phone sizes, as before.
+- **`--only`** takes names, prefixes and globs (`rb-*`, `net-`) and area tags: `online`, `phone`, `cpu`, `career`,
+  `studio`. It runs what it names, whatever the tier. The end of a run prints the 10 slowest tests and the total, and
+  warns if the fast tier passes 3 minutes.
+- **Fixed sleeps kept:** almost all are measurement windows ("play 15 s on this connection"). I replaced the
+  900 ms wait after the guest's Ready with a wait on `Lobby.guestReady()`, but `rb-online` (2% loss) then started
+  its match about 5 s late. The sleep covers more than Ready, so it's back.
+
+Measured on the 2-core cloud container (on a Mac with more cores both should be shorter; not measured here):
+
+| | before | after |
+|---|---|---|
+| `npm test` | all 93 tests, about 43 min | 48 tests, **2.5 min** (148-153 s, 3 runs in a row, identical results) |
+| `npm run test:full` | - | 93 tests, 37.5 min (20 min parallel, 18 min alone) |
+
+A deliberately broken assertion in `formats`, run beside four other tests, still failed the run (exit 1).
+Not met: the full tier's 10 minutes. On 2 cores half of it is the tests that have to run alone, and most of those
+run on real-time network timing (`lag-profiles` alone is 5 minutes), so a faster CPU won't shorten them much. The
+full tier still has its known failures (`rb-slow`, `rb-lag`: Q9), so CI will report them until Q9 is fixed.
+
+## 9.17.1: online, both phones play the same game
+docs/IMPROVEMENTS.md B1, B2, B4, and the play-test report "the player models tweaking out on his side". In an online
+match with rollback each phone builds the match itself from the host's start message, but some of the match came
+from each phone's own device instead. The desync repair then put the guest right a moment later, which showed as
+players jumping, not as an error. Now everything the match needs is in the start message
+(`src/online/v9171-rb-start.js`):
+- **Half court is half court on both phones.** The host played half court and the guest full court from the first
+  frame. The host's Court setting now travels in the message.
+- **A taunt plays the taunter's own taunt on both phones.** Each phone played its own owner's equipped taunt on
+  whoever taunted. The guest now sends its equipped taunt with its lobby presence, and the message carries both. An
+  unknown or retired taunt plays as Sky.
+- **1 on 1 (no CPU) has no CPU.** It was played 2 on 2 with CPU teammates on both phones. Now it's the two picked
+  players, one a team.
+- **Fun modes too** (found in the audit): Big heads, Uncle League and Low gravity counted only if this device had
+  unlocked them, so a host with Big heads on and a guest who hadn't unlocked it played different games. The host's
+  choice now travels in the message.
+- The rest of the match setup already came from the message (teams and their looks, venue, the host's settings), and
+  the Noor power-ups are off in a rollback match. The snapshot path (`?rb=0`, no direct link) is unchanged.
+
+Measured, a loopback match per mode and court, 600 frames of scripted play on both sides, the match checksum compared
+every 60 frames (`rb-same`):
+
+| | co full | co half | vs full | vs half | one full | one half |
+|---|---|---|---|---|---|---|
+| Desyncs repaired, 9.16.4 | 0 | 1 | 0 | 1 | 0 | 1 |
+| Desyncs repaired, 9.17.1 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Players on the floor, 9.16.4 / 9.17.1 | 4 / 4 | 4 / 4 | 4 / 4 | 4 / 4 | 4 / **2** | 4 / **2** |
+
+On 9.16.4 the half-court phones differed from frame 0 (the first player at x 848 on the host, 630 on the guest).
+A guest taunt with different equipped taunts was 1 repaired desync each time (the host played its own "flex" for the
+guest's "chest"), and 0 now. Big heads on at the host only was 1, and 0 now.
+
+Tests: `rb-same` (the six above; any repair is a failure), `rb-taunt` (the guest's taunt on both phones; an unknown
+and a retired id play as Sky), `rb-fun`, `rb-one` (2 players on both phones, `M.one` the same), all in
+`tests/rb-same.mjs`.
+
+Still open, not from this release: `rb-slow` (the guest's CPU 4x slower) still fails, with 3 to 5 desyncs repaired in
+12 s on 9.17.1 and 4 on 9.16.4 in the same environment (host 48-49 frames a second, needs 50). Q9 in the improvements
+list. `rb-lag` passes or fails from run to run here on its Bad mobile line (400 ms, 10% loss: 4 desyncs repaired),
+as since 9.15.0; its other four connections have none. Not yet done: the two-phone try (host on Wi-Fi, guest on mobile data: Half court, a taunt from each side, a 1 on 1).
+
 ## 9.17.0: the cast comes to life, and motion (design batches B and C)
 The second and third batches from the design review (docs/IMPROVEMENTS.md CD1–CD5, CD2, VD3, VD4, UI1). Looks and
 motion only: no speed, reach, skill, timing or AI change.

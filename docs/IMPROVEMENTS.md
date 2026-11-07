@@ -7,27 +7,27 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 
 | # | Item | Source | Impact | Risk | Effort | Priority | Status |
 |---|------|--------|:-:|:-:|:-:|:-:|---|
-| B1 | Rollback: a half-court game is half court on the host only (two different games) | code review | 5 | 5 | 1 | **50** | open, confirmed |
-| B2 | Rollback: each phone uses its own owner's taunt for both players (desync) | code review | 4 | 4 | 1 | **40** | open, confirmed |
+| B1 | Rollback: a half-court game is half court on the host only (two different games) | code review | 5 | 5 | 1 | **50** | done in 9.17.1 |
+| B2 | Rollback: each phone uses its own owner's taunt for both players (desync) | code review | 4 | 4 | 1 | **40** | done in 9.17.1 |
 | B20 | Rollback: your own equipped celebration (Options → Profile) is read from each phone's own profile; 9.17.0 uses cast celebrations online, but check every profile cosmetic that changes a pose inside a rollback match | code review | 4 | 4 | 1 | **40** | open |
 | B3 | Rollback: a dropped direct link is never retried during the match | code review | 4 | 4 | 2 | **32** | open |
-| T1 | Run the tests automatically on every push to `main` | tech debt | 4 | 5 | 2 | **36** | open |
+| T1 | Run the tests automatically on every push to `main` | tech debt | 4 | 5 | 2 | **36** | done in 9.17.2 (`npm run test:full` in `.github/workflows/test.yml`) |
 | S2 | Firebase limits and abuse: 100 players at once on the free plan; no App Check | security | 5 | 4 | 2 | **36** | open |
 | G5 | Before any ads: block gambling, alcohol and dating ad categories | launch | 3 | 4 | 1 | **35** | before ads |
 | G8 | Online on portals: add itch.io's and CrazyGames' game origins to the relay Worker's `ALLOWED_ORIGINS` (today only GitHub Pages and localhost), and check the Firebase key isn't limited to one site | launch | 4 | 3 | 1 | **35** | open |
 | Q2 | Run the phone and online tests in WebKit (Safari's engine) too | testing | 4 | 4 | 2 | **32** | open |
-| SV1 | Protect career saves on iPhone: persistent storage, a backup copy, Export/Import save | save systems | 4 | 4 | 2 | **32** | open |
-| Q9 | `rb-slow` (online, one very slow device) reports repaired desyncs since at least 9.16.2; passed on 9.15.0: find the cause | testing | 4 | 4 | 2 | **32** | open |
+| SV1 | Protect career saves on iPhone: persistent storage, a backup copy, Export/Import save | save systems | 4 | 4 | 2 | **32** | done in 9.17.3 |
+| Q9 | `rb-slow` (online, one very slow device) reports repaired desyncs since at least 9.16.2; passed on 9.15.0: find the cause. 9.17.2: a busy CPU (two tests at once on 2 cores) makes `rb-settings`, `rb-touch` and `rb-one` repair 1-3 desyncs too, so the cause is load, not the slow-device setup | testing | 4 | 4 | 2 | **32** | open |
 | S1 | Cap the rollback input runs (a modified game can freeze the other player) | security | 3 | 3 | 1 | **30** | open |
-| SV2 | An unreadable save silently looks like no career: keep the last good one and say so | save systems | 3 | 3 | 1 | **30** | open |
-| GT1 | A new player's first match starts on Medium: start on Easy and suggest stepping up after a win | game design | 4 | 2 | 1 | **30** | open |
+| SV2 | An unreadable save silently looks like no career: keep the last good one and say so | save systems | 3 | 3 | 1 | **30** | done in 9.17.3 |
+| GT1 | A new player's first match starts on Medium: start on Easy and suggest stepping up after a win | game design | 4 | 2 | 1 | **30** | done in 9.17.4 |
 | GT6 | A playtest plan: first-time players, non-gamers (parents, younger kids), watch without coaching | game design | 4 | 2 | 1 | **30** | open |
-| SV3 | When an autosave fails (storage full, private browsing), say so once; today only the manual save reports it | save systems | 3 | 3 | 1 | **30** | open |
+| SV3 | When an autosave fails (storage full, private browsing), say so once; today only the manual save reports it | save systems | 3 | 3 | 1 | **30** | done in 9.17.3 |
 | ST6 | Steam's content survey: decide honestly what AI-made content ships (text, art); have the Noor questions checked by someone knowledgeable | Steam | 3 | 3 | 1 | **30** | open |
 | T2 | Catch errors on players' devices and add them to the Network report | tech debt | 3 | 4 | 2 | **28** | open |
 | S3 | Only the game can get relay (TURN) credentials; usage alert | security | 3 | 4 | 2 | **28** | open |
 | Q3 | A folder of old saves that every release must load | testing | 3 | 4 | 2 | **28** | open |
-| B4 | Rollback: "1 on 1 (no CPU)" is played 2 on 2 with CPU teammates | code review | 4 | 3 | 2 | **28** | open |
+| B4 | Rollback: "1 on 1 (no CPU)" is played 2 on 2 with CPU teammates | code review | 4 | 3 | 2 | **28** | done in 9.17.1 |
 | VD1 | The logo's dunker pose reads close to a famous sportswear silhouette: check it before store submissions | visual design | 3 | 4 | 2 | **28** | decided: pose stays (docs/adr/0001) |
 | Q7 | A daily live check of the relay Worker | testing | 2 | 3 | 1 | **25** | open |
 | B7 | Rollback: a tap can be lost when the input delay shrinks | code review | 3 | 2 | 1 | **25** | open |
@@ -39,7 +39,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | W1 | Link previews: description, Open Graph image and title for WhatsApp, iMessage and social | SEO and sharing | 4 | 1 | 1 | **25** | open |
 | W2 | The Pages site publishes the whole repo (docs, this list, tests); exclude them | SEO and sharing | 2 | 3 | 1 | **25** | open |
 | CD8 | Respectful depiction check with someone from the community: imama, kufi, beards, the sheikh and mufti titles | character design | 2 | 3 | 1 | **25** | decided: reviewed by the owners (docs/adr/0002) |
-| GT2 | "Why I missed" is off by default: show it during a new player's first games | game design | 3 | 2 | 1 | **25** | open |
+| GT2 | "Why I missed" is off by default: show it during a new player's first games | game design | 3 | 2 | 1 | **25** | done in 9.17.4 |
 | P5 | Adaptive resolution ignores menus and the title, where a full match plays behind: let it count there too | performance | 3 | 2 | 1 | **25** | open |
 | ST5 | Steam needs unpacked app folders per OS (Windows, macOS, Linux for Steam Deck), not the NSIS/DMG/AppImage installers built today | Steam | 3 | 2 | 1 | **25** | open |
 | GDS2 | A one-page game design document (pitch, core loop, modes, progression, art, audio) for the owners and new helpers | game design | 3 | 2 | 1 | **25** | open |

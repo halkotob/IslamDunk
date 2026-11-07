@@ -313,6 +313,7 @@ function tauntOpen(p, why) {
   };
 }
 function myTaunt() { const t = (Profile.load().equip || {}).taunt || 'sky'; return Profile.has('taunt', t) || t === 'sky' ? t : 'sky'; }
+function tauntFor(pad) { return myTaunt(); }   // (which taunt a player's press plays: this device's; v9171-rb-start.js: the start message's in a rollback match)
 function doTaunt(p, id) {
   const T = M.taunt; if (!T || T.p !== p || T.used || M.time > T.until) return;
   let def = TAUNTS.find(x => x.id === id) || TAUNTS[0];
@@ -327,7 +328,7 @@ function doTaunt(p, id) {
     const r = _hc.apply(this, arguments);
     if (Net.role === 'guest') return r;                                   // the host judges these for an online guest
     const T = M.taunt;
-    if (T && !T.used && M.time <= T.until && T.p && T.p.human === pad && c.x && ball.owner !== T.p && !M.mini) { doTaunt(T.p, myTaunt()); c.x = false; c.xHeld = false; }
+    if (T && !T.used && M.time <= T.until && T.p && T.p.human === pad && c.x && ball.owner !== T.p && !M.mini) { doTaunt(T.p, tauntFor(pad)); c.x = false; c.xHeld = false; }
     // Turbo + MOVE on an open run straight at the rim: lob it off the glass to yourself (v9.9: on fire only)
     const bo = ball.owner;
     if (c.x && c.turbo && bo && bo.human === pad && bo.fire && !M.mini && selfOopOK(bo) && laneOpen(bo, attackHoop(bo.team)) > 90) { bo.wantOop = true; c.x = false; c.xHeld = false; }

@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.17.0';
+const VERSION = '9.17.5';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -3126,7 +3126,7 @@ function startMatchFromSelect(venue) {
 }
 // ------------------------------------------------------------- SETTINGS
 const SET_ITEMS = [
-  { label: 'Difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); } },
+  { label: 'Difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); diffChosen(); } },   // (diffChosen: v9.17.4)
   { label: 'Keep games close (rubber-band)', get: () => SETTINGS.rubber ? 'On' : 'Off', step: () => { SETTINGS.rubber = !SETTINGS.rubber; } },
   { label: 'Format', get: () => FORMAT_TXT[SETTINGS.format], step: d => { SETTINGS.format = FORMATS[(FORMATS.indexOf(SETTINGS.format) + d + FORMATS.length) % FORMATS.length]; } },
   { label: 'Period length', get: () => SETTINGS.format === 'first21' ? 'Untimed, win by 2' : periodTxt(SETTINGS.periodLen), step: d => { if (SETTINGS.format !== 'first21') SETTINGS.periodLen = PERIOD_OPTS[(PERIOD_OPTS.indexOf(SETTINGS.periodLen) + d + PERIOD_OPTS.length) % PERIOD_OPTS.length]; } },
@@ -3795,7 +3795,7 @@ const Net = {
         this.depth++; try { return f.apply(obj, a); } finally { this.depth--; }
       };
     };
-    ['bounce', 'swish', 'clank', 'board', 'slam', 'squeak', 'swipe', 'thud', 'buzzer', 'cheer', 'good', 'bad'].forEach(n => wrap(SFX, n, 's'));
+    ['bounce', 'swish', 'clank', 'board', 'slam', 'squeak', 'swipe', 'thud', 'buzzer', 'cheer', 'good', 'bad', 'hotSpot'].forEach(n => wrap(SFX, n, 's'));   // (hotSpot: v9.17.5)
     ['callout', 'pop', 'burst', 'shake', 'hype', 'dust', 'replay', 'highlight', 'cue'].forEach(n => wrap(FX, n, 'f'));
     const kick = Hoop.prototype.kick; this.orig.kick = kick;
     Hoop.prototype.kick = function (kind, s, ax, az, extra) { if (Net.depth === 0 && Net.role === 'host' && M.online) Net.logEv(['k', this.idx, kind, s, ax || 0, az || 0, extra || 0]); Net.depth++; try { return kick.call(this, kind, s, ax, az, extra); } finally { Net.depth--; } };
@@ -5189,11 +5189,12 @@ function buyStat(i) {
   if (C.bp < cost) { SFX.bad(); return; }
   C.bp -= cost; C.lv[k]++; SFX.good(); saveCareer();
 }
-const SAVE_ITEMS = () => ['Save to manual slot', 'Load manual slot', Game.confirmNew ? 'Press again to start over' : 'Start a new career', 'Back'];
+const SAVE_ITEMS = () => ['Save to manual slot', 'Load manual slot', Game.confirmNew ? 'Press again to start over' : 'Start a new career', 'Export career', 'Import career', 'Back'];   // (Export, Import: v9173-save-safe.js)
 function savesSelect(i) {
   if (i === 0) Game.saveMsg = saveCareer(SAVE_SLOT) ? 'Saved to the manual slot.' : 'Could not save on this device.';
   else if (i === 1) { if (loadCareer(SAVE_SLOT)) { saveCareer(); Game.saveMsg = 'Manual save loaded.'; setupPractice('free'); } else Game.saveMsg = 'No manual save found.'; }
   else if (i === 2) { if (!Game.confirmNew) { Game.confirmNew = true; return; } Game.confirmNew = false; C = freshCareer(); Game.creator = { idx: 0, isNew: true }; setupPractice('free'); Game.screen = 'creator'; }
+  else if (i === 3 || i === 4) { saveCareer(); const home = () => { Game.screen = 'saves'; Game.idx = i; Game.saveMsg = ''; }; if (i === 3) openSaveExport(home); else openSaveImport(home); }
   else careerHub();
 }
 
@@ -5269,7 +5270,7 @@ function careerUpdate(rdt) {
     case 'scout': if (menuHit('ok')) { Game.screen = 'pregame'; SFX.blip(); } else if (menuHit('back')) careerHub(); break;
     case 'csummary': summaryUpdate(); break;
     case 'cbracket': if (menuHit('ok') || menuHit('back')) careerHub(); break;
-    case 'saves': menuNav(4, savesSelect); if (menuHit('back')) careerHub(); break;
+    case 'saves': menuNav(SAVE_ITEMS().length, savesSelect); if (menuHit('back')) careerHub(); break;
     case 'gym': gymUpdate(rdt); break;
     case 'shop': shopUpdate(); break;
     case 'musalla': musallaUpdate(rdt); break;
@@ -5557,8 +5558,9 @@ function drawPostgame(g) {
     g.strokeStyle = 'rgba(255,255,255,0.2)'; g.beginPath(); g.moveTo(x, 390); g.lineTo(x + 250, 390); g.stroke();
     g.textAlign = 'right'; g.fillStyle = color; g.font = `18px ${FONT}`; g.fillText('+' + total, x + 250, 418);
   };
-  col(W / 2 - 300, 'BARAKAH POINTS', p.rw.bp, p.rw.bpTotal, '#f2cf6b');
-  col(W / 2 + 50, 'HALAL BUCKS', p.rw.hb, p.rw.hbTotal, '#9dffb0');
+  const shown = earnShown(p, p.rw.bp.length + p.rw.hb.length);   // (v9.17.5: the lines come in one at a time, a soft tick each)
+  col(W / 2 - 300, 'BARAKAH POINTS', p.rw.bp.slice(0, shown), p.rw.bpTotal, '#f2cf6b');
+  col(W / 2 + 50, 'HALAL BUCKS', p.rw.hb.slice(0, Math.max(0, shown - p.rw.bp.length)), p.rw.hbTotal, '#9dffb0');
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText('Press Enter or tap to continue', W / 2, 488);
   if (p.tariq || p.siddiq) {
     g.textAlign = 'left'; g.font = `13px ${BODY}`;
@@ -5599,7 +5601,7 @@ function drawSaves(g) {
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('Save and load', W / 2, 110);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('Your career also saves automatically after every game, drill, and purchase.', W / 2, 138);
   drawMenu(g, SAVE_ITEMS(), Game.idx, 210, savesSelect);
-  if (Game.saveMsg) { g.fillStyle = '#9dffb0'; g.font = `14px ${BODY}`; g.fillText(Game.saveMsg, W / 2, 400); }
+  if (Game.saveMsg) { g.fillStyle = '#9dffb0'; g.font = `14px ${BODY}`; g.fillText(Game.saveMsg, W / 2, 590); }   // (below the six items, v9.17.3)
 }
 
 // ====================================================== MASJID PROJECTS
@@ -6386,7 +6388,8 @@ function drawFinalScreen(g) {
   if (Net.role === 'guest') { g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.textAlign = 'center'; g.fillText('Waiting for your friend to start a rematch', W / 2, 468); return; }
   if (canRematch()) { uiButton(g, W / 2 - 200, 446, 190, 42, 'Rematch (R)', rematch, false); uiButton(g, W / 2 + 10, 446, 190, 42, 'Continue', finalContinue, true); }
   else uiButton(g, W / 2 - 95, 446, 190, 42, 'Continue', finalContinue, true);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'center'; g.fillText('\u2190 \u2192 switch tabs, Enter to continue', W / 2, 510);
+  // (v9.17.4: the hint row can carry one line instead: the step-up offer or the Miss breakdown note, v9174-first-match.js)
+  if (!drawFinalNote(g)) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'center'; g.fillText('\u2190 \u2192 switch tabs, Enter to continue', W / 2, 510); }
 }
 
 // ============================================================ MULTI-BALL
@@ -9379,7 +9382,9 @@ const SFX_VARIANTS = {};             // id -> { A: { label, fn }, B..D, and any 
     try { return vv.fn ? vv.fn.apply(this, args) : this.playSample(vv, args); }
     finally { depth--; this.out = real; setTimeout(() => { try { g.disconnect(); } catch (e) {} }, 4000); }
   };
-  for (const id of SFX_IDS) S[id] = function () { return S.play.call(this, id, depth > 0 ? (SFX_VARIANTS[id][curK] ? curK : 'A') : S.variantOf(id), arguments); };
+  S.dispatcher = id => function () { return S.play.call(this, id, depth > 0 ? (SFX_VARIANTS[id][curK] ? curK : 'A') : S.variantOf(id), arguments); };
+  for (const id of SFX_IDS) S[id] = S.dispatcher(id);
+  S.kit = { tn, nz, ring, thump, metal, sub, swell };                     // (v9.17.5: sfx-moments.js builds its sounds from these)
 
   // ---- recorded samples: more variants of the same ID (loaded when first played; one of the files at random, no repeat)
   S.playSample = function (vv) {
@@ -9418,8 +9423,169 @@ const SFX_LEVELS = {
   swipe: { B: -4.6, C: -0.8, D: 0.4 },
   swish: { B: 2.1, C: -0.2, D: 1 },
   thud: { B: -0.4, C: -1, D: 0.1 },
-  whistle: { B: -0.4, C: 5.1, D: 0.1 }
+  whistle: { B: -0.4, C: 5.1, D: 0.1 },
+  shotTick: { B: -0.1, C: 0, D: 0 },
+  ftStep: { B: 0, C: 0, D: 0 },
+  ftAttempt: { B: 0, C: 0, D: 0 },
+  hotSpot: { B: 0, C: -0.1, D: 0 },
+  crowdTurnover: { B: 0, C: 0.1, D: 0.1 },
+  crowdBlock: { B: -0.1, C: -0.1, D: 0 },
+  crowdBadMiss: { B: 0, C: 0, D: 0 },
+  catch: { B: 0, C: 0, D: 0 },
+  halftimeStinger: { B: 0, C: 0, D: 0 },
+  winStinger: { B: 0, C: 0, D: 0 },
+  lossStinger: { B: 0, C: 0, D: 0 },
+  earnTick: { B: 0, C: 0.1, D: 0.1 },
+  triviaLow: { B: 0, C: -0.1, D: 0 },
+  uiBack: { B: 0.1, C: 0, D: 0 },
+  uiConfirm: { B: 0, C: 0, D: 0 },
+  toast: { B: 0, C: 0, D: 0 },
+  calChime: { B: 0, C: 0, D: 0 }
 };
+// ================================================= v9.17.5: A SOUND FOR EVERY MOMENT (no music)
+// 17 more sound ids, each in the four styles (A Current, B Real, C Arcade, D Soft), procedural like the rest. They're
+// in SFX_IDS, so the Sound style setting, the per-sound picks, the level matching (SFX_LEVELS), the Studio's Sounds tab
+// and the online replay rules (rollback mutes them in replayed frames) all apply. Where each plays: sfx-moments-hooks.js.
+//   in a match     shotTick (the last 3 s of the shot clock, higher each second), ftStep, ftAttempt, hotSpot,
+//                  crowdTurnover / crowdBlock / crowdBadMiss (a few voices, when nobody is drawn; scaled by the
+//                  venue's crowd level, so the practice gym is silent), catch (Lightning's fed ball)
+//   between plays  halftimeStinger, winStinger, lossStinger (calm, never mocking), earnTick, triviaLow
+//   menus, career  uiBack, uiConfirm, toast (quieter than blip), calChime (two notes: no adhan, Quran or takbir)
+// No music anywhere: a stinger is two or three notes, under a second.
+const SFX_MOMENTS = ['shotTick', 'ftStep', 'ftAttempt', 'hotSpot', 'crowdTurnover', 'crowdBlock', 'crowdBadMiss', 'catch',
+  'halftimeStinger', 'winStinger', 'lossStinger', 'earnTick', 'triviaLow', 'uiBack', 'uiConfirm', 'toast', 'calChime'];
+Object.assign(SFX_WHERE, {
+  shotTick: 'The last 3 seconds of the shot clock: a quiet tick each second, a little higher each time',
+  ftStep: 'A player stepping to the free throw line', ftAttempt: 'Each free throw attempt (a soft "ready")',
+  hotSpot: 'A hot spot appearing on the floor', crowdTurnover: 'The crowd after a turnover (when nobody in the crowd is drawn)',
+  crowdBlock: 'The crowd after a block (when nobody in the crowd is drawn)', crowdBadMiss: 'The crowd after a bad miss (when nobody in the crowd is drawn)',
+  catch: 'Lightning: a fed ball caught', halftimeStinger: 'The halftime screen', winStinger: 'The final screen after a win',
+  lossStinger: 'The final screen after a loss (calm)', earnTick: 'Barakah Points and Halal Bucks counting in after a career game',
+  triviaLow: 'The last 5 seconds of a trivia question', uiBack: 'Back or Esc out of a screen', uiConfirm: 'Yes or No in a confirmation',
+  toast: 'A message at the bottom of the screen (saved, copied)', calChime: 'A new month, Ramadan, Eid or a holiday in the career calendar'
+});
+for (const id of ['ftStep', 'ftAttempt', 'catch', 'shotTick']) SFX_ROOM.add(id);
+// each variant's trim (dB): the four land on one level, the match sounds at least 10 dB under the swish (-30.5 dB),
+// menu sounds at least 12 dB under it, the toast under the blip; measured by tools/sfx-levels.mjs before the trim
+const SFX_MOMENT_TRIM = {
+  shotTick: { A: -0.1, B: 5.5, C: -0.3, D: -3.2 },
+  ftStep: { A: -0.8, B: 5.6, C: -0.7, D: 6.3 },
+  ftAttempt: { A: -7.5, B: -8.5, C: 3.8, D: -10.2 },
+  hotSpot: { A: -2.5, B: -2.7, C: 0.0, D: -4.0 },
+  crowdTurnover: { A: -0.5, B: -0.9, C: -4.4, D: 1.6 },
+  crowdBlock: { A: 0.2, B: -0.9, C: -3.5, D: 2.6 },
+  crowdBadMiss: { A: -0.1, B: 0.1, C: -3.1, D: 2.1 },
+  catch: { A: -10.0, B: -8.3, C: 0.6, D: -10.9 },
+  halftimeStinger: { A: -3.8, B: -5.6, C: -2.7, D: -5.9 },
+  winStinger: { A: -4.7, B: -3.9, C: -4.0, D: -5.8 },
+  lossStinger: { A: -5.5, B: -4.7, C: -3.0, D: -6.1 },
+  earnTick: { A: -0.2, B: 11.1, C: 2.1, D: -3.9 },
+  triviaLow: { A: 0.0, B: 12.2, C: 1.2, D: -4.4 },
+  uiBack: { A: -0.3, B: -0.6, C: -4.8, D: -5.3 },
+  uiConfirm: { A: -0.6, B: -0.6, C: -2.0, D: -3.9 },
+  toast: { A: -0.2, B: -3.0, C: -0.9, D: -5.0 },
+  calChime: { A: -7.9, B: -6.6, C: -2.1, D: -7.7 }
+};
+
+{
+  const S = SFX, K = S.kit, { tn, nz, ring, thump } = K;
+  // a few crowd voices: noise through a vowel's two formants, staggered; nothing at a crowd level of 0
+  const FORM = { aw: [700, 1100], oh: [500, 880], ooh: [320, 820], ah: [760, 1250] };
+  const voices = (word, n, g, len, o = {}) => {
+    const L = S.crowdLevel; if (!(L > 0)) return;
+    for (let i = 0; i < n; i++) {
+      const [f1, f2] = FORM[word], p = 0.85 + Math.random() * 0.35, d = (o.d || 0) + i * (o.gap || 0.07) + Math.random() * 0.05, k = g * L * (1 - i * 0.12);
+      nz(len, 'bandpass', f1 * p, o.q || 5, k, { d, att: o.att || 0.05, f2: f1 * p * (o.fall || 0.85) });
+      nz(len * 0.9, 'bandpass', f2 * p, (o.q || 5) * 1.2, k * 0.6, { d, att: o.att || 0.05, f2: f2 * p * (o.fall || 0.85) });
+    }
+  };
+  // A: in the style of the shipped sounds (S.tone / S.hiss)
+  const A = {
+    shotTick(sec = 3) { S.tone(820 + (3 - sec) * 130, 0.05, 'square', 0.022); },
+    ftStep() { S.tone(rand(1700, 2000), 0.05, 'sine', 0.022, 2500); S.hiss(0.04, 'lowpass', 380, 0.8, 0.06, null, 0.06); },
+    ftAttempt() { S.tone(150, 0.07, 'sine', 0.14, 80); S.tone(520, 0.05, 'triangle', 0.025, null, 0.02); },
+    hotSpot() { S.tone(880, 0.32, 'sine', 0.028, 1760); S.tone(1320, 0.3, 'sine', 0.018, 2640, 0.06); S.hiss(0.25, 'highpass', 6000, 0.7, 0.012, null, 0.05); },
+    crowdTurnover() { voices('aw', 3, 0.05, 0.45, { gap: 0.08 }); },
+    crowdBlock() { voices('ooh', 3, 0.05, 0.5, { gap: 0.05, fall: 1.15 }); },
+    crowdBadMiss() { voices('oh', 2, 0.05, 0.55, { gap: 0.1 }); },
+    catch() { S.tone(140, 0.08, 'sine', 0.2, 70); S.hiss(0.03, 'lowpass', 700, 0.8, 0.08); },
+    halftimeStinger() { S.tone(523, 0.3, 'triangle', 0.05); S.tone(392, 0.45, 'triangle', 0.05, null, 0.24); },
+    winStinger() { S.tone(523, 0.18, 'triangle', 0.05); S.tone(659, 0.18, 'triangle', 0.05, null, 0.16); S.tone(784, 0.55, 'triangle', 0.055, null, 0.32); },
+    lossStinger() { S.tone(440, 0.35, 'sine', 0.045); S.tone(349, 0.6, 'sine', 0.04, null, 0.3); },
+    earnTick() { S.tone(1400, 0.03, 'sine', 0.02); },
+    triviaLow() { S.tone(900, 0.04, 'sine', 0.022); },
+    uiBack() { S.tone(620, 0.05, 'square', 0.016, 420); },
+    uiConfirm() { S.tone(700, 0.04, 'sine', 0.035); S.tone(940, 0.06, 'sine', 0.035, null, 0.04); },
+    toast() { S.tone(1050, 0.035, 'sine', 0.014); },
+    calChime() { S.tone(784, 0.6, 'sine', 0.04); S.tone(1568, 0.25, 'sine', 0.008); S.tone(1047, 0.8, 'sine', 0.04, null, 0.22); S.tone(2094, 0.3, 'sine', 0.008, null, 0.22); }
+  };
+  // B: Real
+  const B = {
+    shotTick(sec = 3) { const f = 1500 + (3 - sec) * 220; ring(f, 0.035, 0.12, 12); tn(f, 0.03, 'sine', 0.012); },
+    ftStep() { const k = K.sub('ftStepB', 2); nz(0.05, 'lowpass', [420, 360][k], 0.8, 0.09, { att: 0.004 }); tn([2300, 2600][k], 0.05, 'sawtooth', 0.006, { lp: 3200, f2: [2700, 3000][k], d: 0.05 }); },
+    ftAttempt() { const k = K.sub('ftAttB', 2), f = [118, 128][k]; thump(f, 60, 0.07, 0.16); ring(f * 8, 0.04, 0.035, 7); },
+    hotSpot() { [1568, 2093, 2637].forEach((f, i) => { tn(f, 0.4, 'sine', 0.014, { d: i * 0.05, att: 0.01 }); tn(f * 2.76, 0.12, 'sine', 0.003, { d: i * 0.05 }); }); },
+    crowdTurnover() { voices('aw', 3, 0.05, 0.42, { gap: 0.09, q: 4 }); },
+    crowdBlock() { voices('ooh', 3, 0.05, 0.48, { gap: 0.04, fall: 1.2, q: 4 }); },
+    crowdBadMiss() { voices('oh', 3, 0.045, 0.5, { gap: 0.11, q: 4 }); },
+    catch() { const k = K.sub('catchB', 2); thump([150, 135][k], 75, 0.06, 0.2); nz(0.025, 'bandpass', 1300, 1.2, 0.06); },
+    halftimeStinger() { tn(523, 0.5, 'sine', 0.04, { att: 0.005 }); tn(523 * 2.76, 0.15, 'sine', 0.006); tn(392, 0.7, 'sine', 0.04, { d: 0.25, att: 0.005 }); tn(392 * 2.76, 0.15, 'sine', 0.006, { d: 0.25 }); },
+    winStinger() { [523, 659, 784].forEach((f, i) => { tn(f, i === 2 ? 0.7 : 0.3, 'sine', 0.035, { d: i * 0.15, att: 0.005 }); tn(f * 2, 0.2, 'sine', 0.008, { d: i * 0.15 }); }); },
+    lossStinger() { tn(440, 0.5, 'sine', 0.035, { att: 0.01 }); tn(330, 0.8, 'sine', 0.032, { d: 0.32, att: 0.01 }); },
+    earnTick() { ring(2400, 0.025, 0.06, 14); },
+    triviaLow() { ring(1600, 0.03, 0.07, 12); },
+    uiBack() { nz(0.006, 'bandpass', 2400, 1.2, 0.08); tn(820, 0.02, 'sine', 0.03); },
+    uiConfirm() { nz(0.006, 'bandpass', 3200, 1.2, 0.1); tn(1150, 0.02, 'sine', 0.05); tn(1530, 0.025, 'sine', 0.04, { d: 0.035 }); },
+    toast() { tn(1300, 0.03, 'sine', 0.02, { att: 0.004 }); },
+    calChime() { [784, 1047].forEach((f, i) => { tn(f, 1.0, 'sine', 0.03, { d: i * 0.25, att: 0.004 }); tn(f * 2.76, 0.3, 'sine', 0.006, { d: i * 0.25 }); tn(f * 5.4, 0.1, 'sine', 0.002, { d: i * 0.25 }); }); }
+  };
+  // C: Arcade
+  const C = {
+    shotTick(sec = 3) { tn(988 + (3 - sec) * 165, 0.05, 'square', 0.022); },
+    ftStep() { tn(1800, 0.04, 'square', 0.012, { f2: 2700 }); tn(150, 0.05, 'square', 0.02, { d: 0.05, f2: 80 }); },
+    ftAttempt() { tn(660, 0.06, 'square', 0.03); },
+    hotSpot() { [784, 988, 1175, 1568].forEach((f, i) => tn(f, 0.1, 'square', 0.018, { d: i * 0.045 })); },
+    crowdTurnover() { voices('aw', 3, 0.06, 0.4, { gap: 0.06, q: 3 }); },
+    crowdBlock() { voices('ooh', 3, 0.06, 0.45, { gap: 0.04, fall: 1.3, q: 3 }); },
+    crowdBadMiss() { voices('oh', 3, 0.055, 0.45, { gap: 0.08, q: 3 }); },
+    catch() { tn(220, 0.07, 'square', 0.05, { f2: 110 }); },
+    halftimeStinger() { tn(784, 0.15, 'square', 0.03); tn(523, 0.3, 'square', 0.03, { d: 0.17 }); },
+    winStinger() { [523, 659, 784, 1047].forEach((f, i) => tn(f, i === 3 ? 0.45 : 0.12, 'square', 0.03, { d: i * 0.1 })); },
+    lossStinger() { tn(392, 0.25, 'triangle', 0.045); tn(330, 0.5, 'triangle', 0.04, { d: 0.25 }); },
+    earnTick() { tn(1760, 0.025, 'square', 0.012); },
+    triviaLow() { tn(1046, 0.04, 'square', 0.014); },
+    uiBack() { tn(660, 0.03, 'square', 0.03); tn(440, 0.03, 'square', 0.02, { d: 0.025 }); },
+    uiConfirm() { tn(880, 0.03, 'square', 0.04); tn(1175, 0.04, 'square', 0.035, { d: 0.03 }); },
+    toast() { tn(1320, 0.03, 'square', 0.012); },
+    calChime() { tn(784, 0.25, 'square', 0.02); tn(1047, 0.45, 'square', 0.02, { d: 0.2 }); }
+  };
+  // D: Soft
+  const D = {
+    shotTick(sec = 3) { tn(700 + (3 - sec) * 100, 0.06, 'sine', 0.04, { att: 0.005 }); },
+    ftStep() { nz(0.06, 'lowpass', 320, 0.7, 0.1, { att: 0.008 }); },
+    ftAttempt() { thump(110, 70, 0.08, 0.16, 0, 260); },
+    hotSpot() { tn(660, 0.45, 'sine', 0.04, { f2: 1320, att: 0.03 }); },
+    crowdTurnover() { voices('aw', 2, 0.045, 0.5, { gap: 0.12, q: 6, att: 0.08 }); },
+    crowdBlock() { voices('ooh', 2, 0.045, 0.55, { gap: 0.08, fall: 1.1, q: 6, att: 0.08 }); },
+    crowdBadMiss() { voices('oh', 2, 0.045, 0.55, { gap: 0.14, q: 6, att: 0.08 }); },
+    catch() { thump(120, 70, 0.08, 0.2, 0, 280); },
+    halftimeStinger() { tn(440, 0.45, 'sine', 0.05, { att: 0.03 }); tn(330, 0.6, 'sine', 0.045, { d: 0.25, att: 0.03 }); },
+    winStinger() { tn(440, 0.3, 'sine', 0.05, { att: 0.03 }); tn(554, 0.3, 'sine', 0.05, { d: 0.18, att: 0.03 }); tn(659, 0.6, 'sine', 0.05, { d: 0.36, att: 0.03 }); },
+    lossStinger() { tn(392, 0.5, 'sine', 0.045, { att: 0.04 }); tn(294, 0.7, 'sine', 0.04, { d: 0.32, att: 0.04 }); },
+    earnTick() { tn(1100, 0.04, 'sine', 0.03, { att: 0.006 }); },
+    triviaLow() { tn(740, 0.05, 'sine', 0.035, { att: 0.006 }); },
+    uiBack() { tn(480, 0.05, 'sine', 0.04, { f2: 360, att: 0.006 }); },
+    uiConfirm() { tn(520, 0.05, 'sine', 0.05, { att: 0.006 }); tn(660, 0.07, 'sine', 0.05, { d: 0.05, att: 0.006 }); },
+    toast() { tn(880, 0.04, 'sine', 0.025, { att: 0.006 }); },
+    calChime() { tn(587, 0.7, 'sine', 0.04, { att: 0.02 }); tn(784, 0.9, 'sine', 0.04, { d: 0.28, att: 0.02 }); }
+  };
+  for (const id of SFX_MOMENTS) {
+    SFX_IDS.push(id);
+    const tr = k => Math.pow(10, (SFX_MOMENT_TRIM[id][k] || 0) / 20);
+    SFX_VARIANTS[id] = { A: { label: 'Current', fn: A[id], gain: tr('A') }, B: { label: 'Real', fn: B[id], gain: tr('B') }, C: { label: 'Arcade', fn: C[id], gain: tr('C') }, D: { label: 'Soft', fn: D[id], gain: tr('D') } };
+    S[id] = S.dispatcher(id);
+  }
+}
 // ============================================================ LOGO
 // v7.9.1: the mark is a dunker in a thawb and kufi taking off for a dunk: leaning in, ball arm fully
 // extended, free arm out for balance, front knee driving up, the thawb streaming back off the trailing
@@ -13926,7 +14092,12 @@ const TARGETS = [7, 11, 15, 21, 31];
     return _lu(rdt);
   };
   // ---- half court
-  function halfCourtOn(opts) { return Net.role === 'host' && !!Lobby.saved && Lobby.opts().court === 'half' && !opts.attract && !opts.practice && !opts.career && !M.mini; }
+  // (v9.17.1: a rollback match says so in its start message, opts.court, on both phones; the snapshot path asks the lobby)
+  function halfCourtOn(opts) {
+    if (opts.attract || opts.practice || opts.career || M.mini) return false;
+    if (opts.court != null) return opts.court === 'half';
+    return Net.role === 'host' && !!Lobby.saved && Lobby.opts().court === 'half';
+  }
   const _fm = formation;
   formation = function (off) {
     if (!M.halfCourt || M.gym) return _fm(off);
@@ -16189,7 +16360,7 @@ function minisRows() {
     R.push({ label: 'Word', get: () => MiniOpts.word, step: d => { MiniOpts.word = cyc(MINI_WORDS, MiniOpts.word, d); MiniOpts.save(); } });
     R.push({ label: 'Time to match a shot', get: () => MiniOpts.timer + ' seconds', step: d => { MiniOpts.timer = cyc(MINI_TIMERS, MiniOpts.timer, d); MiniOpts.save(); } });
   }
-  R.push({ label: 'CPU difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); } });
+  R.push({ label: 'CPU difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); diffChosen(); } });
   R.push({ label: 'Start', start: true, step: () => startQuickMini() });
   R.push({ label: 'Back', back: true, step: () => goTitle() });
   return R;
@@ -19042,6 +19213,7 @@ function tauntOpen(p, why) {
   };
 }
 function myTaunt() { const t = (Profile.load().equip || {}).taunt || 'sky'; return Profile.has('taunt', t) || t === 'sky' ? t : 'sky'; }
+function tauntFor(pad) { return myTaunt(); }   // (which taunt a player's press plays: this device's; v9171-rb-start.js: the start message's in a rollback match)
 function doTaunt(p, id) {
   const T = M.taunt; if (!T || T.p !== p || T.used || M.time > T.until) return;
   let def = TAUNTS.find(x => x.id === id) || TAUNTS[0];
@@ -19056,7 +19228,7 @@ function doTaunt(p, id) {
     const r = _hc.apply(this, arguments);
     if (Net.role === 'guest') return r;                                   // the host judges these for an online guest
     const T = M.taunt;
-    if (T && !T.used && M.time <= T.until && T.p && T.p.human === pad && c.x && ball.owner !== T.p && !M.mini) { doTaunt(T.p, myTaunt()); c.x = false; c.xHeld = false; }
+    if (T && !T.used && M.time <= T.until && T.p && T.p.human === pad && c.x && ball.owner !== T.p && !M.mini) { doTaunt(T.p, tauntFor(pad)); c.x = false; c.xHeld = false; }
     // Turbo + MOVE on an open run straight at the rim: lob it off the glass to yourself (v9.9: on fire only)
     const bo = ball.owner;
     if (c.x && c.turbo && bo && bo.human === pad && bo.fire && !M.mini && selfOopOK(bo) && laneOpen(bo, attackHoop(bo.team)) > 90) { bo.wantOop = true; c.x = false; c.xHeld = false; }
@@ -25929,7 +26101,8 @@ function hintKey(k) { const pad = Input.lastDev === 'pad'; return pad ? { x: 'Y'
 
 // ---------------------------------------------------------------- why a shot missed (optional)
 // Settings → Game → Miss breakdown. After your own missed jump shot or layup, one short line says what went into it:
-// "Release: early · Contest: heavy · Range: three". Off by default; the shot itself is unchanged.
+// "Release: early · Contest: heavy · Range: three". Off by default (v9.17.4: unset, it's on for the first 5 games,
+// v9174-first-match.js); the shot itself is unchanged.
 SETTINGS.missWhy = false;
 try { SETTINGS.missWhy = localStorage.getItem('islamdunk.misswhy') === '1'; } catch (e) {}
 const MissWhy = { show: null };
@@ -27294,6 +27467,64 @@ function rbSyncCode() {
     g.fillText('SYNC ' + code, W - 12, H - 10); g.restore();
   };
 }
+// ================================================= v9.17.1: ONLINE: BOTH PHONES PLAY THE SAME GAME
+// In a rollback match each phone builds the match itself from the host's start message (RBN.hostStart / RBN.start),
+// so everything the match needs has to be in that message. Three things weren't, and each phone filled them in from
+// its own device (the desync repair then "put them right", which showed as stutter, not as an error):
+//   * Court: Half court came from the lobby on the host only (halfCourtOn read Net.role): the guest played full court.
+//     Now cfg.court ('half' / 'full', the host's lobby) goes to newMatch as opts.court on both phones.
+//   * Taunts: a taunt press played this device's own equipped taunt (myTaunt) on whoever taunted, so each phone played
+//     a different one. The guest now sends its equipped taunt with its lobby presence (taunt), the host puts both in
+//     cfg.taunts = [host's, guest's] (checked against TAUNTS: unknown or retired is 'sky'), and in a rollback match a
+//     press by pad k plays cfg.taunts[k] (tauntFor).
+//   * 1 on 1 (no CPU) was built 2 on 2 with CPU teammates: hostStart took both whole teams. Now Net.mode 'one' builds
+//     soloTeam(s.a, s.ctrl) and soloTeam(s.b, s.ctrlB), the humans on team 0 slot 0 and team 1 slot 0, and both phones
+//     set M.one = cfg.one. (The guest's 1 on 1 newMatch wrapper only solos teams of 2, so it doesn't do it twice.)
+//   * The audit found one more: Fun modes (Big heads, Uncle League, Low gravity) came from newMatch's activeFun(), which
+//     needs the mode unlocked on this device: the host's choice, now in cfg.fun, goes to newMatch as opts.fun.
+//     The rest of the match setup already comes from the message (the teams with their looks, the venue, the host's
+//     settings in cfg.set); the Noor power-ups are off in a rollback match (hifzUsed).
+// The snapshot path (?rb=0, no direct link) is unchanged.
+function rbTauntId(id) { const t = typeof id === 'string' && TAUNTS.find(x => x.id === id); return t && !t.retired ? id : 'sky'; }
+{
+  // the guest's equipped taunt, with its lobby presence (on joining, on Ready, and back in the lobby after a game)
+  const tag = () => { if (Net.role === 'guest') Net.setP({ taunt: rbTauntId(myTaunt()) }); };
+  for (const k of ['join', 'setReady', 'guestBack']) { const _f = Lobby[k]; Lobby[k] = function () { const r = _f.apply(this, arguments); tag(); return r; }; }
+  // the host: the start message with the court, both taunts, the Fun modes, and the 1 on 1 teams
+  RBN.hostStart = function () {
+    const s = Net.sel, one = Net.mode === 'one', gs = one ? { team: 1, slot: 0 } : Net.guestSlot();
+    const copy = o => JSON.parse(JSON.stringify(o));
+    const teams = one ? [soloTeam(teamAt(s.a), s.ctrl), soloTeam(teamAt(s.b), s.ctrlB)] : [teamAt(s.a), teamAt(s.b)];
+    const g = Net.guestPeer && Net.peers().find(q => q.peer === Net.guestPeer), lo = typeof Lobby !== 'undefined' && Lobby.saved ? Lobby.opts() : null;
+    const cfg = { id: (this.id = (this.id + 1) % 1e6 || 1), mode: Net.mode, seed: (Math.random() * 2147483647) | 0, set: rbConfig(SETTINGS),
+      teams: teams.map(copy), venue: s.venue ? copy(s.venue) : null,
+      humans: [{ team: 0, slot: 0, pad: 0 }, { team: gs.team, slot: gs.slot, pad: 1 }],
+      court: lo && lo.court === 'half' ? 'half' : 'full',
+      taunts: [rbTauntId(myTaunt()), rbTauntId(g && g.presence && g.presence.taunt)],
+      fun: typeof activeFun === 'function' ? activeFun() : null,
+      one: one ? [s.ctrl | 0, s.ctrlB | 0] : null };
+    Net.mid++; Net.evs = []; Game.lastMatch = null;
+    Net.setP({ rbgo: cfg, rbend: null, rb: null });
+    this.start(cfg, 0);
+  };
+  // both phones: newMatch inside RBN.start gets the court and the Fun modes from the message
+  let starting = null;
+  const _st = RBN.start;
+  RBN.start = function (cfg, me) {
+    if (cfg.taunts) cfg.taunts = [rbTauntId(cfg.taunts[0]), rbTauntId(cfg.taunts[1])];
+    starting = cfg;
+    try { _st.apply(this, arguments); } finally { starting = null; }
+    M.one = cfg.one ? cfg.one.slice() : null;
+  };
+  const _nm = newMatch;
+  newMatch = function (tA, tB, opts = {}) {
+    if (starting && starting.court) opts = Object.assign({}, opts, { court: starting.court, fun: starting.fun || null });
+    return _nm.call(this, tA, tB, opts);
+  };
+  // a taunt press in a rollback match plays the presser's own taunt, from the message (never this device's)
+  const _tf = tauntFor;
+  tauntFor = function (pad) { const C = RBN.on && RBN.cfg; return C && C.taunts ? C.taunts[pad === 1 ? 1 : 0] : _tf.apply(this, arguments); };
+}
 // ================================================= v9.16.4: DESIGN PASS, BATCH A
 // Small visual fixes agreed with the owners (docs/IMPROVEMENTS.md D1, D2, D3).
 //   D3: starting any match switches the Dunk lab off (it only switched off through goTitle before).
@@ -27526,6 +27757,466 @@ const SCREEN_FADE = 0.15, NO_FADE = new Set(['play', 'netplay', 'gym', 'world', 
     else at = -1;
     return r;
   };
+}
+// ================================================= v9.17.3: A CAREER CAN'T BE LOST
+// (docs/IMPROVEMENTS.md SV1-SV3.) Before: saveCareer overwrote one key in place, readSave returned null for a save that
+// didn't parse (the career just looked gone, and the next autosave wrote over what was left), the ~50 autosaves
+// ignored a failed write, and nothing asked the browser to keep the data (Safari on iPhone can clear a site's storage
+// after 7 days without a visit unless it's on the Home Screen). Now:
+//   * a backup: before the career autosave, the profile (XP, unlocks) and the custom teams are written, the previous
+//     value goes to key + '.bak' if it parses and is valid (one backup each; skipped, and said, if it would put storage
+//     near the browser's limit; never at the cost of the real save). key + '.at' is when a value was written.
+//   * reading: a value that doesn't parse (or isn't v 1) is kept as key + '.broken'. With a good backup, the backup is
+//     put back and the player is told once ("Your latest save couldn't be read..."). Without one, the career menu says
+//     "We couldn't read your career" and offers Export (the export carries the unreadable text too).
+//   * a failed save shows one message a session ("Couldn't save: ..."), again only after a save has worked since.
+//   * navigator.storage.persist() once, at the first career save; denied on a phone or tablet not started from the
+//     Home Screen: one note, once ever ("Add to Home Screen to keep your career safe").
+//   * Export (one .json file, or Copy code: the same text) and Import (the file or a pasted code: checked, summed up,
+//     then written to the manual slot, never over the autosave) on the career's Save and load screen, the Career
+//     menu and the Profile screen (one row there, Export or import career: the export screen has Import a save).
+// Notices wait while a match is being played. The save format (v, sv) and the manual slot are unchanged.
+const SAFE_KEYS = {
+  'islamdunk.career.auto': o => !!o && o.v === 1,
+  'islamdunk.profile': o => !!o && typeof o === 'object' && !Array.isArray(o),
+  'islamdunk.custom': o => !!o && o.v === 1
+};
+const SafeSave = { failed: false, toldFail: false, persistAsked: false, notes: [], told: {}, broken: {}, quota: 5e6 };
+function ssParse(s) { try { return s == null ? undefined : JSON.parse(s); } catch (e) { return undefined; } }
+function ssGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function ssUsed() { let n = 0; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); n += k.length + (localStorage.getItem(k) || '').length; } } catch (e) {} return n; }
+function ssNote(m) { if (!SafeSave.notes.includes(m)) SafeSave.notes.push(m); }
+function ssWhen(k) { const t = +ssGet(k); return t > 0 ? new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'an earlier save'; }
+// before key is written with text: the value there now becomes the backup, if it's valid (skipped near the limit)
+function ssBackup(key, text) {
+  const valid = SAFE_KEYS[key], old = ssGet(key);
+  if (!valid || old == null || old === text || !valid(ssParse(old))) return;
+  // after the write: everything stored, less the old backup, plus the new value (the old one becomes the backup).
+  // The browser keeps about 5 million characters a site; a backup that would leave less than a tenth is skipped.
+  if (ssUsed() - (ssGet(key + '.bak') || '').length + text.length > SafeSave.quota * 0.9) {
+    if (!SafeSave.told.bakSkip) { SafeSave.told.bakSkip = true; ssNote('Storage is almost full: no backup of the last save this time.'); }
+    return;
+  }
+  try { localStorage.setItem(key + '.bak', old); const at = ssGet(key + '.at'); if (at) localStorage.setItem(key + '.bak.at', at); } catch (e) {}
+}
+// after a write: its time, or the failure
+function ssAfter(key, ok) {
+  if (!ok) { ssFailed(); return false; }
+  try { localStorage.setItem(key + '.at', String(Date.now())); } catch (e) {}
+  ssOk(); return true;
+}
+// write key with the backup first (Import); returns whether the real value was written
+function ssWrite(key, text) {
+  ssBackup(key, text);
+  let ok = true; try { localStorage.setItem(key, text); } catch (e) { ok = false; }
+  return ssAfter(key, ok);
+}
+function ssFailed() { SafeSave.failed = true; if (!SafeSave.toldFail) { SafeSave.toldFail = true; ssNote("Couldn't save: storage is full or this browser is in private mode."); } }
+function ssOk() { if (SafeSave.failed) { SafeSave.failed = false; SafeSave.toldFail = false; } ssNoteFlag(); }   // (after a save works, a new failure is told again)
+function ssNoteFlag() { if (!SafeSave.noteFlag) return; try { localStorage.setItem('islamdunk.persistNote', '1'); SafeSave.noteFlag = false; } catch (e) {} }
+// before a key is read: an unreadable value is kept as .broken; a good backup is put back (and the player told)
+function ssRecover(key) {
+  const valid = SAFE_KEYS[key], raw = ssGet(key);
+  if (raw == null || valid(ssParse(raw))) { delete SafeSave.broken[key]; return; }
+  try { if (ssGet(key + '.broken') !== raw) localStorage.setItem(key + '.broken', raw); } catch (e) {}
+  const bak = ssGet(key + '.bak');
+  if (bak != null && valid(ssParse(bak))) {
+    try { localStorage.setItem(key, bak); const at = ssGet(key + '.bak.at'); if (at) localStorage.setItem(key + '.at', at); } catch (e) {}
+    delete SafeSave.broken[key];
+    if (!SafeSave.told['rec' + key]) { SafeSave.told['rec' + key] = true; ssNote(`Your latest ${key.endsWith('auto') ? 'save' : key.endsWith('profile') ? 'profile' : 'teams and players'} couldn't be read. Loaded the one before it (from ${ssWhen(key + '.bak.at')}).`); }
+  } else {
+    SafeSave.broken[key] = true;
+    // (the backup is unreadable too: keep it as well, before a new save turns it into a copy of something else)
+    if (bak != null) try { if (ssGet(key + '.bak.broken') !== bak) localStorage.setItem(key + '.bak.broken', bak); } catch (e) {}
+  }
+}
+// the browser keeps the site's data (asked once, at the first career save; harmless in the desktop app)
+function ssPersist() {
+  if (SafeSave.persistAsked) return; SafeSave.persistAsked = true;
+  try {
+    if (!(navigator.storage && navigator.storage.persist)) return;
+    const home = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    const phone = (typeof IOS !== 'undefined' && IOS) || (window.matchMedia && matchMedia('(pointer: coarse)').matches);
+    navigator.storage.persist().then(ok => {
+      if (ok || home || !phone || ssGet('islamdunk.persistNote')) return;
+      SafeSave.noteFlag = true; ssNoteFlag();   // (written now, or after the next save that works)
+      ssNote('Add to Home Screen to keep your career safe.');
+    }, () => {});
+  } catch (e) {}
+}
+{
+  // the career: the autosave key gets the backup; every save asks (once) to keep the data
+  // (the wrappers already around these stay in the chain: the career card, the Studio's review mode, the creator's
+  // thumbnails; the backup goes first, the result is checked after)
+  const _sc = saveCareer;
+  saveCareer = function (key = SAVE_AUTO) {
+    if (!C) return false;
+    ssPersist();
+    if (key === SAVE_AUTO) ssBackup(key, JSON.stringify(C));
+    const ok = _sc.call(this, key);
+    if (key === SAVE_AUTO) return ssAfter(key, ok);
+    if (ok) ssOk(); return ok;
+  };
+  const _rs = readSave;
+  readSave = function (key) { if (SAFE_KEYS[key]) ssRecover(key); return _rs.apply(this, arguments); };
+  // the profile and the custom teams: the same backup and recovery
+  const _pl = Profile.load;
+  Profile.load = function () { if (!this.d) ssRecover(PROFILE_KEY); return _pl.apply(this, arguments); };
+  const _ps = Profile.save;
+  Profile.save = function () { const text = JSON.stringify(this.d); ssBackup(PROFILE_KEY, text); _ps.apply(this, arguments); ssAfter(PROFILE_KEY, ssGet(PROFILE_KEY) === text); };
+  const _cl = csLoad;
+  csLoad = function () { if (!CS.d) ssRecover(CS_KEY); return _cl.apply(this, arguments); };
+  const _css = csSave;
+  csSave = function () { const text = JSON.stringify(csLoad()); ssBackup(CS_KEY, text); _css.apply(this, arguments); ssAfter(CS_KEY, ssGet(CS_KEY) === text); };
+  // notices: shown one at a time, never while a match is being played
+  const _gu = gameUpdate;
+  gameUpdate = function (rdt) {
+    _gu.apply(this, arguments);
+    if (SafeSave.notes.length && Game.screen !== 'play' && !(Game.toastT > 0)) toast(SafeSave.notes.shift(), 5);
+  };
+}
+// ---------------------------------------------------------------- export and import
+// the file: { app, kind, v, at, game, data: { auto, slot1, profile, custom, broken? }, sum }; data holds each key's
+// stored text, sum is FNV-1a of JSON.stringify(data)
+const SS_EXPORT_KEYS = { auto: 'islamdunk.career.auto', slot1: 'islamdunk.career.slot1', profile: 'islamdunk.profile', custom: 'islamdunk.custom' };
+function ssSum(s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(16).padStart(8, '0'); }
+function ssExportText() {
+  const data = {};
+  for (const [k, key] of Object.entries(SS_EXPORT_KEYS)) { const s = ssGet(key); if (s != null) data[k] = s; }
+  const broken = {}; for (const key of Object.keys(SAFE_KEYS)) { const b = ssGet(key + '.broken'); if (b != null) broken[key] = b; }
+  if (Object.keys(broken).length) data.broken = broken;
+  return JSON.stringify({ app: 'islamdunk', kind: 'save-export', v: 1, at: new Date().toISOString(), game: VERSION, data, sum: ssSum(JSON.stringify(data)) });
+}
+function ssCareerLine(o) {
+  if (!o) return 'no career';
+  const wk = o.cal && typeof o.cal.d === 'number' ? ', week ' + (Math.floor(o.cal.d / 7) + 1) : '';
+  return `${o.name || 'Your player'}, Masjid Al-Amanah: season ${o.season || 1}${wk}, ${o.wins || 0}-${o.losses || 0}`;
+}
+// check an export; { ok, career, line } or { err }
+function ssCheckImport(text) {
+  const o = ssParse(String(text || '').trim());
+  if (!o || o.app !== 'islamdunk' || o.kind !== 'save-export') return { err: 'That isn’t an Islam Dunk save file.' };
+  if (o.v !== 1 || !o.data || typeof o.data !== 'object') return { err: 'That save file is from a version this one can’t read.' };
+  if (ssSum(JSON.stringify(o.data)) !== o.sum) return { err: 'That save file is damaged (its check doesn’t match).' };
+  const d = o.data, career = ssParse(d.auto) || ssParse(d.slot1);
+  if (career !== undefined && !(career && career.v === 1)) return { err: 'The career in that file can’t be read.' };
+  if (d.profile != null && !SAFE_KEYS['islamdunk.profile'](ssParse(d.profile))) return { err: 'The profile in that file can’t be read.' };
+  if (d.custom != null && !SAFE_KEYS['islamdunk.custom'](ssParse(d.custom))) return { err: 'The teams in that file can’t be read.' };
+  return { ok: true, data: d, career: career || null, line: ssCareerLine(career) + (d.profile ? ', profile' : '') + (d.custom ? ', your teams' : '') };
+}
+// write an import: the career to the manual slot; the profile and teams in place (their old values become the backups)
+function ssApplyImport(r) {
+  const d = r.data;
+  if (r.career) { try { localStorage.setItem(SAVE_SLOT, JSON.stringify(r.career)); } catch (e) { ssFailed(); return false; } }
+  if (d.profile != null && !ssWrite(PROFILE_KEY, d.profile)) return false;
+  if (d.custom != null && !ssWrite(CS_KEY, d.custom)) return false;
+  Profile.d = null; CS.d = null; CS.rev++; CS.card = undefined;
+  return true;
+}
+const SaveIO = { back: null, msg: '', err: false, pending: null, text: '' };
+function ssStamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
+function ssDownload() {
+  const text = SaveIO.text;
+  try {
+    const url = URL.createObjectURL(new Blob([text], { type: 'application/json' })), a = document.createElement('a');
+    a.href = url; a.download = `islamdunk-save-${ssStamp()}.json`; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    SaveIO.msg = 'Saved ' + a.download + '.'; SaveIO.err = false;
+  } catch (e) { SaveIO.msg = 'This browser couldn’t save the file: use Copy code.'; SaveIO.err = true; }
+}
+function ssCopy() {
+  const done = ok => { SaveIO.msg = ok ? 'Code copied. Paste it into Import on any device.' : 'Couldn’t copy: use Save file.'; SaveIO.err = !ok; };
+  try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(SaveIO.text).then(() => done(true), () => done(false)); return; } } catch (e) {}
+  done(false);
+}
+function openSaveExport(back) { Object.assign(SaveIO, { back, msg: '', err: false, pending: null, text: ssExportText() }); Game.screen = 'saveexport'; Game.idx = 0; }
+function openSaveImport(back) { Object.assign(SaveIO, { back, msg: '', err: false, pending: null }); Game.screen = 'saveimport'; Game.idx = 0; }
+function ssTryImport(text) { const r = ssCheckImport(text); if (r.err) { SaveIO.pending = null; SaveIO.msg = r.err; SaveIO.err = true; SFX.bad && SFX.bad(); } else { SaveIO.pending = r; SaveIO.msg = ''; SaveIO.err = false; SFX.blip && SFX.blip(); } }
+function ssPickFile() {
+  try {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json,text/plain';
+    inp.onchange = () => { const f = inp.files && inp.files[0]; if (!f) return; const fr = new FileReader(); fr.onload = () => ssTryImport(fr.result); fr.readAsText(f); };
+    inp.click();
+  } catch (e) { SaveIO.msg = 'This browser can’t open files here: paste the code instead.'; SaveIO.err = true; }
+}
+function ssPaste() {
+  const ask = () => { SaveIO.msg = 'Press Ctrl+V (or ⌘V) to paste the code here.'; SaveIO.err = true; };
+  try { if (navigator.clipboard && navigator.clipboard.readText) { navigator.clipboard.readText().then(ssTryImport, ask); return; } } catch (e) {}
+  ask();
+}
+function ssConfirm() {
+  const r = SaveIO.pending; if (!r) return;
+  if (ssApplyImport(r)) { SaveIO.pending = null; SaveIO.msg = r.career ? 'Imported. Load it from the manual slot (Save and load, or Load manual save).' : 'Imported.'; SaveIO.err = false; SFX.good && SFX.good(); }
+  else { SaveIO.msg = 'Couldn’t write it: storage is full or this browser is in private mode.'; SaveIO.err = true; }
+}
+addEventListener('paste', e => { if (Game.screen !== 'saveimport') return; const t = e.clipboardData && e.clipboardData.getData('text'); if (t) { e.preventDefault(); ssTryImport(t); } });
+function ssToImport() { openSaveImport(SaveIO.back); }
+function ssLeave() { const b = SaveIO.back; SaveIO.pending = null; if (b) b(); else goTitle(); }
+function drawSaveExport(g) {
+  dim(g, 0.86);
+  const o = Math.round((W - 960) / 2), rw = W; g.save(); g.translate(o, 0); W = 960; Game.ox = o;
+  panel(g, 150, 100, 660, 330, true);
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `24px ${FONT}`; g.fillText('Export your career', W / 2, 142);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`;
+  g.fillText(fitText(g, ssCareerLine(ssParse(ssGet(SAVE_AUTO)) || ssParse(ssGet(SAVE_SLOT))), 600), W / 2, 174);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('The career, the manual slot, your profile and your teams, in one file.', W / 2, 198);
+  uiButton(g, W / 2 - 300, 226, 190, 44, 'Save file', ssDownload, Game.idx === 0);
+  uiButton(g, W / 2 - 95, 226, 190, 44, 'Copy code', ssCopy, Game.idx === 1);
+  uiButton(g, W / 2 + 110, 226, 190, 44, 'Import a save', ssToImport, Game.idx === 2);
+  if (SaveIO.msg) { g.fillStyle = SaveIO.err ? '#ff9a8a' : '#9dffb0'; g.font = `14px ${BODY}`; g.fillText(fitText(g, SaveIO.msg, 620), W / 2, 312); }
+  uiButton(g, W / 2 - 80, 360, 160, 38, 'Back', ssLeave, Game.idx === 3);
+  W = rw; Game.ox = 0; g.restore();
+}
+function drawSaveImport(g) {
+  dim(g, 0.86);
+  const o = Math.round((W - 960) / 2), rw = W; g.save(); g.translate(o, 0); W = 960; Game.ox = o;
+  panel(g, 150, 100, 660, 330, true);
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `24px ${FONT}`; g.fillText('Import a career', W / 2, 142);
+  const r = SaveIO.pending;
+  if (r) {
+    g.fillStyle = IVORY; g.font = `15px ${BODY}`; g.fillText(fitText(g, r.line, 620), W / 2, 182);
+    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'The career goes to the manual slot; your autosave stays as it is.', 620), W / 2, 206);
+    uiButton(g, W / 2 - 220, 232, 210, 44, 'Import', ssConfirm, Game.idx === 0);
+    uiButton(g, W / 2 + 10, 232, 210, 44, 'Cancel', () => { SaveIO.pending = null; SaveIO.msg = ''; }, Game.idx === 1);
+  } else {
+    g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('Choose a save file, or paste a code you copied.', W / 2, 176);
+    uiButton(g, W / 2 - 220, 204, 210, 44, 'Choose file', ssPickFile, Game.idx === 0);
+    uiButton(g, W / 2 + 10, 204, 210, 44, 'Paste code', ssPaste, Game.idx === 1);
+    g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('or press Ctrl+V (⌘V on a Mac)', W / 2, 276);
+  }
+  if (SaveIO.msg) { g.fillStyle = SaveIO.err ? '#ff9a8a' : '#9dffb0'; g.font = `14px ${BODY}`; g.fillText(fitText(g, SaveIO.msg, 620), W / 2, 318); }
+  uiButton(g, W / 2 - 80, 360, 160, 38, 'Back', ssLeave, Game.idx === 2);
+  W = rw; Game.ox = 0; g.restore();
+}
+{
+  // the two screens: left/right or up/down move between the buttons, Enter / A presses one (keyboard, gamepad, touch)
+  const acts = () => Game.screen === 'saveexport' ? [ssDownload, ssCopy, ssToImport, ssLeave]
+    : SaveIO.pending ? [ssConfirm, () => { SaveIO.pending = null; SaveIO.msg = ''; }, ssLeave] : [ssPickFile, ssPaste, ssLeave];
+  const SCR = { saveexport: drawSaveExport, saveimport: drawSaveImport };
+  const _gu = gameUpdate;
+  gameUpdate = function (rdt) {
+    const sc = Game.screen, was = SCR[sc]; _gu.apply(this, arguments);
+    if (!was || Game.screen !== sc) return;
+    const n = acts().length; Game.idx = clamp(Game.idx | 0, 0, n - 1);
+    if (menuHit('left') || menuHit('up')) { Game.idx = (Game.idx + n - 1) % n; SFX.blip && SFX.blip(); }
+    if (menuHit('right') || menuHit('down')) { Game.idx = (Game.idx + 1) % n; SFX.blip && SFX.blip(); }
+    if (menuHit('ok')) acts()[Game.idx]();
+    else if (menuHit('back')) ssLeave();
+  };
+  const _r = render;
+  render = function (g) { _r(g); const s = SCR[Game.screen]; if (!s) return; s(g); drawBackButton(g); };
+  BACK.saveexport = ssLeave; BACK.saveimport = ssLeave;
+  // the Career menu: Export and Import (and, when the career can't be read, the reason and Export first)
+  const _ci = cmenuItems;
+  cmenuItems = function () {
+    const items = _ci.apply(this, arguments), back = items.pop();
+    if (SafeSave.broken[SAVE_AUTO]) items.unshift(['We couldn’t read your career: Export it', 'export']);
+    else items.push(['Export career', 'export']);
+    items.push(['Import career', 'import'], back);
+    return items;
+  };
+  const _cs = cmenuSelect;
+  cmenuSelect = function (i) {
+    const act = cmenuItems()[i][1], home = () => { Game.screen = 'cmenu'; Game.idx = 0; };
+    if (act === 'export') return openSaveExport(home);
+    if (act === 'import') return openSaveImport(home);
+    return _cs.apply(this, arguments);
+  };
+  // the Profile screen
+  const _pr = profileRows;
+  profileRows = function () {
+    const R = _pr.apply(this, arguments), back = R.pop(), home = () => { Game.screen = 'profile'; Game.idx = 0; };
+    R.push({ label: 'Export or import career', start: true, step: () => openSaveExport(home) });   // (one row: the screen has Import a save)
+    R.push(back);
+    return R;
+  };
+}
+// ================================================= v9.17.4: THE FIRST MATCH IS FRIENDLY
+// (docs/IMPROVEMENTS.md GT1, GT2.) Before: a newcomer's first Quick Play match was Medium (SETTINGS.difficulty starts
+// there, and difficulty isn't stored), and Miss breakdown was off, so a missed shot was never explained.
+//   * A new player (no games on this device: Profile stats.games 0, and never picked a difficulty: the key
+//     islamdunk.difficulty.chosen, set by the Difficulty rows in Settings and the mini-games menu) plays the first
+//     Quick Play match (one or two players) on Easy. Nothing calls it an easy mode.
+//   * After that match, a win puts one line in the result screen's hint row: "You won on Easy. Try Medium?" with a
+//     button (or Up / M). Enter still continues. Shown once: leaving the screen dismisses it for good. After a loss,
+//     nothing.
+//   * Miss breakdown is three-state (islamdunk.misswhy: missing = default, '1', '0'). Unset, it's on for the player's
+//     first 5 games, then off, and the next result screen says so once. An explicit choice is never changed.
+//     The default applies to Quick Play-style matches; career, online, King of the Court and the mini-games keep Off
+//     unless the player turned it on.
+const FIRST = { games: () => { try { return Profile.load().stats.games | 0; } catch (e) { return 0; } } };
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function diffChosen() { lsSet('islamdunk.difficulty.chosen', '1'); }
+function isNewPlayer() { return FIRST.games() === 0 && lsGet('islamdunk.difficulty.chosen') == null; }
+function missWhyStored() { const v = lsGet('islamdunk.misswhy'); return v === '1' || v === '0' ? v : null; }
+// unset: on until 5 games (so Settings shows it as it is); each match sets it again in newMatch below
+if (missWhyStored() == null) SETTINGS.missWhy = FIRST.games() < 5;
+{
+  // the first Quick Play match: Easy for a new player who hasn't touched the difficulty
+  const _sm = startMatchFromSelect;
+  startMatchFromSelect = function () {
+    const first = isNewPlayer() && SETTINGS.difficulty === 'medium';
+    if (first) SETTINGS.difficulty = 'easy';
+    const r = _sm.apply(this, arguments);
+    M.firstEasy = first;
+    return r;
+  };
+  // (M is one object reused by every match: each match gets a number, and the first-match mark is cleared)
+  const _nm = newMatch;
+  newMatch = function () { const r = _nm.apply(this, arguments); FINAL_NOTE.gen++; M.firstEasy = false; return r; };
+  // Miss breakdown, unset: on for the first 5 games, in a Quick Play-style match. Decided as each shot goes up (King of
+  // the Court and the mini-games mark the match after newMatch, so it can't be decided there); the shot is unchanged.
+  const _rs = releaseShot;
+  releaseShot = function (p) {
+    if (missWhyStored() == null) {
+      const quick = !M.career && !M.kotc && !M.mini && !M.online && !M.attract && !M.practice && !Net.role && !(typeof RBN !== 'undefined' && RBN.on) && !(typeof TUT !== 'undefined' && TUT.on);
+      SETTINGS.missWhy = FIRST.games() < 5 && quick;
+      try { return _rs.apply(this, arguments); } finally { SETTINGS.missWhy = FIRST.games() < 5; }   // (Settings shows the default)
+    }
+    return _rs.apply(this, arguments);
+  };
+  // leaving the result screen: the step-up offer counts as seen
+  const _fc = finalContinue;
+  finalContinue = function () { if (FINAL_NOTE.kind === 'stepup' && FINAL_NOTE.m === FINAL_NOTE.gen) lsSet('islamdunk.stepup', '1'); return _fc.apply(this, arguments); };
+  const _rm = rematch;
+  rematch = function () { if (FINAL_NOTE.kind === 'stepup' && FINAL_NOTE.m === FINAL_NOTE.gen) lsSet('islamdunk.stepup', '1'); return _rm.apply(this, arguments); };
+  // Up or M on the result screen: Try Medium
+  const _fu = finalUpdate;
+  finalUpdate = function () {
+    if (FINAL_NOTE.kind === 'stepup' && FINAL_NOTE.m === FINAL_NOTE.gen && !FINAL_NOTE.done && (menuHit('up') || Input.pressed.KeyM)) { stepUpToMedium(); return; }
+    return _fu.apply(this, arguments);
+  };
+}
+// the one line the result screen can carry (in place of its hint row)
+const FINAL_NOTE = { gen: 0, m: -1, kind: null, done: false };
+function finalNoteFor() {
+  if (FINAL_NOTE.m === FINAL_NOTE.gen) return FINAL_NOTE.kind;
+  FINAL_NOTE.m = FINAL_NOTE.gen; FINAL_NOTE.kind = null; FINAL_NOTE.done = false;
+  if (M.career || M.online || Net.role || M.attract) return null;
+  const me = M.players && M.players.find(p => p.human === 0);
+  if (M.firstEasy && me && M.winner === me.team && lsGet('islamdunk.stepup') == null && SETTINGS.difficulty === 'easy') FINAL_NOTE.kind = 'stepup';
+  else if (missWhyStored() == null && FIRST.games() >= 5 && lsGet('islamdunk.misswhy.note') == null) { FINAL_NOTE.kind = 'missoff'; lsSet('islamdunk.misswhy.note', '1'); SETTINGS.missWhy = false; }
+  return FINAL_NOTE.kind;
+}
+function stepUpToMedium() { SETTINGS.difficulty = 'medium'; diffChosen(); lsSet('islamdunk.stepup', '1'); FINAL_NOTE.done = true; SFX.good && SFX.good(); }
+// drawn by drawFinalScreen at its hint row; returns whether it drew something there
+function drawFinalNote(g) {
+  const k = finalNoteFor(); if (!k) return false;
+  g.save(); g.textAlign = 'center'; g.font = `14px ${BODY}`;
+  if (k === 'missoff') { g.fillStyle = IVORY; g.fillText('Miss breakdown is now off. Turn it on in Settings.', W / 2, 510); }
+  else if (FINAL_NOTE.done) { g.fillStyle = '#9dffb0'; g.fillText('Next match: Medium.', W / 2, 510); }
+  else {
+    const txt = 'You won on Easy.', tw = g.measureText(txt).width, bw = 170, x0 = W / 2 - (tw + 12 + bw) / 2;
+    g.textAlign = 'left'; g.fillStyle = IVORY; g.fillText(txt, x0, 510);
+    uiButton(g, x0 + tw + 12, 492, bw, 28, 'Try Medium? (↑)', stepUpToMedium, false);
+  }
+  g.restore(); return true;
+}
+// ================================================= v9.17.5: WHERE THE NEW SOUNDS PLAY (core/sfx-moments.js has them)
+// In a match, the sounds come from the match itself (in an online rollback match both phones play them on the same
+// frame, and replayed frames are silent, as for every match sound). Between plays and in menus they follow the screen.
+{
+  const resim = () => typeof RB !== 'undefined' && RB.resim;
+  // ---- the shot clock's last 3 seconds: one tick as each second starts (3, 2, 1), a little higher each time
+  const scTick = (before, after) => {
+    if (!(M.fmt && M.fmt.sc > 0) || M.attract || M.phase !== 'live' || M.ft) return;
+    const a = Math.ceil(before - 1e-6), b = Math.ceil(after - 1e-6);
+    if (b < a && b >= 1 && b <= 3) SFX.shotTick(b);
+  };
+  const _um = updateMatch;
+  updateMatch = function (dt) {
+    const sc = M.shotClock, hot = M.hot, ft = M.ft, stage = ft && ft.stage;
+    const r = _um.apply(this, arguments);
+    if (typeof sc === 'number' && typeof M.shotClock === 'number') scTick(sc, M.shotClock);
+    // a hot spot appearing on the floor (the match's own: m 1; the mini games' spots are their own business)
+    if (!hot && M.hot && M.hot.m) SFX.hotSpot();
+    // free throws: stepping to the line, then each attempt
+    const F = M.ft;
+    if (F && F === ft && stage !== F.stage) {
+      if (stage === 'pause' && F.stage === 'set' && F.i === 0) SFX.ftStep();
+      if (F.stage === 'shoot') SFX.ftAttempt();
+    }
+    return r;
+  };
+  // a guest in the older snapshot mode doesn't run the match: its shot clock arrives in the host's snapshots, so the
+  // ticks come from that (the hot spot is the host's sound, mirrored like the others: net.js)
+  let gsc = null;
+  const _gu = gameUpdate;
+  gameUpdate = function (rdt) {
+    const was = Game.screen, back = menuHit('back'), sc = M && M.shotClock;
+    backRan = false;
+    const r = _gu.apply(this, arguments);
+    if (Net.role === 'guest' && !(typeof RBN !== 'undefined' && RBN.on) && (Game.screen === 'netplay' || Game.screen === 'play') && typeof M.shotClock === 'number') {   // (the guest's match screen is netplay)
+      if (gsc != null && M.shotClock < gsc) scTick(gsc, M.shotClock);
+      gsc = M.shotClock;
+    } else gsc = null;
+    // between plays: the halftime screen, the final screen (after the buzzer and the cheer)
+    if (Game.screen !== was) {
+      if (Game.screen === 'halftime' && !M.attract) SFX.halftimeStinger();
+      if (Game.screen === 'final' && !M.attract && M.teams) {
+        const mine = typeof myTeam === 'function' ? myTeam() : 0, me = M.players && M.players.some(p => p.human >= 0);
+        if (me) setTimeout(() => { if (Game.screen === 'final') (M.winner === mine ? SFX.winStinger() : SFX.lossStinger()); }, 450);
+      }
+      // Back or Esc out of a screen (once a frame, whichever way it was pressed)
+      if ((back || backRan) && was !== 'play' && !uiBackPlayed()) SFX.uiBack();
+    }
+    return r;
+  };
+  // Back through the button in the corner (BACK[screen]): the handlers are wrapped as they're used
+  let backRan = false, backFrame = -1;
+  const uiBackPlayed = () => { const f = Game.t; if (backFrame === f) return true; backFrame = f; return false; };
+  const wrapped = new WeakSet();
+  const wrapBack = () => { for (const k of Object.keys(BACK)) { const f = BACK[k]; if (typeof f === 'function' && !wrapped.has(f)) { const g = function () { backRan = true; return f.apply(this, arguments); }; wrapped.add(g); BACK[k] = g; } } };
+  wrapBack(); const _gu2 = gameUpdate; gameUpdate = function () { wrapBack(); return _gu2.apply(this, arguments); };
+  // the practice gym has no crowd: its level is 0 (it was the classic court's 1, silent only because nobody is drawn
+  // there), so the reactions below stay silent in it
+  const _sp = setupPractice;
+  setupPractice = function () { const r = _sp.apply(this, arguments); SFX.setCrowdLevel(0); return r; };
+  // the crowd's reaction when nobody in the crowd is drawn (the drawn people groan and "ooh" themselves: never both)
+  let pend = null;
+  const _crowd = SFX.crowd;
+  if (_crowd) SFX.crowd = function (kind, amt = 1, delay = 0) {
+    const r = _crowd.apply(this, arguments), id = pend; pend = null;
+    // (who is drawn, whether or not the audio has started: crowd() answers 0 people when there's no sound yet)
+    const drawn = r && r.audience != null ? r.audience : CrowdA.force ? CrowdA.force.n : typeof crowdPeople === 'function' ? crowdPeople().length : 0;
+    if (id && !resim() && !drawn && this.crowdLevel > 0 && !M.attract) id(amt);
+    return r;
+  };
+  const tag = (f, id) => function () { const keep = pend; pend = id; try { return f.apply(this, arguments); } finally { pend = keep; } };
+  crowdGroan = tag(crowdGroan, a => SFX.crowdBadMiss(a)); addTov = tag(addTov, a => SFX.crowdTurnover(a)); blockFeel = tag(blockFeel, a => SFX.crowdBlock(a));
+  // the trivia timer's last 5 seconds
+  const _tu = triviaUpdate;
+  triviaUpdate = function (rdt) {
+    const tv = Game.trivia, t0 = tv && !tv.done ? tv.t : null;
+    const r = _tu.apply(this, arguments);
+    if (t0 != null && Game.trivia === tv && !tv.done) { const a = Math.ceil(t0), b = Math.ceil(tv.t); if (b < a && b >= 1 && b <= 5) SFX.triviaLow(); }
+    return r;
+  };
+  // Yes / No in a confirmation; a toast (not in a replayed frame of an online match)
+  const _cp = confirmPick;
+  confirmPick = function (i) { if (Game.confirm) SFX.uiConfirm(i); return _cp.apply(this, arguments); };
+  const _to = toast;
+  toast = function () { if (!resim()) SFX.toast(); return _to.apply(this, arguments); };
+  // the career calendar: a new month (Ramadan, Shawwal with Eid al-Fitr...) or a holiday starting
+  const _sd = calSetDay;
+  calSetDay = function (n) {
+    const before = C && C.cal ? C.cal.d : null;
+    const r = _sd.apply(this, arguments);
+    if (before != null && C && C.cal && C.cal.d !== before) {
+      const a = calDate(before), b = calDate(C.cal.d);
+      if (a.m !== b.m || a.y !== b.y || (calHoliday(C.cal.d) && !calHoliday(before))) SFX.calChime();
+    }
+    return r;
+  };
+}
+// ---- the career summary: the Barakah Points and Halal Bucks lines come in one at a time, a soft tick each
+const EARN = { post: null, t0: 0, shown: 0 };
+function earnShown(p, total) {                     // how many lines are in (and a tick for each new one); Enter skips
+  if (EARN.post !== p) { EARN.post = p; EARN.t0 = Game.t; EARN.shown = 0; }
+  const n = Math.min(total, Math.floor((Game.t - EARN.t0) / 0.12) + 1);
+  while (EARN.shown < n) { EARN.shown++; SFX.earnTick(); }
+  return n;
 }
 
 boot();

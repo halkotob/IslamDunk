@@ -146,11 +146,12 @@ function buyStat(i) {
   if (C.bp < cost) { SFX.bad(); return; }
   C.bp -= cost; C.lv[k]++; SFX.good(); saveCareer();
 }
-const SAVE_ITEMS = () => ['Save to manual slot', 'Load manual slot', Game.confirmNew ? 'Press again to start over' : 'Start a new career', 'Back'];
+const SAVE_ITEMS = () => ['Save to manual slot', 'Load manual slot', Game.confirmNew ? 'Press again to start over' : 'Start a new career', 'Export career', 'Import career', 'Back'];   // (Export, Import: v9173-save-safe.js)
 function savesSelect(i) {
   if (i === 0) Game.saveMsg = saveCareer(SAVE_SLOT) ? 'Saved to the manual slot.' : 'Could not save on this device.';
   else if (i === 1) { if (loadCareer(SAVE_SLOT)) { saveCareer(); Game.saveMsg = 'Manual save loaded.'; setupPractice('free'); } else Game.saveMsg = 'No manual save found.'; }
   else if (i === 2) { if (!Game.confirmNew) { Game.confirmNew = true; return; } Game.confirmNew = false; C = freshCareer(); Game.creator = { idx: 0, isNew: true }; setupPractice('free'); Game.screen = 'creator'; }
+  else if (i === 3 || i === 4) { saveCareer(); const home = () => { Game.screen = 'saves'; Game.idx = i; Game.saveMsg = ''; }; if (i === 3) openSaveExport(home); else openSaveImport(home); }
   else careerHub();
 }
 
@@ -226,7 +227,7 @@ function careerUpdate(rdt) {
     case 'scout': if (menuHit('ok')) { Game.screen = 'pregame'; SFX.blip(); } else if (menuHit('back')) careerHub(); break;
     case 'csummary': summaryUpdate(); break;
     case 'cbracket': if (menuHit('ok') || menuHit('back')) careerHub(); break;
-    case 'saves': menuNav(4, savesSelect); if (menuHit('back')) careerHub(); break;
+    case 'saves': menuNav(SAVE_ITEMS().length, savesSelect); if (menuHit('back')) careerHub(); break;
     case 'gym': gymUpdate(rdt); break;
     case 'shop': shopUpdate(); break;
     case 'musalla': musallaUpdate(rdt); break;
@@ -514,8 +515,9 @@ function drawPostgame(g) {
     g.strokeStyle = 'rgba(255,255,255,0.2)'; g.beginPath(); g.moveTo(x, 390); g.lineTo(x + 250, 390); g.stroke();
     g.textAlign = 'right'; g.fillStyle = color; g.font = `18px ${FONT}`; g.fillText('+' + total, x + 250, 418);
   };
-  col(W / 2 - 300, 'BARAKAH POINTS', p.rw.bp, p.rw.bpTotal, '#f2cf6b');
-  col(W / 2 + 50, 'HALAL BUCKS', p.rw.hb, p.rw.hbTotal, '#9dffb0');
+  const shown = earnShown(p, p.rw.bp.length + p.rw.hb.length);   // (v9.17.5: the lines come in one at a time, a soft tick each)
+  col(W / 2 - 300, 'BARAKAH POINTS', p.rw.bp.slice(0, shown), p.rw.bpTotal, '#f2cf6b');
+  col(W / 2 + 50, 'HALAL BUCKS', p.rw.hb.slice(0, Math.max(0, shown - p.rw.bp.length)), p.rw.hbTotal, '#9dffb0');
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText('Press Enter or tap to continue', W / 2, 488);
   if (p.tariq || p.siddiq) {
     g.textAlign = 'left'; g.font = `13px ${BODY}`;
@@ -556,6 +558,6 @@ function drawSaves(g) {
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('Save and load', W / 2, 110);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('Your career also saves automatically after every game, drill, and purchase.', W / 2, 138);
   drawMenu(g, SAVE_ITEMS(), Game.idx, 210, savesSelect);
-  if (Game.saveMsg) { g.fillStyle = '#9dffb0'; g.font = `14px ${BODY}`; g.fillText(Game.saveMsg, W / 2, 400); }
+  if (Game.saveMsg) { g.fillStyle = '#9dffb0'; g.font = `14px ${BODY}`; g.fillText(Game.saveMsg, W / 2, 590); }   // (below the six items, v9.17.3)
 }
 

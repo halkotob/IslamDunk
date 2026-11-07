@@ -35,7 +35,12 @@ const TARGETS = [7, 11, 15, 21, 31];
     return _lu(rdt);
   };
   // ---- half court
-  function halfCourtOn(opts) { return Net.role === 'host' && !!Lobby.saved && Lobby.opts().court === 'half' && !opts.attract && !opts.practice && !opts.career && !M.mini; }
+  // (v9.17.1: a rollback match says so in its start message, opts.court, on both phones; the snapshot path asks the lobby)
+  function halfCourtOn(opts) {
+    if (opts.attract || opts.practice || opts.career || M.mini) return false;
+    if (opts.court != null) return opts.court === 'half';
+    return Net.role === 'host' && !!Lobby.saved && Lobby.opts().court === 'half';
+  }
   const _fm = formation;
   formation = function (off) {
     if (!M.halfCourt || M.gym) return _fm(off);

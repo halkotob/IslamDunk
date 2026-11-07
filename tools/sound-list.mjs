@@ -13,7 +13,7 @@ const DEF = /(?:function\s+([A-Za-z_$][\w$]*)|([A-Za-z_$][\w$.]*)\s*=\s*function
 export function soundCalls(root = ROOT, ids = null) {
   const out = {};
   for (const f of manifestFiles(root)) {
-    if (/sfx-variants|sfx-levels|v913-crowd/.test(f)) continue;            // the sound engine itself
+    if (/sfx-variants|sfx-levels|sfx-moments\.js|v913-crowd/.test(f)) continue;            // the sound engine itself
     const p = path.join(root, 'src', f); if (!fs.existsSync(p)) continue;
     const src = fs.readFileSync(p, 'utf8'), lines = src.split('\n'), sfxFile = /Object\.assign\(SFX|const SFX = \{/.test(src); let fn = '';
     lines.forEach((ln, i) => {
@@ -30,27 +30,12 @@ export function soundCalls(root = ROOT, ids = null) {
 }
 // events with no sound of their own (what you'd expect to hear, and what plays now)
 export const NO_SOUND = [
-  ['UI', 'Back / Esc out of a menu', 'mostly none (moving inside a menu blips; leaving it is usually silent)'],
-  ['UI', 'Confirm a dialog (Yes / No)', 'blip, the same as any menu move'],
-  ['UI', 'Toast messages (saved, copied, link copied)', 'none (an achievement toast plays best)'],
-  ['Career calendar', 'A new month, Ramadan, Eid or a holiday starting', 'none'],
-  ['Currency', 'Halal Bucks and Barakah earned after a game (the summary)', 'none'],
-  ['Trivia', 'The answer timer running low', 'none'],
-  ['Hot spot', 'A hot spot appearing on the floor', 'none'],
-  ['Shot clock', 'The last seconds of the shot clock', 'none (only the violation buzzer)'],
-  ['Free throws', 'Stepping to the line, each attempt', 'none (the foul whistle before it)'],
-  ['Period', 'The halftime screen', 'none of its own (the period-end buzzer before it)'],
-  ['Results', 'The final screen, a win', 'none of its own (the final buzzer and cheer before it)'],
-  ['Results', 'The final screen, a loss', 'none of its own (the final buzzer before it)'],
+  // (v9.17.5: the other 16 have sounds now, core/sfx-moments.js; these stay silent on purpose: no music, no bed)
   ['Ambience', 'Neighbourhood scenes (home, street, masjid front, store)', 'none'],
   ['Ambience', 'Inside the masjid: musalla, office, the Jumu’ah room', 'none'],
   ['Ambience', 'The career hub', 'none'],
   ['Ambience', 'Menus over the attract match', 'that match’s crowd (the classic arena: tier 4)'],
-  ['Ambience', 'The practice gym', 'none (v9.13: no crowd bed there any more)'],
-  ['Mini games', 'Lightning: a fed ball caught (SFX.catch)', 'none: the code calls SFX.catch, which doesn’t exist'],
-  ['Crowd', 'A turnover', 'v9.13: a groan from the people drawn (silent when nobody is drawn)'],
-  ['Crowd', 'A block', 'v9.13: an "ooh" from the people drawn'],
-  ['Crowd', 'A bad miss', 'v9.13: a groan from the people drawn (they already put their hands on their heads)']
+  ['Ambience', 'The practice gym', 'none (v9.13: no crowd bed there any more)']
 ];
 const esc = v => { const s = v == null ? '' : String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 export function soundListCsv(root = ROOT) {

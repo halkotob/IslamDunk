@@ -70,6 +70,8 @@ export const SCREENS = [
   ['profile', `goTitle(); Game.screen = 'profile'; Game.idx = 0;`],
   ['teams & players', `goTitle(); openCS(0);`],
   ['custom teams: import', `goTitle(); openCS(0); openCSImport();`],
+  ['career: export', `goTitle(); C = freshCareer(); C.name = 'Yusuf'; C.wins = 5; C.losses = 2; saveCareer(); Game.screen = 'cmenu'; openSaveExport(() => { Game.screen = 'cmenu'; });`],
+  ['career: import (a file picked)', `goTitle(); C = freshCareer(); C.name = 'Yusuf'; C.wins = 5; C.losses = 2; saveCareer(); Game.screen = 'cmenu'; openSaveImport(() => { Game.screen = 'cmenu'; }); ssTryImport(ssExportText());`],
   ['custom teams: share', `goTitle(); openCS(0); CSUI.share = csShareCode('team', { name: 'Masjid Al-Noor', short: 'NOOR', c1: TEAMS[0].c1, c2: TEAMS[0].c2, crest: TEAMS[0].crest, roster: [{ k: 'team', t: 0, i: 0 }, { k: 'team', t: 0, i: 1 }] }); Game.screen = 'csshare';`],
   ['custom teams: edit a team', `goTitle(); openCS(0); openCSEdit(csNewTeam());`],
   ['custom teams: edit a player', `goTitle(); openCS(1); openCSEdit(csNewPlayer());`],

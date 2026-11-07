@@ -23,7 +23,8 @@ npm run dev                 # http://localhost:5173 — live reload on every sav
 | `npm run electron:dev` | Electron pointed at a live-reloading dev server. |
 | `npm run build:electron` | Unpacked desktop app for this OS in `release/` (e.g. `release/linux-unpacked/islam-dunk`). |
 | `npm run dist:electron` | Desktop installers (Windows NSIS, macOS DMG, Linux AppImage), built on the matching OS. |
-| `npm test` | Builds the web version and runs the regression suite (below). |
+| `npm test` | Builds the web version and runs the fast tier of the regression suite: about 2.5 minutes, the check before pushing to `main`. |
+| `npm run test:full` | Every test (the heavy ones too: league calibration, lag profiles, the Studio, the phone text audit, the rollback matches). CI runs it on every push (`.github/workflows/test.yml`). |
 | `npm run defense:report` | Builds, then plays seeded CPU-vs-CPU games and prints field goal attempts, blocks (and % of attempts), steals, turnovers and fouls. `node scripts/defense-report.mjs --games 16 --page <file>` compares any build. |
 | `npm run test:electron` | Desktop playthrough test (needs a display; on headless Linux use `xvfb-run -a npm run test:electron`). |
 

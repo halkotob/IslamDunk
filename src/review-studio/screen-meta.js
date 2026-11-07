@@ -33,6 +33,8 @@ export const META = {
   'minis': ['rare', 'The mini games menu.', 'Quick Play → Mini games.', T('Quick Play', 'Mini games'), null, 'v8.0'],
   'profile': ['rare', 'Your profile level, ball skins and stats.', 'Options → Profile.', T('Options', 'Profile'), null, 'v8.3'],
   'teams & players': ['rare', 'Custom teams and players.', 'Teams & Players → Teams.', T('Teams & Players', 'Teams'), null, 'v8.5'],
+  'career: export': ['rare', 'Save the career, the manual slot, the profile and your teams to one file, or copy them as a code.', 'Career → Export career (also Save and load, and Profile).', T('Career', 'Export career'), T('Save and load', 'Export career'), 'v9.17.3'],
+  'career: import (a file picked)': ['rare', 'Check a save file or code and put its career in the manual slot.', 'Career → Import career, then a file.', T('Career', 'Import career'), T('Save and load', 'Import career'), 'v9.17.3'],
   'custom teams: import': ['rare', 'Paste a share code.', 'Teams & Players → Import a code.', T('Teams & Players', 'Import a code'), null, 'v8.5'],
   'custom teams: share': ['rare', 'A code to share a team.', 'A custom team → Share.', T('Teams & Players', 'Teams', '(a team)', 'Share'), null, 'v8.5'],
   'custom teams: edit a team': ['rare', 'Name, colors, crest, roster of a custom team.', 'Teams & Players → Teams → New team.', T('Teams & Players', 'Teams', 'New team'), null, 'v8.5'],

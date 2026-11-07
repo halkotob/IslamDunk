@@ -1,0 +1,31 @@
+# T1 (docs/IMPROVEMENTS.md): the full test tier on every push to main and on every pull request.
+# The dev runs `npm test` (the fast tier, about 3 minutes) before pushing; this runs everything (`npm run test:full`).
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  full:
+    runs-on: ubuntu-24.04   # (ubuntu-latest is 26.04: the pinned Playwright has no Chromium for it)
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:full
+      - name: Keep the test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output
+          path: tests/output/
+          if-no-files-found: ignore

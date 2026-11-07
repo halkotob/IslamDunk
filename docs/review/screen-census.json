@@ -1,11 +1,11 @@
 {
- "built": "2026-10-30",
+ "built": "2026-11-07",
  "screens": {
   "title": {
    "words": 25,
    "taps": 6,
    "numbers": [
-    "9.13.0"
+    "9.17.3"
    ],
    "audit": {
     "desktop": {
@@ -62,8 +62,8 @@
    "shared": []
   },
   "settings: controls & camera": {
-   "words": 40,
-   "taps": 9,
+   "words": 39,
+   "taps": 8,
    "numbers": [],
    "audit": {
     "desktop": {
@@ -152,7 +152,7 @@
    "words": 25,
    "taps": 1,
    "numbers": [
-    "9.13.0"
+    "9.17.3"
    ],
    "audit": {
     "desktop": {
@@ -272,11 +272,10 @@
    "shared": []
   },
   "select": {
-   "words": 36,
+   "words": 35,
    "taps": 6,
    "numbers": [
-    "10",
-    "14"
+    "33"
    ],
    "audit": {
     "desktop": {
@@ -304,8 +303,8 @@
    "shared": []
   },
   "venue": {
-   "words": 89,
-   "taps": 22,
+   "words": 86,
+   "taps": 21,
    "numbers": [],
    "audit": {
     "desktop": {
@@ -449,8 +448,8 @@
    "shared": []
   },
   "profile": {
-   "words": 74,
-   "taps": 8,
+   "words": 78,
+   "taps": 9,
    "numbers": [
     "120"
    ],
@@ -544,6 +543,64 @@
    },
    "shared": []
   },
+  "career: export": {
+   "words": 29,
+   "taps": 6,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "career: import (a file picked)": {
+   "words": 24,
+   "taps": 5,
+   "numbers": [],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
   "custom teams: share": {
    "words": 41,
    "taps": 4,
@@ -576,7 +633,7 @@
    "shared": []
   },
   "custom teams: edit a team": {
-   "words": 33,
+   "words": 35,
    "taps": 23,
    "numbers": [],
    "audit": {
@@ -608,7 +665,7 @@
    "words": 54,
    "taps": 31,
    "numbers": [
-    "51",
+    "43",
     "10"
    ],
    "audit": {
@@ -637,7 +694,7 @@
    "shared": []
   },
   "custom teams: edit a team (own court)": {
-   "words": 50,
+   "words": 52,
    "taps": 38,
    "numbers": [],
    "audit": {
@@ -695,8 +752,8 @@
    "shared": []
   },
   "venue: your own court": {
-   "words": 92,
-   "taps": 23,
+   "words": 89,
+   "taps": 22,
    "numbers": [],
    "audit": {
     "desktop": {
@@ -724,7 +781,7 @@
    "shared": []
   },
   "tournament setup": {
-   "words": 29,
+   "words": 28,
    "taps": 8,
    "numbers": [],
    "audit": {
@@ -759,9 +816,10 @@
     "100",
     "21",
     "17",
-    "16",
-    "18",
-    "13"
+    "10",
+    "19",
+    "14",
+    "16"
    ],
    "audit": {
     "desktop": {
@@ -788,13 +846,13 @@
    },
    "shared": [
     {
-     "screen": "league schedule",
+     "screen": "league standings",
      "numbers": [
       "100"
      ]
     },
     {
-     "screen": "my clips",
+     "screen": "league leaders",
      "numbers": [
       "100"
      ]
@@ -814,52 +872,20 @@
    ]
   },
   "league standings": {
-   "words": 59,
-   "taps": 7,
-   "numbers": [
-    "42",
-    "34",
-    "21",
-    "17",
-    "40",
-    "38",
-    "36",
-    "37",
-    "16"
-   ],
-   "audit": {
-    "desktop": {
-     "pass": true,
-     "overflow": 0,
-     "small": 0,
-     "overlaps": 0,
-     "errors": 0
-    },
-    "phone-750x342": {
-     "pass": true,
-     "overflow": 0,
-     "small": 0,
-     "overlaps": 0,
-     "errors": 0
-    },
-    "phone-667x300": {
-     "pass": true,
-     "overflow": 0,
-     "small": 0,
-     "overlaps": 0,
-     "errors": 0
-    }
-   },
-   "shared": []
-  },
-  "league schedule": {
-   "words": 35,
+   "words": 48,
    "taps": 7,
    "numbers": [
     "100",
+    "42",
+    "26",
+    "16",
     "21",
     "17",
-    "12"
+    "36",
+    "37",
+    "40",
+    "11",
+    "10"
    ],
    "audit": {
     "desktop": {
@@ -892,7 +918,7 @@
      ]
     },
     {
-     "screen": "my clips",
+     "screen": "league leaders",
      "numbers": [
       "100"
      ]
@@ -911,21 +937,52 @@
     }
    ]
   },
-  "league leaders": {
-   "words": 56,
+  "league schedule": {
+   "words": 42,
    "taps": 7,
    "numbers": [
-    "11.0",
-    "10.5",
-    "10.0",
-    "9.5",
-    "7.0",
+    "21",
+    "11"
+   ],
+   "audit": {
+    "desktop": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-750x342": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    },
+    "phone-667x300": {
+     "pass": true,
+     "overflow": 0,
+     "small": 0,
+     "overlaps": 0,
+     "errors": 0
+    }
+   },
+   "shared": []
+  },
+  "league leaders": {
+   "words": 52,
+   "taps": 7,
+   "numbers": [
+    "100",
+    "12.0",
+    "11.5",
+    "9.0",
+    "8.5",
+    "6.5",
+    "5.5",
     "5.0",
     "4.5",
-    "4.0",
-    "3.5",
     "3.0",
-    "2.5",
     "2.0",
     "1.5"
    ],
@@ -952,14 +1009,37 @@
      "errors": 0
     }
    },
-   "shared": []
+   "shared": [
+    {
+     "screen": "tournament bracket",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "league standings",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "cgoals",
+     "numbers": [
+      "100"
+     ]
+    },
+    {
+     "screen": "csummary",
+     "numbers": [
+      "100"
+     ]
+    }
+   ]
   },
   "my clips": {
-   "words": 39,
+   "words": 34,
    "taps": 2,
-   "numbers": [
-    "100"
-   ],
+   "numbers": [],
    "audit": {
     "desktop": {
      "pass": true,
@@ -983,35 +1063,10 @@
      "errors": 0
     }
    },
-   "shared": [
-    {
-     "screen": "tournament bracket",
-     "numbers": [
-      "100"
-     ]
-    },
-    {
-     "screen": "league schedule",
-     "numbers": [
-      "100"
-     ]
-    },
-    {
-     "screen": "cgoals",
-     "numbers": [
-      "100"
-     ]
-    },
-    {
-     "screen": "csummary",
-     "numbers": [
-      "100"
-     ]
-    }
-   ]
+   "shared": []
   },
   "settings: accessibility": {
-   "words": 53,
+   "words": 39,
    "taps": 10,
    "numbers": [],
    "audit": {
@@ -1040,7 +1095,7 @@
    "shared": []
   },
   "barakah run": {
-   "words": 98,
+   "words": 87,
    "taps": 8,
    "numbers": [
     "45"
@@ -1071,14 +1126,14 @@
    "shared": []
   },
   "daily scenario": {
-   "words": 66,
+   "words": 54,
    "taps": 1,
    "numbers": [
-    "10",
-    "30",
-    "16",
-    "52",
-    "53",
+    "11",
+    "07",
+    "20",
+    "36",
+    "39",
     "60"
    ],
    "audit": {
@@ -1107,7 +1162,7 @@
    "shared": []
   },
   "dunk lab": {
-   "words": 41,
+   "words": 30,
    "taps": 5,
    "numbers": [
     "99"
@@ -1138,8 +1193,8 @@
    "shared": []
   },
   "match HUD": {
-   "words": 22,
-   "taps": 5,
+   "words": 4,
+   "taps": 1,
    "numbers": [
     "14"
    ],
@@ -1169,12 +1224,10 @@
    "shared": []
   },
   "match: noor question": {
-   "words": 57,
-   "taps": 8,
+   "words": 34,
+   "taps": 4,
    "numbers": [
-    "14",
-    "27",
-    "10"
+    "14"
    ],
    "audit": {
     "desktop": {
@@ -1202,8 +1255,8 @@
    "shared": []
   },
   "match: noor choice": {
-   "words": 77,
-   "taps": 7,
+   "words": 59,
+   "taps": 3,
    "numbers": [
     "14",
     "12",
@@ -1212,24 +1265,24 @@
    ],
    "audit": {
     "desktop": {
-     "pass": false,
+     "pass": true,
      "overflow": 0,
      "small": 0,
-     "overlaps": 4,
+     "overlaps": 0,
      "errors": 0
     },
     "phone-750x342": {
-     "pass": false,
+     "pass": true,
      "overflow": 0,
      "small": 0,
-     "overlaps": 4,
+     "overlaps": 0,
      "errors": 0
     },
     "phone-667x300": {
-     "pass": false,
+     "pass": true,
      "overflow": 0,
      "small": 0,
-     "overlaps": 4,
+     "overlaps": 0,
      "errors": 0
     }
    },
@@ -1298,12 +1351,19 @@
    "shared": []
   },
   "final": {
-   "words": 32,
-   "taps": 3,
+   "words": 37,
+   "taps": 6,
    "numbers": [
     "21",
     "18",
-    "14"
+    "14",
+    "12",
+    "10",
+    "13",
+    "11",
+    "15",
+    "16",
+    "17"
    ],
    "audit": {
     "desktop": {
@@ -1331,8 +1391,8 @@
    "shared": []
   },
   "career menu": {
-   "words": 44,
-   "taps": 4,
+   "words": 35,
+   "taps": 6,
    "numbers": [
     "60"
    ],
@@ -1340,7 +1400,7 @@
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -1362,16 +1422,14 @@
    "shared": []
   },
   "creator": {
-   "words": 100,
+   "words": 84,
    "taps": 51,
-   "numbers": [
-    "60"
-   ],
+   "numbers": [],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -1393,16 +1451,14 @@
    "shared": []
   },
   "namekeys": {
-   "words": 56,
+   "words": 43,
    "taps": 30,
-   "numbers": [
-    "60"
-   ],
+   "numbers": [],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -1424,14 +1480,14 @@
    "shared": []
   },
   "story": {
-   "words": 40,
+   "words": 27,
    "taps": 1,
    "numbers": [],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -1453,7 +1509,7 @@
    "shared": []
   },
   "hub": {
-   "words": 66,
+   "words": 65,
    "taps": 13,
    "numbers": [
     "25",
@@ -1485,18 +1541,19 @@
    "shared": []
   },
   "cbracket": {
-   "words": 71,
+   "words": 58,
    "taps": 1,
    "numbers": [
-    "16",
-    "11",
-    "22"
+    "21",
+    "10",
+    "24",
+    "19"
    ],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -1567,7 +1624,7 @@
    ]
   },
   "month view: game": {
-   "words": 53,
+   "words": 40,
    "taps": 34,
    "numbers": [
     "10",
@@ -1596,7 +1653,7 @@
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -1650,17 +1707,10 @@
      "errors": 0
     }
    },
-   "shared": [
-    {
-     "screen": "shop",
-     "numbers": [
-      "170"
-     ]
-    }
-   ]
+   "shared": []
   },
   "month view: jumuah": {
-   "words": 47,
+   "words": 34,
    "taps": 33,
    "numbers": [
     "10",
@@ -1688,7 +1738,7 @@
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -1747,7 +1797,7 @@
    "shared": []
   },
   "month view: ramadan": {
-   "words": 51,
+   "words": 38,
    "taps": 34,
    "numbers": [
     "10",
@@ -1776,7 +1826,7 @@
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 13,
+     "small": 6,
      "overlaps": 0,
      "errors": 0
     },
@@ -1831,7 +1881,7 @@
    "shared": []
   },
   "month view: eid": {
-   "words": 51,
+   "words": 38,
    "taps": 33,
    "numbers": [
     "10",
@@ -1859,7 +1909,7 @@
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 13,
+     "small": 6,
      "overlaps": 0,
      "errors": 0
     },
@@ -1917,7 +1967,7 @@
    "shared": []
   },
   "month view: break": {
-   "words": 55,
+   "words": 42,
    "taps": 34,
    "numbers": [
     "10",
@@ -1946,7 +1996,7 @@
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 12,
+     "small": 5,
      "overlaps": 0,
      "errors": 0
     },
@@ -2571,7 +2621,7 @@
    ]
   },
   "cstats": {
-   "words": 73,
+   "words": 60,
    "taps": 6,
    "numbers": [
     "0.0",
@@ -2583,7 +2633,7 @@
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -2612,7 +2662,7 @@
    ]
   },
   "cgoals": {
-   "words": 162,
+   "words": 149,
    "taps": 1,
    "numbers": [
     "40",
@@ -2625,7 +2675,7 @@
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -2652,13 +2702,13 @@
      ]
     },
     {
-     "screen": "league schedule",
+     "screen": "league standings",
      "numbers": [
       "100"
      ]
     },
     {
-     "screen": "my clips",
+     "screen": "league leaders",
      "numbers": [
       "100"
      ]
@@ -2704,30 +2754,29 @@
    "shared": []
   },
   "career league leaders": {
-   "words": 81,
+   "words": 74,
    "taps": 29,
    "numbers": [
     "16",
-    "9.3",
-    "14",
-    "13.3",
-    "22.2",
-    "22.0",
-    "21.2",
-    "20.8",
-    "19.7",
-    "19.0",
-    "18.8",
-    "18.3",
-    "17.0",
+    "10.3",
+    "21.3",
+    "22.3",
+    "21.8",
+    "21.4",
+    "20.5",
+    "20.4",
+    "19.8",
+    "17.8",
     "10",
-    "15.3"
+    "17.3",
+    "60",
+    "15"
    ],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -2750,37 +2799,40 @@
     {
      "screen": "career league player",
      "numbers": [
-      "9.3"
+      "10.3"
      ]
     }
    ]
   },
   "career league player": {
-   "words": 88,
+   "words": 75,
    "taps": 5,
    "numbers": [
-    "9.3",
+    "10.3",
     "1.3",
-    "1.7",
-    "0.3",
+    "4.0",
+    "1.0",
+    "2.3",
+    "61",
+    "75",
     "0.7",
-    "4.7",
-    "88",
-    "28",
-    "14",
-    "16",
-    "21",
-    "30",
-    "10",
     "31",
-    "27",
-    "32"
+    "12",
+    "14",
+    "23",
+    "21",
+    "35",
+    "13",
+    "39",
+    "33",
+    "10",
+    "36"
    ],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -2803,13 +2855,13 @@
     {
      "screen": "career league leaders",
      "numbers": [
-      "9.3"
+      "10.3"
      ]
     }
    ]
   },
   "career league around": {
-   "words": 43,
+   "words": 30,
    "taps": 11,
    "numbers": [
     "39",
@@ -2819,7 +2871,7 @@
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -2841,7 +2893,7 @@
    "shared": []
   },
   "career league box score": {
-   "words": 54,
+   "words": 41,
    "taps": 1,
    "numbers": [
     "25",
@@ -2860,7 +2912,7 @@
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -2882,14 +2934,14 @@
    "shared": []
   },
   "career around the league (waiting)": {
-   "words": 56,
-   "taps": 3,
+   "words": 43,
+   "taps": 6,
    "numbers": [],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -2911,25 +2963,24 @@
    "shared": []
   },
   "csummary": {
-   "words": 85,
+   "words": 79,
    "taps": 1,
    "numbers": [
-    "193",
+    "285",
     "100",
-    "14",
-    "31",
-    "27",
     "10",
-    "21",
-    "30",
-    "16",
-    "32"
+    "39",
+    "33",
+    "35",
+    "36",
+    "13",
+    "21"
    ],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -2956,13 +3007,13 @@
      ]
     },
     {
-     "screen": "league schedule",
+     "screen": "league standings",
      "numbers": [
       "100"
      ]
     },
     {
-     "screen": "my clips",
+     "screen": "league leaders",
      "numbers": [
       "100"
      ]
@@ -2976,20 +3027,21 @@
    ]
   },
   "postgame": {
-   "words": 66,
+   "words": 53,
    "taps": 0,
    "numbers": [
     "21",
-    "30",
+    "35",
     "10",
+    "13",
     "15",
-    "49"
+    "52"
    ],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -3011,7 +3063,7 @@
    "shared": []
   },
   "scout": {
-   "words": 90,
+   "words": 77,
    "taps": 0,
    "numbers": [
     "11",
@@ -3025,7 +3077,7 @@
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -3047,16 +3099,16 @@
    "shared": []
   },
   "pregame": {
-   "words": 89,
+   "words": 76,
    "taps": 4,
    "numbers": [
-    "52"
+    "54"
    ],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -3078,14 +3130,14 @@
    "shared": []
   },
   "journal": {
-   "words": 31,
+   "words": 18,
    "taps": 1,
    "numbers": [],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -3107,14 +3159,14 @@
    "shared": []
   },
   "office": {
-   "words": 28,
+   "words": 15,
    "taps": 4,
    "numbers": [],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -3136,7 +3188,7 @@
    "shared": []
   },
   "musalla": {
-   "words": 75,
+   "words": 62,
    "taps": 2,
    "numbers": [
     "40",
@@ -3146,7 +3198,7 @@
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -3168,17 +3220,16 @@
    "shared": []
   },
   "masjid": {
-   "words": 46,
+   "words": 27,
    "taps": 3,
    "numbers": [
-    "40",
-    "10"
+    "40"
    ],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -3200,10 +3251,10 @@
    "shared": []
   },
   "shop": {
-   "words": 82,
+   "words": 63,
    "taps": 13,
    "numbers": [
-    "130",
+    "165",
     "300",
     "800",
     "600",
@@ -3211,15 +3262,13 @@
     "500",
     "2500",
     "400",
-    "170",
-    "40",
-    "10"
+    "135"
    ],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 10,
+     "small": 3,
      "overlaps": 0,
      "errors": 0
     },
@@ -3242,35 +3291,29 @@
     {
      "screen": "gym",
      "numbers": [
-      "130"
+      "165"
      ]
     },
     {
      "screen": "hub: corner menu",
      "numbers": [
-      "130"
-     ]
-    },
-    {
-     "screen": "hub calendar: jumuah",
-     "numbers": [
-      "170"
+      "165"
      ]
     }
    ]
   },
   "train": {
-   "words": 66,
+   "words": 53,
    "taps": 11,
    "numbers": [
-    "323",
+    "575",
     "40"
    ],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -3293,29 +3336,29 @@
     {
      "screen": "gym",
      "numbers": [
-      "323"
+      "575"
      ]
     },
     {
      "screen": "hub: corner menu",
      "numbers": [
-      "323"
+      "575"
      ]
     }
    ]
   },
   "gym": {
-   "words": 30,
+   "words": 17,
    "taps": 4,
    "numbers": [
-    "323",
-    "130"
+    "575",
+    "165"
    ],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -3338,33 +3381,33 @@
     {
      "screen": "hub: corner menu",
      "numbers": [
-      "323",
-      "130"
+      "575",
+      "165"
      ]
     },
     {
      "screen": "train",
      "numbers": [
-      "323"
+      "575"
      ]
     },
     {
      "screen": "shop",
      "numbers": [
-      "130"
+      "165"
      ]
     }
    ]
   },
   "saves": {
-   "words": 43,
-   "taps": 5,
+   "words": 34,
+   "taps": 7,
    "numbers": [],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -3386,14 +3429,14 @@
    "shared": []
   },
   "newseason": {
-   "words": 84,
+   "words": 71,
    "taps": 3,
    "numbers": [],
    "audit": {
     "desktop": {
      "pass": true,
      "overflow": 0,
-     "small": 9,
+     "small": 2,
      "overlaps": 0,
      "errors": 0
     },
@@ -3415,7 +3458,7 @@
    "shared": []
   },
   "share clip": {
-   "words": 18,
+   "words": 20,
    "taps": 5,
    "numbers": [],
    "audit": {
@@ -3444,7 +3487,7 @@
    "shared": []
   },
   "clip video: no video support": {
-   "words": 19,
+   "words": 21,
    "taps": 3,
    "numbers": [],
    "audit": {
@@ -3473,7 +3516,7 @@
    "shared": []
   },
   "clip video: done": {
-   "words": 15,
+   "words": 17,
    "taps": 4,
    "numbers": [
     "0.0"
@@ -3514,7 +3557,7 @@
    "words": 25,
    "taps": 6,
    "numbers": [
-    "9.13.0"
+    "9.17.3"
    ],
    "audit": {
     "desktop": {
@@ -3545,7 +3588,7 @@
    "words": 25,
    "taps": 6,
    "numbers": [
-    "9.13.0"
+    "9.17.3"
    ],
    "audit": {
     "desktop": {
@@ -3573,7 +3616,7 @@
    "shared": []
   },
   "splash": {
-   "words": 6,
+   "words": 2,
    "taps": 0,
    "numbers": [],
    "audit": {
@@ -3692,7 +3735,7 @@
    "shared": []
   },
   "run map": {
-   "words": 38,
+   "words": 43,
    "taps": 6,
    "numbers": [],
    "audit": {
@@ -3721,10 +3764,10 @@
    "shared": []
   },
   "run choice": {
-   "words": 51,
+   "words": 50,
    "taps": 3,
    "numbers": [
-    "0.5",
+    "15",
     "10"
    ],
    "audit": {
@@ -3814,7 +3857,7 @@
    "words": 53,
    "taps": 2,
    "numbers": [
-    "9.13.0"
+    "9.17.3"
    ],
    "audit": {
     "desktop": {
@@ -3842,10 +3885,10 @@
    "shared": []
   },
   "toast message": {
-   "words": 58,
-   "taps": 2,
+   "words": 30,
+   "taps": 6,
    "numbers": [
-    "9.13.0"
+    "9.17.3"
    ],
    "audit": {
     "desktop": {
@@ -3873,10 +3916,10 @@
    "shared": []
   },
   "achievement toast": {
-   "words": 61,
-   "taps": 2,
+   "words": 28,
+   "taps": 6,
    "numbers": [
-    "9.13.0"
+    "9.17.3"
    ],
    "audit": {
     "desktop": {
@@ -3904,7 +3947,7 @@
    "shared": []
   },
   "tutorial: a step": {
-   "words": 66,
+   "words": 30,
    "taps": 2,
    "numbers": [
     "99",
@@ -3936,8 +3979,8 @@
    "shared": []
   },
   "tutorial: the last card": {
-   "words": 71,
-   "taps": 2,
+   "words": 35,
+   "taps": 4,
    "numbers": [
     "99"
    ],
@@ -3967,8 +4010,8 @@
    "shared": []
   },
   "match: tip-off": {
-   "words": 72,
-   "taps": 2,
+   "words": 8,
+   "taps": 1,
    "numbers": [
     "14"
    ],
@@ -3983,14 +4026,14 @@
     "phone-750x342": {
      "pass": false,
      "overflow": 0,
-     "small": 19,
+     "small": 7,
      "overlaps": 0,
      "errors": 0
     },
     "phone-667x300": {
      "pass": false,
      "overflow": 0,
-     "small": 20,
+     "small": 7,
      "overlaps": 0,
      "errors": 0
     }
@@ -3998,8 +4041,8 @@
    "shared": []
   },
   "match: inbound": {
-   "words": 72,
-   "taps": 2,
+   "words": 8,
+   "taps": 1,
    "numbers": [
     "14"
    ],
@@ -4014,14 +4057,14 @@
     "phone-750x342": {
      "pass": false,
      "overflow": 0,
-     "small": 19,
+     "small": 7,
      "overlaps": 0,
      "errors": 0
     },
     "phone-667x300": {
      "pass": false,
      "overflow": 0,
-     "small": 20,
+     "small": 7,
      "overlaps": 0,
      "errors": 0
     }
@@ -4029,8 +4072,8 @@
    "shared": []
   },
   "match: free throws": {
-   "words": 72,
-   "taps": 2,
+   "words": 8,
+   "taps": 1,
    "numbers": [
     "14"
    ],
@@ -4045,14 +4088,14 @@
     "phone-750x342": {
      "pass": false,
      "overflow": 0,
-     "small": 19,
+     "small": 7,
      "overlaps": 0,
      "errors": 0
     },
     "phone-667x300": {
      "pass": false,
      "overflow": 0,
-     "small": 20,
+     "small": 7,
      "overlaps": 0,
      "errors": 0
     }
@@ -4060,8 +4103,8 @@
    "shared": []
   },
   "match: hot spot": {
-   "words": 72,
-   "taps": 2,
+   "words": 8,
+   "taps": 1,
    "numbers": [
     "14"
    ],
@@ -4076,14 +4119,14 @@
     "phone-750x342": {
      "pass": false,
      "overflow": 0,
-     "small": 19,
+     "small": 7,
      "overlaps": 0,
      "errors": 0
     },
     "phone-667x300": {
      "pass": false,
      "overflow": 0,
-     "small": 20,
+     "small": 7,
      "overlaps": 0,
      "errors": 0
     }
@@ -4091,10 +4134,10 @@
    "shared": []
   },
   "match: replay": {
-   "words": 77,
-   "taps": 2,
+   "words": 18,
+   "taps": 1,
    "numbers": [
-    "12"
+    "13"
    ],
    "audit": {
     "desktop": {
@@ -4107,14 +4150,14 @@
     "phone-750x342": {
      "pass": false,
      "overflow": 0,
-     "small": 21,
+     "small": 9,
      "overlaps": 0,
      "errors": 0
     },
     "phone-667x300": {
      "pass": false,
      "overflow": 0,
-     "small": 22,
+     "small": 9,
      "overlaps": 0,
      "errors": 0
     }
@@ -4122,8 +4165,8 @@
    "shared": []
   },
   "match: period break": {
-   "words": 70,
-   "taps": 2,
+   "words": 11,
+   "taps": 1,
    "numbers": [
     "14"
    ],
@@ -4138,14 +4181,14 @@
     "phone-750x342": {
      "pass": false,
      "overflow": 0,
-     "small": 17,
+     "small": 7,
      "overlaps": 0,
      "errors": 0
     },
     "phone-667x300": {
      "pass": false,
      "overflow": 0,
-     "small": 18,
+     "small": 7,
      "overlaps": 0,
      "errors": 0
     }
@@ -4153,8 +4196,8 @@
    "shared": []
   },
   "match: timeout (call a play)": {
-   "words": 123,
-   "taps": 2,
+   "words": 62,
+   "taps": 5,
    "numbers": [
     "14"
    ],
@@ -4169,14 +4212,14 @@
     "phone-750x342": {
      "pass": false,
      "overflow": 0,
-     "small": 26,
+     "small": 16,
      "overlaps": 0,
      "errors": 0
     },
     "phone-667x300": {
      "pass": false,
      "overflow": 0,
-     "small": 27,
+     "small": 16,
      "overlaps": 0,
      "errors": 0
     }
@@ -4184,7 +4227,7 @@
    "shared": []
   },
   "match: leave? (confirm)": {
-   "words": 47,
+   "words": 49,
    "taps": 2,
    "numbers": [
     "14"
@@ -4200,7 +4243,7 @@
     "phone-750x342": {
      "pass": false,
      "overflow": 0,
-     "small": 12,
+     "small": 13,
      "overlaps": 0,
      "errors": 0
     },
@@ -4215,7 +4258,7 @@
    "shared": []
   },
   "barakah run: abandon? (confirm)": {
-   "words": 66,
+   "words": 61,
    "taps": 2,
    "numbers": [],
    "audit": {
@@ -4244,10 +4287,10 @@
    "shared": []
   },
   "online: network report": {
-   "words": 244,
-   "taps": 7,
+   "words": 235,
+   "taps": 34,
    "numbers": [
-    "9.13.0",
+    "9.17.3",
     "50",
     "95",
     "10",
@@ -4257,73 +4300,60 @@
    ],
    "audit": {
     "desktop": {
-     "pass": true,
+     "pass": false,
      "overflow": 0,
      "small": 0,
-     "overlaps": 0,
+     "overlaps": 14,
      "errors": 0
     },
     "phone-750x342": {
-     "pass": true,
+     "pass": false,
      "overflow": 0,
      "small": 0,
-     "overlaps": 0,
+     "overlaps": 14,
      "errors": 0
     },
     "phone-667x300": {
-     "pass": true,
+     "pass": false,
      "overflow": 0,
      "small": 0,
-     "overlaps": 0,
+     "overlaps": 14,
      "errors": 0
     }
    },
-   "shared": [
-    {
-     "screen": "hub: corner menu",
-     "numbers": [
-      "141"
-     ]
-    }
-   ]
+   "shared": []
   },
   "hub: corner menu": {
-   "words": 218,
-   "taps": 7,
+   "words": 72,
+   "taps": 17,
    "numbers": [
-    "323",
-    "130",
+    "575",
+    "165",
     "17",
     "18",
     "19",
-    "20",
-    "9.13.0",
-    "50",
-    "95",
-    "10",
-    "30",
-    "141"
+    "20"
    ],
    "audit": {
     "desktop": {
-     "pass": true,
+     "pass": false,
      "overflow": 0,
      "small": 0,
-     "overlaps": 0,
+     "overlaps": 5,
      "errors": 0
     },
     "phone-750x342": {
-     "pass": true,
+     "pass": false,
      "overflow": 0,
      "small": 0,
-     "overlaps": 0,
+     "overlaps": 5,
      "errors": 0
     },
     "phone-667x300": {
-     "pass": true,
+     "pass": false,
      "overflow": 0,
      "small": 0,
-     "overlaps": 0,
+     "overlaps": 5,
      "errors": 0
     }
    },
@@ -4331,26 +4361,20 @@
     {
      "screen": "gym",
      "numbers": [
-      "323",
-      "130"
+      "575",
+      "165"
      ]
     },
     {
      "screen": "train",
      "numbers": [
-      "323"
+      "575"
      ]
     },
     {
      "screen": "shop",
      "numbers": [
-      "130"
-     ]
-    },
-    {
-     "screen": "online: network report",
-     "numbers": [
-      "141"
+      "165"
      ]
     }
    ]
