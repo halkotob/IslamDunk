@@ -1,5 +1,39 @@
 # Changelog
 
+## 9.17.4: the first match is friendly
+docs/IMPROVEMENTS.md GT1, GT2. A newcomer's first Quick Play match was Medium (the difficulty starts there every
+launch; it isn't stored), and Miss breakdown was off, so a missed shot was never explained to someone who didn't
+know why. Now (`src/screens/v9174-first-match.js`):
+- **A new player's first Quick Play match is on Easy.** "New" means no games on this device and the Difficulty
+  setting never changed (new key `islamdunk.difficulty.chosen`, set by the Difficulty rows in Settings and the
+  mini-games menu). Nothing on screen calls it an easy mode.
+- **After a first win**, the result screen's hint row shows one line: "You won on Easy." with a "Try Medium? (↑)"
+  button. Press the button, Up or M to take it ("Next match: Medium."); Enter continues as always, so leaving takes
+  no extra tap. It's offered once: taking it or leaving the screen ends it for good. After a loss, nothing.
+- **Miss breakdown is on for a player's first 5 games**, then off. The next result screen says once: "Miss breakdown
+  is now off. Turn it on in Settings." It's now three-state (`islamdunk.misswhy`: unset, '1', '0'), and a choice
+  made in Settings is never changed. The default applies to Quick Play-style matches. Career, online, King of the
+  Court and the mini-games keep Off unless the player turned it on, and keep their own difficulty.
+- No new screens, no popups in a match.
+- docs/IMPROVEMENTS.md also marks B1, B2, B4 (9.17.1) and GT1, GT2 done.
+
+| | 9.17.3 | 9.17.4 |
+|---|---|---|
+| Fresh profile, first Quick Play match | Medium | **Easy** (the CPU uses the Easy table) |
+| Miss breakdown, games 1-5 of a new player | off | **on** (each missed jump shot gets its line) |
+| Miss breakdown after game 5 | off | off, with one note on the next result screen |
+| A profile with games, or a picked difficulty | Medium | Medium (unchanged) |
+| An explicit Miss breakdown Off / On | kept | kept, through every game |
+| `npm run review:first-run` | 31 steps, 31 taps, 1,127 words | 31 steps, 31 taps, 1,125 words, the same screens |
+
+The two words are the match itself: the first-run path's scripted first match is now on Easy and ended 10-25 instead
+of 2-29, so the player's stat line is shorter. No text was added.
+
+Tests (`tests/first-match.mjs`, fast tier): `first-easy` (fresh vs played vs picked), `first-stepup` (a win offers it
+once and Up sets Medium; a second win and a new session after dismissing don't; a loss shows nothing), `first-misswhy`
+(unset on through game 5 then off with exactly one note; explicit '0' off and '1' on through 7 games; career, King
+of the Court and a mini-game stay off and on Medium), all with no page errors.
+
 ## 9.17.3: a career can't be lost
 docs/IMPROVEMENTS.md SV1, SV2, SV3. Each save went to one place, written over in place. A save that didn't parse
 looked like no career at all, and the next autosave wrote over what was left. The ~50 autosaves ignored a failed

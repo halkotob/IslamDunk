@@ -311,7 +311,8 @@ function hintKey(k) { const pad = Input.lastDev === 'pad'; return pad ? { x: 'Y'
 
 // ---------------------------------------------------------------- why a shot missed (optional)
 // Settings → Game → Miss breakdown. After your own missed jump shot or layup, one short line says what went into it:
-// "Release: early · Contest: heavy · Range: three". Off by default; the shot itself is unchanged.
+// "Release: early · Contest: heavy · Range: three". Off by default (v9.17.4: unset, it's on for the first 5 games,
+// v9174-first-match.js); the shot itself is unchanged.
 SETTINGS.missWhy = false;
 try { SETTINGS.missWhy = localStorage.getItem('islamdunk.misswhy') === '1'; } catch (e) {}
 const MissWhy = { show: null };

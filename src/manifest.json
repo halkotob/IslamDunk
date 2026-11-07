@@ -130,6 +130,7 @@
     "sim/cast-life.js",
     "screens/motion-pass.js",
     "career/v9173-save-safe.js",
+    "screens/v9174-first-match.js",
     "boot.js"
   ]
 }

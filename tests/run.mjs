@@ -110,6 +110,7 @@ import { netTests } from './net.mjs';
 import { rollbackTests } from './rollback.mjs';
 import { rbSameTests } from './rb-same.mjs';
 import { saveSafeTests } from './save-safe.mjs';
+import { firstMatchTests } from './first-match.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
 import { animFixTests } from './anim-fix.mjs';
@@ -2611,6 +2612,7 @@ Object.assign(T, netTests({ newContext, open }));   // v9.10 online latency (tes
 Object.assign(T, rollbackTests({ newContext, open }));   // v9.14 rollback netcode (tests/rollback.mjs)
 Object.assign(T, rbSameTests({ newContext, open }));    // v9.17.1 both phones play the same game (tests/rb-same.mjs)
 Object.assign(T, saveSafeTests({ newContext, open }));  // v9.17.3 a career can't be lost (tests/save-safe.mjs)
+Object.assign(T, firstMatchTests({ newContext, open }));  // v9.17.4 the first match is friendly (tests/first-match.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
 Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)

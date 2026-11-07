@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.17.3';
+const VERSION = '9.17.4';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -3126,7 +3126,7 @@ function startMatchFromSelect(venue) {
 }
 // ------------------------------------------------------------- SETTINGS
 const SET_ITEMS = [
-  { label: 'Difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); } },
+  { label: 'Difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); diffChosen(); } },   // (diffChosen: v9.17.4)
   { label: 'Keep games close (rubber-band)', get: () => SETTINGS.rubber ? 'On' : 'Off', step: () => { SETTINGS.rubber = !SETTINGS.rubber; } },
   { label: 'Format', get: () => FORMAT_TXT[SETTINGS.format], step: d => { SETTINGS.format = FORMATS[(FORMATS.indexOf(SETTINGS.format) + d + FORMATS.length) % FORMATS.length]; } },
   { label: 'Period length', get: () => SETTINGS.format === 'first21' ? 'Untimed, win by 2' : periodTxt(SETTINGS.periodLen), step: d => { if (SETTINGS.format !== 'first21') SETTINGS.periodLen = PERIOD_OPTS[(PERIOD_OPTS.indexOf(SETTINGS.periodLen) + d + PERIOD_OPTS.length) % PERIOD_OPTS.length]; } },
@@ -6387,7 +6387,8 @@ function drawFinalScreen(g) {
   if (Net.role === 'guest') { g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.textAlign = 'center'; g.fillText('Waiting for your friend to start a rematch', W / 2, 468); return; }
   if (canRematch()) { uiButton(g, W / 2 - 200, 446, 190, 42, 'Rematch (R)', rematch, false); uiButton(g, W / 2 + 10, 446, 190, 42, 'Continue', finalContinue, true); }
   else uiButton(g, W / 2 - 95, 446, 190, 42, 'Continue', finalContinue, true);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'center'; g.fillText('\u2190 \u2192 switch tabs, Enter to continue', W / 2, 510);
+  // (v9.17.4: the hint row can carry one line instead: the step-up offer or the Miss breakdown note, v9174-first-match.js)
+  if (!drawFinalNote(g)) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'center'; g.fillText('\u2190 \u2192 switch tabs, Enter to continue', W / 2, 510); }
 }
 
 // ============================================================ MULTI-BALL
@@ -16195,7 +16196,7 @@ function minisRows() {
     R.push({ label: 'Word', get: () => MiniOpts.word, step: d => { MiniOpts.word = cyc(MINI_WORDS, MiniOpts.word, d); MiniOpts.save(); } });
     R.push({ label: 'Time to match a shot', get: () => MiniOpts.timer + ' seconds', step: d => { MiniOpts.timer = cyc(MINI_TIMERS, MiniOpts.timer, d); MiniOpts.save(); } });
   }
-  R.push({ label: 'CPU difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); } });
+  R.push({ label: 'CPU difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); diffChosen(); } });
   R.push({ label: 'Start', start: true, step: () => startQuickMini() });
   R.push({ label: 'Back', back: true, step: () => goTitle() });
   return R;
@@ -25936,7 +25937,8 @@ function hintKey(k) { const pad = Input.lastDev === 'pad'; return pad ? { x: 'Y'
 
 // ---------------------------------------------------------------- why a shot missed (optional)
 // Settings → Game → Miss breakdown. After your own missed jump shot or layup, one short line says what went into it:
-// "Release: early · Contest: heavy · Range: three". Off by default; the shot itself is unchanged.
+// "Release: early · Contest: heavy · Range: three". Off by default (v9.17.4: unset, it's on for the first 5 games,
+// v9174-first-match.js); the shot itself is unchanged.
 SETTINGS.missWhy = false;
 try { SETTINGS.missWhy = localStorage.getItem('islamdunk.misswhy') === '1'; } catch (e) {}
 const MissWhy = { show: null };
@@ -27864,6 +27866,88 @@ function drawSaveImport(g) {
     R.push(back);
     return R;
   };
+}
+// ================================================= v9.17.4: THE FIRST MATCH IS FRIENDLY
+// (docs/IMPROVEMENTS.md GT1, GT2.) Before: a newcomer's first Quick Play match was Medium (SETTINGS.difficulty starts
+// there, and difficulty isn't stored), and Miss breakdown was off, so a missed shot was never explained.
+//   * A new player (no games on this device: Profile stats.games 0, and never picked a difficulty: the key
+//     islamdunk.difficulty.chosen, set by the Difficulty rows in Settings and the mini-games menu) plays the first
+//     Quick Play match (one or two players) on Easy. Nothing calls it an easy mode.
+//   * After that match, a win puts one line in the result screen's hint row: "You won on Easy. Try Medium?" with a
+//     button (or Up / M). Enter still continues. Shown once: leaving the screen dismisses it for good. After a loss,
+//     nothing.
+//   * Miss breakdown is three-state (islamdunk.misswhy: missing = default, '1', '0'). Unset, it's on for the player's
+//     first 5 games, then off, and the next result screen says so once. An explicit choice is never changed.
+//     The default applies to Quick Play-style matches; career, online, King of the Court and the mini-games keep Off
+//     unless the player turned it on.
+const FIRST = { games: () => { try { return Profile.load().stats.games | 0; } catch (e) { return 0; } } };
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function diffChosen() { lsSet('islamdunk.difficulty.chosen', '1'); }
+function isNewPlayer() { return FIRST.games() === 0 && lsGet('islamdunk.difficulty.chosen') == null; }
+function missWhyStored() { const v = lsGet('islamdunk.misswhy'); return v === '1' || v === '0' ? v : null; }
+// unset: on until 5 games (so Settings shows it as it is); each match sets it again in newMatch below
+if (missWhyStored() == null) SETTINGS.missWhy = FIRST.games() < 5;
+{
+  // the first Quick Play match: Easy for a new player who hasn't touched the difficulty
+  const _sm = startMatchFromSelect;
+  startMatchFromSelect = function () {
+    const first = isNewPlayer() && SETTINGS.difficulty === 'medium';
+    if (first) SETTINGS.difficulty = 'easy';
+    const r = _sm.apply(this, arguments);
+    M.firstEasy = first;
+    return r;
+  };
+  // (M is one object reused by every match: each match gets a number, and the first-match mark is cleared)
+  const _nm = newMatch;
+  newMatch = function () { const r = _nm.apply(this, arguments); FINAL_NOTE.gen++; M.firstEasy = false; return r; };
+  // Miss breakdown, unset: on for the first 5 games, in a Quick Play-style match. Decided as each shot goes up (King of
+  // the Court and the mini-games mark the match after newMatch, so it can't be decided there); the shot is unchanged.
+  const _rs = releaseShot;
+  releaseShot = function (p) {
+    if (missWhyStored() == null) {
+      const quick = !M.career && !M.kotc && !M.mini && !M.online && !M.attract && !M.practice && !Net.role && !(typeof RBN !== 'undefined' && RBN.on) && !(typeof TUT !== 'undefined' && TUT.on);
+      SETTINGS.missWhy = FIRST.games() < 5 && quick;
+      try { return _rs.apply(this, arguments); } finally { SETTINGS.missWhy = FIRST.games() < 5; }   // (Settings shows the default)
+    }
+    return _rs.apply(this, arguments);
+  };
+  // leaving the result screen: the step-up offer counts as seen
+  const _fc = finalContinue;
+  finalContinue = function () { if (FINAL_NOTE.kind === 'stepup' && FINAL_NOTE.m === FINAL_NOTE.gen) lsSet('islamdunk.stepup', '1'); return _fc.apply(this, arguments); };
+  const _rm = rematch;
+  rematch = function () { if (FINAL_NOTE.kind === 'stepup' && FINAL_NOTE.m === FINAL_NOTE.gen) lsSet('islamdunk.stepup', '1'); return _rm.apply(this, arguments); };
+  // Up or M on the result screen: Try Medium
+  const _fu = finalUpdate;
+  finalUpdate = function () {
+    if (FINAL_NOTE.kind === 'stepup' && FINAL_NOTE.m === FINAL_NOTE.gen && !FINAL_NOTE.done && (menuHit('up') || Input.pressed.KeyM)) { stepUpToMedium(); return; }
+    return _fu.apply(this, arguments);
+  };
+}
+// the one line the result screen can carry (in place of its hint row)
+const FINAL_NOTE = { gen: 0, m: -1, kind: null, done: false };
+function finalNoteFor() {
+  if (FINAL_NOTE.m === FINAL_NOTE.gen) return FINAL_NOTE.kind;
+  FINAL_NOTE.m = FINAL_NOTE.gen; FINAL_NOTE.kind = null; FINAL_NOTE.done = false;
+  if (M.career || M.online || Net.role || M.attract) return null;
+  const me = M.players && M.players.find(p => p.human === 0);
+  if (M.firstEasy && me && M.winner === me.team && lsGet('islamdunk.stepup') == null && SETTINGS.difficulty === 'easy') FINAL_NOTE.kind = 'stepup';
+  else if (missWhyStored() == null && FIRST.games() >= 5 && lsGet('islamdunk.misswhy.note') == null) { FINAL_NOTE.kind = 'missoff'; lsSet('islamdunk.misswhy.note', '1'); SETTINGS.missWhy = false; }
+  return FINAL_NOTE.kind;
+}
+function stepUpToMedium() { SETTINGS.difficulty = 'medium'; diffChosen(); lsSet('islamdunk.stepup', '1'); FINAL_NOTE.done = true; SFX.good && SFX.good(); }
+// drawn by drawFinalScreen at its hint row; returns whether it drew something there
+function drawFinalNote(g) {
+  const k = finalNoteFor(); if (!k) return false;
+  g.save(); g.textAlign = 'center'; g.font = `14px ${BODY}`;
+  if (k === 'missoff') { g.fillStyle = IVORY; g.fillText('Miss breakdown is now off. Turn it on in Settings.', W / 2, 510); }
+  else if (FINAL_NOTE.done) { g.fillStyle = '#9dffb0'; g.fillText('Next match: Medium.', W / 2, 510); }
+  else {
+    const txt = 'You won on Easy.', tw = g.measureText(txt).width, bw = 170, x0 = W / 2 - (tw + 12 + bw) / 2;
+    g.textAlign = 'left'; g.fillStyle = IVORY; g.fillText(txt, x0, 510);
+    uiButton(g, x0 + tw + 12, 492, bw, 28, 'Try Medium? (↑)', stepUpToMedium, false);
+  }
+  g.restore(); return true;
 }
 
 boot();

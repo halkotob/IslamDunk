@@ -17,7 +17,7 @@ function minisRows() {
     R.push({ label: 'Word', get: () => MiniOpts.word, step: d => { MiniOpts.word = cyc(MINI_WORDS, MiniOpts.word, d); MiniOpts.save(); } });
     R.push({ label: 'Time to match a shot', get: () => MiniOpts.timer + ' seconds', step: d => { MiniOpts.timer = cyc(MINI_TIMERS, MiniOpts.timer, d); MiniOpts.save(); } });
   }
-  R.push({ label: 'CPU difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); } });
+  R.push({ label: 'CPU difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); diffChosen(); } });
   R.push({ label: 'Start', start: true, step: () => startQuickMini() });
   R.push({ label: 'Back', back: true, step: () => goTitle() });
   return R;

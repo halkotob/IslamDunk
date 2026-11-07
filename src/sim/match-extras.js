@@ -272,7 +272,8 @@ function drawFinalScreen(g) {
   if (Net.role === 'guest') { g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.textAlign = 'center'; g.fillText('Waiting for your friend to start a rematch', W / 2, 468); return; }
   if (canRematch()) { uiButton(g, W / 2 - 200, 446, 190, 42, 'Rematch (R)', rematch, false); uiButton(g, W / 2 + 10, 446, 190, 42, 'Continue', finalContinue, true); }
   else uiButton(g, W / 2 - 95, 446, 190, 42, 'Continue', finalContinue, true);
-  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'center'; g.fillText('\u2190 \u2192 switch tabs, Enter to continue', W / 2, 510);
+  // (v9.17.4: the hint row can carry one line instead: the step-up offer or the Miss breakdown note, v9174-first-match.js)
+  if (!drawFinalNote(g)) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'center'; g.fillText('\u2190 \u2192 switch tabs, Enter to continue', W / 2, 510); }
 }
 
 // ============================================================ MULTI-BALL
