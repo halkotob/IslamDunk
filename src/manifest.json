@@ -36,6 +36,7 @@
     "sim/fouls.js",
     "core/sfx-variants.js",
     "core/sfx-levels.js",
+    "core/sfx-moments.js",
     "render/logo.js",
     "career/musalla-walk.js",
     "render/reactions.js",
@@ -131,6 +132,7 @@
     "screens/motion-pass.js",
     "career/v9173-save-safe.js",
     "screens/v9174-first-match.js",
+    "screens/sfx-moments-hooks.js",
     "boot.js"
   ]
 }

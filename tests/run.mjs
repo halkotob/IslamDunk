@@ -111,6 +111,7 @@ import { rollbackTests } from './rollback.mjs';
 import { rbSameTests } from './rb-same.mjs';
 import { saveSafeTests } from './save-safe.mjs';
 import { firstMatchTests } from './first-match.mjs';
+import { sfxMomentsTests } from './sfx-moments.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
 import { animFixTests } from './anim-fix.mjs';
@@ -2613,6 +2614,7 @@ Object.assign(T, rollbackTests({ newContext, open }));   // v9.14 rollback netco
 Object.assign(T, rbSameTests({ newContext, open }));    // v9.17.1 both phones play the same game (tests/rb-same.mjs)
 Object.assign(T, saveSafeTests({ newContext, open }));  // v9.17.3 a career can't be lost (tests/save-safe.mjs)
 Object.assign(T, firstMatchTests({ newContext, open }));  // v9.17.4 the first match is friendly (tests/first-match.mjs)
+Object.assign(T, sfxMomentsTests({ newContext, open }));  // v9.17.5 a sound for every moment (tests/sfx-moments.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
 Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)
@@ -2637,7 +2639,7 @@ const HEAVY = new Set([
   'gamepad', 'phase5', 'career', 'v95', 'v99',
   // the online tests that have to run alone (SERIAL), except rb-one, rb-fun and rb-freeze
   'rb-lag', 'rb-same', 'rb-determinism', 'rb-flow', 'rb-rollback', 'rb-taunt', 'rb-online', 'rb-resync', 'rb-settings',
-  'rb-touch', 'rb-slow', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
+  'rb-touch', 'rb-slow', 'rb-sounds', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
 // alone, after the parallel batch: frame-rate and speed checks, and the rollback and real-time online tests, which a
 // busy CPU makes desync (9.17.2 on 2 workers: rb-settings, rb-touch and rb-one each repaired 1-3 desyncs they don't alone)
 const SERIAL = new Set(['rb-slow', 'rb-lag', 'rb-freeze', 'lag-profiles', 'online-lag', 'league-time', 'net-rate',

@@ -149,7 +149,7 @@ const Net = {
         this.depth++; try { return f.apply(obj, a); } finally { this.depth--; }
       };
     };
-    ['bounce', 'swish', 'clank', 'board', 'slam', 'squeak', 'swipe', 'thud', 'buzzer', 'cheer', 'good', 'bad'].forEach(n => wrap(SFX, n, 's'));
+    ['bounce', 'swish', 'clank', 'board', 'slam', 'squeak', 'swipe', 'thud', 'buzzer', 'cheer', 'good', 'bad', 'hotSpot'].forEach(n => wrap(SFX, n, 's'));   // (hotSpot: v9.17.5)
     ['callout', 'pop', 'burst', 'shake', 'hype', 'dust', 'replay', 'highlight', 'cue'].forEach(n => wrap(FX, n, 'f'));
     const kick = Hoop.prototype.kick; this.orig.kick = kick;
     Hoop.prototype.kick = function (kind, s, ax, az, extra) { if (Net.depth === 0 && Net.role === 'host' && M.online) Net.logEv(['k', this.idx, kind, s, ax || 0, az || 0, extra || 0]); Net.depth++; try { return kick.call(this, kind, s, ax, az, extra); } finally { Net.depth--; } };

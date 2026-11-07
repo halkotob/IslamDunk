@@ -515,8 +515,9 @@ function drawPostgame(g) {
     g.strokeStyle = 'rgba(255,255,255,0.2)'; g.beginPath(); g.moveTo(x, 390); g.lineTo(x + 250, 390); g.stroke();
     g.textAlign = 'right'; g.fillStyle = color; g.font = `18px ${FONT}`; g.fillText('+' + total, x + 250, 418);
   };
-  col(W / 2 - 300, 'BARAKAH POINTS', p.rw.bp, p.rw.bpTotal, '#f2cf6b');
-  col(W / 2 + 50, 'HALAL BUCKS', p.rw.hb, p.rw.hbTotal, '#9dffb0');
+  const shown = earnShown(p, p.rw.bp.length + p.rw.hb.length);   // (v9.17.5: the lines come in one at a time, a soft tick each)
+  col(W / 2 - 300, 'BARAKAH POINTS', p.rw.bp.slice(0, shown), p.rw.bpTotal, '#f2cf6b');
+  col(W / 2 + 50, 'HALAL BUCKS', p.rw.hb.slice(0, Math.max(0, shown - p.rw.bp.length)), p.rw.hbTotal, '#9dffb0');
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText('Press Enter or tap to continue', W / 2, 488);
   if (p.tariq || p.siddiq) {
     g.textAlign = 'left'; g.font = `13px ${BODY}`;

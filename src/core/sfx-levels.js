@@ -24,5 +24,22 @@ const SFX_LEVELS = {
   swipe: { B: -4.6, C: -0.8, D: 0.4 },
   swish: { B: 2.1, C: -0.2, D: 1 },
   thud: { B: -0.4, C: -1, D: 0.1 },
-  whistle: { B: -0.4, C: 5.1, D: 0.1 }
+  whistle: { B: -0.4, C: 5.1, D: 0.1 },
+  shotTick: { B: -0.1, C: 0, D: 0 },
+  ftStep: { B: 0, C: 0, D: 0 },
+  ftAttempt: { B: 0, C: 0, D: 0 },
+  hotSpot: { B: 0, C: -0.1, D: 0 },
+  crowdTurnover: { B: 0, C: 0.1, D: 0.1 },
+  crowdBlock: { B: -0.1, C: -0.1, D: 0 },
+  crowdBadMiss: { B: 0, C: 0, D: 0 },
+  catch: { B: 0, C: 0, D: 0 },
+  halftimeStinger: { B: 0, C: 0, D: 0 },
+  winStinger: { B: 0, C: 0, D: 0 },
+  lossStinger: { B: 0, C: 0, D: 0 },
+  earnTick: { B: 0, C: 0.1, D: 0.1 },
+  triviaLow: { B: 0, C: -0.1, D: 0 },
+  uiBack: { B: 0.1, C: 0, D: 0 },
+  uiConfirm: { B: 0, C: 0, D: 0 },
+  toast: { B: 0, C: 0, D: 0 },
+  calChime: { B: 0, C: 0, D: 0 }
 };

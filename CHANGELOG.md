@@ -1,5 +1,73 @@
 # Changelog
 
+## 9.17.5: a sound for every moment (no music)
+docs/audio/sound-list.csv listed 21 events with no sound of their own. 16 have one now; the 5 ambience rows (the
+neighbourhood, inside the masjid, the career hub, menus over the attract match, the practice gym) stay silent on
+purpose. No music anywhere: a stinger is two or three notes, under a second. Bug fixed: Lightning called `SFX.catch`,
+which didn't exist (a guard kept it silent).
+- **17 new sound ids** (`src/core/sfx-moments.js`), each in the four styles (A Current, B Real, C Arcade, D Soft),
+  procedural like the rest. They're in the Studio's Sounds tab for review, and Sound style and per-sound picks apply.
+- **In a match:**
+  - `shotTick`: a quiet tick as each of the shot clock's last 3 seconds starts, a little higher each time.
+  - `ftStep`: stepping to the free throw line. `ftAttempt`: a soft "ready" tap for each attempt.
+  - `hotSpot`: a short rising shimmer when a hot spot appears.
+  - `crowdTurnover`, `crowdBlock`, `crowdBadMiss`: a few voices, scaled by the venue's crowd level. They play only
+    when nobody in the crowd is drawn; when people are drawn they still groan and "ooh" themselves, so the two
+    never stack.
+  - `catch`: Lightning's fed ball.
+- **Between plays:**
+  - `halftimeStinger`: two neutral notes.
+  - `winStinger` and `lossStinger` on the final screen, after the buzzer and cheer. The loss is two calm falling
+    notes, never mocking.
+  - `earnTick`: the career summary's Barakah Points and Halal Bucks lines now come in one at a time, 0.12 s apart,
+    with a soft tick each (no coins, no jackpot). Enter still continues at once.
+  - `triviaLow`: a gentle tick for each of the trivia timer's last 5 seconds.
+- **Menus and career:**
+  - `uiBack`: Back or Esc out of a screen, either way.
+  - `uiConfirm`: Yes or No in a confirmation, distinct from the menu blip.
+  - `toast`: a message at the bottom of the screen, quieter than the blip.
+  - `calChime`: a soft two-note chime for a new month, Ramadan, Eid or a holiday. No adhan, Quran or takbir.
+- **The practice gym's crowd level is 0** (it inherited the classic court's 1 and was silent only because nobody is
+  drawn there), so the new crowd sounds stay out of it.
+- **Online:** in a rollback match the new match sounds come from the match itself, so both phones play them on the
+  same frame and replayed frames are silent. A guest in the older snapshot mode derives the shot clock ticks from
+  the host's snapshots and hears the host's hot spot (added to the sounds `net.js` mirrors).
+
+Measured (`npm run sfx:levels`, the loudest 200 ms, K-weighted). The swish is −30.5 dB:
+
+| | level (dB) | under the swish |
+|---|---|---|
+| shotTick, ftStep | −50 | 19.5 |
+| ftAttempt, calChime | −43 | 12.5 |
+| hotSpot, catch, halftimeStinger | −42 | 11.5 |
+| winStinger / lossStinger | −41 / −42.5 | 10.5 / 12 |
+| crowd turnover / block / bad miss (at crowd level 1) | −52 / −53 / −53 | 21.5+ |
+| earnTick, triviaLow | −54, −53 | 22.5+ |
+| uiConfirm, uiBack, toast (the blip is −46.8) | −46, −53, −57 | 15.5, 22.5, 26.5 |
+
+Each new id's B, C and D land within 0.1 dB of its A (each variant has a fixed trim, so its correction in
+`SFX_LEVELS` is about 0, inside the existing −6 to +5.1 dB range). The existing 23 sounds' levels are unchanged
+(re-measured, identical). The loudest sample peak is 1.09 K-weighted, so nothing clips. The crowd reaction by venue
+(a block): the practice gym silent, the home gym −72.9 dB, a small gym −72.5, an arena −63.8. "No sound" rows in
+`docs/audio/sound-list.csv`: **21 → 5**.
+
+Tests (`tests/sfx-moments.mjs`):
+- `sfx-moments`: each sound fires exactly once per occurrence through the game's own code. The shot clock gives 3,
+  2, 1. Free throws give one step and one tap per attempt. The crowd reacts with nobody drawn, and not when people
+  are. Also covered: the stingers, the 5 summary lines, the 5 trivia ticks, Esc and the corner Back, Yes/No, a toast,
+  a new month and Eid al-Adha.
+- `sfx-calls`: every `SFX.<name>` used in src/ exists. `sound-list` no longer excuses a call to a missing sound
+  that's listed as missing, which is how `SFX.catch` slipped through.
+- `sfx-crowd`: practice gym < home gym < arena.
+- `sfx-quiet`: Sound off renders silence; style D plays its own variant of all 17.
+- `rb-sounds` (full tier, run alone): rollback matches play the same match sounds on the same frames, and a snapshot
+  guest hears the ticks and the hot spot.
+- `sfx-variants` now expects 40 ids and 160 variants (was 23 and 92).
+- Known limit, as for every match sound since 9.15: a phone plays a sound the first time it plays a frame, so a
+  frame it guessed wrong (then replayed silently) can leave one sound on one phone only. That happened once in 11
+  runs (one sound), so `rb-sounds` allows at most one difference a run and names it. Holding sounds until a frame
+  is confirmed would close it at the cost of delay.
+
 ## 9.17.4: the first match is friendly
 docs/IMPROVEMENTS.md GT1, GT2. A newcomer's first Quick Play match was Medium (the difficulty starts there every
 launch; it isn't stored), and Miss breakdown was off, so a missed shot was never explained to someone who didn't

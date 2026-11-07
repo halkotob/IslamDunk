@@ -217,6 +217,7 @@ trigger,buzzer,career/barakah-run.js,101,finishWeekly,,
 trigger,buzzer,sim/v8-atw.js,55,if,,
 trigger,buzzer,sim/v8-kotc.js,50,if,,
 trigger,buzzer,career/masjid-props.js,28,if,,
+trigger,calChime,screens/sfx-moments-hooks.js,93,if,,
 trigger,catch,sim/mini-games.js,204,if,,
 trigger,cheer,sim/players.js,179,for,,
 trigger,cheer,sim/players.js,246,if,,
@@ -238,7 +239,13 @@ trigger,cheer,sim/v86-play.js,323,doTaunt,,
 trigger,cheer,online/v911-predict.js,71,if,,
 trigger,clank,sim/hoops-ball.js,263,if,,
 trigger,clank,sim/v8-defense.js,171,slam,,
+trigger,crowdBadMiss,screens/sfx-moments-hooks.js,72,tag,,
+trigger,crowdBlock,screens/sfx-moments-hooks.js,72,tag,,
+trigger,crowdTurnover,screens/sfx-moments-hooks.js,72,tag,,
 trigger,dunkNet,core/utils-audio.js,74,slam,,
+trigger,earnTick,screens/sfx-moments-hooks.js,103,while,,
+trigger,ftAttempt,screens/sfx-moments-hooks.js,23,if,,
+trigger,ftStep,screens/sfx-moments-hooks.js,22,if,,
 trigger,good,sim/match.js,257,grantBoost,,
 trigger,good,screens/flow.js,186,answerTrivia,,
 trigger,good,online/net.js,213,if,,
@@ -264,11 +271,15 @@ trigger,good,screens/v9174-first-match.js,69,stepUpToMedium,,
 trigger,green,sim/players.js,246,if,,
 trigger,green,online/v911-predict.js,71,if,,
 trigger,greenMake,sim/hoops-ball.js,131,if,,
+trigger,halftimeStinger,screens/sfx-moments-hooks.js,41,if,,
 trigger,heart,sim/match-extras.js,146,if,,
+trigger,hotSpot,screens/sfx-moments-hooks.js,18,updateMatch,,
+trigger,lossStinger,screens/sfx-moments-hooks.js,44,if,,
 trigger,netSwish,sim/hoops-ball.js,130,if,,
 trigger,netSwish,sim/fouls.js,45,swish,,
 trigger,netSwish,career/intro-world.js,317,if,,
 trigger,rimTick,sim/hoops-ball.js,129,if,,
+trigger,shotTick,screens/sfx-moments-hooks.js,10,scTick,,
 trigger,slam,sim/players.js,346,if,,
 trigger,slam,render/bench.js,66,if,,
 trigger,snatch,render/game-feel.js,120,stealFeel,,
@@ -298,30 +309,19 @@ trigger,thud,sim/v6-moves.js,163,if,,
 trigger,thud,sim/v6-moves.js,316,if,,
 trigger,thud,sim/v6-contact.js,252,if,,
 trigger,thud,sim/v6-contact.js,296,if,,
+trigger,toast,screens/sfx-moments-hooks.js,85,toast,,
+trigger,triviaLow,screens/sfx-moments-hooks.js,78,if,,
+trigger,uiBack,screens/sfx-moments-hooks.js,47,if,,
+trigger,uiConfirm,screens/sfx-moments-hooks.js,83,confirmPick,,
 trigger,whistle,screens/challenges.js,35,if,,
 trigger,whistle,core/skill-touch.js,67,for,,
 trigger,whistle,sim/fouls.js,73,callFoul,,
 trigger,whistle,sim/v6-contact.js,6,foulShots,,
 trigger,whistle,sim/v6-contact.js,14,sideOut,,
 trigger,whistle,sim/v6-controls-ai.js,158,for,,
-no sound,,,,,UI: Back / Esc out of a menu,mostly none (moving inside a menu blips; leaving it is usually silent)
-no sound,,,,,UI: Confirm a dialog (Yes / No),"blip, the same as any menu move"
-no sound,,,,,"UI: Toast messages (saved, copied, link copied)",none (an achievement toast plays best)
-no sound,,,,,"Career calendar: A new month, Ramadan, Eid or a holiday starting",none
-no sound,,,,,Currency: Halal Bucks and Barakah earned after a game (the summary),none
-no sound,,,,,Trivia: The answer timer running low,none
-no sound,,,,,Hot spot: A hot spot appearing on the floor,none
-no sound,,,,,Shot clock: The last seconds of the shot clock,none (only the violation buzzer)
-no sound,,,,,"Free throws: Stepping to the line, each attempt",none (the foul whistle before it)
-no sound,,,,,Period: The halftime screen,none of its own (the period-end buzzer before it)
-no sound,,,,,"Results: The final screen, a win",none of its own (the final buzzer and cheer before it)
-no sound,,,,,"Results: The final screen, a loss",none of its own (the final buzzer before it)
+trigger,winStinger,screens/sfx-moments-hooks.js,44,if,,
 no sound,,,,,"Ambience: Neighbourhood scenes (home, street, masjid front, store)",none
 no sound,,,,,"Ambience: Inside the masjid: musalla, office, the Jumu’ah room",none
 no sound,,,,,Ambience: The career hub,none
 no sound,,,,,Ambience: Menus over the attract match,that match’s crowd (the classic arena: tier 4)
 no sound,,,,,Ambience: The practice gym,none (v9.13: no crowd bed there any more)
-no sound,,,,,Mini games: Lightning: a fed ball caught (SFX.catch),"none: the code calls SFX.catch, which doesn’t exist"
-no sound,,,,,Crowd: A turnover,v9.13: a groan from the people drawn (silent when nobody is drawn)
-no sound,,,,,Crowd: A block,"v9.13: an ""ooh"" from the people drawn"
-no sound,,,,,Crowd: A bad miss,v9.13: a groan from the people drawn (they already put their hands on their heads)
