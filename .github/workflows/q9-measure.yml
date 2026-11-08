@@ -18,7 +18,7 @@ jobs:
       - name: Fonts as on the baseline machine
         run: |
           sudo apt-get install -y --no-install-recommends fonts-inter
-          sudo cp tests/ci/56-prefer-inter.conf /etc/fonts/conf.d/
+          sudo cp tests/ci/56-prefer-inter.conf tests/ci/12-unhinted-grayscale.conf /etc/fonts/conf.d/
           fc-cache -f
       - name: Font facts
         run: |
