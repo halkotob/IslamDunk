@@ -106,6 +106,7 @@ const RBN = {
     this.lastPkt = pkt; this.gotAt = nowMs(); this.stats.got++;
     if (pkt.et != null) this.rtt = this.rtt ? lerp(this.rtt, nowMs() - pkt.et - (pkt.ed || 0), 0.2) : nowMs() - pkt.et - (pkt.ed || 0);
     const R = 1 - this.me, I = this.ins[R];
+    if (!Number.isInteger(pkt.s) || pkt.s < 0) return;                  // (v9.17.6, S1: the first frame has to be a frame)
     const D = rbRunsIn(pkt.d);
     for (let j = 0; j < D.length; j++) {
       const f = pkt.s + j; if (I.has(f)) continue;
@@ -249,7 +250,20 @@ function rbUnpackIn(n) {
 }
 // inputs on the wire: base 36, and a run of the same input as value*count ("3k9x1*7,3k9x2")
 function rbRunsOut(d) { const o = []; for (let i = 0; i < d.length;) { let n = 1; while (i + n < d.length && d[i + n] === d[i]) n++; o.push(d[i].toString(36) + (n > 1 ? '*' + n : '')); i += n; } return o.join(','); }
-function rbRunsIn(s) { const o = []; if (!s) return o; for (const t of String(s).split(',')) { const [v, n] = t.split('*'), x = parseInt(v, 36); for (let k = 0; k < (n ? +n : 1); k++) o.push(x); } return o; }
+// (v9.17.6, S1: a packet is checked before it's unpacked: at most RB_RUN_MAX inputs in all, each a whole number a real
+// input can be. One bad part drops the whole packet: the next one carries the same frames again. A modified game could
+// send "0*999999999" and freeze the other player's tab.)
+const RB_RUN_MAX = 48, RB_IN_MAX = 255 * 34359738368;
+function rbRunsIn(s) {
+  const o = []; if (typeof s !== 'string' || !s || s.length > 2048) return o;
+  for (const t of s.split(',')) {
+    const m = /^([0-9a-z]{1,9})(?:\*([0-9]{1,2}))?$/.exec(t); if (!m) return [];
+    const x = parseInt(m[1], 36), n = m[2] ? +m[2] : 1;
+    if (!(x >= 0 && x < RB_IN_MAX) || n < 1 || o.length + n > RB_RUN_MAX) return [];
+    for (let k = 0; k < n; k++) o.push(x);
+  }
+  return o;
+}
 function rbSameIn(a, b) { return a.h === b.h && a.p === b.p && a.r === b.r && a.qx === b.qx && a.qz === b.qz; }
 // the end of the match, once: the real end-of-match flow (records, the final screen) runs on the confirmed frame
 function rbFinishOnce() { if (RB.finish) { const f = RB.finish; RB.finish = null; try { f(); } catch (e) {} } }
@@ -277,6 +291,9 @@ function rbFinishOnce() { if (RB.finish) { const f = RB.finish; RB.finish = null
       if (g && g.id !== RBN.lastGo && !(h.presence.rbend === g.id)) { RBN.lastGo = g.id; Net.mode = g.mode; RBN.start(g, 1); return; }
     }
     if (!RBN.on) return _nu.apply(this, arguments);
+    // (v9.17.6, B3: the direct link still gets its tick in a match, so a dropped link is offered again; this wrapper
+    // skips the earlier chain, where p2p.js ticks it)
+    if (typeof P2P !== 'undefined') try { P2P.tick(); } catch (e) {}
     if (Game.screen !== 'play') { RBN.receive(); RBN.send(); }          // (the final screen: the other side may still need our last inputs)
     if (this.role === 'host') {                                          // still notice the guest leaving
       const keep = this.snapDue; this.snapDue = () => false;

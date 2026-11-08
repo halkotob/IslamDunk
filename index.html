@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.17.5';
+const VERSION = '9.17.6';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -26826,7 +26826,7 @@ function rbWalk(roots, out) {
 }
 function rbStateLines() {
   rbStaticsFresh();
-  return rbWalk([['M', M], ['ball', ball], ['rims', hoops.map(h => [h.dy, h.vy])], ['sprint', Sprint.map(S => [S.on, S.lastDir, S.lastT, S.held])], ['react', typeof React8 !== 'undefined' ? React8 : null]], []);
+  return rbWalk([['M', M], ['ball', ball], ['rims', hoops.map(h => [h.dy, h.vy])], ['sprint', Sprint.map(S => [S.on, S.lastDir, S.lastT, S.held])], ['react', typeof React8 !== 'undefined' ? React8 : null], ['wd', WD]], []);
 }
 function rbHash(lines = rbStateLines()) {
   let h = 2166136261;
@@ -26844,6 +26844,7 @@ function rbClean() {
     Object.assign(o, JSON.parse(JSON.stringify(P)));
   }
   for (const S of Sprint) for (const k of Object.keys(S)) delete S[k];
+  WD.dead = WD.loose = WD.out = 0;
   if (typeof _lastCall !== 'undefined') for (const k of Object.keys(_lastCall)) delete _lastCall[k];
 }
 // ---------------------------------------------------------------- the same math on every engine
@@ -26908,7 +26909,8 @@ const DMath = (() => {
 const RB_MATH = Object.keys(DMath);
 // ---------------------------------------------------------------- saving and restoring a frame
 // rbSave() keeps a shallow copy of every object, array, Set and Map the match owns (everything reachable from M, the
-// ball and the sprint gestures, without the team definitions and the fields only the screen uses); rbLoad() puts
+// ball, the sprint gestures and the stuck-ball watchdog's timers (WD, v8-resets.js: missing before 9.17.6, so a replayed
+// frame counted a loose ball's time again and one phone handed it out sooner), without the team definitions and the fields only the screen uses); rbLoad() puts
 // those values back into the same objects, so every reference anyone holds (a player in the renderer's caches, the
 // AI's player) still points at the right thing. Objects made after the save simply stop being referenced.
 function rbSkipKey(k) { return RB_LOOKS.has(k); }
@@ -26924,7 +26926,7 @@ function rbSave() {
     const c = {}; for (const k of Object.keys(v)) { if (rbSkipKey(k)) continue; const x = v[k]; c[k] = x; if (x !== null && typeof x === 'object') { if (k === 'hist') { if (!seen.has(x)) { seen.add(x); list.push(x, x.slice()); } } else go(x); } }   // (a player's position history: records are never changed once added)
     list.push(v, c);
   };
-  go(M); go(ball); go(Sprint); if (typeof React8 !== 'undefined') go(React8);
+  go(M); go(ball); go(Sprint); go(WD); if (typeof React8 !== 'undefined') go(React8);   // (v9.17.6: and the stuck-ball watchdog's timers)
   return { list, rims: hoops.map(h => [h.dy, h.vy]) };
 }
 function rbLoad(S) {
@@ -27089,6 +27091,7 @@ const RBN = {
     this.lastPkt = pkt; this.gotAt = nowMs(); this.stats.got++;
     if (pkt.et != null) this.rtt = this.rtt ? lerp(this.rtt, nowMs() - pkt.et - (pkt.ed || 0), 0.2) : nowMs() - pkt.et - (pkt.ed || 0);
     const R = 1 - this.me, I = this.ins[R];
+    if (!Number.isInteger(pkt.s) || pkt.s < 0) return;                  // (v9.17.6, S1: the first frame has to be a frame)
     const D = rbRunsIn(pkt.d);
     for (let j = 0; j < D.length; j++) {
       const f = pkt.s + j; if (I.has(f)) continue;
@@ -27232,7 +27235,20 @@ function rbUnpackIn(n) {
 }
 // inputs on the wire: base 36, and a run of the same input as value*count ("3k9x1*7,3k9x2")
 function rbRunsOut(d) { const o = []; for (let i = 0; i < d.length;) { let n = 1; while (i + n < d.length && d[i + n] === d[i]) n++; o.push(d[i].toString(36) + (n > 1 ? '*' + n : '')); i += n; } return o.join(','); }
-function rbRunsIn(s) { const o = []; if (!s) return o; for (const t of String(s).split(',')) { const [v, n] = t.split('*'), x = parseInt(v, 36); for (let k = 0; k < (n ? +n : 1); k++) o.push(x); } return o; }
+// (v9.17.6, S1: a packet is checked before it's unpacked: at most RB_RUN_MAX inputs in all, each a whole number a real
+// input can be. One bad part drops the whole packet: the next one carries the same frames again. A modified game could
+// send "0*999999999" and freeze the other player's tab.)
+const RB_RUN_MAX = 48, RB_IN_MAX = 255 * 34359738368;
+function rbRunsIn(s) {
+  const o = []; if (typeof s !== 'string' || !s || s.length > 2048) return o;
+  for (const t of s.split(',')) {
+    const m = /^([0-9a-z]{1,9})(?:\*([0-9]{1,2}))?$/.exec(t); if (!m) return [];
+    const x = parseInt(m[1], 36), n = m[2] ? +m[2] : 1;
+    if (!(x >= 0 && x < RB_IN_MAX) || n < 1 || o.length + n > RB_RUN_MAX) return [];
+    for (let k = 0; k < n; k++) o.push(x);
+  }
+  return o;
+}
 function rbSameIn(a, b) { return a.h === b.h && a.p === b.p && a.r === b.r && a.qx === b.qx && a.qz === b.qz; }
 // the end of the match, once: the real end-of-match flow (records, the final screen) runs on the confirmed frame
 function rbFinishOnce() { if (RB.finish) { const f = RB.finish; RB.finish = null; try { f(); } catch (e) {} } }
@@ -27260,6 +27276,9 @@ function rbFinishOnce() { if (RB.finish) { const f = RB.finish; RB.finish = null
       if (g && g.id !== RBN.lastGo && !(h.presence.rbend === g.id)) { RBN.lastGo = g.id; Net.mode = g.mode; RBN.start(g, 1); return; }
     }
     if (!RBN.on) return _nu.apply(this, arguments);
+    // (v9.17.6, B3: the direct link still gets its tick in a match, so a dropped link is offered again; this wrapper
+    // skips the earlier chain, where p2p.js ticks it)
+    if (typeof P2P !== 'undefined') try { P2P.tick(); } catch (e) {}
     if (Game.screen !== 'play') { RBN.receive(); RBN.send(); }          // (the final screen: the other side may still need our last inputs)
     if (this.role === 'host') {                                          // still notice the guest leaving
       const keep = this.snapDue; this.snapDue = () => false;
@@ -27318,7 +27337,7 @@ function rbSmoothAfter(B) {
 //   indexes. The guest keeps its own M, ball, sprint gestures, crowd memory, players and their AI (the objects the
 //   rest of the game holds), fills them with the host's values, and makes everything else new.
 function rbAnchors() {                                                    // the objects both sides have, by role
-  const A = { M, ball, Sprint }; if (typeof React8 !== 'undefined') A.React8 = React8;
+  const A = { M, ball, Sprint, WD }; if (typeof React8 !== 'undefined') A.React8 = React8;
   M.players.forEach((p, i) => { A['P' + i] = p; if (p.ai) A['A' + i] = p.ai; });
   (M.teams || []).forEach((t, i) => { A['T' + i] = t; });
   return A;

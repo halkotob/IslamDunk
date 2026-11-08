@@ -10,15 +10,15 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | B1 | Rollback: a half-court game is half court on the host only (two different games) | code review | 5 | 5 | 1 | **50** | done in 9.17.1 |
 | B2 | Rollback: each phone uses its own owner's taunt for both players (desync) | code review | 4 | 4 | 1 | **40** | done in 9.17.1 |
 | B20 | Rollback: your own equipped celebration (Options → Profile) is read from each phone's own profile; 9.17.0 uses cast celebrations online, but check every profile cosmetic that changes a pose inside a rollback match | code review | 4 | 4 | 1 | **40** | open |
-| B3 | Rollback: a dropped direct link is never retried during the match | code review | 4 | 4 | 2 | **32** | open |
+| B3 | Rollback: a dropped direct link is never retried during the match | code review | 4 | 4 | 2 | **32** | done in 9.17.6 (the link is offered again during the match; `rb-linkdrop`) |
 | T1 | Run the tests automatically on every push to `main` | tech debt | 4 | 5 | 2 | **36** | done in 9.17.2 (`npm run test:full` in `.github/workflows/test.yml`) |
 | S2 | Firebase limits and abuse: 100 players at once on the free plan; no App Check | security | 5 | 4 | 2 | **36** | open |
 | G5 | Before any ads: block gambling, alcohol and dating ad categories | launch | 3 | 4 | 1 | **35** | before ads |
 | G8 | Online on portals: add itch.io's and CrazyGames' game origins to the relay Worker's `ALLOWED_ORIGINS` (today only GitHub Pages and localhost), and check the Firebase key isn't limited to one site | launch | 4 | 3 | 1 | **35** | open |
 | Q2 | Run the phone and online tests in WebKit (Safari's engine) too | testing | 4 | 4 | 2 | **32** | open |
 | SV1 | Protect career saves on iPhone: persistent storage, a backup copy, Export/Import save | save systems | 4 | 4 | 2 | **32** | done in 9.17.3 |
-| Q9 | `rb-slow` (online, one very slow device) reports repaired desyncs since at least 9.16.2; passed on 9.15.0: find the cause. 9.17.2: a busy CPU (two tests at once on 2 cores) makes `rb-settings`, `rb-touch` and `rb-one` repair 1-3 desyncs too, so the cause is load, not the slow-device setup | testing | 4 | 4 | 2 | **32** | open |
-| S1 | Cap the rollback input runs (a modified game can freeze the other player) | security | 3 | 3 | 1 | **30** | open |
+| Q9 | `rb-slow` (online, one very slow device) reports repaired desyncs since at least 9.16.2; passed on 9.15.0: find the cause. 9.17.2: a busy CPU (two tests at once on 2 cores) makes `rb-settings`, `rb-touch` and `rb-one` repair 1-3 desyncs too, so the cause is load, not the slow-device setup | testing | 4 | 4 | 2 | **32** | done in 9.17.6: not load and not new (9.15.0 the same). The stuck-ball watchdog's timers weren't in the saved frame, so replayed frames counted a loose ball's time again; saved now (`rb-watchdog`). `rb-same` 7/10 → 10/10. What's left are desyncs by design when inputs come over 20 frames late (a very slow phone, a link stalled for seconds), each put right; the runner retries those once, loudly |
+| S1 | Cap the rollback input runs (a modified game can freeze the other player) | security | 3 | 3 | 1 | **30** | done in 9.17.6 (48 inputs a packet, bad packets dropped whole; `rb-hostile`) |
 | SV2 | An unreadable save silently looks like no career: keep the last good one and say so | save systems | 3 | 3 | 1 | **30** | done in 9.17.3 |
 | GT1 | A new player's first match starts on Medium: start on Easy and suggest stepping up after a win | game design | 4 | 2 | 1 | **30** | done in 9.17.4 |
 | GT6 | A playtest plan: first-time players, non-gamers (parents, younger kids), watch without coaching | game design | 4 | 2 | 1 | **30** | open |
@@ -57,7 +57,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | T8 | A short architecture overview, glossary and decision records | tech debt | 2 | 2 | 1 | **20** | open |
 | S5 | Drop malformed online messages instead of crashing the frame | security | 2 | 3 | 2 | **20** | open |
 | Q4 | Tests for the Firebase database rules (local emulator) | testing | 2 | 3 | 2 | **20** | open |
-| Q5 | Tests that send hostile online messages (with S1, S5) | testing | 2 | 3 | 2 | **20** | open |
+| Q5 | Tests that send hostile online messages (with S1, S5) | testing | 2 | 3 | 2 | **20** | input packets done in 9.17.6 (`rb-hostile`); other messages (S5) open |
 | B8 | P2P: answering a new offer leaves the old channel half open | code review | 2 | 3 | 2 | **20** | open |
 | X3 | Raise contrast of grey labels, calendar chips and the red EXIT (about 140 texts below 4.5:1) | accessibility | 3 | 2 | 2 | **20** | open |
 | X4 | An option for more time on the Noor question (15 s now) | accessibility | 2 | 2 | 1 | **20** | open |

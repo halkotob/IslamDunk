@@ -7,7 +7,7 @@
 //   indexes. The guest keeps its own M, ball, sprint gestures, crowd memory, players and their AI (the objects the
 //   rest of the game holds), fills them with the host's values, and makes everything else new.
 function rbAnchors() {                                                    // the objects both sides have, by role
-  const A = { M, ball, Sprint }; if (typeof React8 !== 'undefined') A.React8 = React8;
+  const A = { M, ball, Sprint, WD }; if (typeof React8 !== 'undefined') A.React8 = React8;
   M.players.forEach((p, i) => { A['P' + i] = p; if (p.ai) A['A' + i] = p.ai; });
   (M.teams || []).forEach((t, i) => { A['T' + i] = t; });
   return A;

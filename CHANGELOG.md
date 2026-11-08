@@ -1,5 +1,60 @@
 # Changelog
 
+## 9.17.6: CI goes green, and online stops flaking
+Nothing changes in how the game plays. Two online bugs are fixed (one desync, one freeze), a dropped direct link now
+comes back during the match, and the tests on GitHub match the machine the screenshots were made on.
+- **The screenshot tests (`world-visual`, `jumuah-visual`) failed on GitHub because of fonts, not art.** Cause (c), a
+  rendering difference. The baselines were made on a machine that prefers Inter for sans-serif and draws text
+  unhinted in grayscale (two fontconfig files there). GitHub's runner had neither, so text fell back to DejaVu Sans.
+  The runner now installs `fonts-inter` and the same two files (`tests/ci/`). No baseline image changed, and the
+  0.2% limit stays. The largest difference on any frame:
+
+  | | world | Jumu'ah |
+  |---|---|---|
+  | without Inter | 0.550% | 0.60-1.78% |
+  | Inter, hinted | 0.394% | 0.699% |
+  | Inter, unhinted grayscale (now) | 0.044% | 0.059% |
+
+- **Online desync fixed (Q9): it was the game, not load, and it was there in 9.15.0 too.** The stuck-ball watchdog
+  (a ball loose for 5 s goes to the nearest player) keeps its timers outside the match. A rollback match didn't save
+  them, so every replayed frame counted the loose ball's time again, and the phone that went back more handed the
+  ball out sooner. Found by comparing both phones' saved frames: the same state on frame 658, the same inputs, and
+  on 659 the guest's player had the ball and the host's didn't. The timers are saved, put back, checksummed and reset
+  with the match now. It showed most in 1 on 1 on a half court (loose balls sit longer). It also explains why a busy
+  CPU made it worse: more load, more frames replayed.
+- **What's left is by design.** When the other phone's inputs arrive more than 20 frames late (a phone too slow to keep
+  up, or a link that stalls for seconds), nobody waits: the frame keeps its guess, and if the guess was wrong the host
+  sends its state and both carry on from it. `rb-lag` now reports how many inputs were played as guessed. A test that
+  fails only on a desync the game put right runs once more, and the runner prints `!!! RETRIED` with the first
+  try in full. Any other failure isn't retried.
+- **`rb-slow` held the host to 50 fps while the other phone runs at a quarter speed.** The host follows the slow phone
+  on purpose (both stay level), so it can't be faster than it. Both measured 45-49 fps here and on GitHub's 2-core
+  runner, and it failed there 2 runs in 10. Both phones are held to the slow phone's 45 fps now.
+- **B3: a dropped direct link comes back during the match.** The match's network step kept the direct link's retry
+  from running, so a link that dropped stayed on the relay for the rest of the match. It's offered again now (up to 6
+  times). `rb-linkdrop`: dropped at frame 128, back within 20 s, no desync. On 9.15.0 it never came back.
+- **S1: a modified game can't freeze the other phone.** An input packet like `0*999999999` built a billion-entry list
+  (7.4 s frozen, then a crash). Now a packet carries at most 48 inputs; a run past that, a value no input can be, junk,
+  the wrong type or a first frame that isn't a frame drops the whole packet, in under 0.1 ms. Valid packets are
+  encoded and read exactly as before. `rb-hostile` sends 13 such packets: 0 inputs taken from them, a normal packet
+  after them still counts, both phones play on. On 9.15.0 the guest froze for 15 s and took 106 inputs from them.
+- **Docs-only pushes skip the suite** (`docs/**` and `.claude/**`, except the baselines, census, game text and sound
+  list the tests read). A newer push to the same branch cancels the run in progress.
+
+Measured: each test alone, 10 runs, on the 2-core container (pass count; desyncs put right per run, median / max):
+
+| | 9.15.0 | 9.17.5 | 9.17.6 |
+|---|---|---|---|
+| `rb-same` | (added in 9.17.1) | 7/10; 0 / 4 | 10/10; 0 / 0 |
+| `rb-lag` (Bad mobile row) | 8/10; desyncs in 2 runs (26, 6) | 5/10; desyncs in 5 runs (6-25) | 8/10; desyncs in 2 runs (36, 13), both in multi-second link stalls (2,500 and 500 late inputs) |
+| `rb-slow` | 1/10 (fps); 12 / 15 | 1/10 (fps); 10.5 / 19 | 0/10 on the old 50 fps bar; host 45-48, guest 45-49 fps; 10.5 / 21, from about 400 late inputs a run |
+| `online-lag` | 10/10; 0 / 0 | 8/10; 0 / 0 | 8/10; 0 / 0 |
+
+`online-lag` never desyncs. Its failures are single timing samples (a layup start, one shot grade's ball step, a
+second hop, a 53 ms move), a different one each time, and they aren't retried.
+- **New tests:** `rb-watchdog` (fast tier: the watchdog's timers are saved, put back, checksummed and reset; all four
+  failed on 9.15.0), `rb-linkdrop` and `rb-hostile` (full tier).
+
 ## 9.17.5: a sound for every moment (no music)
 docs/audio/sound-list.csv listed 21 events with no sound of their own. 16 have one now; the 5 ambience rows (the
 neighbourhood, inside the masjid, the career hub, menus over the attract match, the practice gym) stay silent on

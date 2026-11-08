@@ -169,7 +169,7 @@ function rbWalk(roots, out) {
 }
 function rbStateLines() {
   rbStaticsFresh();
-  return rbWalk([['M', M], ['ball', ball], ['rims', hoops.map(h => [h.dy, h.vy])], ['sprint', Sprint.map(S => [S.on, S.lastDir, S.lastT, S.held])], ['react', typeof React8 !== 'undefined' ? React8 : null]], []);
+  return rbWalk([['M', M], ['ball', ball], ['rims', hoops.map(h => [h.dy, h.vy])], ['sprint', Sprint.map(S => [S.on, S.lastDir, S.lastT, S.held])], ['react', typeof React8 !== 'undefined' ? React8 : null], ['wd', WD]], []);
 }
 function rbHash(lines = rbStateLines()) {
   let h = 2166136261;
@@ -187,6 +187,7 @@ function rbClean() {
     Object.assign(o, JSON.parse(JSON.stringify(P)));
   }
   for (const S of Sprint) for (const k of Object.keys(S)) delete S[k];
+  WD.dead = WD.loose = WD.out = 0;
   if (typeof _lastCall !== 'undefined') for (const k of Object.keys(_lastCall)) delete _lastCall[k];
 }
 // ---------------------------------------------------------------- the same math on every engine
@@ -251,7 +252,8 @@ const DMath = (() => {
 const RB_MATH = Object.keys(DMath);
 // ---------------------------------------------------------------- saving and restoring a frame
 // rbSave() keeps a shallow copy of every object, array, Set and Map the match owns (everything reachable from M, the
-// ball and the sprint gestures, without the team definitions and the fields only the screen uses); rbLoad() puts
+// ball, the sprint gestures and the stuck-ball watchdog's timers (WD, v8-resets.js: missing before 9.17.6, so a replayed
+// frame counted a loose ball's time again and one phone handed it out sooner), without the team definitions and the fields only the screen uses); rbLoad() puts
 // those values back into the same objects, so every reference anyone holds (a player in the renderer's caches, the
 // AI's player) still points at the right thing. Objects made after the save simply stop being referenced.
 function rbSkipKey(k) { return RB_LOOKS.has(k); }
@@ -267,7 +269,7 @@ function rbSave() {
     const c = {}; for (const k of Object.keys(v)) { if (rbSkipKey(k)) continue; const x = v[k]; c[k] = x; if (x !== null && typeof x === 'object') { if (k === 'hist') { if (!seen.has(x)) { seen.add(x); list.push(x, x.slice()); } } else go(x); } }   // (a player's position history: records are never changed once added)
     list.push(v, c);
   };
-  go(M); go(ball); go(Sprint); if (typeof React8 !== 'undefined') go(React8);
+  go(M); go(ball); go(Sprint); go(WD); if (typeof React8 !== 'undefined') go(React8);   // (v9.17.6: and the stuck-ball watchdog's timers)
   return { list, rims: hoops.map(h => [h.dy, h.vy]) };
 }
 function rbLoad(S) {

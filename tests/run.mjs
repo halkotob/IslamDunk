@@ -112,6 +112,7 @@ import { rbSameTests } from './rb-same.mjs';
 import { saveSafeTests } from './save-safe.mjs';
 import { firstMatchTests } from './first-match.mjs';
 import { sfxMomentsTests } from './sfx-moments.mjs';
+import { rbSafetyTests } from './rb-safety.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
 import { animFixTests } from './anim-fix.mjs';
@@ -2441,7 +2442,7 @@ T['world-visual'] = async ({ browser, base }) => {
         let n = 0; for (let i = 0; i < da.length; i += 4) if (Math.abs(da[i] - db[i]) > ch || Math.abs(da[i + 1] - db[i + 1]) > ch || Math.abs(da[i + 2] - db[i + 2]) > ch) n++;
         return { share: n / (da.length / 4) };
       }, [shot.toString('base64'), fs.readFileSync(file).toString('base64'), WORLD_DIFF.channel]);
-      if (d.size || d.share > WORLD_DIFF.share) { ok = false; detail.push(`CHANGED ${path.basename(file)}: ${d.size ? 'size ' + d.size : (d.share * 100).toFixed(2) + '% of pixels differ'}`); }
+      if (d.size || d.share > WORLD_DIFF.share) { ok = false; try { fs.mkdirSync(path.join(ROOT, 'tests/output'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'tests/output', path.basename(file)), shot); } catch (e) {} detail.push(`CHANGED ${path.basename(file)}: ${d.size ? 'size ' + d.size : (d.share * 100).toFixed(2) + '% of pixels differ'} (this run: tests/output/${path.basename(file)})`); }   // (v9.17.6: the frame is kept, as jumuah-visual does)
       if (d.share > worst.share) worst = { share: d.share, file: path.basename(file) };
     }
     for (const e of errs) { ok = false; detail.push('pageerror ' + e); }
@@ -2615,6 +2616,7 @@ Object.assign(T, rbSameTests({ newContext, open }));    // v9.17.1 both phones p
 Object.assign(T, saveSafeTests({ newContext, open }));  // v9.17.3 a career can't be lost (tests/save-safe.mjs)
 Object.assign(T, firstMatchTests({ newContext, open }));  // v9.17.4 the first match is friendly (tests/first-match.mjs)
 Object.assign(T, sfxMomentsTests({ newContext, open }));  // v9.17.5 a sound for every moment (tests/sfx-moments.mjs)
+Object.assign(T, rbSafetyTests({ newContext, open }));   // v9.17.6 a dropped link comes back, hostile packets are dropped (tests/rb-safety.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
 Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)
@@ -2639,7 +2641,7 @@ const HEAVY = new Set([
   'gamepad', 'phase5', 'career', 'v95', 'v99',
   // the online tests that have to run alone (SERIAL), except rb-one, rb-fun and rb-freeze
   'rb-lag', 'rb-same', 'rb-determinism', 'rb-flow', 'rb-rollback', 'rb-taunt', 'rb-online', 'rb-resync', 'rb-settings',
-  'rb-touch', 'rb-slow', 'rb-sounds', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
+  'rb-touch', 'rb-slow', 'rb-sounds', 'rb-linkdrop', 'rb-hostile', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
 // alone, after the parallel batch: frame-rate and speed checks, and the rollback and real-time online tests, which a
 // busy CPU makes desync (9.17.2 on 2 workers: rb-settings, rb-touch and rb-one each repaired 1-3 desyncs they don't alone)
 const SERIAL = new Set(['rb-slow', 'rb-lag', 'rb-freeze', 'lag-profiles', 'online-lag', 'league-time', 'net-rate',
@@ -2672,9 +2674,18 @@ const { srv, base } = await serve();
 console.log(`Testing ${path.relative(ROOT, PAGE)}${REF ? ' against reference ' + REF : ''}: ${TIER} tier, ${names.length} tests (${par.length} on ${WORKERS} workers, then ${ser.length} alone)\n`);
 const T0 = Date.now(), took = {}, results = {};
 let failed = 0;
+// (v9.17.6, Q9) an online test whose only failure is a desync the game put right (r.desyncOnly: it says so itself) runs
+// once more, and the first try is printed in full under a RETRIED line; any other failure, or a second one, fails
+const retried = [];
 async function runOne(n, browser) {
   const t0 = Date.now();
-  let r; try { r = await T[n]({ browser, base, tier: TIER }); } catch (e) { r = { ok: false, detail: [String(e && e.stack || e)] }; }
+  const once = async () => { try { return await T[n]({ browser, base, tier: TIER }); } catch (e) { return { ok: false, detail: [String(e && e.stack || e)] }; } };
+  let r = await once();
+  if (r && !r.ok && r.desyncOnly) {
+    const first = r; r = await once(); retried.push(n);
+    r = Object.assign({}, r, { detail: [...((r && r.detail) || []), `RETRIED: the first try failed only on a desync the game put right (${first.desyncOnly}); it was:`, ...(first.detail || []).map(d => '  ' + d)] });
+    console.log(`!!! RETRIED ${n}: a repaired desync on the first try (${first.desyncOnly}); second try ${r.ok ? 'passed' : 'failed'}`);
+  }
   if (!r || !r.ok) failed++;
   took[n] = (Date.now() - t0) / 1000; results[n] = !!(r && r.ok);
   // one block a test, printed when it finishes
@@ -2694,5 +2705,6 @@ const slow = Object.entries(took).sort((a, b) => b[1] - a[1]).slice(0, 10);
 console.log(`\nSlowest: ${slow.map(([n, t]) => `${n} ${t.toFixed(0)} s`).join(', ')}`);
 console.log(`Total: ${wall.toFixed(0)} s wall, ${Object.values(took).reduce((a, b) => a + b, 0).toFixed(0)} s of tests, ${WORKERS} workers, ${TIER} tier`);
 if (TIER === 'fast' && !ONLY.length && wall > 180) console.log(`WARNING: the fast tier took ${(wall / 60).toFixed(1)} min (target: 3). Move the slowest into HEAVY in tests/run.mjs.`);
+if (retried.length) console.log(`\n!!! RETRIED after a repaired desync: ${retried.join(', ')} (see RETRIED in their details)`);
 console.log(`\n${names.length - failed}/${names.length} passed`);
 process.exit(failed ? 1 : 0);
