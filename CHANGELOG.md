@@ -24,12 +24,16 @@ comes back during the match, and the tests on GitHub match the machine the scree
   CPU made it worse: more load, more frames replayed.
 - **What's left is by design.** When the other phone's inputs arrive more than 20 frames late (a phone too slow to keep
   up, or a link that stalls for seconds), nobody waits: the frame keeps its guess, and if the guess was wrong the host
-  sends its state and both carry on from it. `rb-lag` now reports how many inputs were played as guessed. A test that
-  fails only on a desync the game put right runs once more, and the runner prints `!!! RETRIED` with the first
-  try in full. Any other failure isn't retried.
+  sends its state and both carry on from it. `rb-lag` now reports how many inputs were played as guessed. On the
+  direct and relay links it still allows no desync at all. On the Bad mobile link a desync passes only when inputs
+  really came late, the host put it right, and both phones end on the same sync code. (GitHub's runner played 378
+  and 905 inputs as guessed there, in two tries; this machine 0-13.) A test that fails only on a desync the game put
+  right runs once more, and the runner prints `!!! RETRIED` with the first try in full. Any other failure isn't
+  retried.
 - **`rb-slow` held the host to 50 fps while the other phone runs at a quarter speed.** The host follows the slow phone
   on purpose (both stay level), so it can't be faster than it. Both measured 45-49 fps here and on GitHub's 2-core
-  runner, and it failed there 2 runs in 10. Both phones are held to the slow phone's 45 fps now.
+  runner, and it failed there 2 runs in 10. Both phones are held to the slow phone's 45 fps now, and the slow phone
+  runs at a third of full speed (it was a quarter: GitHub's runner drew 42 fps at that).
 - **B3: a dropped direct link comes back during the match.** The match's network step kept the direct link's retry
   from running, so a link that dropped stayed on the relay for the rest of the match. It's offered again now (up to 6
   times). `rb-linkdrop`: dropped at frame 128, back within 20 s, no desync. On 9.15.0 it never came back.
