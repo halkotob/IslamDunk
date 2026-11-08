@@ -2441,7 +2441,7 @@ T['world-visual'] = async ({ browser, base }) => {
         let n = 0; for (let i = 0; i < da.length; i += 4) if (Math.abs(da[i] - db[i]) > ch || Math.abs(da[i + 1] - db[i + 1]) > ch || Math.abs(da[i + 2] - db[i + 2]) > ch) n++;
         return { share: n / (da.length / 4) };
       }, [shot.toString('base64'), fs.readFileSync(file).toString('base64'), WORLD_DIFF.channel]);
-      if (d.size || d.share > WORLD_DIFF.share) { ok = false; detail.push(`CHANGED ${path.basename(file)}: ${d.size ? 'size ' + d.size : (d.share * 100).toFixed(2) + '% of pixels differ'}`); }
+      if (d.size || d.share > WORLD_DIFF.share) { ok = false; try { fs.mkdirSync(path.join(ROOT, 'tests/output'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'tests/output', path.basename(file)), shot); } catch (e) {} detail.push(`CHANGED ${path.basename(file)}: ${d.size ? 'size ' + d.size : (d.share * 100).toFixed(2) + '% of pixels differ'} (this run: tests/output/${path.basename(file)})`); }   // (v9.17.6: the frame is kept, as jumuah-visual does)
       if (d.share > worst.share) worst = { share: d.share, file: path.basename(file) };
     }
     for (const e of errs) { ok = false; detail.push('pageerror ' + e); }

@@ -4,7 +4,11 @@ name: tests
 on:
   push:
     branches: [main]
+    # (v9.17.6: a docs-only or skills-only push doesn't run the suite; docs the tests read still do: the
+    # screenshot baselines, census, game text and Studio ids under docs/review, the sound list under docs/audio)
+    paths: ['**', '!docs/**', '!.claude/**', 'docs/review/**', 'docs/audio/**']
   pull_request:
+    paths: ['**', '!docs/**', '!.claude/**', 'docs/review/**', 'docs/audio/**']
   workflow_dispatch:
 concurrency:
   group: tests-${{ github.ref }}
@@ -21,6 +25,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      # (v9.17.6) the same fonts as the machine the screenshot baselines were made on: Inter, preferred for sans-serif.
+      # Without it the text falls back to DejaVu Sans and every world and Jumu'ah frame differs by 0.5-1.8%.
+      - name: Fonts as on the baseline machine
+        run: |
+          sudo apt-get install -y --no-install-recommends fonts-inter
+          sudo cp tests/ci/56-prefer-inter.conf /etc/fonts/conf.d/
+          fc-cache -f
+          fc-match sans-serif
       - run: npm run test:full
       - name: Keep the test output
         if: always()

@@ -1,0 +1,30 @@
+# temporary (v9.17.6 measurement): the visual tests with the baseline machine's fonts, and the four online tests 10x alone
+name: q9-measure
+on:
+  push:
+    branches: [q9-measure]
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Fonts as on the baseline machine
+        run: |
+          sudo apt-get install -y --no-install-recommends fonts-inter
+          sudo cp tests/ci/56-prefer-inter.conf /etc/fonts/conf.d/
+          fc-cache -f
+          fc-match sans-serif
+      - run: npx vite build --mode web && npx vite build --mode review
+      - name: Visual tests
+        run: node tests/run.mjs --only world-visual,jumuah-visual --workers 1 || true
+      - name: Online tests, 10 runs each, alone
+        run: |
+          bash tests/ci/q9.sh "$PWD" /tmp/q9 10 rb-slow rb-lag online-lag rb-same
+          python3 tests/ci/q9sum.py /tmp/q9 rb-slow rb-lag online-lag rb-same
