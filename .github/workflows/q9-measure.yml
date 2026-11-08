@@ -1,4 +1,4 @@
-# temporary (v9.17.6 measurement): the visual tests with the baseline machine's fonts, and the four online tests 10x alone
+# temporary (v9.17.6 measurement): what CI draws for the visual tests, with the baseline machine's fonts
 name: q9-measure
 on:
   push:
@@ -6,7 +6,7 @@ on:
 jobs:
   measure:
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,11 +20,16 @@ jobs:
           sudo apt-get install -y --no-install-recommends fonts-inter
           sudo cp tests/ci/56-prefer-inter.conf /etc/fonts/conf.d/
           fc-cache -f
-          fc-match sans-serif
+      - name: Font facts
+        run: |
+          for f in sans-serif "Arial Black" Impact Verdana "Trebuchet MS" "Segoe UI" emoji monospace serif; do echo "FCM $f -> $(fc-match "$f")"; done
+          fc-query -f 'FCV %{family[0]} %{fontversion}\n' /usr/share/fonts/opentype/inter/Inter-Regular.otf
+          dpkg -l fonts-inter fontconfig libfreetype6 | grep '^ii' | sed 's/^/PKG /'
+          fc-list : family | sort -u | sed 's/^/FAM /'
+          ls /etc/fonts/conf.d | sed 's/^/CONF /'
+          node -e "require('playwright').chromium.launch().then(async b=>{console.log('CHR',b.version());await b.close()})"
       - run: npx vite build --mode web && npx vite build --mode review
       - name: Visual tests
         run: node tests/run.mjs --only world-visual,jumuah-visual --workers 1 || true
-      - name: Online tests, 10 runs each, alone
-        run: |
-          bash tests/ci/q9.sh "$PWD" /tmp/q9 10 rb-slow rb-lag online-lag rb-same
-          python3 tests/ci/q9sum.py /tmp/q9 rb-slow rb-lag online-lag rb-same
+      - name: Frames
+        run: node tests/ci/vis-dump.mjs world-store-afternoon-desktop.png jumuah-card-iphone.png world-street-morning-desktop.png
