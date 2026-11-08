@@ -42,6 +42,8 @@ comes back during the match, and the tests on GitHub match the machine the scree
   the wrong type or a first frame that isn't a frame drops the whole packet, in under 0.1 ms. Valid packets are
   encoded and read exactly as before. `rb-hostile` sends 13 such packets: 0 inputs taken from them, a normal packet
   after them still counts, both phones play on. On 9.15.0 the guest froze for 15 s and took 106 inputs from them.
+- **Online tests press Start only once the host has seen the guest's Ready.** Before, they waited a fixed 0.6-0.9 s,
+  and on a lossy link Start sometimes came first and did nothing (`lag-profiles`, 20% loss, timed out once on GitHub).
 - **Docs-only pushes skip the suite** (`docs/**` and `.claude/**`, except the baselines, census, game text and sound
   list the tests read). A newer push to the same branch cancels the run in progress.
 

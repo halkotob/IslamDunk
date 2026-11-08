@@ -124,12 +124,14 @@ export async function lagRun(browser, base, name, prof, opts = {}) {
   try {
     const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
     await G.evaluate(c => Lobby.join(c), code);
-    await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 20000 });
+    await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 20000 }).catch(e => { throw new Error('the guest never reached the lobby: ' + e.message); });
     if (prof.direct) for (const P of [H, G]) await P.evaluate(() => { if (typeof P2P !== 'undefined') P2P.open = true; });   // the direct link's rate (60 Hz), on the conditioned path
     await H.evaluate(() => { const o = Lobby.opts(); o.game = 'vs'; Net.mode = 'vs'; Lobby.changed(); });
     await G.evaluate(() => Lobby.setReady(1)); await sleep(prof.lat * 4 + 800);
-    await H.evaluate(() => Lobby.start());
-    await G.waitForFunction(() => Game.screen === 'netplay' && M.players && M.players.length > 2, null, { timeout: 20000 });
+    // (v9.17.6) Start only once the host has seen the guest's Ready. On a lossy link it can come later than the fixed
+    // wait, and Start before it does nothing, so the match never began (lag-profiles, 20% loss, once on CI)
+    await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
+    await G.waitForFunction(() => Game.screen === 'netplay' && M.players && M.players.length > 2, null, { timeout: 20000 }).catch(e => { throw new Error('the match never started on the guest: ' + e.message); });
     await H.evaluate(HOST_INIT); await G.evaluate(GUEST_INIT);
     if (opts.hostEval) await H.evaluate(opts.hostEval);
     await sleep(2500);

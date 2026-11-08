@@ -162,7 +162,7 @@ export function sfxMomentsTests({ newContext, open }) {
     await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 15000 }).catch(() => {});
     await H.evaluate(S => { const o = Lobby.opts(); Object.assign(o, S); Net.mode = S.game; Lobby.changed(); }, setup);
     await G.evaluate(() => Lobby.setReady(1)); await sleep(900);
-    await H.evaluate(() => Lobby.start());
+    await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
     await G.waitForFunction(() => Game.screen === 'play', null, { timeout: 15000 }).catch(() => {});
     return { ctx, H, G, errs };
   }

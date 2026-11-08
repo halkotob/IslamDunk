@@ -112,7 +112,7 @@ export function rollbackTests({ newContext, open }) {
     await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 15000 }).catch(() => {});
     await H.evaluate(S => { const o = Lobby.opts(); o.game = 'vs'; Net.mode = 'vs'; Object.assign(o, S || {}); Lobby.changed(); }, setup || null);
     await G.evaluate(() => Lobby.setReady(1)); await sleep(900);
-    await H.evaluate(() => Lobby.start());
+    await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
     await G.waitForFunction(() => RBN.on && Game.screen === 'play', null, { timeout: 15000 }).catch(() => {});
     return { ctx, H, G, errs };
   }
@@ -146,7 +146,7 @@ export function rollbackTests({ newContext, open }) {
     out.lobby = await Promise.all([H, G].map(p => p.evaluate(() => ({ screen: Game.screen, rb: RBN.on }))));
     // a rematch
     const id0 = await H.evaluate(() => RBN.id);
-    await sleep(600); await H.evaluate(() => Lobby.start());
+    await sleep(600); await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
     await G.waitForFunction(() => RBN.on && Game.screen === 'play', null, { timeout: 15000 }).catch(() => {});
     await sleep(1500);
     out.rematch = await Promise.all([H, G].map(p => p.evaluate(() => ({ on: RBN.on, id: RBN.id, f: RBN.f, screen: Game.screen }))));

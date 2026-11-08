@@ -1136,7 +1136,7 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
     const coN = games.slice(0, gi + 1).filter(x => x === 'co').length;   // v8.6.7: 1st co game on NOOR (hafiz on slot 0), 2nd on TAQWA (hafiz on slot 1)
     await H.evaluate(([g, coN, fixTeam]) => { const o = Lobby.opts(); o.game = g; if (g === 'horse') { o.word = 'HAQ'; o.timer = 6; } if (g === 'co' && fixTeam) { o.a = coN === 1 ? 0 : 1; o.b = 4; } Net.mode = g; Lobby.changed(); }, [game, coN, noor && !custom]);
     await G.evaluate(() => Lobby.setReady(1)); await sleep(800);
-    await H.evaluate(() => Lobby.start());
+    await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
     await G.waitForFunction(() => Game.screen === 'netplay' && M.players && M.players.length > 0, null, { timeout: 10000 }).catch(() => {});
     await sleep(2500);
     const st = await G.evaluate(() => ({ screen: Game.screen, players: M.players.length, snaps: Net.snaps.length }));
@@ -1228,7 +1228,7 @@ async function lagRun(browser, base, lat, jit) {
   await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 10000 }).catch(() => {});
   await H.evaluate(() => { const o = Lobby.opts(); o.game = 'vs'; Net.mode = 'vs'; Lobby.changed(); });
   await G.evaluate(() => Lobby.setReady(1)); await sleep(600);
-  await H.evaluate(() => Lobby.start());
+  await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
   await G.waitForFunction(() => Game.screen === 'netplay' && M.players && M.players.length > 0, null, { timeout: 10000 }).catch(() => {});
   await sleep(1500);
   // guest instrumentation: every frame, and every pop shown
@@ -1339,7 +1339,7 @@ T['duo-run'] = async ({ browser, base }) => {
   await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 10000 }).catch(() => {});
   await H.evaluate(() => { const o = Lobby.opts(); o.game = 'brun'; Net.mode = 'brun'; Lobby.changed(); });
   await G.evaluate(() => Lobby.setReady(1)); await sleep(600);
-  await H.evaluate(() => Lobby.start());
+  await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
   await G.waitForFunction(() => Game.screen === 'netplay' && M.players && M.players.length > 2, null, { timeout: 10000 }).catch(() => {});
   const rounds = [];
   const finish = win => H.evaluate(win => { Replay.schedule = () => {}; M.introT = 0; M.teams[0].score = win ? 30 : 0; M.teams[1].score = win ? 0 : 30; M.clock = 0.05; M.phase = 'live'; }, win);

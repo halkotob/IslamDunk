@@ -22,7 +22,7 @@ export function rbSafetyTests({ newContext, open }) {
     const { ctx, H, G, errs } = await pair(browser, base, '?net=loop&mode=udp&lat=30&jit=5&room=rblink&nowelcome=1');
     await G.waitForFunction(() => P2P.open, null, { timeout: 15000 }).catch(() => {});
     const before = await G.evaluate(() => P2P.open);
-    await H.evaluate(() => Lobby.start());
+    await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
     await G.waitForFunction(() => RBN.on && RBN.f > 120, null, { timeout: 15000 }).catch(() => {});
     // the link drops mid-match
     await H.evaluate(() => P2P.close('test'));
@@ -37,7 +37,7 @@ export function rbSafetyTests({ newContext, open }) {
   };
   T['rb-hostile'] = async ({ browser, base }) => {
     const { ctx, H, G, errs } = await pair(browser, base, '?net=loop&mode=udp&lat=30&jit=5&p2p=0&room=rbhost&nowelcome=1');
-    await H.evaluate(() => Lobby.start());
+    await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
     await G.waitForFunction(() => RBN.on && RBN.f > 120, null, { timeout: 15000 }).catch(() => {});
     // packets from a modified game, handed to the guest's receive as if they came from the host
     const r = await G.evaluate(() => {
