@@ -46,37 +46,11 @@ Object.assign(SFX, {
 });
 
 // ================================================= v4.1: FOULS + FREE THROWS
-// A connected shove can be called a foul. The call rate depends on difficulty,
-// on context (shoving a ball handler who has beaten you is called far more than
-// incidental contact while both players jockey for position) and rises softly
-// with each shove that player has thrown this game. A called foul stops play
-// and sends the fouled player to the line for two live free throws. After a
-// team's 5th foul in a period every shove is called (the other team is in the
-// bonus).
-const FOUL_BASE = { veryeasy: 0.12, easy: 0.2, medium: 0.34, hard: 0.46 };   // v6: the shove is a hard foul and gets called more
+// v9.17.10: the shove and its hard-foul call (shoveFoulCheck, callFoul, FOUL_BASE) are gone. Fouls are the contact
+// ones in v6-contact.js (reach-in, blocking, shooting, and-one, on purpose): they count toward the bonus below.
 const BONUS_AT = 5;
 function teamFouls(t) { return (M.teamFouls || [0, 0])[t]; }
 function inBonus(t) { return teamFouls(1 - t) >= BONUS_AT; }            // team t shoots free throws on every foul
-function shoveFoulCheck(p, tgt) {
-  if (M.phase !== 'live' || M.practice || M.attract || M.mini) return false;
-  if (teamFouls(p.team) >= BONUS_AT) return true;                      // opponent in the bonus: always a foul
-  const hp = attackHoop(tgt.team);
-  const beat = ball.owner === tgt && dxz(tgt, hp) < dxz(p, hp) - 4;   // shoving a handler who got past you
-  const incidental = ball.owner !== tgt && Math.hypot(p.vx || 0, p.vz || 0) > 60 && Math.hypot(tgt.vx || 0, tgt.vz || 0) > 60;
-  const ctx = beat ? 1.9 : ball.owner === tgt ? 1.25 : incidental ? 0.5 : 0.85;
-  const esc = 1 + 0.18 * Math.max(0, (p.shoves || 1) - 1);            // soft escalation, no cap
-  return chance(Math.min(0.92, (FOUL_BASE[SETTINGS.difficulty] || 0.24) * ctx * esc));
-}
-function callFoul(p, tgt) {
-  const bonus = teamFouls(p.team) >= BONUS_AT;
-  M.teamFouls[p.team]++; p.stats.pf = (p.stats.pf || 0) + 1;
-  SFX.whistle(); FX.callout('FOUL!', '#ffd76a', 'ON ' + p.def.name.toUpperCase() + (bonus || teamFouls(p.team) >= BONUS_AT ? '  \u2022  BONUS' : ''), true);
-  if (ball.owner) { const o = ball.owner; ball.owner = null; ball.state = 'loose'; o.move = null; }
-  ball.shot = null; ball.pass = null;
-  M.pendingEnd = false;
-  M.phase = 'ft';
-  M.ft = { shooter: tgt, team: tgt.team, n: 2, i: 0, stage: 'pause', t: 0, made: 0, res: null };
-}
 // Lane positions for everyone except the shooter (shooter at the line)
 function ftTargets() {               // where everyone stands for free throws (shooter at the line, lane spots for the rest)
   const F = M.ft, h = attackHoop(F.team), s = F.shooter, out = new Map([[s, { x: h.x + h.dir * 214, z: h.z }]]);

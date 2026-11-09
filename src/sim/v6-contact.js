@@ -58,26 +58,19 @@ function nonShootingFoul(by, victim, title) {
   };
 }
 
-// ------------------------------------------------------------- shoves, intentional fouls
+// ------------------------------------------------------------- intentional fouls (v9.17.10: the shove is gone)
 function intentionalOK(p) {
   if (!foulsOn() || M.fmt.first21) return false;
   const bo = ball.owner, me = M.teams[p.team].score, them = M.teams[1 - p.team].score;
   if (p.human < 0 && ((M.intF || [0, 0])[p.team] >= 3 || M.clock > 30 || them - me > 6)) return false;
   return M.quarter >= M.fmt.periods && M.clock <= 40 && them - me >= 1 && them - me <= 8 && bo && bo.team !== p.team && dxz(bo, p) < 52;
 }
-{
-  const _sh = tryShove;
-  tryShove = function (p) {
-    if (p.cd.shove > 0) return;
-    if (intentionalOK(p)) {                                         // fouling on purpose: a grab, not a shove; stops the clock
-      const t = ball.owner; p.cd.shove = 1.0; p.state = 'shove'; p.st_t = 0; p.face = sgn(t.x - p.x);
-      M.intF = M.intF || [0, 0]; M.intF[p.team]++;
-      addFoul(p); foulShots(p, t, 2, 'FOUL ON PURPOSE', 'STOPS THE CLOCK  •  2 SHOTS'); return;
-    }
-    _sh(p);
-  };
-  const _cf = callFoul;
-  callFoul = function (p, tgt) { p.hardFouls = (p.hardFouls || 0) + 1; compAdd(p, -6); _cf(p, tgt); FX.callout('HARD FOUL!', '#ffd76a', 'ON ' + p.def.name.toUpperCase() + '  •  WATCH THE ADAB', true); };
+// late and trailing, turbo + Pass on defense: a grab (the steal reach) that stops the clock; true when it happened
+function intentionalGrab(p) {
+  if (p.cd.steal > 0 || !intentionalOK(p)) return false;
+  const t = ball.owner; p.cd.steal = 1.0; p.state = 'steal'; p.st_t = 0; p.face = sgn(t.x - p.x);
+  M.intF = M.intF || [0, 0]; M.intF[p.team]++;
+  addFoul(p); foulShots(p, t, 2, 'FOUL ON PURPOSE', 'STOPS THE CLOCK  •  2 SHOTS'); return true;
 }
 
 // ------------------------------------------------------------- stance

@@ -35,7 +35,7 @@ function trackCareerGame(g) {
   const tm = { t: s.tmd || 0, g: s.grn || 0, e: s.early || 0, l: s.late || 0 };
   C.timing.push(tm); if (C.timing.length > 10) C.timing.shift();
   C.ct.tmd += tm.t; C.ct.grn += tm.g; C.ct.early += tm.e; C.ct.late += tm.l;
-  return Object.assign({}, g, { pts: perf.pts, ast: perf.ast, road: !!M.cRoad, buzzer: !!M.cBuzzer, tm, clean: !g.me.shoves });
+  return Object.assign({}, g, { pts: perf.pts, ast: perf.ast, road: !!M.cRoad, buzzer: !!M.cBuzzer, tm, clean: !(g.me.stats && g.me.stats.pf) });   // (v9.17.10: no foul committed; it was no shove)
 }
 
 // ------------------------------------------------------------- milestone beats

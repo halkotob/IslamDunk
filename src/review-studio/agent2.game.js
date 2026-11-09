@@ -63,7 +63,7 @@
     setup: c => { place(c.o1, c.me.x - attackHoop(c.me.team).dir * 40, c.me.z); c.o1.face = -c.me.face; giveBall(c.o1, 'inbound'); },
     start: c => trySteal(c.me) });
   add('Defense', 'block/default', 'Block (jump)', { n: 80, at: 8, start: c => startJump(c.me) });
-  add('Defense', 'shove/default', 'Shove', { n: 70, at: 8, setup: c => { place(c.o1, c.me.x - attackHoop(c.me.team).dir * 36, c.me.z); }, start: c => tryShove(c.me) });
+  // (v9.17.10: 'shove/default' retired with the shove)
   add('Defense', 'ankles/default', 'Ankle break (crossed up)', { n: 70, dist: 520, follow: true, cmd: run(0.5), at: 10, start: c => { c.me.stumble = 0.55; c.me.shook = 0.47; c.me.shookDir = { x: attackHoop(c.me.team).dir, z: 0 }; } });
   add('Falls', 'fall/default', 'Knocked down, and getting up', { n: 160, at: 8, start: c => knockDown(c.me, attackHoop(c.me.team).dir, 0) });
   add('Celebrate', 'celebrate/default', 'Celebration (arm up)', { n: 120, at: 4, start: c => { c.me.celebrate = 1.6; } });

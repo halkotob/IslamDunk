@@ -310,7 +310,7 @@ const SHEIKH_LINES = {
     'Close out with short, choppy steps. Run at a shooter and he’ll drive right past you.',
     'The best shot is the one your teammate is open for.',
     'When you’re tired, your shot gets short. Legs first, then arms.',
-    'A shove might feel good for a second. The foul costs the team for the rest of the game.',
+    'A cheap foul might feel good for a second. It costs the team for the rest of the game.',
     'Take the charge. Standing still in the right spot is a skill.',
     'Watch the game when you’re not in the play. The next pass is already telling you where it’s going.',
     'A dunk counts two, the same as a layup. Pick the one that goes in.',

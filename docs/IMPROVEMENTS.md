@@ -136,6 +136,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | UX2 | 16:10 (Steam Deck, many laptops) and ultrawide get black bars: let the height grow on 16:10 | UI | 2 | 1 | 2 | **12** | open |
 | UX3 | Buttons are fixed widths sized to English; translations will overflow (with UI2) | UI | 2 | 1 | 2 | **12** | open |
 | IN3 | One-button alternatives for two-button moves (Turbo + Block swipe, chase-down) | input | 2 | 1 | 2 | **12** | open |
+| IN4 | Remove the shove (Turbo + Pass on defense: a two-button combo called as a hard foul more the more it's used; a new player mashing it got whistled) | input | 3 | 2 | 1 | **25** | done in 9.17.10: Turbo + Pass on defense is a steal; late and trailing it's still the foul on purpose. Every other foul unchanged |
 | GDS4 | A few cosmetics earned by feats (first posterizer, first buzzer-beater), not only by XP | game design | 2 | 1 | 2 | **12** | open |
 | GDS5 | After level 30 XP does nothing: keep a count of levels past 30 (a star on the profile card) | game design | 2 | 1 | 2 | **12** | open |
 | B10 | Rollback: events in a replayed frame 0 are skipped | code review | 1 | 1 | 1 | **10** | open |

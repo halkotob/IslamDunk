@@ -292,8 +292,7 @@ function careerRewards(won, champ, ctx = {}) {
     bp.push([stops >= 4 ? 'Defensive anchor (' + stops + ' stops)' : 'Defense (' + parts + ')', stl * 4 + blk * 4 + chg * 8 + (stops >= 4 ? 15 : 0)]);
   }
   if (s.reb) bp.push(['Rebounds (' + s.reb + ')', s.reb * 2]);
-  if (!me.shoves) bp.push(won ? ['Sportsmanship: clean win', 25] : ['Clean play, no shoves', 15]);
-  if (me.hardFouls) bp.push(['Hard fouls called (' + me.hardFouls + ')', -8 * me.hardFouls]);
+  if (!(me.stats && me.stats.pf)) bp.push(won ? ['Sportsmanship: clean win', 25] : ['Clean play, no fouls', 15]);   // (v9.17.10: no foul committed; was no shove, and hard fouls are gone)
   if (ctx.salah) bp.push(['Prayed before the game', ECON.bpSalah]);
   const base = bp.reduce((a, b) => a + b[1], 0), k = ECON.bpStageK[st];
   if (k > 1 && base > 0) bp.push([S.name + ' stage bonus (x' + k + ')', Math.round(base * (k - 1))]);

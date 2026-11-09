@@ -1,4 +1,4 @@
-// npm run defense:report  (builds first; or: node scripts/defense-report.mjs [--games 8] [--page dist/web/index.html] [--seed 5000])
+// npm run defense:report  (builds first; or: node scripts/defense-report.mjs [--games 8] [--page dist/web/index.html] [--seed 5000] [--diff hard])
 //
 // Plays N seeded CPU-vs-CPU games (2v2, 4 x 60 s quarters, 8 team pairings, cycled) in headless Chromium
 // and prints, per game and in total: field goal attempts, blocks, blocks as a percent of attempts, steals,
@@ -12,6 +12,7 @@ import path from 'node:path';
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const PAGE = path.resolve(ROOT, arg('--page', 'dist/web/index.html'));
+const DIFF = arg('--diff', null);   // (v9.17.10: veryeasy | easy | medium | hard; default: the game's default)
 const GAMES = Math.max(1, +arg('--games', 8) | 0), SEED = +arg('--seed', 5000) | 0;
 if (!fs.existsSync(PAGE)) { console.error(`No build at ${PAGE}. Run npm run build:web first.`); process.exit(1); }
 
@@ -31,8 +32,8 @@ const errs = []; page.on('pageerror', e => errs.push(e.message));
 await page.goto(`http://127.0.0.1:${srv.address().port}/`);
 await page.waitForFunction(() => typeof Game !== 'undefined' && typeof newMatch === 'function' && typeof Net !== 'undefined' && Net.avail !== 'checking', null, { timeout: 20000 });
 
-const rows = await page.evaluate(({ GAMES, SEED }) => {
-  const out = [];
+const rows = await page.evaluate(({ GAMES, SEED, DIFF }) => {
+  const out = []; if (DIFF) SETTINGS.difficulty = DIFF;
   for (let g = 0; g < GAMES; g++) {
     window.__seed(SEED + g * 7919);
     const a = g % 8, b = (g + 3) % 8;
@@ -44,12 +45,12 @@ const rows = await page.evaluate(({ GAMES, SEED }) => {
       fga: sum('fga'), blk: sum('blk'), stl: sum('stl'), tov: hasTov ? sum('tov') : null, pf: sum('pf'), finished: M.phase === 'over' });
   }
   return out;
-}, { GAMES, SEED });
+}, { GAMES, SEED, DIFF });
 await browser.close(); srv.close();
 
 const pct = (a, b) => b ? (a / b * 100).toFixed(1) + '%' : '-';
 const pad = (s, n) => String(s).padStart(n);
-console.log(`Defense report: ${GAMES} seeded CPU-vs-CPU games, 2v2, 4 x 60 s  (${path.relative(ROOT, PAGE)}, seed ${SEED})\n`);
+console.log(`Defense report: ${GAMES} seeded CPU-vs-CPU games, 2v2, 4 x 60 s, ${DIFF || 'default'} difficulty  (${path.relative(ROOT, PAGE)}, seed ${SEED})\n`);
 console.log(`${'game'.padEnd(26)}${pad('score', 8)}${pad('FGA', 6)}${pad('BLK', 6)}${pad('BLK%', 8)}${pad('STL', 6)}${pad('TOV', 6)}${pad('PF', 5)}`);
 const T = { fga: 0, blk: 0, stl: 0, tov: 0, pf: 0 }; let tovKnown = true;
 for (const r of rows) {

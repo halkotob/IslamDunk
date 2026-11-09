@@ -1,5 +1,41 @@
 # Changelog
 
+## 9.17.10: the shove is gone
+The shove is gone. Turbo + Pass on defense is just a steal. All other fouls are the same.
+- **What changed:** sprint + Pass on defense (Turbo + Steal on keys and pads) is a steal attempt, exactly like Pass
+  alone: nobody gets knocked down, and there's no hard foul to be called for. The one exception stays: late in the
+  last period and trailing, sprint + Pass is still the foul on purpose that stops the clock (2 shots). The CPU never
+  shoves. Reach-ins, blocking fouls, shooting fouls, and-ones, the foul on purpose, the bonus and free throws are
+  unchanged. On defense, the reach ring around your player stays the steal's size when you sprint, and turns orange
+  only where sprint + Pass is the foul on purpose.
+- **How much it happened:** the CPU almost never shoved (8 seeded games each: 0, 0, 0.13 and 0.38 shoves a game from
+  Very easy to Hard; 0.63 on Hard over 24 games, a quarter of them called). A player mashing Turbo + Pass on
+  defense threw 29 to 37 shoves a game and was called for 7.5 to 13.8 hard fouls a game; on Very easy it was the one
+  style that won (by 2.5 points a game). Now the same masher throws no shoves, makes 6 to 7 steals a game (0.1 to
+  0.4 before) and loses at every difficulty (by 8 to 12 points).
+- **The rest of the game:** `npm run defense:report` (8 seeded CPU games a difficulty, steals a game, before →
+  after): Very easy 0.3 → 0.3, Easy 1.8 → 2.0, Medium 4.3 → 3.9, Hard 6.6 → 5.0. Over 24 games a difficulty, steals per
+  100 possessions: 1.70 → 0.94 (20 steals → 11), 3.80 → 3.34, 6.05 → 7.17, 10.23 → 11.32. That moves more than the
+  brief's 10% in some rows, both up and down; a shove never counted as a steal, so it comes from the games playing out
+  differently once the CPU's shove roll is gone, and 24 games aren't enough to see a real change through that. Other
+  fouls a game on Hard: and-ones 1.13 → 1.13, fouls on purpose 1.83 → 1.75, reach-ins 0.38 → 0.38. The loop report
+  (`tests/perf/loop-report.mjs`, now with a Turbo-spamming defender row) shows the same picture as before: on Very
+  easy every scripted style outscores the CPU, on Medium and Hard none does by more than mixed play; the masher
+  scores 1.26 to 1.45 points a possession and gives up 1.11 to 1.48.
+- **Text and goals:** How to play and the tips no longer mention the shove ("Late and trailing, sprint + Pass: foul
+  on purpose"). "Win without a shove or a hard foul" (the daily scenario), "Win 2 games without a shove" (the weekly
+  goal), the "Play clean" niyyah and the clean-play bonus now count fouls committed (same ids, so saves still match).
+  Old saves with shove counts load (the fields are ignored). New strings are in `docs/review/game-text.csv`.
+- **Online:** the network protocol is 4 (was 3), so a 9.17.9 player and a 9.17.10 player can't start a game together
+  ("Your friend is on a different version"). Two 9.17.10 players: 0 desyncs (`rb-same`, `rb-holdtap`).
+- **Retired:** the shove's animation (Review Studio `anim/shove/default`), `tryShove`, `shoveFoulCheck`, `callFoul`,
+  the shove state and cooldown, the CPU's shove caution. The Studio's free-throw screen and the sound test set up a
+  free throw with `foulShots` now.
+- **New tests:** `no-shove` (fast tier: the shove functions are gone; Turbo + Pass is one steal try with nobody
+  down and no foul, the same as Pass; late and trailing it's the foul on purpose; the bonus still goes to the line;
+  an old save loads; protocol 3 can't play 4) and `fouls-kept` (full tier: 16 seeded games, half with a masher, all
+  finish with no shove and no page error, and every other kind of foul still happens).
+
 ## 9.17.9: one way back on every screen, one name for leaving, and a gamepad hint
 - **One way back (U2).** The ‹ Back pill, top left, is the way back on every screen that has one, with Esc on a
   keyboard and B on a pad. 26 screens also had a second control that did the same thing; it's gone: the Back row in

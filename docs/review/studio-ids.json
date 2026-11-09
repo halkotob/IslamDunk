@@ -37,7 +37,6 @@
   "anim/shoot/layup": "9.2.2",
   "anim/shoot/reverse": "9.2.2",
   "anim/shoot/upunder": "9.2.2",
-  "anim/shove/default": "9.2.2",
   "anim/sprint/default": "9.2.2",
   "anim/steal/default": "9.2.2",
   "anim/taunt/chest": "9.2.2",
@@ -1634,7 +1633,7 @@
   "text/career/career-goals/floor-general-6zqkgd": "8.6.0",
   "text/career/career-goals/free-throws-a-little-steadier-asku82": "8.6.0",
   "text/career/career-goals/game-s-left-this-week-kuh3yu": "8.6.2",
-  "text/career/career-goals/games-without-a-shove-4hcmaq": "8.6.0",
+  "text/career/career-goals/games-without-committing-a-foul-q6e5fw": "9.17.10",
   "text/career/career-goals/get-25-stops-holding-defend-511wml": "8.6.0",
   "text/career/career-goals/get-4-assists-in-one-naax88": "8.6.0",
   "text/career/career-goals/goals-badges-6ivvar": "8.6.0",
@@ -1841,7 +1840,7 @@
   "text/career/career/champions-gu2fvz": "8.6.0",
   "text/career/career/cheikh-4cmj0j": "8.6.0",
   "text/career/career/chicago-2f1esf": "8.6.0",
-  "text/career/career/clean-play-no-shoves-8kwa6v": "8.6.0",
+  "text/career/career/clean-play-no-fouls-dkzlp4": "9.17.10",
   "text/career/career/clearwater-352xot": "8.6.0",
   "text/career/career/clutch-t89cog": "8.6.0",
   "text/career/career/columbus-xqvv9f": "8.6.0",
@@ -1879,7 +1878,6 @@
   "text/career/career/hamad-09dlio": "8.6.0",
   "text/career/career/hamza-rqrjgs": "8.6.0",
   "text/career/career/harbor-city-mnthmu": "8.6.0",
-  "text/career/career/hard-fouls-called-y9ovi4": "8.6.0",
   "text/career/career/haris-u1ynp4": "8.6.0",
   "text/career/career/hassan-5zlb5j": "8.6.0",
   "text/career/career/haziq-ja31eu": "8.6.0",
@@ -3260,7 +3258,6 @@
   "text/screens/menus/tip-off-qhwdsr": "8.6.0",
   "text/screens/menus/to-change-enter-to-confirm-sj6zui": "8.6.0",
   "text/screens/menus/tournament-x41ccy": "9.8.0",
-  "text/screens/menus/turbo-pass-on-defense-is-hnn4b5": "8.6.0",
   "text/screens/menus/turbo-pfrdsr": "8.6.0",
   "text/screens/menus/turbo-shoot-near-the-rim-8vphqp": "8.6.0",
   "text/screens/menus/tutorial-learn-to-play-j4lcaw": "9.8.0",
@@ -3459,7 +3456,7 @@
   "text/screens/scenarios/win-by-3-or-more-pcznwx": "phase1",
   "text/screens/scenarios/win-the-game-3000ns": "phase1",
   "text/screens/scenarios/win-with-at-least-one-jd33z5": "phase1",
-  "text/screens/scenarios/win-without-a-shove-or-xcy8je": "phase1",
+  "text/screens/scenarios/win-without-committing-a-foul-fq3pcd": "9.17.10",
   "text/screens/scenarios/you-control-wsfrzd": "8.6.0",
   "text/screens/scenarios/your-ball-frontcourt-9ifpct": "8.6.0",
   "text/screens/splash-stats/developed-by-obvvzk": "8.6.0",
@@ -3516,6 +3513,7 @@
   "text/screens/v6-ui/floater-fadeaway-stick-away-hook-fmxnlq": "8.6.0",
   "text/screens/v6-ui/hold-move-stance-mirror-him-e6gk6t": "8.6.0",
   "text/screens/v6-ui/hold-pass-tap-shoot-pass-7ub5kf": "8.6.0",
+  "text/screens/v6-ui/late-and-trailing-turbo-steal-tsaeqp": "9.17.10",
   "text/screens/v6-ui/left-only-with-the-ball-j4skvb": "8.6.0",
   "text/screens/v6-ui/move-away-from-the-rim-4njqic": "8.6.0",
   "text/screens/v6-ui/move-back-diagonal-behind-the-juxgz8": "8.6.0",
@@ -3527,6 +3525,7 @@
   "text/screens/v6-ui/num2-4yobmw": "8.6.0",
   "text/screens/v6-ui/num3-du6uoo": "8.6.0",
   "text/screens/v6-ui/num4-n-d1svcq": "8.6.0",
+  "text/screens/v6-ui/on-purpose-it-stops-the-41pl55": "9.17.10",
   "text/screens/v6-ui/pass-steal-98k191": "8.6.0",
   "text/screens/v6-ui/pass-then-call-for-it-liv0ol": "8.6.0",
   "text/screens/v6-ui/pause-to-call-a-timeout-trxuby": "8.6.0",
@@ -3541,8 +3540,6 @@
   "text/screens/v6-ui/tap-pass-quick-pass-hold-50dwqf": "8.6.0",
   "text/screens/v6-ui/tap-shoot-pump-fake-hold-e38cea": "8.6.0",
   "text/screens/v6-ui/timeout-5fmeq8": "8.6.0",
-  "text/screens/v6-ui/trailing-it-s-a-foul-rgjw9o": "8.6.0",
-  "text/screens/v6-ui/turbo-steal-shove-hard-foul-11y90b": "8.6.0",
   "text/screens/v6-ui/with-the-ball-k7ytnf": "8.6.0",
   "text/screens/v912-polish/a-two-minute-tutorial-teaches-wdlvsu": "9.12.0",
   "text/screens/v912-polish/abandon-run-lhm9ir": "9.12.0",
@@ -3720,7 +3717,6 @@
   "text/screens/v95-series/you-re-out-watch-the-6rfb1u": "9.5.0",
   "text/screens/v95-series/your-team-8goslz": "9.5.0",
   "text/sim/ai/double-team-ctd5hd": "8.6.0",
-  "text/sim/fouls/bonus-1zwjrm": "8.6.0",
   "text/sim/fouls/free-throw-u4t2rf": "8.6.0",
   "text/sim/match-extras/alhamdulillah-good-shot-b46aw0": "phase1",
   "text/sim/match-extras/an-old-shot-but-a-py95ii": "phase1",
@@ -3849,7 +3845,6 @@
   "text/sim/players/crossed-up-xnxl0m": "phase1",
   "text/sim/players/drive-at-the-rim-3smfz3": "8.6.0",
   "text/sim/players/turbo-to-dunk-h0h5n0": "8.6.0",
-  "text/sim/players/watch-the-adab-2egmde": "phase1",
   "text/sim/pump-fake-pickup/picked-up-phdn8u": "8.6.0",
   "text/sim/skill-expression/and-finished-0bjuh0": "phase1",
   "text/sim/skill-expression/ankle-trimmed-vzn32a": "phase1",
@@ -3906,16 +3901,15 @@
   "text/sim/v6-contact/2-shots-bc663m": "8.6.0",
   "text/sim/v6-contact/and-one-5cl4s1": "8.6.0",
   "text/sim/v6-contact/blocking-foul-k3vvqo": "8.6.0",
+  "text/sim/v6-contact/bonus-1zwjrm": "9.17.10",
   "text/sim/v6-contact/boxed-out-86hmgj": "8.6.0",
   "text/sim/v6-contact/chase-down-off-the-glass-y92v6m": "8.6.0",
   "text/sim/v6-contact/dives-for-it-yct6db": "8.6.0",
   "text/sim/v6-contact/foul-on-95b5vw": "8.6.0",
   "text/sim/v6-contact/foul-on-purpose-2o8rey": "8.6.0",
-  "text/sim/v6-contact/hard-foul-ggcafd": "phase1",
   "text/sim/v6-contact/knocked-off-his-line-fsa3az": "8.6.0",
   "text/sim/v6-contact/shooting-foul-sn4x3q": "8.6.0",
   "text/sim/v6-contact/stops-the-clock-2-shots-qa3tfi": "8.6.0",
-  "text/sim/v6-contact/watch-the-adab-vi96xh": "8.6.0",
   "text/sim/v6-controls-ai/frontcourt-inbound-no-set-play-t7swid": "8.6.0",
   "text/sim/v6-controls-ai/give-and-go-ta58id": "8.6.0",
   "text/sim/v6-controls-ai/isolation-20t6vr": "8.6.0",
@@ -3954,6 +3948,7 @@
   "text/sim/v7-controls/hold-pass-call-a-screen-ylmigy": "9.12.0",
   "text/sim/v7-controls/hold-screen-7l8rce": "8.6.0",
   "text/sim/v7-controls/hold-skill-move-near-the-pv5q4c": "9.12.0",
+  "text/sim/v7-controls/late-and-trailing-sprint-pass-0e22e1": "9.17.10",
   "text/sim/v7-controls/left-stick-d-pad-9tgk1d": "8.7.0",
   "text/sim/v7-controls/lob-it-j2812u": "8.6.0",
   "text/sim/v7-controls/no-legs-left-1j3x18": "8.6.0",
@@ -3976,7 +3971,6 @@
   "text/sim/v7-controls/shoot-ox5hcg": "8.7.0",
   "text/sim/v7-controls/skill-move-defend-mv3cs3": "9.12.0",
   "text/sim/v7-controls/skill-move-direction-crossover-b-nbs1nt": "9.12.0",
-  "text/sim/v7-controls/sprint-pass-shove-hard-foul-imw32c": "8.6.0",
   "text/sim/v7-controls/sprint-shoot-in-range-dunk-0e3u2k": "9.12.0",
   "text/sim/v7-controls/sprint-sq0prp": "8.7.0",
   "text/sim/v7-controls/tap-skill-move-hesitation-double-f8xmru": "9.12.0",
@@ -4273,6 +4267,11 @@
    "version": "9.16.1",
    "was": "9.2.2"
   },
+  "anim/shove/default": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
+   "was": "9.2.2"
+  },
   "anim/taunt/brush": {
    "reason": "v9.16.1: retired after the first Studio review (Delete). Saves map to Stride / Float / the default taunt.",
    "version": "9.16.1",
@@ -4353,6 +4352,11 @@
    "version": "9.12.0",
    "was": "9.0.0"
   },
+  "text/career/career-goals/games-without-a-shove-4hcmaq": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
+   "was": "8.6.0"
+  },
   "text/career/career-screens/1v1-wins-vs-nasser-1vr8gp": {
    "reason": "v9.6.2: moved off the career hub (balances are chips, gym bests are on My Player > Records > Personal bests)",
    "version": "9.6.2",
@@ -4402,6 +4406,16 @@
    "reason": "v9.6.2: moved off the career hub (balances are chips, gym bests are on My Player > Records > Personal bests)",
    "version": "9.6.2",
    "was": "8.6.2"
+  },
+  "text/career/career/clean-play-no-shoves-8kwa6v": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
+   "was": "8.6.0"
+  },
+  "text/career/career/hard-fouls-called-y9ovi4": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
+   "was": "8.6.0"
   },
   "text/career/gym-drills/bake-sale-furfh7": {
    "reason": "v9.16.1: the whiteboard was removed from the Al-Amanah gym (Studio review).",
@@ -4558,6 +4572,11 @@
    "version": "9.17.9",
    "was": "8.6.0"
   },
+  "text/screens/menus/turbo-pass-on-defense-is-hnn4b5": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
+   "was": "8.6.0"
+  },
   "text/screens/minis-menu/mini-games-3x9kc5": {
    "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
    "version": "9.8.0",
@@ -4573,9 +4592,24 @@
    "version": "9.17.9",
    "was": "8.6.0"
   },
+  "text/screens/scenarios/win-without-a-shove-or-xcy8je": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
+   "was": "phase1"
+  },
   "text/screens/tutorial/tutorial-learn-to-play-j4lcaw": {
    "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
    "version": "9.8.0",
+   "was": "8.6.0"
+  },
+  "text/screens/v6-ui/trailing-it-s-a-foul-rgjw9o": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
+   "was": "8.6.0"
+  },
+  "text/screens/v6-ui/turbo-steal-shove-hard-foul-11y90b": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
    "was": "8.6.0"
   },
   "text/screens/v912-polish/leave-this-game-fuibqj": {
@@ -4608,10 +4642,30 @@
    "version": "9.8.0",
    "was": "9.5.0"
   },
+  "text/sim/fouls/bonus-1zwjrm": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
+   "was": "8.6.0"
+  },
+  "text/sim/players/watch-the-adab-2egmde": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
+   "was": "phase1"
+  },
   "text/sim/tomahawk-styles/quit-jersk6": {
    "reason": "v9.17.9 (U2): one way back per screen and one word for leaving: duplicate Back / Leave / Close / Cancel buttons removed (the ‹ Back pill does it), and Quit to title, Leave game (no result), Leave online game, Back to title and Back to lobby renamed to Quit, Leave, Title and Back; Settings is Game settings; Leave this game? is Quit this game?; profile's Title is now listed under the hub's Title (same word)",
    "version": "9.17.9",
    "was": "8.6.5"
+  },
+  "text/sim/v6-contact/hard-foul-ggcafd": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
+   "was": "phase1"
+  },
+  "text/sim/v6-contact/watch-the-adab-vi96xh": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
+   "was": "8.6.0"
   },
   "text/sim/v7-controls/hold-defend-move-button-or-uc46h1": {
    "reason": "9.12: How to play says Skill move for H/Y; run map footer says Esc asks first; Continue says where it goes (no badge)",
@@ -4642,6 +4696,11 @@
    "reason": "9.12: How to play says Skill move for H/Y; run map footer says Esc asks first; Continue says where it goes (no badge)",
    "version": "9.12.0",
    "was": "9.9.0"
+  },
+  "text/sim/v7-controls/sprint-pass-shove-hard-foul-imw32c": {
+   "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
+   "version": "9.17.10",
+   "was": "8.6.0"
   },
   "text/sim/v7-controls/sprint-shoot-in-range-dunk-777maj": {
    "reason": "9.12: How to play says Skill move for H/Y; run map footer says Esc asks first; Continue says where it goes (no badge)",

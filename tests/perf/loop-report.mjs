@@ -63,6 +63,11 @@ await p.goto(`http://127.0.0.1:${srv.address().port}/`); await p.waitForFunction
       if (ball.owner && ball.owner.team !== me.team) { zeroCmd(c); c.xHeld = true; return true; }
       return bots.shooter(me, c, st);
     };
+    // v9.17.10: shooter on offense; on defense chase the handler and mash Turbo + Pass (the old shove)
+    bots.spammer = (me, c, st) => {
+      if (ball.owner && ball.owner.team !== me.team) { const o = ball.owner, d = Math.hypot(o.x - me.x, o.z - me.z); c.mx = (o.x - me.x) / (d || 1); c.mz = (o.z - me.z) / (d || 1); c.turbo = true; if (d < 60 && Math.random() < 0.25) c.a = true; return true; }
+      return bots.shooter(me, c, st);
+    };
     const play = (bot, diff, n) => {
       SETTINGS.difficulty = diff; const games = [];
       for (let g = 0; g < n; g++) {
@@ -80,7 +85,7 @@ await p.goto(`http://127.0.0.1:${srv.address().port}/`); await p.waitForFunction
       PL = {}; const cpu = play(null, diff, N);
       out['cpu-vs-cpu ' + diff] = possSummary(cpu); out['cpu-vs-cpu ' + diff].players = players(); out['cpu-vs-cpu ' + diff].finals = cpu.map(g => g.final.join('-')); PL = null;
       if (CPU_ONLY) continue;
-      for (const bot of ['idle', 'rusher', 'shooter', 'guard']) {
+      for (const bot of ['idle', 'rusher', 'shooter', 'guard', 'spammer']) {
         const gs = play(bot, diff, N);
         out[bot + ' ' + diff] = { you: possSummary(gs, (g, t) => t === 0), cpu: possSummary(gs, (g, t) => t === 1), finals: gs.map(g => g.final.join('-')).join(' ') };
       }

@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.17.9';
+const VERSION = '9.17.10';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -889,7 +889,7 @@ class Player {
     this.face = team === 0 ? 1 : -1; this.human = -1;
     this.turbo = 100; this.hifz = 0; this.boost = 0; this.fire = false; this.fireT = 0; this.streak = 0;
     this.state = 'free'; this.st_t = 0; this.act = null;
-    this.cd = { steal: 0, shove: 0, jump: 0 }; this.moveCd = 0; this.stumble = 0; this.holdT = 0;
+    this.cd = { steal: 0, jump: 0 }; this.moveCd = 0; this.stumble = 0; this.holdT = 0;
     this.phase = 0; this.dp = 0; this.dh = 'n'; this.move = null; this.spin = 0; this.rot = 0; this.fallDir = 1;
     this.j = {}; for (const k of JOINTS) this.j[k] = { a: 0, v: 0 };
     this.hands = { n: { x: 0, y: 0, z: 0 }, f: { x: 0, y: 0, z: 0 } }; this.hipH = 44;
@@ -916,12 +916,12 @@ class Player {
     return s;
   }
 }
-const GROUND_STATES = ['free', 'steal', 'shove', 'pass', 'land', 'getup', 'windup'];
+const GROUND_STATES = ['free', 'steal', 'pass', 'land', 'getup', 'windup'];
 const AIR_STATES = ['shoot', 'post', 'jump'];
 
 function updatePlayer(p, dt) {
   const c = p.cmd;
-  p.st_t += dt; p.cd.steal -= dt; p.cd.shove -= dt; p.cd.jump -= dt; p.moveCd -= dt;
+  p.st_t += dt; p.cd.steal -= dt; p.cd.jump -= dt; p.moveCd -= dt;
   if (p.cd.mv > 0) p.cd.mv -= dt;              // dribble-move cooldown (was never counted down: moves worked once per game)
   if (p.boost > 0) { p.boost -= dt; if (chance(dt * 18)) FX.spark(p.x + rand(-14, 14), p.y + rand(10, 90), p.z, '#ffe38a', 'star'); }
   if (p.celebrate > 0) p.celebrate -= dt;
@@ -963,7 +963,6 @@ function updatePlayer(p, dt) {
       break;
     case 'pass': if (p.st_t > 0.2) p.state = 'free'; break;
     case 'steal': if (p.st_t > 0.28) p.state = 'free'; break;
-    case 'shove': if (p.st_t > 0.32) p.state = 'free'; break;
     case 'land': if (p.st_t > 0.14) p.state = 'free'; break;
     case 'down':
       if (p.y > 0) { p.vy -= grav() * dt; p.y = Math.max(0, p.y + p.vy * dt); }
@@ -1041,7 +1040,7 @@ function freeLogic(p) {
       else startJump(p);
     }
   } else {
-    if (c.a) { if (c.turbo && p.turboOK()) tryShove(p); else trySteal(p); }
+    if (c.a) defPass(p);
     if (c.b) startJump(p);
   }
 }
@@ -1329,21 +1328,9 @@ function trySteal(p) {
 // v9.8: how strong this defender's defense is for the difficulty: humans, and CPU teammates of a human, play at 1
 function defK(p) { if (!p || p.human >= 0 || !M.players || M.players.some(q => q.team === p.team && q.human >= 0)) return 1; return (aiCfg(p.team) || DIFF.medium).dk || 1; }
 function ballExposed(p, h) { return Math.hypot(ball.x - p.x, ball.z - p.z) < dxz(h, p) - 4; }
-function tryShove(p) {
-  if (p.cd.shove > 0) return;
-  p.cd.shove = 1.0; p.shoves = (p.shoves || 0) + 1; if (!p.fire) p.turbo = Math.max(0, p.turbo - 25);
-  p.state = 'shove'; p.st_t = 0;
-  let tgt = null, bd = 48;
-  for (const o of p.opps) { if (o.state === 'down' || o.state === 'hang' || o.y > 70) continue; const d = dxz(o, p); if (d < bd) { bd = d; tgt = o; } }
-  if (tgt) {
-    p.face = sgn(tgt.x - p.x);
-    knockDown(tgt, (tgt.x - p.x) / (bd || 1), (tgt.z - p.z) / (bd || 1));
-    SFX.thud();
-    FX.burst((p.x + tgt.x) / 2, 72, (p.z + tgt.z) / 2, 6, 'star', ['#ffe38a', '#ffffff']);   // cartoon impact stars
-    if (shoveFoulCheck(p, tgt)) callFoul(p, tgt);
-    else if (chance(0.35)) FX.callout('WATCH THE ADAB!', '#ff9a8a');
-  } else SFX.swipe();
-}
+// Pass on defense (v9.17.10: the shove is gone): a steal attempt, with or without turbo. The one exception: late and
+// trailing, turbo + Pass is the foul on purpose that stops the clock (intentionalGrab, v6-contact.js)
+function defPass(p) { if (!(p.cmd && p.cmd.turbo && p.turboOK() && intentionalGrab(p))) trySteal(p); }
 function knockDown(t, nx, nz) {
   if (ball.owner === t) fumble(t);
   t.state = 'down'; t.st_t = 0; t.vx = nx * 200; t.vz = nz * 200; t.vy = 0;
@@ -1362,7 +1349,7 @@ function addHifz(p, n) { if (M.practice || (M.fmt && M.fmt.shortGame && p.hifzUs
 function poseTargets(p, sp) {
   const t = { nh: 0.05, nk: 0.2, fh: -0.05, fk: 0.2, ns: 0.2, ne: 0.35, fs: 0.1, fe: 0.4, lean: 0.06, K: 420, D: 28 };
   const s = p.state, holding = ball.owner === p || p.fakeHold, ph = p.phase;
-  if (s === 'free' || s === 'steal' || s === 'shove' || s === 'pass' || s === 'land' || s === 'getup') {
+  if (s === 'free' || s === 'steal' || s === 'pass' || s === 'land' || s === 'getup') {
     if (p.fakeIdle) { t.lean += Math.sin(M.time * 2.2 + p.def.num) * 0.035; t.ns += Math.sin(M.time * 2.2) * 0.05; }
     if (sp > 15) {
       const run = clamp(sp / 230, 0, 1.25);
@@ -1390,7 +1377,6 @@ function poseTargets(p, sp) {
       t.K = 1400;
     }
     if (s === 'steal') { t.ns = 1.45; t.ne = 0.05; t.lean = 0.45; t.nk = 0.9; t.nh = 0.7; t.K = 1300; }
-    if (s === 'shove') { t.ns = 1.55; t.fs = 1.55; t.ne = 0; t.fe = 0.05; t.lean = 0.45; t.nh = 0.6; t.fh = -0.3; t.nk = 0.7; t.K = 1500; }
     if (p.celebrate > 0 && !holding && s === 'free') { t.ns = 3.0; t.ne = 0.3; }
     if (!holding && (s === 'free' || s === 'land')) reactPose(p, t);          // body language (blocks, dunks, turnovers, nods)
   } else if (s === 'sig') {
@@ -1824,8 +1810,7 @@ class Brain {
           const exposed = bo.move ? 1 : ballExposed(p, bo) ? 0.6 : 0.2;
           if (chance(cfg.steal * exposed * (0.3 + p.st.stl * 0.07) * 0.9 * STEP * (typeof cpuStealK === 'function' ? cpuStealK(p) : 1))) c.a = true;   // v9.11: his own reach rate
         }
-        // shove only when a score is imminent (driving to dunk / gathering near rim)
-        if (bo && dd < 44 && p.turboOK() && p.turbo > 25 && hd < 240 && (bo.cmd.turbo || bo.state === 'windup') && chance(cfg.shove * 1.5 * STEP * shoveRiskK(p))) { c.turbo = true; c.a = true; }
+        // (v9.17.10: no shove: the CPU never shoves)
         void dist; break;
       }
       case 'deny': {
@@ -3493,7 +3478,6 @@ function drawHowTo(g) {
   });
   const tips = [
     'Turbo + shoot near the rim to dunk. Longer dunks get bigger, slower and louder.',
-    'Turbo + pass on defense is a shove. It works, but mind your adab.',
     'Without the ball: pass calls for it, shoot near the rim asks your teammate for an alley-oop.',
     'Three baskets in a row and you catch fire. Some players fill a Noor meter. Answer its question correctly, then choose one of three Noor power-ups.',
     'Change direction while dribbling for a crossover. Hold turbo for a behind-the-back.',
@@ -4481,8 +4465,7 @@ function careerRewards(won, champ, ctx = {}) {
     bp.push([stops >= 4 ? 'Defensive anchor (' + stops + ' stops)' : 'Defense (' + parts + ')', stl * 4 + blk * 4 + chg * 8 + (stops >= 4 ? 15 : 0)]);
   }
   if (s.reb) bp.push(['Rebounds (' + s.reb + ')', s.reb * 2]);
-  if (!me.shoves) bp.push(won ? ['Sportsmanship: clean win', 25] : ['Clean play, no shoves', 15]);
-  if (me.hardFouls) bp.push(['Hard fouls called (' + me.hardFouls + ')', -8 * me.hardFouls]);
+  if (!(me.stats && me.stats.pf)) bp.push(won ? ['Sportsmanship: clean win', 25] : ['Clean play, no fouls', 15]);   // (v9.17.10: no foul committed; was no shove, and hard fouls are gone)
   if (ctx.salah) bp.push(['Prayed before the game', ECON.bpSalah]);
   const base = bp.reduce((a, b) => a + b[1], 0), k = ECON.bpStageK[st];
   if (k > 1 && base > 0) bp.push([S.name + ' stage bonus (x' + k + ')', Math.round(base * (k - 1))]);
@@ -7112,7 +7095,7 @@ const SHEIKH_LINES = {
     'Close out with short, choppy steps. Run at a shooter and he’ll drive right past you.',
     'The best shot is the one your teammate is open for.',
     'When you’re tired, your shot gets short. Legs first, then arms.',
-    'A shove might feel good for a second. The foul costs the team for the rest of the game.',
+    'A cheap foul might feel good for a second. It costs the team for the rest of the game.',
     'Take the charge. Standing still in the right spot is a skill.',
     'Watch the game when you’re not in the play. The next pass is already telling you where it’s going.',
     'A dunk counts two, the same as a layup. Pick the one that goes in.',
@@ -9050,37 +9033,11 @@ Object.assign(SFX, {
 });
 
 // ================================================= v4.1: FOULS + FREE THROWS
-// A connected shove can be called a foul. The call rate depends on difficulty,
-// on context (shoving a ball handler who has beaten you is called far more than
-// incidental contact while both players jockey for position) and rises softly
-// with each shove that player has thrown this game. A called foul stops play
-// and sends the fouled player to the line for two live free throws. After a
-// team's 5th foul in a period every shove is called (the other team is in the
-// bonus).
-const FOUL_BASE = { veryeasy: 0.12, easy: 0.2, medium: 0.34, hard: 0.46 };   // v6: the shove is a hard foul and gets called more
+// v9.17.10: the shove and its hard-foul call (shoveFoulCheck, callFoul, FOUL_BASE) are gone. Fouls are the contact
+// ones in v6-contact.js (reach-in, blocking, shooting, and-one, on purpose): they count toward the bonus below.
 const BONUS_AT = 5;
 function teamFouls(t) { return (M.teamFouls || [0, 0])[t]; }
 function inBonus(t) { return teamFouls(1 - t) >= BONUS_AT; }            // team t shoots free throws on every foul
-function shoveFoulCheck(p, tgt) {
-  if (M.phase !== 'live' || M.practice || M.attract || M.mini) return false;
-  if (teamFouls(p.team) >= BONUS_AT) return true;                      // opponent in the bonus: always a foul
-  const hp = attackHoop(tgt.team);
-  const beat = ball.owner === tgt && dxz(tgt, hp) < dxz(p, hp) - 4;   // shoving a handler who got past you
-  const incidental = ball.owner !== tgt && Math.hypot(p.vx || 0, p.vz || 0) > 60 && Math.hypot(tgt.vx || 0, tgt.vz || 0) > 60;
-  const ctx = beat ? 1.9 : ball.owner === tgt ? 1.25 : incidental ? 0.5 : 0.85;
-  const esc = 1 + 0.18 * Math.max(0, (p.shoves || 1) - 1);            // soft escalation, no cap
-  return chance(Math.min(0.92, (FOUL_BASE[SETTINGS.difficulty] || 0.24) * ctx * esc));
-}
-function callFoul(p, tgt) {
-  const bonus = teamFouls(p.team) >= BONUS_AT;
-  M.teamFouls[p.team]++; p.stats.pf = (p.stats.pf || 0) + 1;
-  SFX.whistle(); FX.callout('FOUL!', '#ffd76a', 'ON ' + p.def.name.toUpperCase() + (bonus || teamFouls(p.team) >= BONUS_AT ? '  \u2022  BONUS' : ''), true);
-  if (ball.owner) { const o = ball.owner; ball.owner = null; ball.state = 'loose'; o.move = null; }
-  ball.shot = null; ball.pass = null;
-  M.pendingEnd = false;
-  M.phase = 'ft';
-  M.ft = { shooter: tgt, team: tgt.team, n: 2, i: 0, stage: 'pause', t: 0, made: 0, res: null };
-}
 // Lane positions for everyone except the shooter (shooter at the line)
 function ftTargets() {               // where everyone stands for free throws (shooter at the line, lane spots for the rest)
   const F = M.ft, h = attackHoop(F.team), s = F.shooter, out = new Map([[s, { x: h.x + h.dir * 214, z: h.z }]]);
@@ -9738,11 +9695,7 @@ function musallaDetails(g, bx0, bx1, by0, by1, t) {
   const vg = g.createRadialGradient(W / 2, H * 0.55, H * 0.35, W / 2, H * 0.55, W * 0.75); vg.addColorStop(0, 'rgba(40,25,10,0)'); vg.addColorStop(1, 'rgba(40,25,10,0.28)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);
 }
 
-// CPU foul caution: fewer shoves near/in the bonus, after earlier shoves, and on Hard (stricter refs)
-function shoveRiskK(p) {
-  const tf = teamFouls(p.team), n = p.shoves || 0;
-  return (tf >= BONUS_AT ? 0.12 : tf === BONUS_AT - 1 ? 0.45 : 1) * Math.max(0.3, 1 - 0.15 * n) * ({ veryeasy: 1, easy: 1, medium: 0.85, hard: 0.6 }[SETTINGS.difficulty] || 0.85);
-}
+// (v9.17.10: shoveRiskK, the CPU's shove caution, went with the shove)
 
 // ================================================= v4.2: WALKABLE MUSALLA
 // The musalla is a room you walk around in: the same perspective as its art,
@@ -10445,7 +10398,7 @@ function trackCareerGame(g) {
   const tm = { t: s.tmd || 0, g: s.grn || 0, e: s.early || 0, l: s.late || 0 };
   C.timing.push(tm); if (C.timing.length > 10) C.timing.shift();
   C.ct.tmd += tm.t; C.ct.grn += tm.g; C.ct.early += tm.e; C.ct.late += tm.l;
-  return Object.assign({}, g, { pts: perf.pts, ast: perf.ast, road: !!M.cRoad, buzzer: !!M.cBuzzer, tm, clean: !g.me.shoves });
+  return Object.assign({}, g, { pts: perf.pts, ast: perf.ast, road: !!M.cRoad, buzzer: !!M.cBuzzer, tm, clean: !(g.me.stats && g.me.stats.pf) });   // (v9.17.10: no foul committed; it was no shove)
 }
 
 // ------------------------------------------------------------- milestone beats
@@ -10763,7 +10716,7 @@ if (ACH_BY_ID.good_company) { ACH_BY_ID.good_company.goal = MUS_CAST.length; ACH
 // swipe block / chase-down (pins it on the glass from behind), steals read the
 // dribble hand (reach across the body and it's a foul), box out by holding stance.
 // Contact: bumps on drives, blocking fouls, and-ones, posterize knockdowns,
-// post-up battles; the shove stays as a hard foul. Late game: composure under
+// post-up battles (the shove, a hard foul, was removed in 9.17.10). Late game: composure under
 // pressure, dives for loose balls, timeouts with set plays, fouling on purpose.
 // Every player can use every move; a play style's signature version is stronger.
 
@@ -11128,26 +11081,19 @@ function nonShootingFoul(by, victim, title) {
   };
 }
 
-// ------------------------------------------------------------- shoves, intentional fouls
+// ------------------------------------------------------------- intentional fouls (v9.17.10: the shove is gone)
 function intentionalOK(p) {
   if (!foulsOn() || M.fmt.first21) return false;
   const bo = ball.owner, me = M.teams[p.team].score, them = M.teams[1 - p.team].score;
   if (p.human < 0 && ((M.intF || [0, 0])[p.team] >= 3 || M.clock > 30 || them - me > 6)) return false;
   return M.quarter >= M.fmt.periods && M.clock <= 40 && them - me >= 1 && them - me <= 8 && bo && bo.team !== p.team && dxz(bo, p) < 52;
 }
-{
-  const _sh = tryShove;
-  tryShove = function (p) {
-    if (p.cd.shove > 0) return;
-    if (intentionalOK(p)) {                                         // fouling on purpose: a grab, not a shove; stops the clock
-      const t = ball.owner; p.cd.shove = 1.0; p.state = 'shove'; p.st_t = 0; p.face = sgn(t.x - p.x);
-      M.intF = M.intF || [0, 0]; M.intF[p.team]++;
-      addFoul(p); foulShots(p, t, 2, 'FOUL ON PURPOSE', 'STOPS THE CLOCK  •  2 SHOTS'); return;
-    }
-    _sh(p);
-  };
-  const _cf = callFoul;
-  callFoul = function (p, tgt) { p.hardFouls = (p.hardFouls || 0) + 1; compAdd(p, -6); _cf(p, tgt); FX.callout('HARD FOUL!', '#ffd76a', 'ON ' + p.def.name.toUpperCase() + '  •  WATCH THE ADAB', true); };
+// late and trailing, turbo + Pass on defense: a grab (the steal reach) that stops the clock; true when it happened
+function intentionalGrab(p) {
+  if (p.cd.steal > 0 || !intentionalOK(p)) return false;
+  const t = ball.owner; p.cd.steal = 1.0; p.state = 'steal'; p.st_t = 0; p.face = sgn(t.x - p.x);
+  M.intF = M.intF || [0, 0]; M.intF[p.team]++;
+  addFoul(p); foulShots(p, t, 2, 'FOUL ON PURPOSE', 'STOPS THE CLOCK  •  2 SHOTS'); return true;
 }
 
 // ------------------------------------------------------------- stance
@@ -11514,7 +11460,7 @@ freeLogic = function (p) {
       else startJump(p);
     }
   } else {
-    if (c.a) { if (c.turbo && p.turboOK()) tryShove(p); else trySteal(p); }
+    if (c.a) defPass(p);
     if (c.b) { if (p.human >= 0 ? c.turbo && p.turboOK() : c.swipeNow && p.turboOK()) startSwipe(p); else startJump(p); }   // CPU swipes only on a read chase-down
   }
 };
@@ -11775,7 +11721,7 @@ drawHowTo = function (g) {
   col(70, 'WITH THE BALL', ['Move + stick sideways: crossover', 'Move + back-diagonal: behind the back', 'Move + toward a defender: spin', 'Move + away from the rim: step-back',
     'Tap Move: hesitation  •  hold near the paint: post up', 'Tap Shoot: pump fake  •  hold: shoot', 'Shot type comes from the play: layup, euro,', 'floater, fadeaway (stick away), hook in the post',
     'Tap Pass: quick pass  •  hold: lob  •  turbo: bounce', 'Hold Pass, tap Shoot: pass fake']);
-  col(500, 'DEFENSE, CONTACT, LATE GAME', ['Hold Move: stance (mirror him, hands up, box out)', 'Turbo + Block: swipe; from behind it’s a chase-down', 'Reach across his body and it’s a foul', 'Turbo + Steal: shove (hard foul). Late and', 'trailing, it’s a foul on purpose to stop the clock',
+  col(500, 'DEFENSE, CONTACT, LATE GAME', ['Hold Move: stance (mirror him, hands up, box out)', 'Turbo + Block: swipe; from behind it’s a chase-down', 'Reach across his body and it’s a foul', 'Late and trailing, turbo + Steal is a foul', 'on purpose: it stops the clock',
     'Final minute: turbo + Pass dives for loose balls', 'Poise rises with good plays and steadies your', 'shot under pressure', 'Pass, then call for it again: give-and-go', 'Pause to call a timeout and a set play']);
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText('Press Enter or tap to go back', W / 2, 520);
   W = rw; g.restore();
@@ -12223,7 +12169,7 @@ function scoutCore(oppId) {
 // so skipping a day costs nothing. Completing it once a day also gives your career
 // save a small BP and Halal Bucks bonus.
 const SCEN_TWISTS = [
-  { id: 'win', t: 'Win the game' }, { id: 'three', t: 'Win, and hit at least one three' }, { id: 'clean', t: 'Win without a shove or a hard foul' },
+  { id: 'win', t: 'Win the game' }, { id: 'three', t: 'Win, and hit at least one three' }, { id: 'clean', t: 'Win without committing a foul' },
   { id: 'by3', t: 'Win by 3 or more' }, { id: 'dunk', t: 'Win, and throw one down' }, { id: 'assist', t: 'Win, with at least one assist from you' },
   { id: 'stop', t: 'Get a stop first, then win', poss: 1 }
 ];
@@ -12271,7 +12217,7 @@ function scenPossession(p) { const S = M.scenario; if (S && !S.done && S.stop ==
     const S = M.scenario; if (!S || S.done || M.attract) return;
     S.done = true;
     const me = M.players.find(p => p.human === 0), won = M.winner === 0, margin = M.teams[0].score - M.teams[1].score;
-    const tw = { win: true, three: S.threes > 0, clean: !(me && (me.shoves || me.hardFouls)), by3: margin >= 3, dunk: S.dunks > 0, assist: S.assist, stop: S.stop === true }[S.twist.id];
+    const tw = { win: true, three: S.threes > 0, clean: !(me && me.stats && me.stats.pf), by3: margin >= 3, dunk: S.dunks > 0, assist: S.assist, stop: S.stop === true }[S.twist.id];
     S.won = won; S.twistOK = !!tw; S.ok = won && !!tw;
     const pr = Progress.update(o => { o.scen = o.scen || {}; const d = o.scen[S.day] = o.scen[S.day] || { tries: 0, done: false }; d.tries++; if (S.ok) d.done = true; });
     const d = pr.scen[S.day];
@@ -12953,7 +12899,7 @@ function v7Input(p, dt) {
       else if (!held) { if (!A.done) { if (free) passAuto(p); else { A.waitFree = true; } } if (!A.waitFree || free) V.a = null; }
       if (A.waitFree && free && mine) { passAuto(p); V.a = null; }
     } else if (A.ctx === 'def') {
-      if (!held) { if (A.t < STEAL_TAP && free && !A.done) { if (c.turbo && p.turboOK()) tryShove(p); else trySteal(p); } V.a = null; }   // tap: steal (or shove while sprinting)
+      if (!held) { if (A.t < STEAL_TAP && free && !A.done) defPass(p); V.a = null; }   // tap: steal (late and trailing, sprint + tap: the foul on purpose)
     } else if (A.ctx === 'off') {
       if (!A.done) { A.done = true; setScreenForPartner(p); }
       if (!held) V.a = null;
@@ -13087,7 +13033,7 @@ drawHowTo = function (g) {
     'Skill move + direction: crossover, behind the back, spin, step-back', 'Tap Skill move: hesitation  \u2022  double-tap: signature move', '\u2022 On fire: Sprint + Skill move at the rim: self alley-oop', 'Hold Skill move near the paint: post up', '\u2022 Without the ball: Shoot calls for it (give-and-go,',
     '\u2022   or alley-oop while sprinting at the rim)', '\u2022 Without the ball: Pass sets a screen for your partner']);
   col(500, 'DEFENSE', ['Hold Defend (Skill move button or L): guard your man.', '\u2022   You slide with him, between him and the rim', '\u2022   Feet set in his path: he charges into you', 'Hold Defend on a shot: box out',
-    'Pass: tap to steal  \u2022  hold: partner doubles the ball', 'Sprint + Pass: shove (hard foul)', 'Shoot: jump, block, contest  \u2022  sprint + Shoot: swipe', '\u2022 Reach across his body and it\u2019s a foul',
+    'Pass: tap to steal  \u2022  hold: partner doubles the ball', 'Late and trailing, sprint + Pass: foul on purpose', 'Shoot: jump, block, contest  \u2022  sprint + Shoot: swipe', '\u2022 Reach across his body and it\u2019s a foul',
     '\u2022 Final minute: sprint + Pass dives for loose balls', '\u2022 Pause for timeouts and set plays']);
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(pad ? 'Pad: LB talks and uses things, Start pauses, View opens an on-screen picker for any button.' : 'Touch: push the stick past the dashed ring to sprint. Buttons: SHOOT, PASS, MOVE (labels change with the play).', W / 2, 438);
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText('Press Enter or tap to go back', W / 2, 520);
@@ -13162,11 +13108,11 @@ function drawDepthAids(g, actors) {
     floorRing(g, sh.x, sh.z, br + 28, inB ? '#57e389' : '#ffffff', inB ? 0.95 * pulse : 0.45, inB ? 2.4 : 1.4);
     if (inB) { const [lx, ly] = P(sh.x, 0, sh.z + br + 34); g.save(); g.fillStyle = '#57e389'; g.font = `10px ${FONT}`; g.textAlign = 'center'; g.fillText('IN RANGE', lx, ly + 12); g.restore(); }
   }
-  // contact range around you on defense: steal reach (54), shove reach (48) while sprinting
+  // contact range around you on defense: steal reach (54; v9.17.10: also while sprinting, the shove's 48 is gone)
   if (onD) {
     const d = dxz(me, bo), near = d < 130;
     if (near || full) {
-      const sprint = me.cmd.turbo && me.turboOK && me.turboOK(), r = sprint ? 48 : 54, inR = d <= r;
+      const sprint = me.cmd.turbo && me.turboOK && me.turboOK() && typeof intentionalOK === 'function' && intentionalOK(me), r = 54, inR = d <= r;   // (orange: sprint + Pass here is the foul on purpose)
       floorRing(g, me.x, me.z, r, inR ? (sprint ? '#ff9a6b' : '#57e389') : '#ffffff', inR ? 0.85 : 0.3, inR ? 2 : 1.2);
       if (inR) floorRing(g, bo.x, bo.z, 22, sprint ? '#ff9a6b' : '#57e389', 0.85, 2);      // the target, highlighted
     }
@@ -14733,7 +14679,7 @@ function fairRestart(team) {
 //                Feet set in his path = a charge when he drives into you.
 //                On a shot or loose ball, holding DEFEND boxes out.
 //   hold PASS    call the double team (was on MOVE)
-// Tap PASS (steal), SHOOT (jump, block, contest) and sprint + PASS (shove) are unchanged.
+// Tap PASS (steal), SHOOT (jump, block, contest) are unchanged (v9.17.10: sprint + PASS is a steal too; the shove is gone).
 const DEF_KEYS = [['KeyL'], ['Numpad3', 'Slash']];
 const GUARD_ON = 36, GUARD_OFF_MIN = 46, GUARD_OFF_MAX = 120;
 {
@@ -17151,7 +17097,7 @@ const WEEK_POOL = [
   { id: 'stl', txt: n => 'Get ' + n + ' steals', need: 3 },
   { id: 'dnk', txt: n => 'Throw down ' + n + ' dunks', need: 3 },
   { id: 'chg', txt: () => 'Draw a charge', need: 1 },
-  { id: 'clean', txt: n => 'Win ' + n + ' games without a shove', need: 2 }
+  { id: 'clean', txt: n => 'Win ' + n + ' games without committing a foul', need: 2 }   // (v9.17.10: was without a shove; same id)
 ];
 const BADGES = [
   { id: 'mikan', name: 'Mikan Man', need: 30, how: 'Make 30 layups and dunks in career games (the Mikan drill counts too)', eff: 'Contested finishes at the rim go in a little more' },
@@ -17264,7 +17210,7 @@ const CGame = { stops: 0, green: 0, close: 0, ft: 0, oppStart: 0, guarded: false
     const G = cg();
     weekAdd('stops', CGame.stops); weekAdd('green', CGame.green); if ((s.ast || 0) >= 4) weekAdd('ast1');
     if (CGame.prayed) weekAdd('pray'); weekAdd('stl', s.stl || 0); weekAdd('dnk', s.dnk || 0); weekAdd('chg', s.chg || 0);
-    if (won && me && !me.shoves) weekAdd('clean');
+    if (won && me && !(me.stats && me.stats.pf)) weekAdd('clean');
     badgeAdd('mikan', CGame.close); badgeAdd('lockdown', CGame.stops); badgeAdd('line', CGame.ft); badgeAdd('general', s.ast || 0);
     if (won && opp === 1) { G.rivalBeat = (G.rivalBeat || 0) + 1; if (G.rivalArc) badgeAdd('bigstage'); }
     cg(); saveCareer();
@@ -17689,7 +17635,7 @@ function gymDrillMenu() {
 // * End of season: a small ceremony at the masjid with awards drawn from your season.
 // * New lines: people in the musalla have something new to say after things happen ("!").
 const NIYYAH = [
-  { id: 'clean', label: 'Play clean. No shoves, and help people up.', say: 'play clean', kept: (me, s) => !me.shoves },
+  { id: 'clean', label: 'Play clean. No fouls, and help people up.', say: 'play clean', kept: (me, s) => !(s && s.pf) },   // (v9.17.10: was no shoves)
   { id: 'pass', label: 'Make the extra pass. Get my brothers involved.', say: 'make the extra pass', kept: (me, s) => (s.ast || 0) >= 3 },
   { id: 'defend', label: 'Defend every possession like it matters.', say: 'defend every possession', kept: (me, s) => CGame.stops >= 3 || (s.stl || 0) >= 2 },
   { id: 'glass', label: 'Fight for every rebound.', say: 'fight for every rebound', kept: (me, s) => (s.reb || 0) >= 5 },
@@ -25058,7 +25004,7 @@ for (let i = REWARDS.length - 1; i >= 0; i--) { const r = REWARDS[i]; if (r.kind
 //     render delay and prediction corrections in a small box. The lobby rates each player's connection (Good / OK /
 //     Poor) from a 5 s probe, and "Copy network report" copies a plain-text report. Nothing is sent anywhere.
 const ONLINE_ICE_URL = 'https://islamdunk-ice.islamdunk.workers.dev/ice';   // the Worker in worker/ice (TURN credentials)
-const NET_PROTO = 3;           // bump when the wire format changes in a way older clients can't read (3: v9.11.1 trickle ICE, snapshot numbers)
+const NET_PROTO = 4;           // bump when the wire format or the match's rules change in a way older clients can't play (3: v9.11.1 trickle ICE, snapshot numbers; 4: v9.17.10 no shove)
 const SNAP_V = 2;              // newest snapshot format this client reads
 
 // ---------------------------------------------------------------- ICE servers (TURN) from the Worker

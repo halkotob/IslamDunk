@@ -43,7 +43,7 @@ freeLogic = function (p) {
       else startJump(p);
     }
   } else {
-    if (c.a) { if (c.turbo && p.turboOK()) tryShove(p); else trySteal(p); }
+    if (c.a) defPass(p);
     if (c.b) { if (p.human >= 0 ? c.turbo && p.turboOK() : c.swipeNow && p.turboOK()) startSwipe(p); else startJump(p); }   // CPU swipes only on a read chase-down
   }
 };

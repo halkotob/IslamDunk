@@ -306,8 +306,7 @@ class Brain {
           const exposed = bo.move ? 1 : ballExposed(p, bo) ? 0.6 : 0.2;
           if (chance(cfg.steal * exposed * (0.3 + p.st.stl * 0.07) * 0.9 * STEP * (typeof cpuStealK === 'function' ? cpuStealK(p) : 1))) c.a = true;   // v9.11: his own reach rate
         }
-        // shove only when a score is imminent (driving to dunk / gathering near rim)
-        if (bo && dd < 44 && p.turboOK() && p.turbo > 25 && hd < 240 && (bo.cmd.turbo || bo.state === 'windup') && chance(cfg.shove * 1.5 * STEP * shoveRiskK(p))) { c.turbo = true; c.a = true; }
+        // (v9.17.10: no shove: the CPU never shoves)
         void dist; break;
       }
       case 'deny': {

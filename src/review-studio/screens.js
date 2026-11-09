@@ -20,7 +20,7 @@ export const STUDIO_SCREENS = [
   ['tutorial: the last card', `startTutorial(); tutGo(TUT_STEPS.length - 1);`],
   ['match: tip-off', `Input.touchMode = false; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; for (let i = 0; i < 30; i++) updateMatch(STEP);`],
   ['match: inbound', MATCH + ` M.possTeam = 1; inbound(1); for (let i = 0; i < 10; i++) updateMatch(STEP);`],
-  ['match: free throws', MATCH + ` callFoul(M.players[2], M.players[0]); for (let i = 0; i < 40; i++) updateMatch(STEP);`],
+  ['match: free throws', MATCH + ` addFoul(M.players[2]); foulShots(M.players[2], M.players[0], 2, 'FOUL!', 'ON ' + M.players[2].def.name.toUpperCase()); for (let i = 0; i < 40; i++) updateMatch(STEP);`],
   ['match: hot spot', MATCH + ` const h = attackHoop(0); M.hot = { x: h.x + h.dir * 260, z: 350, t: 9, m: 1, v: 2 };`],
   ['match: replay', MATCH + ` for (let i = 0; i < 120; i++) updateMatch(STEP); const fr = Replay.buf.slice(-210); Replay.active = { frames: fr, t: 0.6, dur: fr.length / 60 / 0.55 };`],
   ['match: period break', MATCH + ` M.fmt.periods = 4; M.quarter = 1; endQuarter();`],

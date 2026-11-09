@@ -65,11 +65,11 @@ function drawDepthAids(g, actors) {
     floorRing(g, sh.x, sh.z, br + 28, inB ? '#57e389' : '#ffffff', inB ? 0.95 * pulse : 0.45, inB ? 2.4 : 1.4);
     if (inB) { const [lx, ly] = P(sh.x, 0, sh.z + br + 34); g.save(); g.fillStyle = '#57e389'; g.font = `10px ${FONT}`; g.textAlign = 'center'; g.fillText('IN RANGE', lx, ly + 12); g.restore(); }
   }
-  // contact range around you on defense: steal reach (54), shove reach (48) while sprinting
+  // contact range around you on defense: steal reach (54; v9.17.10: also while sprinting, the shove's 48 is gone)
   if (onD) {
     const d = dxz(me, bo), near = d < 130;
     if (near || full) {
-      const sprint = me.cmd.turbo && me.turboOK && me.turboOK(), r = sprint ? 48 : 54, inR = d <= r;
+      const sprint = me.cmd.turbo && me.turboOK && me.turboOK() && typeof intentionalOK === 'function' && intentionalOK(me), r = 54, inR = d <= r;   // (orange: sprint + Pass here is the foul on purpose)
       floorRing(g, me.x, me.z, r, inR ? (sprint ? '#ff9a6b' : '#57e389') : '#ffffff', inR ? 0.85 : 0.3, inR ? 2 : 1.2);
       if (inR) floorRing(g, bo.x, bo.z, 22, sprint ? '#ff9a6b' : '#57e389', 0.85, 2);      // the target, highlighted
     }

@@ -7,7 +7,7 @@ class Player {
     this.face = team === 0 ? 1 : -1; this.human = -1;
     this.turbo = 100; this.hifz = 0; this.boost = 0; this.fire = false; this.fireT = 0; this.streak = 0;
     this.state = 'free'; this.st_t = 0; this.act = null;
-    this.cd = { steal: 0, shove: 0, jump: 0 }; this.moveCd = 0; this.stumble = 0; this.holdT = 0;
+    this.cd = { steal: 0, jump: 0 }; this.moveCd = 0; this.stumble = 0; this.holdT = 0;
     this.phase = 0; this.dp = 0; this.dh = 'n'; this.move = null; this.spin = 0; this.rot = 0; this.fallDir = 1;
     this.j = {}; for (const k of JOINTS) this.j[k] = { a: 0, v: 0 };
     this.hands = { n: { x: 0, y: 0, z: 0 }, f: { x: 0, y: 0, z: 0 } }; this.hipH = 44;
@@ -34,12 +34,12 @@ class Player {
     return s;
   }
 }
-const GROUND_STATES = ['free', 'steal', 'shove', 'pass', 'land', 'getup', 'windup'];
+const GROUND_STATES = ['free', 'steal', 'pass', 'land', 'getup', 'windup'];
 const AIR_STATES = ['shoot', 'post', 'jump'];
 
 function updatePlayer(p, dt) {
   const c = p.cmd;
-  p.st_t += dt; p.cd.steal -= dt; p.cd.shove -= dt; p.cd.jump -= dt; p.moveCd -= dt;
+  p.st_t += dt; p.cd.steal -= dt; p.cd.jump -= dt; p.moveCd -= dt;
   if (p.cd.mv > 0) p.cd.mv -= dt;              // dribble-move cooldown (was never counted down: moves worked once per game)
   if (p.boost > 0) { p.boost -= dt; if (chance(dt * 18)) FX.spark(p.x + rand(-14, 14), p.y + rand(10, 90), p.z, '#ffe38a', 'star'); }
   if (p.celebrate > 0) p.celebrate -= dt;
@@ -81,7 +81,6 @@ function updatePlayer(p, dt) {
       break;
     case 'pass': if (p.st_t > 0.2) p.state = 'free'; break;
     case 'steal': if (p.st_t > 0.28) p.state = 'free'; break;
-    case 'shove': if (p.st_t > 0.32) p.state = 'free'; break;
     case 'land': if (p.st_t > 0.14) p.state = 'free'; break;
     case 'down':
       if (p.y > 0) { p.vy -= grav() * dt; p.y = Math.max(0, p.y + p.vy * dt); }
@@ -159,7 +158,7 @@ function freeLogic(p) {
       else startJump(p);
     }
   } else {
-    if (c.a) { if (c.turbo && p.turboOK()) tryShove(p); else trySteal(p); }
+    if (c.a) defPass(p);
     if (c.b) startJump(p);
   }
 }
@@ -447,21 +446,9 @@ function trySteal(p) {
 // v9.8: how strong this defender's defense is for the difficulty: humans, and CPU teammates of a human, play at 1
 function defK(p) { if (!p || p.human >= 0 || !M.players || M.players.some(q => q.team === p.team && q.human >= 0)) return 1; return (aiCfg(p.team) || DIFF.medium).dk || 1; }
 function ballExposed(p, h) { return Math.hypot(ball.x - p.x, ball.z - p.z) < dxz(h, p) - 4; }
-function tryShove(p) {
-  if (p.cd.shove > 0) return;
-  p.cd.shove = 1.0; p.shoves = (p.shoves || 0) + 1; if (!p.fire) p.turbo = Math.max(0, p.turbo - 25);
-  p.state = 'shove'; p.st_t = 0;
-  let tgt = null, bd = 48;
-  for (const o of p.opps) { if (o.state === 'down' || o.state === 'hang' || o.y > 70) continue; const d = dxz(o, p); if (d < bd) { bd = d; tgt = o; } }
-  if (tgt) {
-    p.face = sgn(tgt.x - p.x);
-    knockDown(tgt, (tgt.x - p.x) / (bd || 1), (tgt.z - p.z) / (bd || 1));
-    SFX.thud();
-    FX.burst((p.x + tgt.x) / 2, 72, (p.z + tgt.z) / 2, 6, 'star', ['#ffe38a', '#ffffff']);   // cartoon impact stars
-    if (shoveFoulCheck(p, tgt)) callFoul(p, tgt);
-    else if (chance(0.35)) FX.callout('WATCH THE ADAB!', '#ff9a8a');
-  } else SFX.swipe();
-}
+// Pass on defense (v9.17.10: the shove is gone): a steal attempt, with or without turbo. The one exception: late and
+// trailing, turbo + Pass is the foul on purpose that stops the clock (intentionalGrab, v6-contact.js)
+function defPass(p) { if (!(p.cmd && p.cmd.turbo && p.turboOK() && intentionalGrab(p))) trySteal(p); }
 function knockDown(t, nx, nz) {
   if (ball.owner === t) fumble(t);
   t.state = 'down'; t.st_t = 0; t.vx = nx * 200; t.vz = nz * 200; t.vy = 0;

@@ -99,7 +99,7 @@ drawHowTo = function (g) {
   col(70, 'WITH THE BALL', ['Move + stick sideways: crossover', 'Move + back-diagonal: behind the back', 'Move + toward a defender: spin', 'Move + away from the rim: step-back',
     'Tap Move: hesitation  •  hold near the paint: post up', 'Tap Shoot: pump fake  •  hold: shoot', 'Shot type comes from the play: layup, euro,', 'floater, fadeaway (stick away), hook in the post',
     'Tap Pass: quick pass  •  hold: lob  •  turbo: bounce', 'Hold Pass, tap Shoot: pass fake']);
-  col(500, 'DEFENSE, CONTACT, LATE GAME', ['Hold Move: stance (mirror him, hands up, box out)', 'Turbo + Block: swipe; from behind it’s a chase-down', 'Reach across his body and it’s a foul', 'Turbo + Steal: shove (hard foul). Late and', 'trailing, it’s a foul on purpose to stop the clock',
+  col(500, 'DEFENSE, CONTACT, LATE GAME', ['Hold Move: stance (mirror him, hands up, box out)', 'Turbo + Block: swipe; from behind it’s a chase-down', 'Reach across his body and it’s a foul', 'Late and trailing, turbo + Steal is a foul', 'on purpose: it stops the clock',
     'Final minute: turbo + Pass dives for loose balls', 'Poise rises with good plays and steadies your', 'shot under pressure', 'Pass, then call for it again: give-and-go', 'Pause to call a timeout and a set play']);
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText('Press Enter or tap to go back', W / 2, 520);
   W = rw; g.restore();

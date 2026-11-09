@@ -21,7 +21,7 @@ const WEEK_POOL = [
   { id: 'stl', txt: n => 'Get ' + n + ' steals', need: 3 },
   { id: 'dnk', txt: n => 'Throw down ' + n + ' dunks', need: 3 },
   { id: 'chg', txt: () => 'Draw a charge', need: 1 },
-  { id: 'clean', txt: n => 'Win ' + n + ' games without a shove', need: 2 }
+  { id: 'clean', txt: n => 'Win ' + n + ' games without committing a foul', need: 2 }   // (v9.17.10: was without a shove; same id)
 ];
 const BADGES = [
   { id: 'mikan', name: 'Mikan Man', need: 30, how: 'Make 30 layups and dunks in career games (the Mikan drill counts too)', eff: 'Contested finishes at the rim go in a little more' },
@@ -134,7 +134,7 @@ const CGame = { stops: 0, green: 0, close: 0, ft: 0, oppStart: 0, guarded: false
     const G = cg();
     weekAdd('stops', CGame.stops); weekAdd('green', CGame.green); if ((s.ast || 0) >= 4) weekAdd('ast1');
     if (CGame.prayed) weekAdd('pray'); weekAdd('stl', s.stl || 0); weekAdd('dnk', s.dnk || 0); weekAdd('chg', s.chg || 0);
-    if (won && me && !me.shoves) weekAdd('clean');
+    if (won && me && !(me.stats && me.stats.pf)) weekAdd('clean');
     badgeAdd('mikan', CGame.close); badgeAdd('lockdown', CGame.stops); badgeAdd('line', CGame.ft); badgeAdd('general', s.ast || 0);
     if (won && opp === 1) { G.rivalBeat = (G.rivalBeat || 0) + 1; if (G.rivalArc) badgeAdd('bigstage'); }
     cg(); saveCareer();

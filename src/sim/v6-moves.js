@@ -13,7 +13,7 @@
 // swipe block / chase-down (pins it on the glass from behind), steals read the
 // dribble hand (reach across the body and it's a foul), box out by holding stance.
 // Contact: bumps on drives, blocking fouls, and-ones, posterize knockdowns,
-// post-up battles; the shove stays as a hard foul. Late game: composure under
+// post-up battles (the shove, a hard foul, was removed in 9.17.10). Late game: composure under
 // pressure, dives for loose balls, timeouts with set plays, fouling on purpose.
 // Every player can use every move; a play style's signature version is stronger.
 

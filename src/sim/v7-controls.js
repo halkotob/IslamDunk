@@ -107,7 +107,7 @@ function v7Input(p, dt) {
       else if (!held) { if (!A.done) { if (free) passAuto(p); else { A.waitFree = true; } } if (!A.waitFree || free) V.a = null; }
       if (A.waitFree && free && mine) { passAuto(p); V.a = null; }
     } else if (A.ctx === 'def') {
-      if (!held) { if (A.t < STEAL_TAP && free && !A.done) { if (c.turbo && p.turboOK()) tryShove(p); else trySteal(p); } V.a = null; }   // tap: steal (or shove while sprinting)
+      if (!held) { if (A.t < STEAL_TAP && free && !A.done) defPass(p); V.a = null; }   // tap: steal (late and trailing, sprint + tap: the foul on purpose)
     } else if (A.ctx === 'off') {
       if (!A.done) { A.done = true; setScreenForPartner(p); }
       if (!held) V.a = null;
@@ -241,7 +241,7 @@ drawHowTo = function (g) {
     'Skill move + direction: crossover, behind the back, spin, step-back', 'Tap Skill move: hesitation  \u2022  double-tap: signature move', '\u2022 On fire: Sprint + Skill move at the rim: self alley-oop', 'Hold Skill move near the paint: post up', '\u2022 Without the ball: Shoot calls for it (give-and-go,',
     '\u2022   or alley-oop while sprinting at the rim)', '\u2022 Without the ball: Pass sets a screen for your partner']);
   col(500, 'DEFENSE', ['Hold Defend (Skill move button or L): guard your man.', '\u2022   You slide with him, between him and the rim', '\u2022   Feet set in his path: he charges into you', 'Hold Defend on a shot: box out',
-    'Pass: tap to steal  \u2022  hold: partner doubles the ball', 'Sprint + Pass: shove (hard foul)', 'Shoot: jump, block, contest  \u2022  sprint + Shoot: swipe', '\u2022 Reach across his body and it\u2019s a foul',
+    'Pass: tap to steal  \u2022  hold: partner doubles the ball', 'Late and trailing, sprint + Pass: foul on purpose', 'Shoot: jump, block, contest  \u2022  sprint + Shoot: swipe', '\u2022 Reach across his body and it\u2019s a foul',
     '\u2022 Final minute: sprint + Pass dives for loose balls', '\u2022 Pause for timeouts and set plays']);
   g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(pad ? 'Pad: LB talks and uses things, Start pauses, View opens an on-screen picker for any button.' : 'Touch: push the stick past the dashed ring to sprint. Buttons: SHOOT, PASS, MOVE (labels change with the play).', W / 2, 438);
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText('Press Enter or tap to go back', W / 2, 520);

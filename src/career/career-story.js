@@ -8,7 +8,7 @@
 // * End of season: a small ceremony at the masjid with awards drawn from your season.
 // * New lines: people in the musalla have something new to say after things happen ("!").
 const NIYYAH = [
-  { id: 'clean', label: 'Play clean. No shoves, and help people up.', say: 'play clean', kept: (me, s) => !me.shoves },
+  { id: 'clean', label: 'Play clean. No fouls, and help people up.', say: 'play clean', kept: (me, s) => !(s && s.pf) },   // (v9.17.10: was no shoves)
   { id: 'pass', label: 'Make the extra pass. Get my brothers involved.', say: 'make the extra pass', kept: (me, s) => (s.ast || 0) >= 3 },
   { id: 'defend', label: 'Defend every possession like it matters.', say: 'defend every possession', kept: (me, s) => CGame.stops >= 3 || (s.stl || 0) >= 2 },
   { id: 'glass', label: 'Fight for every rebound.', say: 'fight for every rebound', kept: (me, s) => (s.reb || 0) >= 5 },

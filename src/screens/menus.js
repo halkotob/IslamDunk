@@ -304,7 +304,6 @@ function drawHowTo(g) {
   });
   const tips = [
     'Turbo + shoot near the rim to dunk. Longer dunks get bigger, slower and louder.',
-    'Turbo + pass on defense is a shove. It works, but mind your adab.',
     'Without the ball: pass calls for it, shoot near the rim asks your teammate for an alley-oop.',
     'Three baskets in a row and you catch fire. Some players fill a Noor meter. Answer its question correctly, then choose one of three Noor power-ups.',
     'Change direction while dribbling for a crossover. Hold turbo for a behind-the-back.',

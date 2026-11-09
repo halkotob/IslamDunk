@@ -10,7 +10,7 @@
 //                Feet set in his path = a charge when he drives into you.
 //                On a shot or loose ball, holding DEFEND boxes out.
 //   hold PASS    call the double team (was on MOVE)
-// Tap PASS (steal), SHOOT (jump, block, contest) and sprint + PASS (shove) are unchanged.
+// Tap PASS (steal), SHOOT (jump, block, contest) are unchanged (v9.17.10: sprint + PASS is a steal too; the shove is gone).
 const DEF_KEYS = [['KeyL'], ['Numpad3', 'Slash']];
 const GUARD_ON = 36, GUARD_OFF_MIN = 46, GUARD_OFF_MAX = 120;
 {

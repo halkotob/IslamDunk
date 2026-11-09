@@ -39,7 +39,7 @@ export function sfxMomentsTests({ newContext, open }) {
       out.hot = take().filter(x => x[0] === 'hotSpot').length;
       // free throws: a foul on a shooter, then the CPU shoots both (the human's shooter is the CPU's here)
       M.hot = null; M.hotCd = 99; M.cmdHook = null;
-      const sh = M.teams[1].players[0], df = M.teams[0].players[1]; giveBall(sh, 'test'); M.possTeam = 1; callFoul(df, sh);
+      const sh = M.teams[1].players[0], df = M.teams[0].players[1]; giveBall(sh, 'test'); M.possTeam = 1; addFoul(df); foulShots(df, sh, 2, 'FOUL!', 'ON ' + df.def.name.toUpperCase());   // (v9.17.10: callFoul went with the shove)
       for (let i = 0; i < 60 * 12 && (M.ft || M.phase === 'ft'); i++) updateMatch(STEP);
       const fts = take(); out.ft = { step: fts.filter(x => x[0] === 'ftStep').length, attempt: fts.filter(x => x[0] === 'ftAttempt').length };
       // the crowd with nobody drawn, then with people drawn (they react themselves)

@@ -58,7 +58,7 @@ STUDIO_TESTS['studio-anim'] = async ({ browser }) => {
   const st = await openStudio(browser, DIST), p = st.page;
   const r = await p.evaluate(() => {
     const rs = window.__studio.S.G.rs, out = { n: 0, bad: [], states: {} };
-    const EXPECT = { dunk: 'dunk', hang: 'hang', shoot: 'shoot', pass: 'pass', steal: 'steal', block: 'jump', fall: 'down', shove: 'shove', move: null };
+    const EXPECT = { dunk: 'dunk', hang: 'hang', shoot: 'shoot', pass: 'pass', steal: 'steal', block: 'jump', fall: 'down', move: null };   // (v9.17.10: shove retired)
     for (const a of rs.anims()) {
       out.n++; const seen = new Set(); let info = rs.animStart(a.id, {}); seen.add(info.state);
       for (let i = 0; i < a.n; i++) { info = rs.animStep(); seen.add(info.state); if (info.joints.some(([, v]) => !isFinite(v)) || !isFinite(info.y)) { out.bad.push(a.id + ': joints not finite at ' + i); break; } }

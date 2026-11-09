@@ -68,11 +68,7 @@ function musallaDetails(g, bx0, bx1, by0, by1, t) {
   const vg = g.createRadialGradient(W / 2, H * 0.55, H * 0.35, W / 2, H * 0.55, W * 0.75); vg.addColorStop(0, 'rgba(40,25,10,0)'); vg.addColorStop(1, 'rgba(40,25,10,0.28)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);
 }
 
-// CPU foul caution: fewer shoves near/in the bonus, after earlier shoves, and on Hard (stricter refs)
-function shoveRiskK(p) {
-  const tf = teamFouls(p.team), n = p.shoves || 0;
-  return (tf >= BONUS_AT ? 0.12 : tf === BONUS_AT - 1 ? 0.45 : 1) * Math.max(0.3, 1 - 0.15 * n) * ({ veryeasy: 1, easy: 1, medium: 0.85, hard: 0.6 }[SETTINGS.difficulty] || 0.85);
-}
+// (v9.17.10: shoveRiskK, the CPU's shove caution, went with the shove)
 
 // ================================================= v4.2: WALKABLE MUSALLA
 // The musalla is a room you walk around in: the same perspective as its art,

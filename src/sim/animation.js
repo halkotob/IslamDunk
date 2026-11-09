@@ -5,7 +5,7 @@
 function poseTargets(p, sp) {
   const t = { nh: 0.05, nk: 0.2, fh: -0.05, fk: 0.2, ns: 0.2, ne: 0.35, fs: 0.1, fe: 0.4, lean: 0.06, K: 420, D: 28 };
   const s = p.state, holding = ball.owner === p || p.fakeHold, ph = p.phase;
-  if (s === 'free' || s === 'steal' || s === 'shove' || s === 'pass' || s === 'land' || s === 'getup') {
+  if (s === 'free' || s === 'steal' || s === 'pass' || s === 'land' || s === 'getup') {
     if (p.fakeIdle) { t.lean += Math.sin(M.time * 2.2 + p.def.num) * 0.035; t.ns += Math.sin(M.time * 2.2) * 0.05; }
     if (sp > 15) {
       const run = clamp(sp / 230, 0, 1.25);
@@ -33,7 +33,6 @@ function poseTargets(p, sp) {
       t.K = 1400;
     }
     if (s === 'steal') { t.ns = 1.45; t.ne = 0.05; t.lean = 0.45; t.nk = 0.9; t.nh = 0.7; t.K = 1300; }
-    if (s === 'shove') { t.ns = 1.55; t.fs = 1.55; t.ne = 0; t.fe = 0.05; t.lean = 0.45; t.nh = 0.6; t.fh = -0.3; t.nk = 0.7; t.K = 1500; }
     if (p.celebrate > 0 && !holding && s === 'free') { t.ns = 3.0; t.ne = 0.3; }
     if (!holding && (s === 'free' || s === 'land')) reactPose(p, t);          // body language (blocks, dunks, turnovers, nods)
   } else if (s === 'sig') {

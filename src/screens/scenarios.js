@@ -5,7 +5,7 @@
 // so skipping a day costs nothing. Completing it once a day also gives your career
 // save a small BP and Halal Bucks bonus.
 const SCEN_TWISTS = [
-  { id: 'win', t: 'Win the game' }, { id: 'three', t: 'Win, and hit at least one three' }, { id: 'clean', t: 'Win without a shove or a hard foul' },
+  { id: 'win', t: 'Win the game' }, { id: 'three', t: 'Win, and hit at least one three' }, { id: 'clean', t: 'Win without committing a foul' },
   { id: 'by3', t: 'Win by 3 or more' }, { id: 'dunk', t: 'Win, and throw one down' }, { id: 'assist', t: 'Win, with at least one assist from you' },
   { id: 'stop', t: 'Get a stop first, then win', poss: 1 }
 ];
@@ -53,7 +53,7 @@ function scenPossession(p) { const S = M.scenario; if (S && !S.done && S.stop ==
     const S = M.scenario; if (!S || S.done || M.attract) return;
     S.done = true;
     const me = M.players.find(p => p.human === 0), won = M.winner === 0, margin = M.teams[0].score - M.teams[1].score;
-    const tw = { win: true, three: S.threes > 0, clean: !(me && (me.shoves || me.hardFouls)), by3: margin >= 3, dunk: S.dunks > 0, assist: S.assist, stop: S.stop === true }[S.twist.id];
+    const tw = { win: true, three: S.threes > 0, clean: !(me && me.stats && me.stats.pf), by3: margin >= 3, dunk: S.dunks > 0, assist: S.assist, stop: S.stop === true }[S.twist.id];
     S.won = won; S.twistOK = !!tw; S.ok = won && !!tw;
     const pr = Progress.update(o => { o.scen = o.scen || {}; const d = o.scen[S.day] = o.scen[S.day] || { tries: 0, done: false }; d.tries++; if (S.ok) d.done = true; });
     const d = pr.scen[S.day];
