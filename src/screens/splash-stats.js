@@ -82,9 +82,13 @@ function trackDeficit() {
     _cp.apply(this, arguments);
     if (to.human < 0 && pa.from && pa.from.team === to.team && nearestOppDist(to.x, to.z, to.team) > 70) react(to, 'nod', 0.55);   // good pass: a nod
   };
+  // (v9.17.8: "already counted" lives here, not in M: M is the match's state, saved and checksummed online, and the
+  // two phones finish the match at different moments, so a flag in M made the end of every online match a desync)
+  let achEnd = false;
+  const _nmA = newMatch; newMatch = function () { achEnd = false; return _nmA.apply(this, arguments); };
   const _fm = finishMatch;
   finishMatch = function () {
-    const me = M.players && M.players.find(isMine), done = M._achEnd; M._achEnd = true;
+    const me = M.players && M.players.find(isMine), done = achEnd; achEnd = true;
     const r = _fm.apply(this, arguments);
     if (me && !done) { const us = M.teams[me.team].score, them = M.teams[1 - me.team].score; AchEvents.gameEnd(us > them, us - them, M.maxDef || 0); }
     return r;

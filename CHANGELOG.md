@@ -29,6 +29,12 @@ Accessibility would make 8 on a computer, where a group shows at most 7.)
   above) and `rb-holdtap` (full tier: host on Tap, guest on Hold, a whole online match, 0 desyncs, same final
   checksum).
 - New strings are in `docs/review/game-text.csv` (the export also brings the file up to date since 9.16.1).
+- **Fixed: every online match desynced at its last moment.** The "this match's achievements are counted" flag lived
+  in the match state, which online play saves and checksums, and the two phones finish a match at different
+  moments. The new online test found it: in a whole 1-minute match with both players mashing, 5 matches in 6 ended
+  with one desync put right (on Hold and on Tap alike). The flag now lives outside the match: 12 matches out of 12
+  with no desync, 6 of them with the host on Tap. (It also stops a match that was played again after a rollback
+  from counting its end twice.)
 
 ## 9.17.7: phone menus are easier to tap, and text can be made bigger
 Nothing looks different at Normal text size: the five screens checked (title, settings, career hub, pause, join code)
