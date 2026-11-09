@@ -95,7 +95,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | GT5 | Bragging rights: share a daily scenario result as a "beat my score" code | game design | 3 | 1 | 2 | **16** | open |
 | GF1 | Online rollback matches lose hit-stop and slow motion (reset each frame): play them as a visual-only hold | game feel | 3 | 1 | 2 | **16** | open |
 | IN1 | A Controls screen: keys already live in one table (`BINDS`), so remapping is data; save it and add Reset | input | 3 | 1 | 2 | **16** | open |
-| IN2 | Toggle instead of hold for Defend (guard stance) and Sprint | input | 3 | 1 | 2 | **16** | open |
+| IN2 | Toggle instead of hold for Defend (guard stance) and Sprint | input | 3 | 1 | 2 | **16** | done in 9.17.8: Settings → Accessibility → "Hold or tap" (Hold by default; Tap for Defend, Sprint or both); a tap stays on until the next tap, the ball changing hands, a dead ball or a pause |
 | SV5 | Desktop and Steam: save the career as a file in the app's data folder so Steam Cloud can sync it | save systems | 3 | 1 | 2 | **16** | open (with ST2) |
 | A6 | A screen registry instead of reassigning `render` / `gameUpdate` | architecture | 3 | 2 | 3 | **15** | open |
 | B13 | After a duo Barakah Run the end screen shows the solo best | code review | 2 | 1 | 1 | **15** | open |

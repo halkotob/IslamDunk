@@ -1,5 +1,35 @@
 # Changelog
 
+## 9.17.8: Defend and Sprint can be taps instead of holds (a setting, off by default)
+Nothing changes unless you change it. Settings → Accessibility has a new row, **Hold or tap**, after Shot release:
+Hold (the default), Tap: Defend, Tap: Sprint, or Tap: Defend and Sprint. (One row, not the two the brief asked for,
+and not in Controls & camera: that group already has 8 rows on a phone, the most that fit, and two rows in
+Accessibility would make 8 on a computer, where a group shows at most 7.)
+- **Tap:** one tap of DEFEND (H or L, Y on a pad, the third touch button) guards your man, and boxes out on a shot,
+  until you tap again. One tap of sprint (Shift, RB/RT/B on a pad, or pushing the touch stick past its ring) keeps
+  you sprinting whenever you move, until you tap again. On a phone that means you no longer hold the stick and a
+  button for a whole possession.
+- **It switches itself off** when the ball changes hands, when the ball is dead (timeouts, free throws, breaks, out
+  of bounds) and when you pause, so it can't stay on by accident.
+- **You can see it's on:** on a phone the DEFEND button stays lit, its line says "tap: GUARD" instead of "hold: GUARD",
+  the stick's sprint ring stays bright, and GUARD / SPRINT chips show under the turbo bar. With keys or a pad, the
+  player card says GUARD and the turbo bar keeps its sprint glow. (No new art: the existing chip, glow and lit
+  button. For the designer to look at: the chips sit under the turbo bar on a phone.)
+- **How to play** says "tap" instead of "hold" for whichever of the two is on Tap.
+- **Online:** the setting stays on your device. The toggle is turned into held buttons before the match sees them,
+  so one player on Tap and the other on Hold play the same game on both phones.
+- **Measured.** At the defaults: `npm run defense:report` (8 seeded games) is identical before and after. The loop
+  report isn't seeded and differs between two runs of the same build; before vs after is within that noise
+  (points per possession over 36 rows: 0.100 mean difference, against 0.096 between two runs of 9.17.7).
+  On Tap: a scripted defender who taps once each possession plays exactly the same seeded game as one who holds
+  (same score 0-8, same 5 shots allowed, 3 made, 1 steal, the same match checksum).
+- **New tests:** `hold-tap` (fast tier: with real key presses, a tap guards until the next tap; the ball changing
+  hands, a dead ball and a pause each turn it off; one Shift tap sprints only while moving; Hold works as before; no
+  stored setting loads as Hold and Tap survives a reload), `hold-tap-bot` (fast tier: the tap and hold defenders
+  above) and `rb-holdtap` (full tier: host on Tap, guest on Hold, a whole online match, 0 desyncs, same final
+  checksum).
+- New strings are in `docs/review/game-text.csv` (the export also brings the file up to date since 9.16.1).
+
 ## 9.17.7: phone menus are easier to tap, and text can be made bigger
 Nothing looks different at Normal text size: the five screens checked (title, settings, career hub, pause, join code)
 are pixel-identical to 9.17.6 on both phone sizes. What changes is where a tap lands, and a new choice in
