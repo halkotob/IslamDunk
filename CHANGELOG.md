@@ -19,9 +19,10 @@ The shove is gone. Turbo + Pass on defense is just a steal. All other fouls are 
   brief's 10% in some rows, both up and down; a shove never counted as a steal, so it comes from the games playing out
   differently once the CPU's shove roll is gone, and 24 games aren't enough to see a real change through that. Other
   fouls a game on Hard: and-ones 1.13 → 1.13, fouls on purpose 1.83 → 1.75, reach-ins 0.38 → 0.38. The loop report
-  (`tests/perf/loop-report.mjs`, now with a Turbo-spamming defender row) shows the same picture as before: on Very
-  easy every scripted style outscores the CPU, on Medium and Hard none does by more than mixed play; the masher
-  scores 1.26 to 1.45 points a possession and gives up 1.11 to 1.48.
+  (`tests/perf/loop-report.mjs`, now with a Turbo-spamming defender row) shows the same picture as before (points a possession, the script's / the CPU's): on Very
+  easy and Easy the scripted styles outscore the CPU, as they did; on Medium only the rusher edges it (1.52 / 1.46;
+  1.51 / 1.47 before); on Hard none does. The masher scores 1.26 to 1.45 and gives up 1.11 to 1.48 (its row in the
+  9.17.9 run came out empty, so the before numbers for it are from the seeded masher games above).
 - **Text and goals:** How to play and the tips no longer mention the shove ("Late and trailing, sprint + Pass: foul
   on purpose"). "Win without a shove or a hard foul" (the daily scenario), "Win 2 games without a shove" (the weekly
   goal), the "Play clean" niyyah and the clean-play bonus now count fouls committed (same ids, so saves still match).
