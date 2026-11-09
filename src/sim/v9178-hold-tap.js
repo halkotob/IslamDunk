@@ -42,8 +42,10 @@ function latchTick() {
   for (let i = 0; i < 2; i++) {
     const L = Latch[i], p = live ? latchPlayer(i) : null;
     const K = latchKeys(i), d = Input.down, pr = Input.pressed, held = ks => ks.some(k => d[k]), hit = ks => ks.some(k => pr[k]);
-    const dH = held(K.def), sH = held(K.spr), deep = i === 0 && Input.touchMode && !!(Input.stick && Input.stick.deep);
-    const dEdge = hit(K.def) || (dH && !L.dHeld), sEdge = hit(K.spr) || (sH && !L.sHeld) || (deep && !L.deep);
+    // a press: held or pressed this frame, and not the frame before (a quick tap can stay in Input.pressed for a second
+    // frame when the match ran no step, on a fast screen: that's still one tap)
+    const dH = held(K.def) || hit(K.def), sH = held(K.spr) || hit(K.spr), deep = i === 0 && Input.touchMode && !!(Input.stick && Input.stick.deep);
+    const dEdge = dH && !L.dHeld, sEdge = (sH && !L.sHeld) || (deep && !L.deep);
     L.dHeld = dH; L.sHeld = sH; L.deep = deep;
     if (!p) { latchClear(L); continue; }
     const side = latchSide(p);

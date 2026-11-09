@@ -1,5 +1,52 @@
 # Changelog
 
+## 9.17.9: one way back on every screen, one name for leaving, and a gamepad hint
+- **One way back (U2).** The ‹ Back pill, top left, is the way back on every screen that has one, with Esc on a
+  keyboard and B on a pad. 26 screens also had a second control that did the same thing; it's gone: the Back row in
+  Game settings (and its "‹ SETTINGS" link), the online menu, Mini games, Profile, tournament and league setup, the
+  Career menu, Save and load, Upgrade stats, Fun modes, the month view, the join-code keys, the custom-team code
+  screens, the save export and import screens and the clip screen; "Leave (saved)" on a tournament or league;
+  "Leave office"; the shop's and a conversation's Leave; the hub corner menu's Close; the online waiting screen's
+  Cancel. Nothing else on those screens moved (before and after pictures for the designer: 19 screens).
+  The pill now goes up one screen where it went further: inside a Game settings group it goes back to the groups
+  (it went to the title), and on the join-code keys to the online menu (it went to the title; their Back button
+  went to the online menu).
+- **One name for leaving.** Back goes up one screen. Leave leaves an online game. Quit leaves a match in progress,
+  and asks first ("Quit this game?"; the pause menu said "Quit to title" or "Leave game (no result)"). Title goes to
+  the title (the hub corner menu's "Main menu", the end of a run's "Back to title", the Dunk lab's Quit). Cancel is
+  left only where a dialog has a confirm button (importing a save). The pill says Skip on a story or the khutbah,
+  which passes the scene rather than going back.
+- **Settings (U3).** The title menu says Settings (it said Options) ▸ Profile, Game settings, Extras, How to play,
+  About, and the screen is called Game settings.
+- **The gamepad hint (UX1).** On screens you play by tapping, with more than 6 targets, "View: pick" shows in the
+  bottom-right corner for 5 seconds after a gamepad press, so a controller player knows the View button picks any
+  button. Touch and keyboard players never see it. Shown on: Teams & Players, the lobby, the career stats (league
+  leaders, around the league). Screens with 6 targets or fewer: the custom-team code import and share screens and
+  My clips open the pad's picker by themselves (as the join-code keys do), so the pad has a focus there. The rest
+  were left as they are, because the pad's directions or A already do something there that a focus would take over:
+  tabs and the main button on a tournament or league, team picking on select, the stick in the neighbourhood, the
+  gym, the musalla and a match, A to go on in a story, the khutbah, halftime and the results. The picker (View) still
+  reaches every target on all of them.
+- **Fixed:** a gamepad couldn't leave the clip screen (B, Start and A were read before the pad pressed them); one
+  tap of a Hold-or-tap button (9.17.8) could count twice on a fast screen when a frame ran no match step.
+- **Measured** with the new screen census (`node tests/screen-census.mjs`: the 103 screens of the phone audit, each
+  on a fresh page, with the keyboard alone, a gamepad alone and touch alone):
+
+  | | 9.17.8 | 9.17.9 |
+  |---|---|---|
+  | screens with no way out: keyboard / gamepad / touch | 0 / 2 / 0 | 0 / 0 / 0 |
+  | screens with two controls that go back | 26 | 0 |
+  | words for leaving on controls | 9: Back, Skip, Leave, Leave (saved), Title, Cancel, Quit, Quit to title, Leave office | 6: Back, Skip, Title, Leave, Cancel (the import dialog), Quit |
+  | "View: pick" shown | 0 | 4 (the screens above) |
+  | page errors | 0 (6 from two audit setups, fixed) | 0 |
+
+  Phone audit: 0 overflows, 0 page errors at 667×300 and 750×342. The screenshot tests (neighbourhood, Jumu'ah)
+  didn't change; no baseline was regenerated.
+- **New tests:** `nav-hint` (fast tier: the hint after a pad press, not after a key or a touch, gone after 5 s, never
+  on a list screen), `nav-names` (fast tier: Settings ▸ Game settings, no Back rows, the pill goes up one, Quit asks
+  first, join code goes back to the online menu) and `nav-census` (full tier: the census above must show no screen
+  without a way out on any device, no two ways back, only the six words, and no page errors).
+
 ## 9.17.8: Defend and Sprint can be taps instead of holds (a setting, off by default)
 Nothing changes unless you change it. Settings → Accessibility has a new row, **Hold or tap**, after Shot release:
 Hold (the default), Tap: Defend, Tap: Sprint, or Tap: Defend and Sprint. (One row, not the two the brief asked for,

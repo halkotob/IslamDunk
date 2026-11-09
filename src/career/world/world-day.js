@@ -79,10 +79,10 @@ function storeBuy(it) {
 // the shop panel
 function worldOpenShop(greet) { World.shop = { idx: 0, msg: greet ? 'Abu Karim: Assalamu alaikum! Have a look around.' : '' }; SFX.blip(); }
 function worldShopUpdate() {
-  const S = World.shop, n = STORE_ITEMS.length + 1;
+  const S = World.shop, n = STORE_ITEMS.length;   // (v9.17.9: Leave is the pill)
   if (menuHit('up')) { S.idx = (S.idx + n - 1) % n; SFX.blip(); }
   if (menuHit('down')) { S.idx = (S.idx + 1) % n; SFX.blip(); }
-  if (menuHit('ok')) { if (S.idx === n - 1) World.shop = null; else storeBuy(STORE_ITEMS[S.idx]); }
+  if (menuHit('ok')) storeBuy(STORE_ITEMS[S.idx]);
   else if (menuHit('back')) World.shop = null;
 }
 function worldDrawShop(g) {
@@ -107,11 +107,7 @@ function worldDrawShop(g) {
     g.fillStyle = wear ? '#9dffb0' : own ? '#fff' : can ? NIGHT : '#8494a8'; g.textAlign = 'center'; g.fillText(tag, tx + tw / 2, ry + 25);
     addRect(x + 12, ry, w - 24, rh - 4, () => { S.idx = i; storeBuy(it); });
   });
-  const by = y + 78 + STORE_ITEMS.length * rh + 8, on = S.idx === STORE_ITEMS.length;
-  if (on) goldPill(g, W / 2 - 80, by, 160, 36, 18, false); else glassPill(g, W / 2 - 80, by, 160, 36, 18, 0.5);
-  g.textAlign = 'center'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `15px ${FONT}`; g.fillText('Leave', W / 2, by + 24);
-  addRect(W / 2 - 80, by, 160, 36, () => { World.shop = null; SFX.blip(); });
-  if (!TT) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('↑ ↓ choose  •  Enter buy or wear  •  Esc leave', W / 2, y + 466); }
+  if (!TT) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('↑ ↓ choose  •  Enter buy or wear  •  Esc back', W / 2, y + 466); }
 }
 
 // ---------------------------------------------------------------- where you are today

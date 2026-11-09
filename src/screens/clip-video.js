@@ -136,28 +136,29 @@ function drawClipVideo(g) {
   if (ClipVid.state === 'rec') {
     g.fillStyle = 'rgba(255,255,255,0.14)'; roundRect(g, x, y + h + 20, w, 12, 6); g.fill(); g.fillStyle = GOLD; roundRect(g, x, y + h + 20, w * ClipVid.prog, 12, 6); g.fill();
     g.fillStyle = IVORY; g.fillText('Recording in real time: about ' + Math.round(ClipVid.secs) + ' s', W / 2, y + h + 56);
-    uiButton(g, W / 2 - 60, 448, 120, 36, 'Cancel', cancelClipVideo, false);
   } else if (ClipVid.state === 'done') {
     const mb = ClipVid.blob ? (ClipVid.blob.size / 1048576).toFixed(1) : '0';
     g.fillText(fitText(g, ClipVid.name + '  •  ' + mb + ' MB  •  no sound', w), W / 2, y + h + 30);
     const share = clipCanShare();
     if (share) uiButton(g, W / 2 - 230, 440, 140, 38, 'Share', shareClipVideo, true);
     uiButton(g, share ? W / 2 - 70 : W / 2 - 150, 440, 140, 38, 'Save', saveClipVideo, !share);
-    uiButton(g, share ? W / 2 + 90 : W / 2 + 10, 440, 140, 38, 'Back', cancelClipVideo, false);
   } else {
     g.fillText(fitText(g, ClipVid.msg || '', w + 100), W / 2, y + h + 30);
     uiButton(g, W / 2 - 150, 440, 140, 38, 'Save image', downloadShareCard, true);
-    uiButton(g, W / 2 + 10, 440, 140, 38, 'Back', cancelClipVideo, false);
   }
 }
 {
   const _gu = gameUpdate;
   gameUpdate = function (rdt) {
-    if (Game.screen === 'clipvideo') {
+    const sc = Game.screen;
+    if (sc === 'shareclip' && Input.pressed.KeyV) { startClipVideo(); Input.pressed.KeyV = false; }
+    const r = _gu.apply(this, arguments);
+    // (v9.17.9: after the rest of the frame, so a pad's B and A count: the pad presses its keys inside it)
+    if (sc === 'clipvideo' && Game.screen === 'clipvideo') {
       if (menuHit('back')) cancelClipVideo();
       else if (menuHit('ok')) { if (ClipVid.state === 'done') shareClipVideo(); else if (ClipVid.state === 'fallback') downloadShareCard(); }
-    } else if (Game.screen === 'shareclip' && Input.pressed.KeyV) { startClipVideo(); Input.pressed.KeyV = false; }
-    return _gu.apply(this, arguments);
+    }
+    return r;
   };
   const _r = render;
   render = function (g) { _r.apply(this, arguments); if (Game.screen === 'clipvideo') drawClipVideo(g); };

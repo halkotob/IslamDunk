@@ -393,7 +393,6 @@ function drawCSShare(g) {
   const code = CSUI.share || '', cw = g.measureText('MMMMMMMMMM').width / 10, per = Math.max(20, Math.floor(656 / cw)), lh = Math.max(16, Math.ceil(cw * 1.9));
   for (let i = 0, y = 176; i < code.length; i += per, y += lh) { const last = y + lh > 370 && i + per < code.length; g.fillText(last ? code.slice(i, i + per - 1) + '…' : code.slice(i, i + per), 152, y); if (last) break; }
   uiButton(g, W / 2 - 200, 396, 190, 40, 'Copy code', () => csCopy(code), true);
-  uiButton(g, W / 2 + 10, 396, 190, 40, 'Back', () => BACK.csshare(), false);
   W = rw; Game.ox = 0; g.restore();
 }
 function openCSImport() { CSUI.imp = { msg: '', err: false }; Game.screen = 'csimport'; }
@@ -412,7 +411,6 @@ function drawCSImport(g) {
   uiButton(g, W / 2 - 110, 210, 220, 44, 'Paste', csPasteButton, true);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('or press Ctrl+V (⌘V on a Mac)', W / 2, 280);
   if (CSUI.imp && CSUI.imp.msg) { g.fillStyle = CSUI.imp.err ? '#ff9a8a' : '#9dffb0'; g.font = `15px ${BODY}`; g.fillText(CSUI.imp.msg, W / 2, 322); }
-  uiButton(g, W / 2 - 80, 346, 160, 38, 'Back', () => { Game.screen = 'cslist'; }, false);
   W = rw; Game.ox = 0; g.restore();
 }
 // ---- screens and title entry

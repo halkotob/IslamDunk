@@ -345,7 +345,7 @@ function drawTrivia(g) {
 function drawPause(g) {
   dim(g, 0.65);
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `40px ${FONT}`; g.fillText('Paused', W / 2, 190);
-  drawMenu(g, [Net.role === 'guest' ? 'Keep playing' : 'Resume', Net.role ? 'Leave online game' : M.career ? 'Leave game (no result)' : 'Quit to title'], Game.idx, 260, i => i === 0 ? (Game.paused = false) : M.career ? careerHub() : goTitle());
+  drawMenu(g, [Net.role === 'guest' ? 'Keep playing' : 'Resume', Net.role ? 'Leave' : 'Quit'], Game.idx, 260, i => i === 0 ? (Game.paused = false) : M.career ? careerHub() : goTitle());
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.textAlign = 'center'; g.fillText('Press F for fullscreen', W / 2, 360);
 }
 function render(g) {

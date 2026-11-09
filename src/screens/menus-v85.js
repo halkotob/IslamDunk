@@ -52,35 +52,35 @@ function setGroupItems(gi) {
 }
 {
   settingsUpdate = function () {
+    // (v9.17.9: no Back row: the ‹ Back pill, Esc and B go back)
     if (Game.setGroup == null) {
-      const n = SET_GROUPS.length + 1;
-      menuNav(n, i => { if (i === n - 1) goTitle(); else { Game.setGroup = i; Game.idx = 0; } });
+      const n = SET_GROUPS.length;
+      Game.idx = Math.min(Game.idx, n - 1);
+      menuNav(n, i => { Game.setGroup = i; Game.idx = 0; });
       if (menuHit('back')) goTitle();
       return;
     }
-    const L = setGroupItems(Game.setGroup), n = L.length + 1, back = () => { Game.idx = Game.setGroup; Game.setGroup = null; };
+    const L = setGroupItems(Game.setGroup), n = L.length, back = () => { Game.idx = Game.setGroup; Game.setGroup = null; };
     Game.idx = Math.min(Game.idx, n - 1);
-    menuNav(n, i => { if (i === n - 1) back(); else L[i].step(1); });
-    if (Game.idx < n - 1 && menuHit('left')) { L[Game.idx].step(-1); SFX.blip(); }
-    if (Game.idx < n - 1 && menuHit('right')) { L[Game.idx].step(1); SFX.blip(); }
+    menuNav(n, i => L[i].step(1));
+    if (menuHit('left')) { L[Game.idx].step(-1); SFX.blip(); }
+    if (menuHit('right')) { L[Game.idx].step(1); SFX.blip(); }
     if (menuHit('back')) back();
   };
   drawSettings = function (g) {
     dim(g, 0.72);
     g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `32px ${FONT}`;
     if (Game.setGroup == null) {
-      g.fillText('Settings', W / 2, 110);
+      g.fillText('Game settings', W / 2, 110);   // (v9.17.9: the title menu's row is Settings ▸ Game settings)
       g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('Difficulty changes CPU reaction, decisions and timing. Player stats never change.', W / 2, 138);
-      const labels = [...SET_GROUPS.map(s => s.name), 'Back'];
-      drawMenuList(g, 'setgroups', labels.map((label, i) => ({ label, sub: i < SET_GROUPS.length ? [] : null })), Game.idx, 210, 46,
-        i => { Game.idx = i; if (i === labels.length - 1) goTitle(); else { Game.setGroup = i; Game.idx = 0; } }, i => { Game.idx = i; });
+      const labels = SET_GROUPS.map(s => s.name);
+      drawMenuList(g, 'setgroups', labels.map(label => ({ label, sub: [] })), Game.idx, 210, 46,
+        i => { Game.idx = i; Game.setGroup = i; Game.idx = 0; }, i => { Game.idx = i; });
       return;
     }
     const G = SET_GROUPS[Game.setGroup], L = setGroupItems(Game.setGroup);
     g.fillText(G.name, W / 2, 104);
-    g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.fillText('‹  SETTINGS', W / 2, 134);
-    addRect(W / 2 - 110, 118, 220, 24, () => { Game.idx = Game.setGroup; Game.setGroup = null; });
-    drawMenu(g, [...L.map(s => s.label), 'Back'], Game.idx, 190, i => { if (i === L.length) { Game.idx = Game.setGroup; Game.setGroup = null; } else L[i].step(1); }, [...L.map(s => s.get()), ''], Math.min(44, Math.floor((H - 216) / (L.length + 1))));   // v8.6.2: longer lists close up to fit
+    drawMenu(g, L.map(s => s.label), Game.idx, 190, i => L[i].step(1), L.map(s => s.get()), Math.min(44, Math.floor((H - 216) / (L.length + 1))));   // v8.6 (v9.17.9: the gap as before, so no row moves).2: longer lists close up to fit
   };
   // opening Settings always starts at the group list
   const _st = goTitle; goTitle = function () { Game.setGroup = null; return _st.apply(this, arguments); };

@@ -203,8 +203,8 @@ const UNCLE_LINES = ['IN MY DAY WE PLAYED IN SLIDES!', 'PASS THE BALL, BETA!', '
   'MY KNEE SAYS NO. MY HEART SAYS YES!', 'CHAI AFTER THE GAME?', 'SLIDES ON, GAME ON!', 'EAT FIRST, THEN SHOOT!', 'WHO IS YOUR FATHER? I KNOW HIM!'];
 function uncleTalk() { FX.callout(pick(UNCLE_LINES), '#ffd6a5', 'UNCLE MODE'); }
 function funUpdate() {
-  const n = FUN_MODES.length + 1;
-  menuNav(n, i => { if (i === n - 1) goTitle(); else toggleFun(i); });
+  const n = FUN_MODES.length;   // (v9.17.9: Back is the pill)
+  menuNav(n, i => toggleFun(i));
   if (menuHit('back')) goTitle();
 }
 function toggleFun(i) {
@@ -217,7 +217,7 @@ function drawFunModes(g) {
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `30px ${FONT}`; g.fillText('Fun Modes', W / 2, 100);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('For Quick Play and online games. Career stays standard.', W / 2, 128);
   const vals = FUN_MODES.map(m => Unlocks[m.key] ? (SETTINGS.fun[m.key] ? 'On' : 'Off') : 'Locked');
-  drawMenu(g, [...FUN_MODES.map(m => m.name), 'Back'], Game.idx, 196, i => { if (i === FUN_MODES.length) goTitle(); else toggleFun(i); }, [...vals, '']);
+  drawMenu(g, FUN_MODES.map(m => m.name), Game.idx, 196, i => toggleFun(i), vals);
   const m = FUN_MODES[Game.idx];
   if (m) { g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(Unlocks[m.key] ? ({ bigHead: 'Everyone gets a very big head.', uncle: 'Everyone plays in thobes and slides, a bit slower, with plenty of uncle commentary.', lowGrav: 'Floaty jumps and slow, high shots.' })[m.key] : 'Locked. ' + m.how + '.', W / 2, 390); }
 }

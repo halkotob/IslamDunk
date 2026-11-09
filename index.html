@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.17.8';
+const VERSION = '9.17.9';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -3534,7 +3534,7 @@ function drawTrivia(g) {
 function drawPause(g) {
   dim(g, 0.65);
   g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `40px ${FONT}`; g.fillText('Paused', W / 2, 190);
-  drawMenu(g, [Net.role === 'guest' ? 'Keep playing' : 'Resume', Net.role ? 'Leave online game' : M.career ? 'Leave game (no result)' : 'Quit to title'], Game.idx, 260, i => i === 0 ? (Game.paused = false) : M.career ? careerHub() : goTitle());
+  drawMenu(g, [Net.role === 'guest' ? 'Keep playing' : 'Resume', Net.role ? 'Leave' : 'Quit'], Game.idx, 260, i => i === 0 ? (Game.paused = false) : M.career ? careerHub() : goTitle());
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.textAlign = 'center'; g.fillText('Press F for fullscreen', W / 2, 360);
 }
 function render(g) {
@@ -4118,7 +4118,7 @@ function drawOnline(g) {
     g.fillText(msg, W / 2, 200);
     if (Net.avail !== 'checking') g.fillText('Both players open the same page, then one hosts and the other enters the code.', W / 2, 226);
     if (Net.reason) { g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Diagnostic: ' + Net.reason, W / 2, 256); }
-    drawMenu(g, ['Back', 'Reload and try again'], Game.idx % 2, 310, i => { if (i === 1 && typeof location !== 'undefined') location.reload(); else goTitle(); });
+    if (Net.avail !== 'checking') drawMenu(g, ['Reload and try again'], 0, 310, () => { if (typeof location !== 'undefined') location.reload(); });   // (v9.17.9: Back is the pill)
     return;
   }
   g.fillText('Host a game to get a join code, or type your friend\u2019s code to join theirs.', W / 2, 124);
@@ -4138,7 +4138,6 @@ function drawJoinCode(g) {
   const btn = (x, label, fn, on) => { g.fillStyle = on ? GOLD : 'rgba(255,255,255,0.12)'; roundRect(g, x, 340, 150, 42, 21); g.fill(); g.fillStyle = on ? NIGHT : '#fff'; g.font = `17px ${FONT}`; g.fillText(label, x + 75, 367); addRect(x, 340, 150, 42, fn); };
   btn(W / 2 - 240, 'Delete', () => { Net.typed = Net.typed.slice(0, -1); }, false);
   btn(W / 2 - 75, 'Join', joinTyped, Net.typed.length === 4);
-  btn(W / 2 + 90, 'Back', () => { Game.screen = 'online'; }, false);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Type the letters, Enter to join, Esc to go back', W / 2, 420);
 }
 function drawHostLobby(g) {
@@ -4176,9 +4175,7 @@ function drawNetWait(g) {
   g.fillStyle = Net.status === 'lobby' ? '#9dffb0' : IVORY; g.font = `17px ${BODY}`;
   wrapText(g, msgs[Net.status] || '', W / 2, 210, 640, 26);
   const end = Net.status === 'notfound' || Net.status === 'full' || Net.status === 'hostleft' || Net.status === 'busy';
-  g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, W / 2 - 80, 300, 160, 40, 20); g.fill();
-  g.fillStyle = '#fff'; g.font = `16px ${FONT}`; g.fillText(end ? 'Back to title' : 'Cancel', W / 2, 326);
-  addRect(W / 2 - 80, 300, 160, 40, goTitle);
+  void end;   // (v9.17.9: the ‹ Back pill leaves; it was a second button, Cancel or Back to title)
 }
 function drawNetPlay(g) {
   const s = Net.lastS; if (!s) return;
@@ -5053,8 +5050,7 @@ function cmenuItems() {
   if (readSave(SAVE_AUTO)) items.push(['Continue career', 'continue']);
   items.push([Game.confirmNew ? 'Press again to start over' : 'New career', 'new']);
   if (readSave(SAVE_SLOT)) items.push(['Load manual save', 'load']);
-  items.push(['Back', 'back']);
-  return items;
+  return items;   // (v9.17.9: no Back row: the ‹ Back pill, Esc and B)
 }
 function cmenuSelect(i) {
   const act = cmenuItems()[i][1];
@@ -5135,7 +5131,7 @@ const HUB_MENU = () => hubExtra([
   { label: 'Bracket', act: () => { Game.screen = 'cbracket'; } }
 ]);
 const HUB_CORNER = [['Save and load', () => { Game.hubMenu.open = false; Game.screen = 'saves'; Game.idx = 0; Game.saveMsg = ''; Game.confirmNew = false; }],
-  ['Main menu', () => { saveCareer(); goTitle(); }], ['Close', () => { Game.hubMenu.open = false; }]];
+  ['Title', () => { saveCareer(); goTitle(); }]];   // (v9.17.9: the pill closes this menu; Title, as it goes to the title)
 function hubUpdate() {
   const hm = Game.hubMenu || (Game.hubMenu = { open: false, idx: 0 });
   if (hm.open) {
@@ -5189,7 +5185,7 @@ function buyStat(i) {
   if (C.bp < cost) { SFX.bad(); return; }
   C.bp -= cost; C.lv[k]++; SFX.good(); saveCareer();
 }
-const SAVE_ITEMS = () => ['Save to manual slot', 'Load manual slot', Game.confirmNew ? 'Press again to start over' : 'Start a new career', 'Export career', 'Import career', 'Back'];   // (Export, Import: v9173-save-safe.js)
+const SAVE_ITEMS = () => ['Save to manual slot', 'Load manual slot', Game.confirmNew ? 'Press again to start over' : 'Start a new career', 'Export career', 'Import career'];   // (v9.17.9: Back is the pill)   // (Export, Import: v9173-save-safe.js)
 function savesSelect(i) {
   if (i === 0) Game.saveMsg = saveCareer(SAVE_SLOT) ? 'Saved to the manual slot.' : 'Could not save on this device.';
   else if (i === 1) { if (loadCareer(SAVE_SLOT)) { saveCareer(); Game.saveMsg = 'Manual save loaded.'; setupPractice('free'); } else Game.saveMsg = 'No manual save found.'; }
@@ -5263,7 +5259,7 @@ function careerUpdate(rdt) {
     }
     case 'hub': hubUpdate(); break;
     case 'train':
-      menuNav(STAT_ROWS.length + 1, i => i === STAT_ROWS.length ? careerHub() : buyStat(i));
+      menuNav(STAT_ROWS.length, i => buyStat(i));   // (v9.17.9: Back is the pill)
       if (menuHit('back')) careerHub(); break;
     case 'pregame': if (menuHit('ok')) startCareerMatch(); else if (menuHit('back')) careerHub(); break;
     case 'postgame': if (menuHit('ok')) postgameContinue(); break;
@@ -5493,9 +5489,6 @@ function drawTrain(g) {
     g.fillText(l >= 10 ? 'Max' : 'Level up: ' + cost, W / 2 + 262, y + 23);
     addRect(W / 2 - 280, y, 560, 34, () => { Game.idx = i; buyStat(i); });
   });
-  const by = 132 + STAT_ROWS.length * 38 + 2, sel = Game.idx === STAT_ROWS.length;
-  g.fillStyle = sel ? GOLD : 'rgba(255,255,255,0.12)'; roundRect(g, W / 2 - 80, by, 160, 36, 18); g.fill();
-  g.textAlign = 'center'; g.fillStyle = sel ? NIGHT : '#fff'; g.font = `15px ${FONT}`; g.fillText('Back', W / 2, by + 24); addRect(W / 2 - 80, by, 160, 36, careerHub);
   // v8.6.2: below the panel (it sat on the Back button); phones drop it, it's longer than the screen
   if (!(Input.touchMode && g === ctx)) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Stamina: slower turbo drain. Passing: faster, safer passes. Hustle: first to loose balls, draws charges. Clutch: steadier in the last minute of close games.', W / 2, 512); }
 }
@@ -5954,8 +5947,8 @@ const BACK = {
   bests: () => { Game.screen = 'title'; },
   achievements: () => { Game.screen = 'title'; },
   about: () => { Game.screen = 'title'; },
-  funmodes: () => goTitle(), settings: () => goTitle(), howto: () => goTitle(), online: () => goTitle(),
-  joincode: () => goTitle(), hostlobby: () => goTitle(), netwait: () => goTitle(), bracket: () => goTitle(),
+  funmodes: () => goTitle(), settings: () => { if (Game.setGroup != null) { Game.idx = Game.setGroup; Game.setGroup = null; } else goTitle(); },   // (v9.17.9: in a group, up one to the groups, as Esc does) howto: () => goTitle(), online: () => goTitle(),
+  joincode: () => { Game.screen = 'online'; Game.idx = 1; },   // (v9.17.9: up one, to Join with a code, as its Back button did) hostlobby: () => goTitle(), netwait: () => goTitle(), bracket: () => goTitle(),
   cmenu: () => goTitle(), creator: () => { if (Game.creator.isNew) { Game.screen = 'cmenu'; Game.idx = 0; } else careerHub(); },
   namekeys: () => { Game.screen = 'creator'; }, story: () => (typeof storySkip === 'function' ? storySkip(Game.story) : Game.story.then()),
   train: () => careerHub(), pregame: () => careerHub(), cbracket: () => careerHub(),
@@ -5976,7 +5969,7 @@ function backVisible() {
 const BackBtn = { x: 8, y: 8, w: 80, h: 32 };
 function drawBackButton(g) {
   if (!backVisible()) return;
-  const label = Game.screen === 'story' || Game.screen === 'jumuah' ? 'Skip' : (Game.screen === 'musalla' && Game.mus && Game.mus.talk) || (Game.screen === 'hub' && Game.hubMenu && Game.hubMenu.open) ? 'Close' : 'Back';
+  const label = Game.screen === 'story' || Game.screen === 'jumuah' ? 'Skip' : 'Back';   // (v9.17.9: Back, also for closing the hub menu or a talk; Skip passes a scene)
   g.font = `14px ${FONT}`; const w = Math.max(80, Math.ceil(g.measureText('\u2039 ' + label).width) + 28); BackBtn.w = w;   // v9.6.2: fits its label
   const hov = hovering(8, 8, w, 32), pr = pressing(8, 8, w, 32);
   g.fillStyle = pr ? '#c9a24a' : hov ? GOLD : 'rgba(8,16,24,0.85)'; roundRect(g, 8, 8, w, 32, 16); g.fill();
@@ -6319,8 +6312,8 @@ const UNCLE_LINES = ['IN MY DAY WE PLAYED IN SLIDES!', 'PASS THE BALL, BETA!', '
   'MY KNEE SAYS NO. MY HEART SAYS YES!', 'CHAI AFTER THE GAME?', 'SLIDES ON, GAME ON!', 'EAT FIRST, THEN SHOOT!', 'WHO IS YOUR FATHER? I KNOW HIM!'];
 function uncleTalk() { FX.callout(pick(UNCLE_LINES), '#ffd6a5', 'UNCLE MODE'); }
 function funUpdate() {
-  const n = FUN_MODES.length + 1;
-  menuNav(n, i => { if (i === n - 1) goTitle(); else toggleFun(i); });
+  const n = FUN_MODES.length;   // (v9.17.9: Back is the pill)
+  menuNav(n, i => toggleFun(i));
   if (menuHit('back')) goTitle();
 }
 function toggleFun(i) {
@@ -6333,7 +6326,7 @@ function drawFunModes(g) {
   g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `30px ${FONT}`; g.fillText('Fun Modes', W / 2, 100);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('For Quick Play and online games. Career stays standard.', W / 2, 128);
   const vals = FUN_MODES.map(m => Unlocks[m.key] ? (SETTINGS.fun[m.key] ? 'On' : 'Off') : 'Locked');
-  drawMenu(g, [...FUN_MODES.map(m => m.name), 'Back'], Game.idx, 196, i => { if (i === FUN_MODES.length) goTitle(); else toggleFun(i); }, [...vals, '']);
+  drawMenu(g, FUN_MODES.map(m => m.name), Game.idx, 196, i => toggleFun(i), vals);
   const m = FUN_MODES[Game.idx];
   if (m) { g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(Unlocks[m.key] ? ({ bigHead: 'Everyone gets a very big head.', uncle: 'Everyone plays in thobes and slides, a bit slower, with plenty of uncle commentary.', lowGrav: 'Floaty jumps and slow, high shots.' })[m.key] : 'Locked. ' + m.how + '.', W / 2, 390); }
 }
@@ -7305,7 +7298,6 @@ function drawOffice(g) {
   g.fillStyle = 'rgba(8,16,24,0.8)'; roundRect(g, 96, 8, 360, 32, 16); g.fill();
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.textAlign = 'left'; g.fillText('Sheikh\u2019s office', 112, 29);
   g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('\u2190 \u2192 choose, Enter to select', 250, 29);
-  if (!of.panel) uiButton(g, W - 150, H - 52, 130, 36, 'Leave office', () => leaveOffice());   // v8.6.7: visible, works by touch (Esc too)
   if (of.panel === 'shelf') {
     panel(g, 60, 150, W - 120, 240, true);
     g.textAlign = 'left';
@@ -11689,7 +11681,7 @@ function pauseItems() {
   if (canCallTimeout(t)) items.push(['Call timeout (' + M.timeouts[t] + ' left)', () => { Game.paused = false; callTimeout(t, true); }]);
   else if (M.timeouts && t >= 0 && !Net.role && !M.mini && !M.practice) items.push(['Timeout (' + M.timeouts[t] + ' left): only with the ball', () => {}]);
   if (!M.gym && !M.practice) items.push(['Camera: ' + CAM_PRESETS[View.camera].name, () => cycleCamera(1, true)]);
-  items.push([Net.role ? 'Leave online game' : M.career ? 'Leave game (no result)' : 'Quit to title', () => { M.career ? careerHub() : goTitle(); }]);
+  items.push([Net.role ? 'Leave' : 'Quit', () => { M.career ? careerHub() : goTitle(); }]);   // (v9.17.9: Leave for an online room, Quit for a match; it asks first, v912-polish.js)
   return items;
 }
 function pauseNav() {
@@ -13541,18 +13533,18 @@ const Lobby = {
     }
   }
 };
-function runEndBackLabel() { return Run.duo === 'online' && Net.role === 'host' ? 'Back to lobby' : 'Back to title'; }
+function runEndBackLabel() { return Run.duo === 'online' && Net.role === 'host' ? 'Back' : 'Title'; }   // (v9.17.9: Back up one, to the lobby; Title when it goes to the title)
 function runEndBack() { if (Run.duo === 'online' && Net.role === 'host') Lobby.back(); else goTitle(); }
 // ---- menu: Host a lobby / Join with a code / Rejoin
 function onlineItems() {
   const L = Lobby.last(), it = ['Host a lobby', 'Join with a code'];
   if (L) it.push((L.role === 'host' ? 'Reopen lobby ' : 'Rejoin lobby ') + L.code);
-  it.push('Back'); return it;
+  return it;   // (v9.17.9: Back is the pill)
 }
 function refreshOnlineItems() { ONLINE_ITEMS.splice(0, ONLINE_ITEMS.length, ...onlineItems()); }
 onlineSelect = function (i) {
   refreshOnlineItems();
-  if (Net.avail !== 'yes') { if (i === 1 && typeof location !== 'undefined') location.reload(); else goTitle(); return; }
+  if (Net.avail !== 'yes') { if (Net.avail !== 'checking' && typeof location !== 'undefined') location.reload(); return; }
   const label = ONLINE_ITEMS[i] || 'Back';
   if (label === 'Host a lobby') Lobby.open();
   else if (label === 'Join with a code') { Net.typed = ''; Game.screen = 'joincode'; }
@@ -16366,7 +16358,6 @@ function minisRows() {
   }
   R.push({ label: 'CPU difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); diffChosen(); } });
   R.push({ label: 'Start', start: true, step: () => startQuickMini() });
-  R.push({ label: 'Back', back: true, step: () => goTitle() });
   return R;
 }
 const MINI_GAMES = [['lightning', 'Lightning'], ['horse', 'HORSE'], ['kotc', 'King of the Court']];   // v9.8: Around the World removed (play-test review)
@@ -16812,7 +16803,6 @@ function profileRows() {
     R.push({ label: { title: 'Title', ball: 'Ball', cele: 'Celebration' }[kind], get: () => name(kind, E[kind]) + (list.length > 1 ? '' : '  (earn more by levelling up)'), step: dd => { const i = list.indexOf(E[kind]); E[kind] = list[((i < 0 ? 0 : i) + dd + list.length) % list.length]; Profile.save(); } });
   }
   R.push({ label: 'Save profile card', start: true, step: () => saveProfileCard() });
-  R.push({ label: 'Back', back: true, step: () => goTitle() });
   return R;
 }
 function profileTitle() { const t = Profile.load().equip.title; return t && t !== 'none' ? REWARDS.find(r => r.id === t).name : ''; }
@@ -18703,7 +18693,6 @@ function drawCSShare(g) {
   const code = CSUI.share || '', cw = g.measureText('MMMMMMMMMM').width / 10, per = Math.max(20, Math.floor(656 / cw)), lh = Math.max(16, Math.ceil(cw * 1.9));
   for (let i = 0, y = 176; i < code.length; i += per, y += lh) { const last = y + lh > 370 && i + per < code.length; g.fillText(last ? code.slice(i, i + per - 1) + '…' : code.slice(i, i + per), 152, y); if (last) break; }
   uiButton(g, W / 2 - 200, 396, 190, 40, 'Copy code', () => csCopy(code), true);
-  uiButton(g, W / 2 + 10, 396, 190, 40, 'Back', () => BACK.csshare(), false);
   W = rw; Game.ox = 0; g.restore();
 }
 function openCSImport() { CSUI.imp = { msg: '', err: false }; Game.screen = 'csimport'; }
@@ -18722,7 +18711,6 @@ function drawCSImport(g) {
   uiButton(g, W / 2 - 110, 210, 220, 44, 'Paste', csPasteButton, true);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('or press Ctrl+V (⌘V on a Mac)', W / 2, 280);
   if (CSUI.imp && CSUI.imp.msg) { g.fillStyle = CSUI.imp.err ? '#ff9a8a' : '#9dffb0'; g.font = `15px ${BODY}`; g.fillText(CSUI.imp.msg, W / 2, 322); }
-  uiButton(g, W / 2 - 80, 346, 160, 38, 'Back', () => { Game.screen = 'cslist'; }, false);
   W = rw; Game.ox = 0; g.restore();
 }
 // ---- screens and title entry
@@ -19404,35 +19392,35 @@ function setGroupItems(gi) {
 }
 {
   settingsUpdate = function () {
+    // (v9.17.9: no Back row: the ‹ Back pill, Esc and B go back)
     if (Game.setGroup == null) {
-      const n = SET_GROUPS.length + 1;
-      menuNav(n, i => { if (i === n - 1) goTitle(); else { Game.setGroup = i; Game.idx = 0; } });
+      const n = SET_GROUPS.length;
+      Game.idx = Math.min(Game.idx, n - 1);
+      menuNav(n, i => { Game.setGroup = i; Game.idx = 0; });
       if (menuHit('back')) goTitle();
       return;
     }
-    const L = setGroupItems(Game.setGroup), n = L.length + 1, back = () => { Game.idx = Game.setGroup; Game.setGroup = null; };
+    const L = setGroupItems(Game.setGroup), n = L.length, back = () => { Game.idx = Game.setGroup; Game.setGroup = null; };
     Game.idx = Math.min(Game.idx, n - 1);
-    menuNav(n, i => { if (i === n - 1) back(); else L[i].step(1); });
-    if (Game.idx < n - 1 && menuHit('left')) { L[Game.idx].step(-1); SFX.blip(); }
-    if (Game.idx < n - 1 && menuHit('right')) { L[Game.idx].step(1); SFX.blip(); }
+    menuNav(n, i => L[i].step(1));
+    if (menuHit('left')) { L[Game.idx].step(-1); SFX.blip(); }
+    if (menuHit('right')) { L[Game.idx].step(1); SFX.blip(); }
     if (menuHit('back')) back();
   };
   drawSettings = function (g) {
     dim(g, 0.72);
     g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `32px ${FONT}`;
     if (Game.setGroup == null) {
-      g.fillText('Settings', W / 2, 110);
+      g.fillText('Game settings', W / 2, 110);   // (v9.17.9: the title menu's row is Settings ▸ Game settings)
       g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText('Difficulty changes CPU reaction, decisions and timing. Player stats never change.', W / 2, 138);
-      const labels = [...SET_GROUPS.map(s => s.name), 'Back'];
-      drawMenuList(g, 'setgroups', labels.map((label, i) => ({ label, sub: i < SET_GROUPS.length ? [] : null })), Game.idx, 210, 46,
-        i => { Game.idx = i; if (i === labels.length - 1) goTitle(); else { Game.setGroup = i; Game.idx = 0; } }, i => { Game.idx = i; });
+      const labels = SET_GROUPS.map(s => s.name);
+      drawMenuList(g, 'setgroups', labels.map(label => ({ label, sub: [] })), Game.idx, 210, 46,
+        i => { Game.idx = i; Game.setGroup = i; Game.idx = 0; }, i => { Game.idx = i; });
       return;
     }
     const G = SET_GROUPS[Game.setGroup], L = setGroupItems(Game.setGroup);
     g.fillText(G.name, W / 2, 104);
-    g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.fillText('‹  SETTINGS', W / 2, 134);
-    addRect(W / 2 - 110, 118, 220, 24, () => { Game.idx = Game.setGroup; Game.setGroup = null; });
-    drawMenu(g, [...L.map(s => s.label), 'Back'], Game.idx, 190, i => { if (i === L.length) { Game.idx = Game.setGroup; Game.setGroup = null; } else L[i].step(1); }, [...L.map(s => s.get()), ''], Math.min(44, Math.floor((H - 216) / (L.length + 1))));   // v8.6.2: longer lists close up to fit
+    drawMenu(g, L.map(s => s.label), Game.idx, 190, i => L[i].step(1), L.map(s => s.get()), Math.min(44, Math.floor((H - 216) / (L.length + 1))));   // v8.6 (v9.17.9: the gap as before, so no row moves).2: longer lists close up to fit
   };
   // opening Settings always starts at the group list
   const _st = goTitle; goTitle = function () { Game.setGroup = null; return _st.apply(this, arguments); };
@@ -20424,7 +20412,7 @@ function dlCmd(q) {
     uiButton(g, x + 16, y + 62, 110, 24, 'Dunk', () => dlDunk(), true);
     uiButton(g, x + 136, y + 62, 130, 24, 'Next style', () => setTomahawk(1));
     uiButton(g, x + 276, y + 62, 130, 24, DL.slow ? 'Normal speed' : 'Slow motion', () => { DL.slow = !DL.slow; });
-    uiButton(g, x + w - 96, y + 62, 80, 24, 'Quit', () => goTitle());
+    uiButton(g, x + w - 96, y + 62, 80, 24, 'Title', () => goTitle());
     g.restore();
   };
   const _tm = TITLE_MENU;
@@ -20754,28 +20742,29 @@ function drawClipVideo(g) {
   if (ClipVid.state === 'rec') {
     g.fillStyle = 'rgba(255,255,255,0.14)'; roundRect(g, x, y + h + 20, w, 12, 6); g.fill(); g.fillStyle = GOLD; roundRect(g, x, y + h + 20, w * ClipVid.prog, 12, 6); g.fill();
     g.fillStyle = IVORY; g.fillText('Recording in real time: about ' + Math.round(ClipVid.secs) + ' s', W / 2, y + h + 56);
-    uiButton(g, W / 2 - 60, 448, 120, 36, 'Cancel', cancelClipVideo, false);
   } else if (ClipVid.state === 'done') {
     const mb = ClipVid.blob ? (ClipVid.blob.size / 1048576).toFixed(1) : '0';
     g.fillText(fitText(g, ClipVid.name + '  •  ' + mb + ' MB  •  no sound', w), W / 2, y + h + 30);
     const share = clipCanShare();
     if (share) uiButton(g, W / 2 - 230, 440, 140, 38, 'Share', shareClipVideo, true);
     uiButton(g, share ? W / 2 - 70 : W / 2 - 150, 440, 140, 38, 'Save', saveClipVideo, !share);
-    uiButton(g, share ? W / 2 + 90 : W / 2 + 10, 440, 140, 38, 'Back', cancelClipVideo, false);
   } else {
     g.fillText(fitText(g, ClipVid.msg || '', w + 100), W / 2, y + h + 30);
     uiButton(g, W / 2 - 150, 440, 140, 38, 'Save image', downloadShareCard, true);
-    uiButton(g, W / 2 + 10, 440, 140, 38, 'Back', cancelClipVideo, false);
   }
 }
 {
   const _gu = gameUpdate;
   gameUpdate = function (rdt) {
-    if (Game.screen === 'clipvideo') {
+    const sc = Game.screen;
+    if (sc === 'shareclip' && Input.pressed.KeyV) { startClipVideo(); Input.pressed.KeyV = false; }
+    const r = _gu.apply(this, arguments);
+    // (v9.17.9: after the rest of the frame, so a pad's B and A count: the pad presses its keys inside it)
+    if (sc === 'clipvideo' && Game.screen === 'clipvideo') {
       if (menuHit('back')) cancelClipVideo();
       else if (menuHit('ok')) { if (ClipVid.state === 'done') shareClipVideo(); else if (ClipVid.state === 'fallback') downloadShareCard(); }
-    } else if (Game.screen === 'shareclip' && Input.pressed.KeyV) { startClipVideo(); Input.pressed.KeyV = false; }
-    return _gu.apply(this, arguments);
+    }
+    return r;
   };
   const _r = render;
   render = function (g) { _r.apply(this, arguments); if (Game.screen === 'clipvideo') drawClipVideo(g); };
@@ -21166,9 +21155,8 @@ function drawCalMonth(g) {
     else { g.strokeStyle = GOLD; g.lineWidth = 2.5; roundRect(g, ix - 10, iy - 9, 20, 18, 5); g.stroke(); }
     g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(label, lx + (TT ? 36 : 32), ly + 11);
   });
-  const by = 456, bw = 184, bx = sx + (sw - bw) / 2, hov = hovering(bx, by, bw, 42), pr = pressing(bx, by, bw, 42);
-  goldPill(g, bx, by, bw, 42, 21, pr); g.textAlign = 'center'; g.fillStyle = NIGHT; g.font = `17px ${FONT}`; g.fillText('Back', bx + bw / 2, by + 27);
-  addRect(bx, by, bw, 42, careerHub);
+  const bw = 184, bx = sx + (sw - bw) / 2;   // (v9.17.9: no Back button here: the pill)
+  g.textAlign = 'center';
   if (!TT) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Arrows: day   Q E: month   Esc: back', bx + bw / 2, 522); }
 }
 function drawCalDetail(g, D, x, w, TT) {
@@ -21601,8 +21589,7 @@ function worldDrawHud(g, T) {
     if (calDay(C.cal.d).fri) { g.font = `12px ${FONT}`; const jw = g.measureText('JUMU’AH').width + 20; g.fillStyle = 'rgba(30,90,74,0.95)'; roundRect(g, x + w + 8, 15, jw, 26, 13); g.fill(); g.fillStyle = GOLD; g.textAlign = 'center'; g.fillText('JUMU’AH', x + w + 8 + jw / 2, 33); }
   }
   if (World.talk) {                                               // always leavable
-    worldPill(g, W - 124, 12, 112, 'Leave', worldLeaveTalk);
-    return;
+    return;   // (v9.17.9: always leavable by the ‹ Back pill, Esc and B; it had a second Leave pill)
   }
   if (World.menu) { worldDrawMenu(g); return; }
   if (World.shop) { worldDrawShop(g); return; }
@@ -22265,10 +22252,10 @@ function storeBuy(it) {
 // the shop panel
 function worldOpenShop(greet) { World.shop = { idx: 0, msg: greet ? 'Abu Karim: Assalamu alaikum! Have a look around.' : '' }; SFX.blip(); }
 function worldShopUpdate() {
-  const S = World.shop, n = STORE_ITEMS.length + 1;
+  const S = World.shop, n = STORE_ITEMS.length;   // (v9.17.9: Leave is the pill)
   if (menuHit('up')) { S.idx = (S.idx + n - 1) % n; SFX.blip(); }
   if (menuHit('down')) { S.idx = (S.idx + 1) % n; SFX.blip(); }
-  if (menuHit('ok')) { if (S.idx === n - 1) World.shop = null; else storeBuy(STORE_ITEMS[S.idx]); }
+  if (menuHit('ok')) storeBuy(STORE_ITEMS[S.idx]);
   else if (menuHit('back')) World.shop = null;
 }
 function worldDrawShop(g) {
@@ -22293,11 +22280,7 @@ function worldDrawShop(g) {
     g.fillStyle = wear ? '#9dffb0' : own ? '#fff' : can ? NIGHT : '#8494a8'; g.textAlign = 'center'; g.fillText(tag, tx + tw / 2, ry + 25);
     addRect(x + 12, ry, w - 24, rh - 4, () => { S.idx = i; storeBuy(it); });
   });
-  const by = y + 78 + STORE_ITEMS.length * rh + 8, on = S.idx === STORE_ITEMS.length;
-  if (on) goldPill(g, W / 2 - 80, by, 160, 36, 18, false); else glassPill(g, W / 2 - 80, by, 160, 36, 18, 0.5);
-  g.textAlign = 'center'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `15px ${FONT}`; g.fillText('Leave', W / 2, by + 24);
-  addRect(W / 2 - 80, by, 160, 36, () => { World.shop = null; SFX.blip(); });
-  if (!TT) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('↑ ↓ choose  •  Enter buy or wear  •  Esc leave', W / 2, y + 466); }
+  if (!TT) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('↑ ↓ choose  •  Enter buy or wear  •  Esc back', W / 2, y + 466); }
 }
 
 // ---------------------------------------------------------------- where you are today
@@ -23122,7 +23105,6 @@ function serSetupRows() {
   ];
   if (o.kind === 'league') R.push({ label: 'Play each team', get: () => o.twice ? 'Twice' : 'Once', step: () => { o.twice = !o.twice; } });
   R.push({ label: o.kind === 'tour' ? 'Start the tournament' : 'Start the league', start: true, step: () => serStart() });
-  R.push({ label: 'Back', back: true, step: () => goTitle() });
   return R;
 }
 function serStart() {
@@ -23187,8 +23169,7 @@ function drawSeries(g) {
     if (tab === 'Bracket') drawSerBracket(g, d); else if (tab === 'Standings') drawSerStandings(g, d); else if (tab === 'Schedule') drawSerSchedule(g, d); else drawSerLeaders(g, d);
     const main = d.done ? 'Start a new one' : serNext(d) ? 'Play your game' : 'Play out the rest';
     uiButton(g, W / 2 - 230, 466, 220, 42, main, serMain, true);
-    uiButton(g, W / 2 + 10, 466, 220, 42, 'Leave (saved)', goTitle, false);
-    if (!Input.touchMode) { g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.textAlign = 'center'; g.fillText('Enter: ' + main.toLowerCase() + '   ← →: tabs   N: end and start over   Esc: leave (saved)', W / 2, 528); }
+    if (!Input.touchMode) { g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.textAlign = 'center'; g.fillText('Enter: ' + main.toLowerCase() + '   ← →: tabs   N: end and start over   Esc: back (it\u2019s saved)', W / 2, 528); }
     else uiButton(g, W - 150, 470, 120, 34, 'Start over', serAbandon, false);
   } finally { W = rw; Game.ox = 0; g.restore(); }
 }
@@ -25350,9 +25331,6 @@ function unpackEv(e) { if (typeof e[1] !== 'number') return e; const n = SNAP_EV
     g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Joining ' + Net.code, W / 2, 150);
     g.fillStyle = IVORY; g.font = `17px ${BODY}`;
     wrapText(g, `That game is on a different version (theirs ${Net.verOther || '?'}, yours ${VERSION}). Both players refresh the page, then try again.`, W / 2, 210, 640, 26);
-    g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, W / 2 - 80, 300, 160, 40, 20); g.fill();
-    g.fillStyle = '#fff'; g.font = `16px ${FONT}`; g.fillText('Back to title', W / 2, 326);
-    addRect(W / 2 - 80, 300, 160, 40, goTitle);
   };
   const _ou = onlineUpdate;
   onlineUpdate = function (rdt) {
@@ -25872,10 +25850,10 @@ function pauseTimeoutInfo() {
     // the timeout you can't call: greyed out, with the reason
     it = it.map(x => (/^Timeout \(/.test(x[0]) ? Object.assign([x[0].replace(/:.*$/, ''), () => { SFX.bad && SFX.bad(); }], { off: true, why: (pauseTimeoutInfo() || {}).why || 'Only with the ball.' }) : x));
     // leaving throws the match away: ask first
-    it = it.map(x => (/^(Quit to title|Leave game|Leave online game|End game)/.test(x[0]) ? [x[0], () => askConfirm({
-      title: /online/i.test(x[0]) ? 'Leave the online game?' : 'Leave this game?',
-      text: M.career ? 'The game won’t count: no result, no stats, no reward.' : /online/i.test(x[0]) ? 'Your friend will be left on their own.' : 'The score won’t be saved.',
-      yes: ['Leave', x[1]], no: ['Keep playing'] })] : x));
+    it = it.map(x => (/^(Quit|Leave|End game)$/.test(x[0]) ? [x[0], () => askConfirm({
+      title: Net.role ? 'Leave the online game?' : 'Quit this game?',
+      text: M.career ? 'The game won’t count: no result, no stats, no reward.' : Net.role ? 'Your friend will be left on their own.' : 'The score won’t be saved.',
+      yes: [Net.role ? 'Leave' : 'Quit', x[1]], no: ['Keep playing'] })] : x));
     // help and settings without leaving the match
     const at = Math.max(1, it.findIndex(x => /^Camera|^(Quit|Leave|End game)/.test(x[0])));
     const extra = [['How to play', () => { Game.retPlay = { screen: Game.screen }; Game.screen = 'howto'; }],
@@ -27987,7 +27965,6 @@ function drawSaveExport(g) {
   uiButton(g, W / 2 - 95, 226, 190, 44, 'Copy code', ssCopy, Game.idx === 1);
   uiButton(g, W / 2 + 110, 226, 190, 44, 'Import a save', ssToImport, Game.idx === 2);
   if (SaveIO.msg) { g.fillStyle = SaveIO.err ? '#ff9a8a' : '#9dffb0'; g.font = `14px ${BODY}`; g.fillText(fitText(g, SaveIO.msg, 620), W / 2, 312); }
-  uiButton(g, W / 2 - 80, 360, 160, 38, 'Back', ssLeave, Game.idx === 3);
   W = rw; Game.ox = 0; g.restore();
 }
 function drawSaveImport(g) {
@@ -28008,13 +27985,12 @@ function drawSaveImport(g) {
     g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('or press Ctrl+V (⌘V on a Mac)', W / 2, 276);
   }
   if (SaveIO.msg) { g.fillStyle = SaveIO.err ? '#ff9a8a' : '#9dffb0'; g.font = `14px ${BODY}`; g.fillText(fitText(g, SaveIO.msg, 620), W / 2, 318); }
-  uiButton(g, W / 2 - 80, 360, 160, 38, 'Back', ssLeave, Game.idx === 2);
   W = rw; Game.ox = 0; g.restore();
 }
 {
   // the two screens: left/right or up/down move between the buttons, Enter / A presses one (keyboard, gamepad, touch)
-  const acts = () => Game.screen === 'saveexport' ? [ssDownload, ssCopy, ssToImport, ssLeave]
-    : SaveIO.pending ? [ssConfirm, () => { SaveIO.pending = null; SaveIO.msg = ''; }, ssLeave] : [ssPickFile, ssPaste, ssLeave];
+  const acts = () => Game.screen === 'saveexport' ? [ssDownload, ssCopy, ssToImport]   // (v9.17.9: Back is the pill)
+    : SaveIO.pending ? [ssConfirm, () => { SaveIO.pending = null; SaveIO.msg = ''; }] : [ssPickFile, ssPaste];
   const SCR = { saveexport: drawSaveExport, saveimport: drawSaveImport };
   const _gu = gameUpdate;
   gameUpdate = function (rdt) {
@@ -28032,10 +28008,10 @@ function drawSaveImport(g) {
   // the Career menu: Export and Import (and, when the career can't be read, the reason and Export first)
   const _ci = cmenuItems;
   cmenuItems = function () {
-    const items = _ci.apply(this, arguments), back = items.pop();
+    const items = _ci.apply(this, arguments);   // (v9.17.9: no Back row at the end any more; the pill)
     if (SafeSave.broken[SAVE_AUTO]) items.unshift(['We couldn’t read your career: Export it', 'export']);
     else items.push(['Export career', 'export']);
-    items.push(['Import career', 'import'], back);
+    items.push(['Import career', 'import']);
     return items;
   };
   const _cs = cmenuSelect;
@@ -28048,9 +28024,8 @@ function drawSaveImport(g) {
   // the Profile screen
   const _pr = profileRows;
   profileRows = function () {
-    const R = _pr.apply(this, arguments), back = R.pop(), home = () => { Game.screen = 'profile'; Game.idx = 0; };
-    R.push({ label: 'Export or import career', start: true, step: () => openSaveExport(home) });   // (one row: the screen has Import a save)
-    R.push(back);
+    const R = _pr.apply(this, arguments), home = () => { Game.screen = 'profile'; Game.idx = 0; };
+    R.push({ label: 'Export or import career', start: true, step: () => openSaveExport(home) });   // (one row: the screen has Import a save; v9.17.9: last, as there's no Back row after it)
     return R;
   };
 }
@@ -28487,8 +28462,10 @@ function latchTick() {
   for (let i = 0; i < 2; i++) {
     const L = Latch[i], p = live ? latchPlayer(i) : null;
     const K = latchKeys(i), d = Input.down, pr = Input.pressed, held = ks => ks.some(k => d[k]), hit = ks => ks.some(k => pr[k]);
-    const dH = held(K.def), sH = held(K.spr), deep = i === 0 && Input.touchMode && !!(Input.stick && Input.stick.deep);
-    const dEdge = hit(K.def) || (dH && !L.dHeld), sEdge = hit(K.spr) || (sH && !L.sHeld) || (deep && !L.deep);
+    // a press: held or pressed this frame, and not the frame before (a quick tap can stay in Input.pressed for a second
+    // frame when the match ran no step, on a fast screen: that's still one tap)
+    const dH = held(K.def) || hit(K.def), sH = held(K.spr) || hit(K.spr), deep = i === 0 && Input.touchMode && !!(Input.stick && Input.stick.deep);
+    const dEdge = dH && !L.dHeld, sEdge = (sH && !L.sHeld) || (deep && !L.deep);
     L.dHeld = dH; L.sHeld = sH; L.deep = deep;
     if (!p) { latchClear(L); continue; }
     const side = latchSide(p);
@@ -28602,6 +28579,62 @@ const HOLD_TAP_TEXT = {
     const own = Object.prototype.hasOwnProperty.call(g, 'fillText'), f = g.fillText;
     g.fillText = function (t, ...a) { const s = String(t); const r = (SETTINGS.defToggle && HOLD_TAP_TEXT.def[s]) || (SETTINGS.sprToggle && HOLD_TAP_TEXT.spr[s]); return f.call(this, r || t, ...a); };
     try { return _hw.apply(this, arguments); } finally { if (own) g.fillText = f; else delete g.fillText; }
+  };
+}
+// v9.17.9: one way back on every screen, one name for leaving, and a gamepad hint on tap-only screens.
+//   U2  The ‹ Back pill is the way back (with Esc on keys and B on a pad); the duplicate Back rows and buttons are gone
+//       (Settings, the online menu, Mini games, Profile, tournament setup, Career, Save and load, Upgrade stats, Fun
+//       modes, the hub's corner menu, the month view, the shop, a talk, the office, join code, the custom-team and
+//       save code screens, the clip screen, the online waiting screen). Leaving is Back (up one screen), Leave (an
+//       online room), Quit (a match in progress, after asking) and Title (where it goes to the title). Cancel stays
+//       only on a dialog with a confirm button.
+//   UX1 Screens you play by tapping (no list to move through) show "View: pick" in a corner when a gamepad was used
+//       in the last few seconds, so a controller player knows the View button picks any button. Screens with 6
+//       targets or fewer get a focus order instead: the pad's picker opens on them by itself (as on the join-code
+//       keys), and needs no hint.
+//   U3  The title menu's Options is Settings; the screen it calls Settings is Game settings.
+{
+  const _tm = TITLE_MENU;
+  TITLE_MENU = function () {
+    const m = _tm.apply(this, arguments);
+    for (const e of m) if (e.label === 'Options') { e.label = 'Settings'; for (const s of e.sub || []) if (s.label === 'Settings') s.label = 'Game settings'; }
+    return m;
+  };
+  if (typeof MENU_HELP !== 'undefined' && MENU_HELP.Options) { MENU_HELP['Game settings'] = MENU_HELP.Settings; MENU_HELP.Settings = MENU_HELP.Options; }   // (the inner row's help moves with its new name)
+}
+// ---- UX1
+// the tap-only screens (no arrow-key list) and which get the hint or a focus order: from the 9.17.9 screen census
+// (tests/screen-census.mjs). A screen that uses the pad's directions itself (days, tabs, a court to walk) is left out
+// of the focus order, which would take them over.
+// hint: Teams & Players, the lobby, a tournament or league, the career stats (where they have more than 6 targets)
+const NAV_HINT_SCREENS = new Set(['lobby', 'cslist', 'series', 'cstats']);
+// focus order (6 targets or fewer, and the pad's directions and A do nothing else there): the code import and share
+// screens, My clips
+const NAV_FOCUS_SCREENS = new Set(['csimport', 'csshare', 'myclips']);
+const PadSeen = { t: -1e9 };
+{
+  // when the pad was last used: any pad input sets Input.lastDev to 'pad' and presses keys
+  const _gu = gameUpdate;
+  gameUpdate = function (rdt) {
+    const r = _gu.apply(this, arguments);
+    if (Input.lastDev === 'pad' && Object.keys(Input.pressed).length) PadSeen.t = nowMs();   // (after: the pad presses its keys inside the frame)
+    return r;
+  };
+  for (const s of NAV_FOCUS_SCREENS) if (!PAD_PICKER_SCREENS.includes(s)) PAD_PICKER_SCREENS.push(s);
+}
+function navHintOn() {
+  return Input.lastDev === 'pad' && nowMs() - PadSeen.t < 5000 && NAV_HINT_SCREENS.has(Game.screen) && !Pad.cursor.on && !Game.confirm && !Game.paused
+    && (Game.rects || []).filter(r => r.w > 4 && r.h > 4 && r.w * r.h < W * H * 0.4).length > 6;
+}
+{
+  const _r = render;
+  render = function (g) {
+    _r.apply(this, arguments);
+    if (!navHintOn()) return;
+    g.save(); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.textAlign = 'center'; g.font = `12px ${FONT}`;
+    const t = 'View: pick', w = g.measureText(t).width + 24, x = W - w - 12, y = H - 34;
+    g.fillStyle = 'rgba(8,16,24,0.85)'; roundRect(g, x, y, w, 24, 12); g.fill();
+    g.fillStyle = '#fff'; g.fillText(t, x + w / 2, y + 17); g.restore();
   };
 }
 

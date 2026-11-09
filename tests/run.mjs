@@ -115,6 +115,7 @@ import { sfxMomentsTests } from './sfx-moments.mjs';
 import { rbSafetyTests } from './rb-safety.mjs';
 import { phoneTapTextTests } from './phone-tap-text.mjs';
 import { holdTapTests } from './hold-tap.mjs';
+import { navTests } from './nav-919.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
 import { animFixTests } from './anim-fix.mjs';
@@ -683,7 +684,7 @@ T['phase6'] = async ({ browser, base }) => {
   }
   await p.evaluate(() => { Game.screen = 'settings'; Game.setGroup = 1; }); await sleep(300);
   await ctx.close();
-  const ok = Object.entries(r).every(([k, v]) => k === 'top' || v === true) && r.top === 'Career,Quick Play,Online,Teams & Players,Options,Review' && !errs.length;
+  const ok = Object.entries(r).every(([k, v]) => k === 'top' || v === true) && r.top === 'Career,Quick Play,Online,Teams & Players,Settings,Review' && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
@@ -844,7 +845,7 @@ T['v95'] = async ({ browser, base }) => {
     await mycTx('readwrite', s => { s.put({ id: 'test', at: Date.now(), name: 'test.webm', type: 'video/webm', blob: new Blob(['x'], { type: 'video/webm' }), poster: '', label: 'Big dunk', teams: ['A', 'B'], score: [21, 18] }); });
     openMyClips(); await new Promise(r => setTimeout(r, 300)); const one = MYC.list.length === 1;
     mycDelete(MYC.list[0]); mycDelete(MYC.list[0]); await new Promise(r => setTimeout(r, 300));
-    const menu = TITLE_MENU().find(e => e.label === 'Options').sub.find(e => e.label === 'Extras').sub.some(e => e.label === 'My clips');
+    const menu = TITLE_MENU().find(e => e.label === 'Settings').sub.find(e => e.label === 'Extras').sub.some(e => e.label === 'My clips');
     return one && MYC.list.length === 0 && menu;
   });
   // the screens draw (with large text too)
@@ -1450,7 +1451,7 @@ T['v912'] = async ({ browser, base }) => {
   });
   // the pause menu: leaving asks; How to play comes back to the paused match
   out.pause = await p.evaluate(() => {
-    const it = pauseItems(), leave = it.find(x => /^Quit to title/.test(x[0])); leave[1]();
+    const it = pauseItems(), leave = it.find(x => /^Quit$/.test(x[0])); leave[1]();
     const asked = !!Game.confirm; confirmPick(0);
     const how = it.find(x => x[0] === 'How to play'); how[1](); const inHow = Game.screen === 'howto';
     goTitle(); return { asked, back: inHow && Game.screen === 'play' && Game.paused && !!M.players };
@@ -1756,8 +1757,8 @@ T['tomahawk'] = async ({ browser, base }) => {
       M.cmdHook = null; out.replay[st] = same === n && n > 30;
     }
     SETTINGS.tomahawk = 'classic';
-    // the Dunk lab: under Options → Extras; each dunk slams and he's back on the line; nothing is earned
-    const ex = TITLE_MENU().find(e => e.label === 'Options').sub.find(e => e.label === 'Extras');
+    // the Dunk lab: under Settings → Extras (Options until 9.17.9); each dunk slams and he's back on the line; nothing is earned
+    const ex = TITLE_MENU().find(e => e.label === 'Settings').sub.find(e => e.label === 'Extras');
     out.lab.inMenu = !!ex.sub.find(e => e.label === 'Dunk lab');
     const a0 = JSON.stringify(Ach.load());
     startDunkLab(); for (let i = 0; i < 20; i++) updateMatch(STEP);
@@ -2625,6 +2626,7 @@ Object.assign(T, sfxMomentsTests({ newContext, open }));  // v9.17.5 a sound for
 Object.assign(T, rbSafetyTests({ newContext, open }));   // v9.17.6 a dropped link comes back, hostile packets are dropped (tests/rb-safety.mjs)
 Object.assign(T, phoneTapTextTests({ newContext, open }));   // v9.17.7 phone tap areas and text size (tests/phone-tap-text.mjs)
 Object.assign(T, holdTapTests({ newContext, open }));   // v9.17.8 Defend and Sprint as hold or tap (tests/hold-tap.mjs)
+Object.assign(T, navTests({ newContext, open }));   // v9.17.9 one way back, leave words, the gamepad hint (tests/nav-919.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
 Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)
@@ -2650,7 +2652,7 @@ const HEAVY = new Set([
   'gamepad', 'phase5', 'career', 'v95', 'v99',
   // the online tests that have to run alone (SERIAL), except rb-one, rb-fun and rb-freeze
   'rb-lag', 'rb-same', 'rb-determinism', 'rb-flow', 'rb-rollback', 'rb-taunt', 'rb-online', 'rb-resync', 'rb-settings',
-  'rb-touch', 'rb-slow', 'rb-sounds', 'rb-linkdrop', 'rb-hostile', 'phone-text-size', 'rb-holdtap', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
+  'rb-touch', 'rb-slow', 'rb-sounds', 'rb-linkdrop', 'rb-hostile', 'phone-text-size', 'rb-holdtap', 'nav-census', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
 // alone, after the parallel batch: frame-rate and speed checks, and the rollback and real-time online tests, which a
 // busy CPU makes desync (9.17.2 on 2 workers: rb-settings, rb-touch and rb-one each repaired 1-3 desyncs they don't alone)
 const SERIAL = new Set(['rb-slow', 'rb-lag', 'rb-freeze', 'lag-profiles', 'online-lag', 'league-time', 'net-rate',

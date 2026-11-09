@@ -119,18 +119,18 @@ const Lobby = {
     }
   }
 };
-function runEndBackLabel() { return Run.duo === 'online' && Net.role === 'host' ? 'Back to lobby' : 'Back to title'; }
+function runEndBackLabel() { return Run.duo === 'online' && Net.role === 'host' ? 'Back' : 'Title'; }   // (v9.17.9: Back up one, to the lobby; Title when it goes to the title)
 function runEndBack() { if (Run.duo === 'online' && Net.role === 'host') Lobby.back(); else goTitle(); }
 // ---- menu: Host a lobby / Join with a code / Rejoin
 function onlineItems() {
   const L = Lobby.last(), it = ['Host a lobby', 'Join with a code'];
   if (L) it.push((L.role === 'host' ? 'Reopen lobby ' : 'Rejoin lobby ') + L.code);
-  it.push('Back'); return it;
+  return it;   // (v9.17.9: Back is the pill)
 }
 function refreshOnlineItems() { ONLINE_ITEMS.splice(0, ONLINE_ITEMS.length, ...onlineItems()); }
 onlineSelect = function (i) {
   refreshOnlineItems();
-  if (Net.avail !== 'yes') { if (i === 1 && typeof location !== 'undefined') location.reload(); else goTitle(); return; }
+  if (Net.avail !== 'yes') { if (Net.avail !== 'checking' && typeof location !== 'undefined') location.reload(); return; }
   const label = ONLINE_ITEMS[i] || 'Back';
   if (label === 'Host a lobby') Lobby.open();
   else if (label === 'Join with a code') { Net.typed = ''; Game.screen = 'joincode'; }

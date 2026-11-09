@@ -9,8 +9,8 @@ const BACK = {
   bests: () => { Game.screen = 'title'; },
   achievements: () => { Game.screen = 'title'; },
   about: () => { Game.screen = 'title'; },
-  funmodes: () => goTitle(), settings: () => goTitle(), howto: () => goTitle(), online: () => goTitle(),
-  joincode: () => goTitle(), hostlobby: () => goTitle(), netwait: () => goTitle(), bracket: () => goTitle(),
+  funmodes: () => goTitle(), settings: () => { if (Game.setGroup != null) { Game.idx = Game.setGroup; Game.setGroup = null; } else goTitle(); },   // (v9.17.9: in a group, up one to the groups, as Esc does) howto: () => goTitle(), online: () => goTitle(),
+  joincode: () => { Game.screen = 'online'; Game.idx = 1; },   // (v9.17.9: up one, to Join with a code, as its Back button did) hostlobby: () => goTitle(), netwait: () => goTitle(), bracket: () => goTitle(),
   cmenu: () => goTitle(), creator: () => { if (Game.creator.isNew) { Game.screen = 'cmenu'; Game.idx = 0; } else careerHub(); },
   namekeys: () => { Game.screen = 'creator'; }, story: () => (typeof storySkip === 'function' ? storySkip(Game.story) : Game.story.then()),
   train: () => careerHub(), pregame: () => careerHub(), cbracket: () => careerHub(),
@@ -31,7 +31,7 @@ function backVisible() {
 const BackBtn = { x: 8, y: 8, w: 80, h: 32 };
 function drawBackButton(g) {
   if (!backVisible()) return;
-  const label = Game.screen === 'story' || Game.screen === 'jumuah' ? 'Skip' : (Game.screen === 'musalla' && Game.mus && Game.mus.talk) || (Game.screen === 'hub' && Game.hubMenu && Game.hubMenu.open) ? 'Close' : 'Back';
+  const label = Game.screen === 'story' || Game.screen === 'jumuah' ? 'Skip' : 'Back';   // (v9.17.9: Back, also for closing the hub menu or a talk; Skip passes a scene)
   g.font = `14px ${FONT}`; const w = Math.max(80, Math.ceil(g.measureText('\u2039 ' + label).width) + 28); BackBtn.w = w;   // v9.6.2: fits its label
   const hov = hovering(8, 8, w, 32), pr = pressing(8, 8, w, 32);
   g.fillStyle = pr ? '#c9a24a' : hov ? GOLD : 'rgba(8,16,24,0.85)'; roundRect(g, 8, 8, w, 32, 16); g.fill();

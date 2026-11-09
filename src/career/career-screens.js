@@ -10,8 +10,7 @@ function cmenuItems() {
   if (readSave(SAVE_AUTO)) items.push(['Continue career', 'continue']);
   items.push([Game.confirmNew ? 'Press again to start over' : 'New career', 'new']);
   if (readSave(SAVE_SLOT)) items.push(['Load manual save', 'load']);
-  items.push(['Back', 'back']);
-  return items;
+  return items;   // (v9.17.9: no Back row: the ‹ Back pill, Esc and B)
 }
 function cmenuSelect(i) {
   const act = cmenuItems()[i][1];
@@ -92,7 +91,7 @@ const HUB_MENU = () => hubExtra([
   { label: 'Bracket', act: () => { Game.screen = 'cbracket'; } }
 ]);
 const HUB_CORNER = [['Save and load', () => { Game.hubMenu.open = false; Game.screen = 'saves'; Game.idx = 0; Game.saveMsg = ''; Game.confirmNew = false; }],
-  ['Main menu', () => { saveCareer(); goTitle(); }], ['Close', () => { Game.hubMenu.open = false; }]];
+  ['Title', () => { saveCareer(); goTitle(); }]];   // (v9.17.9: the pill closes this menu; Title, as it goes to the title)
 function hubUpdate() {
   const hm = Game.hubMenu || (Game.hubMenu = { open: false, idx: 0 });
   if (hm.open) {
@@ -146,7 +145,7 @@ function buyStat(i) {
   if (C.bp < cost) { SFX.bad(); return; }
   C.bp -= cost; C.lv[k]++; SFX.good(); saveCareer();
 }
-const SAVE_ITEMS = () => ['Save to manual slot', 'Load manual slot', Game.confirmNew ? 'Press again to start over' : 'Start a new career', 'Export career', 'Import career', 'Back'];   // (Export, Import: v9173-save-safe.js)
+const SAVE_ITEMS = () => ['Save to manual slot', 'Load manual slot', Game.confirmNew ? 'Press again to start over' : 'Start a new career', 'Export career', 'Import career'];   // (v9.17.9: Back is the pill)   // (Export, Import: v9173-save-safe.js)
 function savesSelect(i) {
   if (i === 0) Game.saveMsg = saveCareer(SAVE_SLOT) ? 'Saved to the manual slot.' : 'Could not save on this device.';
   else if (i === 1) { if (loadCareer(SAVE_SLOT)) { saveCareer(); Game.saveMsg = 'Manual save loaded.'; setupPractice('free'); } else Game.saveMsg = 'No manual save found.'; }
@@ -220,7 +219,7 @@ function careerUpdate(rdt) {
     }
     case 'hub': hubUpdate(); break;
     case 'train':
-      menuNav(STAT_ROWS.length + 1, i => i === STAT_ROWS.length ? careerHub() : buyStat(i));
+      menuNav(STAT_ROWS.length, i => buyStat(i));   // (v9.17.9: Back is the pill)
       if (menuHit('back')) careerHub(); break;
     case 'pregame': if (menuHit('ok')) startCareerMatch(); else if (menuHit('back')) careerHub(); break;
     case 'postgame': if (menuHit('ok')) postgameContinue(); break;
@@ -450,9 +449,6 @@ function drawTrain(g) {
     g.fillText(l >= 10 ? 'Max' : 'Level up: ' + cost, W / 2 + 262, y + 23);
     addRect(W / 2 - 280, y, 560, 34, () => { Game.idx = i; buyStat(i); });
   });
-  const by = 132 + STAT_ROWS.length * 38 + 2, sel = Game.idx === STAT_ROWS.length;
-  g.fillStyle = sel ? GOLD : 'rgba(255,255,255,0.12)'; roundRect(g, W / 2 - 80, by, 160, 36, 18); g.fill();
-  g.textAlign = 'center'; g.fillStyle = sel ? NIGHT : '#fff'; g.font = `15px ${FONT}`; g.fillText('Back', W / 2, by + 24); addRect(W / 2 - 80, by, 160, 36, careerHub);
   // v8.6.2: below the panel (it sat on the Back button); phones drop it, it's longer than the screen
   if (!(Input.touchMode && g === ctx)) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Stamina: slower turbo drain. Passing: faster, safer passes. Hustle: first to loose balls, draws charges. Clutch: steadier in the last minute of close games.', W / 2, 512); }
 }

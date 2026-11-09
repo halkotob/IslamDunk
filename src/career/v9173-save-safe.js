@@ -204,7 +204,6 @@ function drawSaveExport(g) {
   uiButton(g, W / 2 - 95, 226, 190, 44, 'Copy code', ssCopy, Game.idx === 1);
   uiButton(g, W / 2 + 110, 226, 190, 44, 'Import a save', ssToImport, Game.idx === 2);
   if (SaveIO.msg) { g.fillStyle = SaveIO.err ? '#ff9a8a' : '#9dffb0'; g.font = `14px ${BODY}`; g.fillText(fitText(g, SaveIO.msg, 620), W / 2, 312); }
-  uiButton(g, W / 2 - 80, 360, 160, 38, 'Back', ssLeave, Game.idx === 3);
   W = rw; Game.ox = 0; g.restore();
 }
 function drawSaveImport(g) {
@@ -225,13 +224,12 @@ function drawSaveImport(g) {
     g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('or press Ctrl+V (⌘V on a Mac)', W / 2, 276);
   }
   if (SaveIO.msg) { g.fillStyle = SaveIO.err ? '#ff9a8a' : '#9dffb0'; g.font = `14px ${BODY}`; g.fillText(fitText(g, SaveIO.msg, 620), W / 2, 318); }
-  uiButton(g, W / 2 - 80, 360, 160, 38, 'Back', ssLeave, Game.idx === 2);
   W = rw; Game.ox = 0; g.restore();
 }
 {
   // the two screens: left/right or up/down move between the buttons, Enter / A presses one (keyboard, gamepad, touch)
-  const acts = () => Game.screen === 'saveexport' ? [ssDownload, ssCopy, ssToImport, ssLeave]
-    : SaveIO.pending ? [ssConfirm, () => { SaveIO.pending = null; SaveIO.msg = ''; }, ssLeave] : [ssPickFile, ssPaste, ssLeave];
+  const acts = () => Game.screen === 'saveexport' ? [ssDownload, ssCopy, ssToImport]   // (v9.17.9: Back is the pill)
+    : SaveIO.pending ? [ssConfirm, () => { SaveIO.pending = null; SaveIO.msg = ''; }] : [ssPickFile, ssPaste];
   const SCR = { saveexport: drawSaveExport, saveimport: drawSaveImport };
   const _gu = gameUpdate;
   gameUpdate = function (rdt) {
@@ -249,10 +247,10 @@ function drawSaveImport(g) {
   // the Career menu: Export and Import (and, when the career can't be read, the reason and Export first)
   const _ci = cmenuItems;
   cmenuItems = function () {
-    const items = _ci.apply(this, arguments), back = items.pop();
+    const items = _ci.apply(this, arguments);   // (v9.17.9: no Back row at the end any more; the pill)
     if (SafeSave.broken[SAVE_AUTO]) items.unshift(['We couldn’t read your career: Export it', 'export']);
     else items.push(['Export career', 'export']);
-    items.push(['Import career', 'import'], back);
+    items.push(['Import career', 'import']);
     return items;
   };
   const _cs = cmenuSelect;
@@ -265,9 +263,8 @@ function drawSaveImport(g) {
   // the Profile screen
   const _pr = profileRows;
   profileRows = function () {
-    const R = _pr.apply(this, arguments), back = R.pop(), home = () => { Game.screen = 'profile'; Game.idx = 0; };
-    R.push({ label: 'Export or import career', start: true, step: () => openSaveExport(home) });   // (one row: the screen has Import a save)
-    R.push(back);
+    const R = _pr.apply(this, arguments), home = () => { Game.screen = 'profile'; Game.idx = 0; };
+    R.push({ label: 'Export or import career', start: true, step: () => openSaveExport(home) });   // (one row: the screen has Import a save; v9.17.9: last, as there's no Back row after it)
     return R;
   };
 }

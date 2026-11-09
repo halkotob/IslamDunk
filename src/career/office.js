@@ -496,7 +496,6 @@ function drawOffice(g) {
   g.fillStyle = 'rgba(8,16,24,0.8)'; roundRect(g, 96, 8, 360, 32, 16); g.fill();
   g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.textAlign = 'left'; g.fillText('Sheikh\u2019s office', 112, 29);
   g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('\u2190 \u2192 choose, Enter to select', 250, 29);
-  if (!of.panel) uiButton(g, W - 150, H - 52, 130, 36, 'Leave office', () => leaveOffice());   // v8.6.7: visible, works by touch (Esc too)
   if (of.panel === 'shelf') {
     panel(g, 60, 150, W - 120, 240, true);
     g.textAlign = 'left';

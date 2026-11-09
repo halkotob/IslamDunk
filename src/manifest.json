@@ -136,6 +136,7 @@
     "screens/v9177-tap-targets.js",
     "screens/v9177-text-size.js",
     "sim/v9178-hold-tap.js",
+    "screens/v9179-nav.js",
     "boot.js"
   ]
 }

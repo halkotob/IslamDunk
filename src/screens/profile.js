@@ -160,7 +160,6 @@ function profileRows() {
     R.push({ label: { title: 'Title', ball: 'Ball', cele: 'Celebration' }[kind], get: () => name(kind, E[kind]) + (list.length > 1 ? '' : '  (earn more by levelling up)'), step: dd => { const i = list.indexOf(E[kind]); E[kind] = list[((i < 0 ? 0 : i) + dd + list.length) % list.length]; Profile.save(); } });
   }
   R.push({ label: 'Save profile card', start: true, step: () => saveProfileCard() });
-  R.push({ label: 'Back', back: true, step: () => goTitle() });
   return R;
 }
 function profileTitle() { const t = Profile.load().equip.title; return t && t !== 'none' ? REWARDS.find(r => r.id === t).name : ''; }

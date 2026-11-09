@@ -19,7 +19,6 @@ function minisRows() {
   }
   R.push({ label: 'CPU difficulty', get: () => diffName(SETTINGS.difficulty), step: d => { SETTINGS.difficulty = diffStep(SETTINGS.difficulty, d); diffChosen(); } });
   R.push({ label: 'Start', start: true, step: () => startQuickMini() });
-  R.push({ label: 'Back', back: true, step: () => goTitle() });
   return R;
 }
 const MINI_GAMES = [['lightning', 'Lightning'], ['horse', 'HORSE'], ['kotc', 'King of the Court']];   // v9.8: Around the World removed (play-test review)

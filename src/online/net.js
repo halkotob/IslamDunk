@@ -472,7 +472,7 @@ function drawOnline(g) {
     g.fillText(msg, W / 2, 200);
     if (Net.avail !== 'checking') g.fillText('Both players open the same page, then one hosts and the other enters the code.', W / 2, 226);
     if (Net.reason) { g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Diagnostic: ' + Net.reason, W / 2, 256); }
-    drawMenu(g, ['Back', 'Reload and try again'], Game.idx % 2, 310, i => { if (i === 1 && typeof location !== 'undefined') location.reload(); else goTitle(); });
+    if (Net.avail !== 'checking') drawMenu(g, ['Reload and try again'], 0, 310, () => { if (typeof location !== 'undefined') location.reload(); });   // (v9.17.9: Back is the pill)
     return;
   }
   g.fillText('Host a game to get a join code, or type your friend\u2019s code to join theirs.', W / 2, 124);
@@ -492,7 +492,6 @@ function drawJoinCode(g) {
   const btn = (x, label, fn, on) => { g.fillStyle = on ? GOLD : 'rgba(255,255,255,0.12)'; roundRect(g, x, 340, 150, 42, 21); g.fill(); g.fillStyle = on ? NIGHT : '#fff'; g.font = `17px ${FONT}`; g.fillText(label, x + 75, 367); addRect(x, 340, 150, 42, fn); };
   btn(W / 2 - 240, 'Delete', () => { Net.typed = Net.typed.slice(0, -1); }, false);
   btn(W / 2 - 75, 'Join', joinTyped, Net.typed.length === 4);
-  btn(W / 2 + 90, 'Back', () => { Game.screen = 'online'; }, false);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Type the letters, Enter to join, Esc to go back', W / 2, 420);
 }
 function drawHostLobby(g) {
@@ -530,9 +529,7 @@ function drawNetWait(g) {
   g.fillStyle = Net.status === 'lobby' ? '#9dffb0' : IVORY; g.font = `17px ${BODY}`;
   wrapText(g, msgs[Net.status] || '', W / 2, 210, 640, 26);
   const end = Net.status === 'notfound' || Net.status === 'full' || Net.status === 'hostleft' || Net.status === 'busy';
-  g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, W / 2 - 80, 300, 160, 40, 20); g.fill();
-  g.fillStyle = '#fff'; g.font = `16px ${FONT}`; g.fillText(end ? 'Back to title' : 'Cancel', W / 2, 326);
-  addRect(W / 2 - 80, 300, 160, 40, goTitle);
+  void end;   // (v9.17.9: the ‹ Back pill leaves; it was a second button, Cancel or Back to title)
 }
 function drawNetPlay(g) {
   const s = Net.lastS; if (!s) return;

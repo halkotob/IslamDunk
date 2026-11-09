@@ -31,7 +31,7 @@ export const AUDIT_INIT = `(() => {
         const px = parseFloat((/([\\d.]+)px/.exec(this.font) || [])[1] || '0');
         const css = px * Math.hypot(m.a, m.b) * (cv.getBoundingClientRect().width / cv.width);
         const key = A.screen + '|' + t;
-        if (A.texts.length < 400) A.texts.push({ t: t.slice(0, 40), x: (a.x + b.x) / 2, y: a.y });
+        if (A.texts.length < 400) A.texts.push({ t: t.slice(0, 40), x: (a.x + b.x) / 2, y: a.y, s: String(this.fillStyle) });
         if (lo < -2 || hi > cv.width + 2) A.found.set('O|' + key, { kind: 'overflow', screen: A.screen, text: t.slice(0, 80), left: Math.round(lo), right: Math.round(hi), width: cv.width });
         if (css && css < MIN - 0.05) { const k = 'S|' + key, o = A.found.get(k); if (!o || css < o.css) A.found.set(k, { kind: 'small', screen: A.screen, text: t.slice(0, 80), css: Math.round(css * 10) / 10, px }); }
       }
@@ -93,11 +93,11 @@ export const SCREENS = [
   ['match: noor question', MATCH + ` openTrivia(M.players[0]);`],
   ['match: noor choice', MATCH + ` openTrivia(M.players[0]); answerTrivia(Game.trivia.order.indexOf(0)); Game.trivia.res = 1.79; triviaUpdate(0.05);`],
   ['match: pause', MATCH + ` Game.paused = true; Game.idx = 0;`],
-  ['halftime', MATCH + ` Game.screen = 'halftime';`],
+  ['halftime', MATCH + ` M.nextStart = 1; Game.screen = 'halftime';`],   // (v9.17.9: who starts the half, as a real halftime sets it)
   ['final', MATCH + ` M.teams[0].score = 21; M.teams[1].score = 18; M.phase = 'over'; M.winner = 0; Game.screen = 'final';`],
   ['career menu', CAREER + ` Game.screen = 'cmenu'; Game.idx = 0;`],
   ['creator', CAREER + ` Game.creator = { idx: 0, isNew: false }; Game.screen = 'creator';`],
-  ['namekeys', CAREER + ` Game.nameBuf = C.name; Game.screen = 'namekeys';`],
+  ['namekeys', CAREER + ` Game.creator = { idx: 0, isNew: false }; Game.nameBuf = C.name; Game.screen = 'namekeys';`],   // (v9.17.9: as the creator opens it; Back goes there)
   ['story', CAREER + ` playStory([['saleem', 'Assalamu alaikum. Ready for your first game at the Metro Masjid League? Keep your intention pure and play hard.']], () => careerHub());`],
   ['hub', CAREER + ` careerHub();`],
   ['cbracket', CAREER + ` careerHub(); Game.screen = 'cbracket';`],

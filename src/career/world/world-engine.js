@@ -386,8 +386,7 @@ function worldDrawHud(g, T) {
     if (calDay(C.cal.d).fri) { g.font = `12px ${FONT}`; const jw = g.measureText('JUMU’AH').width + 20; g.fillStyle = 'rgba(30,90,74,0.95)'; roundRect(g, x + w + 8, 15, jw, 26, 13); g.fill(); g.fillStyle = GOLD; g.textAlign = 'center'; g.fillText('JUMU’AH', x + w + 8 + jw / 2, 33); }
   }
   if (World.talk) {                                               // always leavable
-    worldPill(g, W - 124, 12, 112, 'Leave', worldLeaveTalk);
-    return;
+    return;   // (v9.17.9: always leavable by the ‹ Back pill, Esc and B; it had a second Leave pill)
   }
   if (World.menu) { worldDrawMenu(g); return; }
   if (World.shop) { worldDrawShop(g); return; }

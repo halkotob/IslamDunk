@@ -78,10 +78,10 @@ function pauseTimeoutInfo() {
     // the timeout you can't call: greyed out, with the reason
     it = it.map(x => (/^Timeout \(/.test(x[0]) ? Object.assign([x[0].replace(/:.*$/, ''), () => { SFX.bad && SFX.bad(); }], { off: true, why: (pauseTimeoutInfo() || {}).why || 'Only with the ball.' }) : x));
     // leaving throws the match away: ask first
-    it = it.map(x => (/^(Quit to title|Leave game|Leave online game|End game)/.test(x[0]) ? [x[0], () => askConfirm({
-      title: /online/i.test(x[0]) ? 'Leave the online game?' : 'Leave this game?',
-      text: M.career ? 'The game won’t count: no result, no stats, no reward.' : /online/i.test(x[0]) ? 'Your friend will be left on their own.' : 'The score won’t be saved.',
-      yes: ['Leave', x[1]], no: ['Keep playing'] })] : x));
+    it = it.map(x => (/^(Quit|Leave|End game)$/.test(x[0]) ? [x[0], () => askConfirm({
+      title: Net.role ? 'Leave the online game?' : 'Quit this game?',
+      text: M.career ? 'The game won’t count: no result, no stats, no reward.' : Net.role ? 'Your friend will be left on their own.' : 'The score won’t be saved.',
+      yes: [Net.role ? 'Leave' : 'Quit', x[1]], no: ['Keep playing'] })] : x));
     // help and settings without leaving the match
     const at = Math.max(1, it.findIndex(x => /^Camera|^(Quit|Leave|End game)/.test(x[0])));
     const extra = [['How to play', () => { Game.retPlay = { screen: Game.screen }; Game.screen = 'howto'; }],

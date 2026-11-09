@@ -189,7 +189,7 @@ function dlCmd(q) {
     uiButton(g, x + 16, y + 62, 110, 24, 'Dunk', () => dlDunk(), true);
     uiButton(g, x + 136, y + 62, 130, 24, 'Next style', () => setTomahawk(1));
     uiButton(g, x + 276, y + 62, 130, 24, DL.slow ? 'Normal speed' : 'Slow motion', () => { DL.slow = !DL.slow; });
-    uiButton(g, x + w - 96, y + 62, 80, 24, 'Quit', () => goTitle());
+    uiButton(g, x + w - 96, y + 62, 80, 24, 'Title', () => goTitle());
     g.restore();
   };
   const _tm = TITLE_MENU;

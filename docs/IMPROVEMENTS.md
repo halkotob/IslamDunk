@@ -75,7 +75,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | ST4 | Steam store page: capsules, a trailer from highlight clips, screenshots, the AI-content survey | Steam | 3 | 2 | 2 | **20** | open |
 | CD3 | Teammates in the same kit look alike at play size: add one large personal mark (headband, sleeve, long shorts, knee pad) | character design | 3 | 2 | 2 | **20** | done in 9.17.0 |
 | VD2 | Vertical (9:16) highlight videos for TikTok, Reels and Shorts (today 1280×720 only) | visual design | 4 | 1 | 2 | **20** | open |
-| UX1 | Screens without arrow-key menus need the gamepad's View button to pick a target: show that hint, or give them focus order | UI | 3 | 2 | 2 | **20** | open |
+| UX1 | Screens without arrow-key menus need the gamepad's View button to pick a target: show that hint, or give them focus order | UI | 3 | 2 | 2 | **20** | done in 9.17.9: "View: pick" on Teams & Players, the lobby, a tournament or league and the career stats (more than 6 targets) for 5 s after a pad press; the code import and share screens and My clips open the picker by themselves |
 | PH1 | A stress test that fires the ball at the rim and glass at top speed and checks it never passes through | physics | 2 | 2 | 1 | **20** | open |
 | SV4 | Check a save's values when loading (numbers, known team and item ids) and fall back to the backup if broken | save systems | 2 | 3 | 2 | **20** | open |
 | P6 | A performance budget test: draw calls per frame and script ms per frame, checked on every run | performance | 2 | 2 | 1 | **20** | open (with Q6) |
@@ -89,7 +89,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | A2 | Make sound, effects and commentary consume match events | architecture | 4 | 4 | 4 | **16** | open |
 | A3 | One state codec for snapshots, rollback saves and checksums | architecture | 4 | 4 | 4 | **16** | open (after A1, A4) |
 | S4 | Longer join codes, the guest's name in the lobby, a way to remove a guest | security | 2 | 2 | 2 | **16** | open |
-| U2 | One way back per screen, and one name for leaving (Back, Cancel, Leave, Quit, EXIT) | UX copy | 3 | 1 | 2 | **16** | open |
+| U2 | One way back per screen, and one name for leaving (Back, Cancel, Leave, Quit, EXIT) | UX copy | 3 | 1 | 2 | **16** | done in 9.17.9: the ‹ Back pill only (26 screens had a second control going back); Back, Leave (online), Quit (a match, asks first), Title, and Cancel only on a dialog with a confirm. Skip stays on the pill for scenes |
 | G3 | Submit to CrazyGames (non-exclusive) and the YouTube Playables interest form | launch | 3 | 1 | 2 | **16** | open |
 | GT4 | Quick online reactions ("MashaAllah!", "Pass!", "Good game") for players not on a call | game design | 3 | 1 | 2 | **16** | open |
 | GT5 | Bragging rights: share a daily scenario result as a "beat my score" code | game design | 3 | 1 | 2 | **16** | open |
@@ -102,7 +102,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | B14 | A pop label can replace the foul callout's subtitle ("ON AHMED • 2 SHOTS") | code review | 2 | 1 | 1 | **15** | open |
 | B16 | League sims: a tie fix-up changes the score but not the box score | code review | 2 | 1 | 1 | **15** | open |
 | B18 | Dead code that looks live: v6 `preStep`, the old `drawHowTo`, the first `checkBlockJump` | code review | 2 | 1 | 1 | **15** | open |
-| U3 | "Options" on the title screen opens a screen called "Settings" | UX copy | 2 | 1 | 1 | **15** | open |
+| U3 | "Options" on the title screen opens a screen called "Settings" | UX copy | 2 | 1 | 1 | **15** | done in 9.17.9: the title says Settings ▸ Game settings, and the screen is called Game settings |
 | U4 | Unexplained short forms: BP, HB, Nat., "No upload"; the Arabic-only مصلى label | UX copy | 2 | 1 | 1 | **15** | open |
 | D1 | Final screen: the court banner text shows through behind "Final 21 – 18" | design | 2 | 1 | 1 | **15** | done in 9.16.4 |
 | D4 | Settings: the Back row is cut off at the bottom of the panel on phones | design | 2 | 1 | 1 | **15** | open |

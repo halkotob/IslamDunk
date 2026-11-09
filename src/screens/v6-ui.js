@@ -5,7 +5,7 @@ function pauseItems() {
   if (canCallTimeout(t)) items.push(['Call timeout (' + M.timeouts[t] + ' left)', () => { Game.paused = false; callTimeout(t, true); }]);
   else if (M.timeouts && t >= 0 && !Net.role && !M.mini && !M.practice) items.push(['Timeout (' + M.timeouts[t] + ' left): only with the ball', () => {}]);
   if (!M.gym && !M.practice) items.push(['Camera: ' + CAM_PRESETS[View.camera].name, () => cycleCamera(1, true)]);
-  items.push([Net.role ? 'Leave online game' : M.career ? 'Leave game (no result)' : 'Quit to title', () => { M.career ? careerHub() : goTitle(); }]);
+  items.push([Net.role ? 'Leave' : 'Quit', () => { M.career ? careerHub() : goTitle(); }]);   // (v9.17.9: Leave for an online room, Quit for a match; it asks first, v912-polish.js)
   return items;
 }
 function pauseNav() {

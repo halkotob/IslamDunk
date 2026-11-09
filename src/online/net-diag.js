@@ -292,9 +292,6 @@ function unpackEv(e) { if (typeof e[1] !== 'number') return e; const n = SNAP_EV
     g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Joining ' + Net.code, W / 2, 150);
     g.fillStyle = IVORY; g.font = `17px ${BODY}`;
     wrapText(g, `That game is on a different version (theirs ${Net.verOther || '?'}, yours ${VERSION}). Both players refresh the page, then try again.`, W / 2, 210, 640, 26);
-    g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, W / 2 - 80, 300, 160, 40, 20); g.fill();
-    g.fillStyle = '#fff'; g.font = `16px ${FONT}`; g.fillText('Back to title', W / 2, 326);
-    addRect(W / 2 - 80, 300, 160, 40, goTitle);
   };
   const _ou = onlineUpdate;
   onlineUpdate = function (rdt) {

@@ -383,9 +383,8 @@ function drawCalMonth(g) {
     else { g.strokeStyle = GOLD; g.lineWidth = 2.5; roundRect(g, ix - 10, iy - 9, 20, 18, 5); g.stroke(); }
     g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText(label, lx + (TT ? 36 : 32), ly + 11);
   });
-  const by = 456, bw = 184, bx = sx + (sw - bw) / 2, hov = hovering(bx, by, bw, 42), pr = pressing(bx, by, bw, 42);
-  goldPill(g, bx, by, bw, 42, 21, pr); g.textAlign = 'center'; g.fillStyle = NIGHT; g.font = `17px ${FONT}`; g.fillText('Back', bx + bw / 2, by + 27);
-  addRect(bx, by, bw, 42, careerHub);
+  const bw = 184, bx = sx + (sw - bw) / 2;   // (v9.17.9: no Back button here: the pill)
+  g.textAlign = 'center';
   if (!TT) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Arrows: day   Q E: month   Esc: back', bx + bw / 2, 522); }
 }
 function drawCalDetail(g, D, x, w, TT) {

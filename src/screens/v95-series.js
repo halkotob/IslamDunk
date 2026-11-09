@@ -167,7 +167,6 @@ function serSetupRows() {
   ];
   if (o.kind === 'league') R.push({ label: 'Play each team', get: () => o.twice ? 'Twice' : 'Once', step: () => { o.twice = !o.twice; } });
   R.push({ label: o.kind === 'tour' ? 'Start the tournament' : 'Start the league', start: true, step: () => serStart() });
-  R.push({ label: 'Back', back: true, step: () => goTitle() });
   return R;
 }
 function serStart() {
@@ -232,8 +231,7 @@ function drawSeries(g) {
     if (tab === 'Bracket') drawSerBracket(g, d); else if (tab === 'Standings') drawSerStandings(g, d); else if (tab === 'Schedule') drawSerSchedule(g, d); else drawSerLeaders(g, d);
     const main = d.done ? 'Start a new one' : serNext(d) ? 'Play your game' : 'Play out the rest';
     uiButton(g, W / 2 - 230, 466, 220, 42, main, serMain, true);
-    uiButton(g, W / 2 + 10, 466, 220, 42, 'Leave (saved)', goTitle, false);
-    if (!Input.touchMode) { g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.textAlign = 'center'; g.fillText('Enter: ' + main.toLowerCase() + '   ← →: tabs   N: end and start over   Esc: leave (saved)', W / 2, 528); }
+    if (!Input.touchMode) { g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.textAlign = 'center'; g.fillText('Enter: ' + main.toLowerCase() + '   ← →: tabs   N: end and start over   Esc: back (it\u2019s saved)', W / 2, 528); }
     else uiButton(g, W - 150, 470, 120, 34, 'Start over', serAbandon, false);
   } finally { W = rw; Game.ox = 0; g.restore(); }
 }

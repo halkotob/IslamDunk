@@ -21,7 +21,7 @@ export function holdTapTests({ newContext, open }) {
     // the CPU stands still (its brain is skipped) so the possession only changes when the test changes it
     await p.evaluate(() => { const _u = Brain.prototype.update; Brain.prototype.update = function () { if (this.p.cpuFrozen) { const c = this.p.cmd; c.mx = c.mz = 0; c.a = c.b = c.x = false; c.turbo = false; c.bHeld = false; return; } return _u.apply(this, arguments); }; });
     const held = () => p.evaluate(() => !!(window.__me.v8 && window.__me.v8.held));
-    const tapKey = async k => { await p.keyboard.down(k); await sleep(80); await p.keyboard.up(k); await sleep(250); };
+    const tapKey = async k => { await p.keyboard.down(k); await sleep(80); await p.keyboard.up(k); await sleep(400); };   // (room for a busy machine)
     // 1. Hold (default): a tap guards only while held
     await start(); await sleep(300);
     await p.keyboard.down('l'); await sleep(200); out.holdWhileDown = await held(); await p.keyboard.up('l'); await sleep(250); out.holdAfterUp = await held();
@@ -32,8 +32,9 @@ export function holdTapTests({ newContext, open }) {
     await tapKey('l'); out.tapOff = await held();
     // 3. clears: the ball changes hands, a dead ball, a pause
     await tapKey('l'); const onBefore = await held();
-    await p.evaluate(() => giveBall(window.__me)); await sleep(300); await p.evaluate(() => giveBall(window.__me.opps[0])); await sleep(300);
+    await p.evaluate(() => giveBall(window.__me)); await sleep(450); await p.evaluate(() => giveBall(window.__me.opps[0])); await sleep(450);
     out.clearPossession = onBefore && !(await held()) && !(await p.evaluate(() => Latch[0].def));
+    if (!out.clearPossession) out.cpWhy = await p.evaluate(() => ({ held: !!(window.__me.v8 && window.__me.v8.held), L: Object.assign({}, Latch[0]), ctx: defCtx(window.__me), ph: M.phase, owner: ball.owner && ball.owner.team, xHeld: window.__me.cmd.xHeld }));
     await tapKey('l'); const on2 = await held();
     await p.evaluate(() => { M.phase = 'dead'; }); await sleep(200); await p.evaluate(() => { M.phase = 'live'; }); await sleep(200);
     out.clearDead = on2 && !(await p.evaluate(() => Latch[0].def));
