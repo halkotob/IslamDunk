@@ -56,6 +56,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | T6 | Align the Playwright version with the test browsers | tech debt | 2 | 2 | 1 | **20** | open |
 | T8 | A short architecture overview, glossary and decision records | tech debt | 2 | 2 | 1 | **20** | open |
 | S5 | Drop malformed online messages instead of crashing the frame | security | 2 | 3 | 2 | **20** | open |
+| S6 | Snapshot online (HORSE, Lightning, Barakah Run duos, matches with no direct link): `online-lag` misses 1 run in 10 at 40±10 ms on 9.15.0 and 9.17.6 alike: a shot's jump shown 0 or 2 times, a layup start or a ball step off by a frame. Find whether a player can see it, fix it, and put the test back in CI | testing | 3 | 3 | 3 | **18** | open (9.17.6: out of `test:full`, run with `npm run test:release`) |
 | Q4 | Tests for the Firebase database rules (local emulator) | testing | 2 | 3 | 2 | **20** | open |
 | Q5 | Tests that send hostile online messages (with S1, S5) | testing | 2 | 3 | 2 | **20** | input packets done in 9.17.6 (`rb-hostile`); other messages (S5) open |
 | B8 | P2P: answering a new offer leaves the old channel half open | code review | 2 | 3 | 2 | **20** | open |

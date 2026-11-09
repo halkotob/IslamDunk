@@ -57,9 +57,13 @@ Measured: each test alone, 10 runs, on the 2-core container (pass count; desyncs
 | `online-lag` | 10/10; 0 / 0 | 8/10; 0 / 0 | 8/10; 0 / 0 |
 
 `online-lag` never desyncs. Its failures are single timing samples (a layup start, one shot grade's ball step, a
-second hop, a 53 ms move), a different one each time, and they aren't retried.
+second hop, a 53 ms move), a different one each time, and they aren't retried. 30 runs each at the 40 ms profile:
+9.15.0 26/30, 9.17.6 27/30, so it isn't a regression (the 10/10 above was luck). It's out of `test:full`, so CI
+skips it; it runs by hand before a release (`npm run test:release`, or `--only online-lag`). Whether the odd double
+jump is something a player sees is still open (S6 in `docs/IMPROVEMENTS.md`).
 - **New tests:** `rb-watchdog` (fast tier: the watchdog's timers are saved, put back, checksummed and reset; all four
-  failed on 9.15.0), `rb-linkdrop` and `rb-hostile` (full tier).
+  failed on 9.15.0), `rb-linkdrop` and `rb-hostile` (full tier). `rb-watchdog` puts the title screen's match back when it's done; it
+  left it wiped, and the next frame drawn threw a page error (2 runs in 3). `STACK=1` adds page-error stacks to test output.
 
 ## 9.17.5: a sound for every moment (no music)
 docs/audio/sound-list.csv listed 21 events with no sound of their own. 16 have one now; the 5 ambience rows (the

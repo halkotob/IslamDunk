@@ -18,6 +18,7 @@
     "dist:electron": "vite build --mode electron && electron-builder --config electron/electron-builder.yml",
     "test": "vite build --mode web && vite build --mode review && node tests/run.mjs",
     "test:full": "vite build --mode web && vite build --mode review && node tests/run.mjs --full",
+    "test:release": "vite build --mode web && vite build --mode review && node tests/run.mjs --full --release",
     "test:electron": "vite build --mode electron && node tests/electron.mjs",
     "review:export": "node scripts/review-export.mjs",
     "review:tomahawk": "vite build --mode web && node scripts/review-tomahawk.mjs",

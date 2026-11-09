@@ -69,10 +69,12 @@ export function rbSafetyTests({ newContext, open }) {
   T['rb-watchdog'] = async ({ browser, base }) => {
     const errs = [], ctx = await newContext(browser, { rb: true }), P = await open(ctx, base + '/?nowelcome=1', errs, 'one');
     const r = await P.evaluate(() => {
+      const keep = rbSave();   // the title screen's match, put back after (rbClean leaves no match to draw)
       WD.dead = 0; WD.loose = 3; WD.out = 0.25; const S = rbSave(), h0 = rbHashSaved(S), l0 = rbHash();
       WD.loose = 4.9; WD.out = 0.5; const h1 = rbHashSaved(rbSave()), l1 = rbHash();
       rbLoad(S); const back = [WD.dead, WD.loose, WD.out];
       rbClean(); const clean = [WD.dead, WD.loose, WD.out];
+      rbLoad(keep);
       return { back, clean, savedHashMoves: h0 !== h1, lineHashMoves: l0 !== l1 };
     });
     await ctx.close();
