@@ -51,7 +51,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | CD1 | Silhouette lineup fails: the 16 main players share one body; give heights, builds and 2–3 landmarks each | character design | 4 | 2 | 2 | **24** | done in 9.17.0 |
 | A4 | Give the renderer its own view state | architecture | 3 | 4 | 3 | **21** | open |
 | Q8 | Fast match tests in Node, without a browser (after A1) | testing | 4 | 3 | 3 | **21** | open (after A1) |
-| X1 | Bigger tap targets in menus on phones (rows are about 23 px tall; 44 recommended) | accessibility | 4 | 3 | 3 | **21** | open |
+| X1 | Bigger tap targets in menus on phones (rows are about 23 px tall; 44 recommended) | accessibility | 4 | 3 | 3 | **21** | done in 9.17.7 for the tap areas: every control is tapped as at least 44 px, or its full share of the space when neighbours are closer (median 26 → 40 px on the iPhone 13, 23 → 36 px on 667×300). Stacked rows and the join-code keys sit 21-33 px apart, so 44 there needs a phone layout: X7 |
 | P1 | Slow phones: about 850 canvas draw calls a frame at up to 3× pixel density; draw the court and crowd once to an offscreen canvas | performance | 4 | 3 | 3 | **21** | open |
 | T6 | Align the Playwright version with the test browsers | tech debt | 2 | 2 | 1 | **20** | open |
 | T8 | A short architecture overview, glossary and decision records | tech debt | 2 | 2 | 1 | **20** | open |
@@ -83,7 +83,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | GDS3 | Between Quick Play matches, offer (never force) one level down after two heavy losses and one up after three big wins | game design | 3 | 2 | 2 | **20** | open |
 | A1 | Make the match simulation one deep module (first step: one config and seed object) | architecture | 5 | 4 | 4 | **18** | open |
 | Q6 | A frame-time budget test on a slowed-down phone profile | testing | 3 | 3 | 3 | **18** | open |
-| X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | open |
+| X2 | Let phones choose larger text (most phone text is at the 11 px minimum; the setting is computer-only) | accessibility | 4 | 2 | 3 | **18** | done in 9.17.7: Normal (11 px), Large (13), Larger (15) on phones, menus and text screens only; lines that wouldn't fit step down a size. Sizes pending the designer's check on a real phone |
 | GD1 | Let a newcomer friend use Casual controls and automatic release online (per player) | game design | 4 | 2 | 3 | **18** | open |
 | ST3 | Steam Deck: text at least 9 px (12 recommended) at 1280×800, fill 16:10, a playable frame rate at default settings; Deck's A/B/X/Y already match the labels | Steam | 4 | 2 | 3 | **18** | open |
 | A2 | Make sound, effects and commentary consume match events | architecture | 4 | 4 | 4 | **16** | open |
@@ -110,7 +110,8 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | P2 | Ship a minified script (196 KB smaller before compression, faster start), keep the readable copy | performance | 2 | 1 | 1 | **15** | open |
 | P3 | Split the 669 ms startup task: set up career, world and studio code when first opened | performance | 3 | 2 | 3 | **15** | open |
 | P4 | The canvas jumps after load on computers (layout shift 0.31); size it before the first paint | performance | 2 | 1 | 1 | **15** | open |
-| X6 | Pinch zoom is off (axe: critical); keep it off for play, and make X2 the answer | accessibility | 2 | 1 | 1 | **15** | open |
+| X6 | Pinch zoom is off (axe: critical); keep it off for play, and make X2 the answer | accessibility | 2 | 1 | 1 | **15** | done in 9.17.7 (X2 is the answer; pinch zoom stays off) |
+| X7 | A phone layout for menus: 44 px rows and join-code keys (scrolling where a list doesn't fit), so every control meets 44 px, not just its share of the spacing. A visible change at Normal: designer mock-ups first | accessibility | 4 | 2 | 4 | **12** | open (after X1) |
 | GD2 | A reason to come back together: a record with each friend, recent players, co-op challenges | game design | 4 | 1 | 3 | **15** | open |
 | AU1 | Music: none today; adaptive layers (percussion and vocal stems that rise with a close game and the final minute), with vocal-only and Off | audio | 4 | 1 | 3 | **15** | open |
 | CA1 | On the online guest the camera steps once per drawn frame (`updateCamera(rdt)`), so its easing differs at 30, 60 and 120 fps: time-based easing | camera | 2 | 1 | 1 | **15** | open |

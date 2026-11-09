@@ -97,7 +97,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { FAKE_FIREBASE_APP, FAKE_FIREBASE_DB, FAKE_FIREBASE_AUTH, FAKE_ROOM_INIT } from './fakes.js';
-import { PHONES, auditPhone, MIN_CSS_PX } from './phone-audit.mjs';
+import { PHONES, auditPhone, MIN_CSS_PX, tapReport, MIN_TAP } from './phone-audit.mjs';
 import { TOMAHAWK_REC } from './tomahawk-rec.mjs';
 import { FAKE_PAD_INIT } from './fake-pad.js';
 import { CAL_HELPERS } from './calendar-setup.js';
@@ -113,6 +113,7 @@ import { saveSafeTests } from './save-safe.mjs';
 import { firstMatchTests } from './first-match.mjs';
 import { sfxMomentsTests } from './sfx-moments.mjs';
 import { rbSafetyTests } from './rb-safety.mjs';
+import { phoneTapTextTests } from './phone-tap-text.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
 import { animFixTests } from './anim-fix.mjs';
@@ -1596,9 +1597,13 @@ T['mobile'] = async ({ browser, base, tier }) => {
   if (tier === 'fast') detail.push('phone text audit: full tier only (npm run test:full)');
   else for (const [dn, dev] of PHONES) {
     const tag = dn.startsWith('iPhone') ? 'iphone' : '667x300';
-    const { out, errs } = await auditPhone(browser, base, dev, { shots: s => s === 'match HUD' ? path.join(ROOT, 'docs/review/img', `phone-hud-${tag}.png`) : null });
+    const { out, errs } = await auditPhone(browser, base, dev, { targets: true, shots: s => s === 'match HUD' ? path.join(ROOT, 'docs/review/img', `phone-hud-${tag}.png`) : null });
     const bad = out.flatMap(s => s.found);
-    ok = ok && !bad.length && !errs.length;
+    // v9.17.7 (X1): every control's tap area is at least MIN_TAP CSS px on its short side, or held in by its neighbours
+    const tr = tapReport(out), tn = out.reduce((n, s) => n + (s.tg ? s.tg.targets.length : 0), 0);
+    ok = ok && !bad.length && !errs.length && !tr.problems.length;
+    detail.push(`${dn}: tap areas: ${tn} controls, ${tr.problems.length} problems; under ${MIN_TAP} px: ${tr.exceptions.spacing.length} held in by row or key spacing, ${tr.exceptions.play.length} on screens played with the joystick, ${tr.exceptions.twice.length} drawn twice`);
+    for (const t of tr.problems.slice(0, 20)) detail.push(`   ${t.screen}: "${t.label}" tap area ${t.area.join('x')} (drawn ${t.drawn.join('x')})`);
     detail.push(`${dn}: ${out.length} screens, min text ${MIN_CSS_PX} CSS px: ${bad.length} problems, ${errs.length} page errors`);
     for (const f of bad.slice(0, 40)) detail.push(`   ${f.screen}: ${f.kind === 'small' ? `text ${f.css}px "${f.text}"` : f.kind === 'overflow' ? `past the edge [${f.left}, ${f.right}] of ${f.width}: "${f.text}"` : f.text}`);
     for (const e of errs) detail.push('   pageerror ' + e);
@@ -2617,6 +2622,7 @@ Object.assign(T, saveSafeTests({ newContext, open }));  // v9.17.3 a career can'
 Object.assign(T, firstMatchTests({ newContext, open }));  // v9.17.4 the first match is friendly (tests/first-match.mjs)
 Object.assign(T, sfxMomentsTests({ newContext, open }));  // v9.17.5 a sound for every moment (tests/sfx-moments.mjs)
 Object.assign(T, rbSafetyTests({ newContext, open }));   // v9.17.6 a dropped link comes back, hostile packets are dropped (tests/rb-safety.mjs)
+Object.assign(T, phoneTapTextTests({ newContext, open }));   // v9.17.7 phone tap areas and text size (tests/phone-tap-text.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
 Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)
@@ -2642,7 +2648,7 @@ const HEAVY = new Set([
   'gamepad', 'phase5', 'career', 'v95', 'v99',
   // the online tests that have to run alone (SERIAL), except rb-one, rb-fun and rb-freeze
   'rb-lag', 'rb-same', 'rb-determinism', 'rb-flow', 'rb-rollback', 'rb-taunt', 'rb-online', 'rb-resync', 'rb-settings',
-  'rb-touch', 'rb-slow', 'rb-sounds', 'rb-linkdrop', 'rb-hostile', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
+  'rb-touch', 'rb-slow', 'rb-sounds', 'rb-linkdrop', 'rb-hostile', 'phone-text-size', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
 // alone, after the parallel batch: frame-rate and speed checks, and the rollback and real-time online tests, which a
 // busy CPU makes desync (9.17.2 on 2 workers: rb-settings, rb-touch and rb-one each repaired 1-3 desyncs they don't alone)
 const SERIAL = new Set(['rb-slow', 'rb-lag', 'rb-freeze', 'lag-profiles', 'online-lag', 'league-time', 'net-rate',

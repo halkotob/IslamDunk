@@ -1,5 +1,47 @@
 # Changelog
 
+## 9.17.7: phone menus are easier to tap, and text can be made bigger
+Nothing looks different at Normal text size: the five screens checked (title, settings, career hub, pause, join code)
+are pixel-identical to 9.17.6 on both phone sizes. What changes is where a tap lands, and a new choice in
+Settings → Accessibility → Text size.
+- **Bigger tap areas on phones (X1).** On touch, every menu control is tapped as if it were at least 44 px on each
+  side, grown around its centre. Where two controls are closer than that, the space between them is split down the
+  middle, so a tap always lands on exactly one. Mouse, keyboard and gamepad work as before, and so do the joystick and
+  buttons during play. Measured over the phone audit's screens (short side of each control's tap area, CSS px):
+
+  | | iPhone 13 landscape | 667×300 |
+  |---|---|---|
+  | 9.17.6 median | 26 | 23 |
+  | 9.17.7 median | 40 | 36 |
+  | under 44, 9.17.6 → 9.17.7 | 870 of 925 → 602 of 922 | 865 of 916 → 637 of 917 |
+
+  Every control under 44 is listed by the report, with its reason: 569 / 610 are held in by their neighbours (menu
+  rows 21-23 px apart, join-code keys 33×31; each now gets its whole share of the gap, the keys 38×39 / 33×37 from
+  33×29 / 29×26), 10 are the in-match buttons (left alone on purpose), 23 / 17 are drawn twice in the same place
+  (the copy on top takes the tap). None is under 44 with room to grow. Reaching 44 on rows and keys needs a phone
+  layout, which changes how menus look, so it's a separate item (X7) for the designer.
+- **Fixed: How to play's "Play the Tutorial" couldn't be tapped on a phone.** The page's "tap anywhere else to go
+  back" area was drawn over it, so the tap went back to the title. On touch a control now beats a tap-anywhere area.
+  Where two drawn controls overlap (the lobby's ‹ › arrows, 8 px), the tap goes to the nearer centre.
+- **Text size on phones (X2, X6).** Normal, Large and Larger now work on a phone (the row said "Phone size" and
+  couldn't change; it now says Normal). Normal is today's 11 px minimum; Large raises small text to 13 px and Larger to
+  15 px. Menus and text screens only: the court and the match HUD stay at Normal, so nothing on the court gets
+  covered (a pause menu or a Noor question over the court does get bigger). Pinch zoom stays off.
+  A line that wouldn't fit at the bigger size steps down a size, then to Normal, in the same frame: one that would
+  run past the screen's edge, stick out of its button or panel further than it does at Normal, or run into another
+  line. A wrapped paragraph steps down as a whole and wraps again. A label fitted to its box tries one size smaller
+  before it's shortened with "…". So a screen can mix sizes (at Larger on the pause menu, the long "Settings: sound,
+  display, accessibility" row stays at Normal while the others grow). The 13 and 15 px sizes are estimates for the
+  designer to confirm on a real phone.
+  Phone audit, 103 screens: 0 lines past the edge, out of their box or into another line, and 0 page errors, at
+  Normal, Large and Larger on both phone sizes. Saved in `islamdunk.access` as before (old saves load; the setting
+  stays local online, `RB_LOCAL`).
+- **New tests:** `tap-targets` (fast tier: a tap just outside a control, between two rows, in the join-code gap,
+  on the tutorial button, and a mouse click that must not grow), `text-size` (fast tier: the three sizes, saves old
+  and new, match text unchanged at Larger, title and settings fit) and `phone-text-size` (full tier: the whole audit
+  at Large and Larger). The `mobile` test's audit now also fails on any control under 44 px that isn't held in by
+  its neighbours. `node tests/phone-audit.mjs --targets` prints the tap-area report; `--text 1|2` audits a size.
+
 ## 9.17.6: CI goes green, and online stops flaking
 Nothing changes in how the game plays. Two online bugs are fixed (one desync, one freeze), a dropped direct link now
 comes back during the match, and the tests on GitHub match the machine the screenshots were made on.

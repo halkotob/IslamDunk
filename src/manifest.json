@@ -133,6 +133,8 @@
     "career/v9173-save-safe.js",
     "screens/v9174-first-match.js",
     "screens/sfx-moments-hooks.js",
+    "screens/v9177-tap-targets.js",
+    "screens/v9177-text-size.js",
     "boot.js"
   ]
 }

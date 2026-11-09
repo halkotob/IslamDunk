@@ -17,7 +17,7 @@ export const PHONES = [
 ];
 export const AUDIT_INIT = `(() => {
   const MIN = ${MIN_CSS_PX};
-  window.__audit = { on: false, screen: '', found: new Map() };
+  window.__audit = { on: false, screen: '', found: new Map(), texts: [] };
   const P = CanvasRenderingContext2D.prototype;
   const wrap = name => { const f = P[name]; P[name] = function (text, x, y, maxWidth) {
     const A = window.__audit;
@@ -31,6 +31,7 @@ export const AUDIT_INIT = `(() => {
         const px = parseFloat((/([\\d.]+)px/.exec(this.font) || [])[1] || '0');
         const css = px * Math.hypot(m.a, m.b) * (cv.getBoundingClientRect().width / cv.width);
         const key = A.screen + '|' + t;
+        if (A.texts.length < 400) A.texts.push({ t: t.slice(0, 40), x: (a.x + b.x) / 2, y: a.y });
         if (lo < -2 || hi > cv.width + 2) A.found.set('O|' + key, { kind: 'overflow', screen: A.screen, text: t.slice(0, 80), left: Math.round(lo), right: Math.round(hi), width: cv.width });
         if (css && css < MIN - 0.05) { const k = 'S|' + key, o = A.found.get(k); if (!o || css < o.css) A.found.set(k, { kind: 'small', screen: A.screen, text: t.slice(0, 80), css: Math.round(css * 10) / 10, px }); }
       }
@@ -49,7 +50,7 @@ const SHARE = `if (!window.__shareReady) { window.__shareReady = 1;             
   for (let k = 0; k < 4 && !(window.__hl && window.__hl.length); k++) { newMatch(TEAMS[k], TEAMS[k + 1], { humans: [], fmt: { format: 'quarters', len: 30 } });
     for (let n = 0; n < 60 * 60 * 10 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; } window.__hl = M.highlights; } }
   M.highlights = window.__hl; Game.screen = 'final';`;
-const MATCH = `Input.touchMode = true; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; M.introT = 0;
+const MATCH = `Input.touchMode = true; Game.trivia = null; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; M.introT = 0;
   for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP); M.players[0].def.huffath = true;`;
 export const SCREENS = [
   ['title', `goTitle();`],
@@ -144,6 +145,60 @@ export const SCREENS = [
   ['title after forced select', `goTitle();`]
 ];
 
+// v9.17.7 (X1): every tap target on the screen, as a phone sees it. For each control in Game.rects (not full-screen
+// "tap anywhere" areas), the area a tap acts on it: along the lines through its centre, how far a tap still lands on it
+// (the game's tapWho when it has one; before 9.17.7 the drawn rectangle, last drawn on top). In CSS px.
+export const MIN_TAP = 44;
+export const TARGETS_JS = `(() => {
+  const cr = canvas.getBoundingClientRect(), k = cr.width / W, s = canvas.width / W, A = window.__audit;
+  const big = r => r.w * r.h >= W * H * 0.4, R = (Game.rects || []).filter(r => r.w > 2 && r.h > 2 && !big(r));
+  const inR = (r, x, y) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+  const who = typeof tapWho === 'function' ? (x, y) => tapWho(x, y) : (x, y) => { for (let i = R.length - 1; i >= 0; i--) if (inR(R[i], x, y)) return R[i]; return null; };
+  const out = [];
+  R.forEach((r, i) => {
+    const cx = r.x + r.w / 2, cy = r.y + r.h / 2, own = who(cx, cy) === r;
+    let a = cx, b = cx, c = cy, d = cy;
+    if (own) { while (a > -100 && who(a - 1, cy) === r) a--; while (b < W + 100 && who(b + 1, cy) === r) b++; while (c > -100 && who(cx, c - 1) === r) c--; while (d < H + 100 && who(cx, d + 1) === r) d++; }
+    const lab = (A.texts.find(t => inR(r, t.x / s, t.y / s - 4)) || A.texts.find(t => inR({ x: r.x - 6, y: r.y - 6, w: r.w + 12, h: r.h + 12 }, t.x / s, t.y / s - 4)) || {}).t || ('#' + i);
+    const w = own ? (b - a + 1) * k : 0, h = own ? (d - c + 1) * k : 0;
+    // what stops it growing on its short side: the controls just past its edges
+    const nb = !own ? [who(cx, cy)] : w <= h ? [who(a - 1, cy), who(b + 1, cy)] : [who(cx, c - 1), who(cx, d + 1)];
+    out.push({ label: lab, drawn: [Math.round(r.w * k), Math.round(r.h * k)], area: [Math.round(w), Math.round(h)], short: Math.round(Math.min(w, h)), by: nb.filter(Boolean).map(q => R.indexOf(q)) });
+  });
+  for (const t of out) t.by = t.by.map(j => j >= 0 ? out[j].label : '?');
+  // drawn controls that overlap. Fine: one drawn on top inside the other (an arrow on its row), or the same rectangle
+  // twice (dup: the one drawn last takes every tap). Not fine (over): any other overlap, where part of one can't be tapped
+  const over = [], dup = [], inside = (p, q) => p.x >= q.x - 1 && p.y >= q.y - 1 && p.x + p.w <= q.x + q.w + 1 && p.y + p.h <= q.y + q.h + 1;
+  for (let i = 0; i < R.length; i++) for (let j = i + 1; j < R.length; j++) { const p = R[i], q = R[j];
+    if (!(p.x < q.x + q.w - 1 && q.x < p.x + p.w - 1 && p.y < q.y + q.h - 1 && q.y < p.y + p.h - 1)) continue;
+    if (inside(p, q) && inside(q, p)) dup.push([out[i].label, out[j].label]); else if (!inside(q, p)) over.push([out[i].label, out[j].label]); }
+  // controls drawn before a full-screen area (which used to take their taps)
+  const all = Game.rects || [], lastBig = all.reduce((m, r, i) => big(r) ? i : m, -1);
+  const under = lastBig < 0 ? [] : all.slice(0, lastBig).filter(r => R.includes(r)).map(r => out[R.indexOf(r)].label);
+  return { k, targets: out, over, dup, under };
+})()`;
+
+// Sorts the tap targets of an audit: a control under MIN_TAP on its short side is an exception when what stops it is
+// a neighbour (the row or key spacing: the gap is split down the middle), when it's on a screen played with the
+// joystick (the in-match controls stay as they are), or when it's drawn twice in the same place (the copy drawn last
+// takes the taps). Anything else (a control no tap reaches, or one under MIN_TAP with room around it) is a problem.
+export const PLAY_SCREENS = new Set(['match HUD', 'dunk lab', 'gym']);
+export function tapReport(out) {
+  const problems = [], exceptions = { spacing: [], play: [], twice: [] };
+  for (const s of out) {
+    if (!s.tg) continue;
+    for (const t of s.tg.targets) {
+      if (t.short >= MIN_TAP) continue;
+      const row = Object.assign({ screen: s.name }, t);
+      if (PLAY_SCREENS.has(s.name)) exceptions.play.push(row);
+      else if (t.short === 0 && t.by.length === 1 && t.by[0] === t.label) exceptions.twice.push(row);
+      else if (t.short > 0 && t.by.length) exceptions.spacing.push(row);
+      else problems.push(row);
+    }
+  }
+  return { problems, exceptions };
+}
+
 // The touch buttons must never cover the scoreboard: every Button size, both hands.
 async function buttonOverlap(p) {
   const bad = [];
@@ -163,7 +218,7 @@ async function buttonOverlap(p) {
   return bad;
 }
 
-export async function auditPhone(browser, base, device, { query = '?net=loop&lat=0&room=audit', shots = null } = {}) {
+export async function auditPhone(browser, base, device, { query = '?net=loop&lat=0&room=audit', shots = null, targets = false, textSize = 0 } = {}) {
   const ctx = await browser.newContext(device);
   await ctx.route(/fonts\.(googleapis|gstatic)\.com|gstatic\.com\/firebasejs|islamdunk-ice\.[^/]*workers\.dev/, r => r.abort());   // (no live services; the TURN Worker fails at once: STUN only)
   await ctx.addInitScript(AUDIT_INIT);
@@ -171,23 +226,41 @@ export async function auditPhone(browser, base, device, { query = '?net=loop&lat
   p.on('pageerror', e => errs.push(`${p.__screen || 'load'}: ${e.message}`));
   await p.goto(base + '/' + query);
   await p.waitForFunction(() => typeof Game !== 'undefined' && Game.screen !== undefined && typeof Net !== 'undefined' && Net.avail !== 'checking', null, { timeout: 20000 });
-  await p.evaluate(() => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} Input.touchMode = true; });
+  await p.evaluate(() => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} Input.touchMode = true; Input.lastDev = 'touch'; });
+  if (textSize) await p.evaluate(n => { SETTINGS.textSize = n; }, textSize);
   const out = [];
   const only = (process.env.ONLY || '').split(',').map(x => x.trim()).filter(Boolean);
   for (const [name, setup] of SCREENS) {
     if (only.length && !only.includes(name)) continue;
     p.__screen = name;
-    const set = await p.evaluate(([name, js]) => { const A = window.__audit; A.on = false; A.found.clear(); try { (0, eval)(js); } catch (e) { return String(e && e.message || e); } A.screen = name; return null; }, [name, setup]);
+    const set = await p.evaluate(([name, js]) => { const A = window.__audit; A.on = false; A.found.clear(); A.texts.length = 0; try { (0, eval)(js); } catch (e) { return String(e && e.message || e); } A.screen = name; return null; }, [name, setup]);
     if (set) { errs.push(`${name}: setup failed: ${set}`); continue; }
     await p.waitForTimeout(450);                                           // let the screen transition finish
     await p.evaluate(() => { window.__audit.on = true; });
     await p.waitForTimeout(350);
+    await p.evaluate(() => { window.__audit.texts.length = 0; window.__audit.on = true; });
+    await p.waitForTimeout(60);
     const found = await p.evaluate(() => { const A = window.__audit; A.on = false; return [...A.found.values()]; });
+    const tg = targets ? await p.evaluate(TARGETS_JS) : null;
+    // v9.17.7: at Large and Larger, no line drawn bigger than Normal sticks out of its button or panel, or into
+    // another line, further than it does at Normal (the game steps such lines down a size; this checks it settled)
+    if (textSize) found.push(...await p.evaluate(name => {
+      if (typeof PhoneFit === 'undefined') return [{ kind: 'overflow', screen: name, text: 'no text-size fitting in this build', left: 0, right: 0, width: 0 }];
+      const R = PhoneFit.last, s = canvas.width / W, out = [], gap = 4 * s;
+      const ov = (a, b) => Math.max(0, Math.min(a[2], b[2]) + gap - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
+      const off = (a, r) => Math.max(0, r[0] - a[0]) + Math.max(0, a[2] - r[2]) + Math.max(0, r[1] - a[1]) + Math.max(0, a[3] - r[3]);
+      const mid = (a, r) => { const x = (a[0] + a[2]) / 2, y = (a[1] + a[3]) / 2; return x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3]; };
+      const boxes = (Game.rects || []).filter(r => r.w * r.h < W * H * 0.9).map(r => [r.x * s, r.y * s, (r.x + r.w) * s, (r.y + r.h) * s]).concat(PhoneFit.panels);
+      for (const r of R) if (r.L > 0 && boxes.some(q => mid(r.b0, q) && off(r.b, q) > off(r.b0, q) + 2)) out.push({ kind: 'overflow', screen: name, text: 'out of its box: ' + r.t.slice(0, 60), left: Math.round(r.b[0]), right: Math.round(r.b[2]), width: canvas.width });
+      for (let i = 0; i < R.length; i++) for (let j = i + 1; j < R.length; j++) { const a = R[i], b = R[j];
+        if (a.key !== b.key && (a.L || b.L) && ov(a.b, b.b) > ov(a.b0, b.b0) + 4) out.push({ kind: 'overflow', screen: name, text: 'into another line: ' + a.t.slice(0, 40) + ' / ' + b.t.slice(0, 40), left: Math.round(a.b[0]), right: Math.round(a.b[2]), width: canvas.width }); }
+      return out;
+    }, name));
     // shots: a folder (match HUD and venue, or every screen with ALL_SHOTS=1), or a function screen name -> file path or null
     const shot = typeof shots === 'function' ? shots(name) : shots && (process.env.ALL_SHOTS || name === 'match HUD' || name === 'venue') ? `${shots}/${name.replace(/\W+/g, '-')}.png` : null;
     if (shot) await p.screenshot({ path: shot });
     if (name === 'match HUD') found.push(...await buttonOverlap(p));
-    out.push({ name, found });
+    out.push({ name, found, tg });
   }
   await ctx.close();
   return { out, errs };
@@ -205,7 +278,21 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   for (const [dn, dev] of PHONES) {
     if (process.env.DEV && !dn.includes(process.env.DEV)) continue;
     const shots = SHOTS ? path.join(SHOTS, dn.replace(/\W+/g, '-')) : null; if (shots) fs.mkdirSync(shots, { recursive: true });
-    const { out, errs } = await auditPhone(browser, `http://127.0.0.1:${srv.address().port}`, dev, { shots });
+    const TG = process.argv.includes('--targets');
+    const TS = +(arg('--text', 0));
+    const { out, errs } = await auditPhone(browser, `http://127.0.0.1:${srv.address().port}`, dev, { shots, targets: TG, textSize: TS });
+    if (TG) {
+      const all = out.flatMap(s => (s.tg ? s.tg.targets : []).map(t => Object.assign({ screen: s.name }, t))), sh = all.map(t => t.short).sort((a, b) => a - b);
+      const under = all.filter(t => t.short < MIN_TAP), med = sh.length ? sh[sh.length >> 1] : 0;
+      console.log(`\n== ${dn} tap targets: ${all.length} controls on ${out.filter(s => s.tg && s.tg.targets.length).length} screens; short side median ${med} px, smallest ${sh[0]} px; under ${MIN_TAP}: ${under.length}`);
+      if (process.env.JSON) fs.writeFileSync(process.env.JSON.replace('%', dn.replace(/\W+/g, '-')), JSON.stringify(out.map(s => ({ name: s.name, tg: s.tg })), null, 1));
+      const by = {}; for (const t of under) (by[t.screen] = by[t.screen] || []).push(t);
+      for (const [sc, L] of Object.entries(by)) console.log(`  ${sc}: ` + L.map(t => `"${t.label}" ${t.area.join('x')} (drawn ${t.drawn.join('x')}; next to ${t.by.map(x => '"' + x + '"').join(', ') || 'nothing'})`).join(', '));
+      for (const s of out) if (s.tg && s.tg.over.length) console.log(`  OVERLAP ${s.name}: ` + s.tg.over.map(x => x.join(' / ')).join(', '));
+      const rep = tapReport(out);
+      console.log(`  exceptions: ${rep.exceptions.spacing.length} limited by row or key spacing, ${rep.exceptions.play.length} on screens played with the joystick, ${rep.exceptions.twice.length} drawn twice; PROBLEMS: ${rep.problems.length}`);
+      for (const t of rep.problems) console.log(`  PROBLEM ${t.screen}: "${t.label}" ${t.area.join('x')} (drawn ${t.drawn.join('x')})`);
+    }
     let small = 0, over = 0;
     console.log(`\n== ${dn}`);
     for (const s of out) {
