@@ -81,6 +81,7 @@ export const META = {
   'career intro: outside the masjid': ['first-run', 'Your first walk to the masjid.', 'A new career, after the creator.', T('Career', 'New career', 'Done'), null, 'v7.8'],
   'story': ['first-run', 'A story scene between games.', 'The career, at its story beats.', null, null, 'v8.4'],
   'hub': ['hub loop', 'The career hub: next game, player, masjid, schedule.', 'Career → Continue; after every career game.', T('Career', 'Continue career'), T(), 'v5.0', [], { v: 'keep' }],
+  'hub: Jumu’ah question': ['hub loop', 'Attend Jumu’ah or not today, asked on the hub.', 'The hub on a Friday.', T('Career', 'Continue career'), null, 'v9.18.0'],
   'hub: corner menu': ['hub loop', 'Save and load, main menu.', 'The ☰ corner button on the hub.', T('Career', 'Continue career', '☰'), T('☰'), 'v9.6.2'],
   'cbracket': ['hub loop', 'The career bracket.', 'Hub → Schedule → Bracket.', T('Career', 'Continue career', 'Schedule', 'Bracket'), T('Schedule', 'Bracket'), 'v5.0'],
   ...Object.fromEntries(CAL.flatMap(st => [['hub calendar: ' + st, ['career calendar', 'The hub’s calendar strip on a ' + st + ' day.', 'The hub, on such a day.', T('Career', 'Continue career'), T(), 'v9.0', st === 'game' ? [] : [NEAR('hub calendar: game')]]],

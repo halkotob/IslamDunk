@@ -28,7 +28,8 @@ export const STUDIO_SCREENS = [
   ['match: leave? (confirm)', MATCH + ` Game.paused = true; Game.idx = 0; const it = pauseItems(); it[it.length - 1][1]();`],
   ['barakah run: abandon? (confirm)', RUN + ` runPickVow(0); runAskAbandon();`],
   ['online: network report', `goTitle(); Lobby.open(); NetReport.open('lobby');`],
-  ['hub: corner menu', `if (!C) { C = freshCareer(); C.name = 'Reviewer'; C.bracket = makeBracket(0); } careerHub(); Game.hubMenu = { open: true, idx: 0 };`]
+  ['hub: corner menu', `if (!C) { C = freshCareer(); C.name = 'Reviewer'; C.bracket = makeBracket(0); } careerHub(); Game.hubMenu = { open: true, idx: 0 };`],
+  ['hub: Jumu’ah question', `if (!C) { C = freshCareer(); C.name = 'Reviewer'; C.bracket = makeBracket(0); } careerHub(); jumuahTalk(); Game.hubJum = { idx: 0 };`]
 ];
 // the Game.screen each setup lands on (the studio test fails if a setup lands anywhere else)
 export const SCREEN_OF = {
@@ -158,7 +159,8 @@ export const SCREEN_OF = {
   "match: leave? (confirm)": "play",
   "barakah run: abandon? (confirm)": "runmap",
   "online: network report": "lobby",
-  "hub: corner menu": "hub"
+  "hub: corner menu": "hub",
+  "hub: Jumu’ah question": "hub"
 };
 export const NOT_RENDERABLE = {
   hostlobby: 'Needs a live online session with you as host and a guest connected. The online-loop, online-room and online-fb tests play it with a fake network.',

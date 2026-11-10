@@ -136,6 +136,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | UX2 | 16:10 (Steam Deck, many laptops) and ultrawide get black bars: let the height grow on 16:10 | UI | 2 | 1 | 2 | **12** | open |
 | UX3 | Buttons are fixed widths sized to English; translations will overflow (with UI2) | UI | 2 | 1 | 2 | **12** | open |
 | IN3 | One-button alternatives for two-button moves (Turbo + Block swipe, chase-down) | input | 2 | 1 | 2 | **12** | open |
+| CR1 | Career: Continue opened at home and a game or the gym was a walk away (a free day to the gym: ~10 presses and ~40 s of walking); open at the hub with Play and Practice one press away | career | 4 | 2 | 2 | **24** | done in 9.18.0: Continue opens the hub; Practice is 1 press, a live game 3 (Play, the scout's Got it, Tip off); Go outside is a hub row |
 | IN4 | Remove the shove (Turbo + Pass on defense: a two-button combo called as a hard foul more the more it's used; a new player mashing it got whistled) | input | 3 | 2 | 1 | **25** | done in 9.17.10: Turbo + Pass on defense is a steal; late and trailing it's still the foul on purpose. Every other foul unchanged |
 | GDS4 | A few cosmetics earned by feats (first posterizer, first buzzer-beater), not only by XP | game design | 2 | 1 | 2 | **12** | open |
 | GDS5 | After level 30 XP does nothing: keep a count of levels past 30 (a star on the profile card) | game design | 2 | 1 | 2 | **12** | open |

@@ -25,6 +25,7 @@ export const OVERLAYS = [
   ['results', 'Final score', /Game\.screen = 'final'/, ['final']],
   ['netreport', 'Network report', /const NetReport = \{/, ['online: network report']],
   ['hubmenu', 'Hub corner menu', /const HUB_CORNER = /, ['hub: corner menu'], ['Game.hubMenu']],
+  ['hubjum', 'Jumu’ah question on the hub', /function hubJumuahOffer\(/, ['hub: Jumu’ah question'], ['Game.hubJum']],
   ['hubsub', 'Hub submenus (Schedule, My Player, My Masjid)', /function HUB_MENU|HUB_MENU = /, ['hub calendar: schedule menu']],
   ['worldtalk', 'Neighbourhood speech bubble', /World\.talk = \{/, ['world: speech bubble', 'world: long bubble'], ['World.talk']],
   ['worldshop', 'Neighbourhood store list', /World\.shop = \{/, ['world: shop'], ['World.shop']],

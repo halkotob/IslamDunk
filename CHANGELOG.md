@@ -1,5 +1,39 @@
 # Changelog
 
+## 9.18.0: the career opens at the hub
+Continue now opens your career hub. Play and Practice are one press away. The neighbourhood is optional: Go outside from the hub.
+- **What changed:** Continue, the end of a game's post-game screen and every new day open the career hub, never at
+  home. A save made at home, on the street, in the store or at the masjid front opens at the hub on the same day. The
+  hub's rows are Play, Practice, Skip, Go outside, My Player, My Masjid. Play goes to the next game: its day, then its
+  scout and pregame, past any free days and Fridays on the way ("Play: next game, Sat 25"; on a game day "Play
+  today's game"). Practice opens the gym, and it's also P on a keyboard and X on a pad (the row says which). "Skip to
+  Saturday: game day" moves one day on and says where it goes; it isn't shown on a game day, because games are never
+  skipped. Go outside goes to the masjid front as before. The neighbourhood scenes and their lines are unchanged.
+- **Presses, before → after** (a returning player, from the title; keyboard, gamepad and touch alike):
+  - to the hub: game day 2 → 2; free day 2 to your home → 2 to the hub.
+  - to a live game: game day 5 → 5 (Career, Continue, Play, the scout's Got it, Tip off). The stage's story lines
+    still play once per stage. Free day 5 to 8 → 5 (before, Skip once per stop; each Friday on the way was another
+    stop).
+  - to the gym: free day about 10 presses and about 40 seconds of walking (out the door, up the street, the masjid
+    door, Practice) → 3 (Career, Continue, Practice). Game day 4 → 3.
+  - From the hub, Practice is 1 press and a live game is 3, not the 2 we aimed for, because the scout and the
+    pregame are still two screens. Folding them into one is the next step if 3 is too many.
+- **Schedule:** the Calendar and the Bracket moved into My Player, so the six rows fit the panel at 667x300 and
+  750x342 without scrolling. Schedule's Next day and Play today's game are the Skip and Play rows now.
+- **Fridays:** on a Friday the hub asks "Attend Jumu'ah" or "Not today" (the same question and words as at the masjid
+  door), one press either way. Not today keeps you on the hub.
+- **New careers:** the intro (outside the masjid with Sh. Saleem, then the gym) is unchanged and ends on the hub.
+- **Counted:** each Go outside press is counted in the day's counters (`go_outside`, on this device only), so we can see
+  how often players still go out.
+- **Checked:** phone audit 0 overflow, 0 small text, 0 errors at both phone sizes. `npm run review:first-run` shows
+  no new problems: step 31 (the first day ends) now goes to the day's lines and then the hub, not home.
+- **New tests:** `hub-presses` (fast tier: keyboard, gamepad and touch, free day and game day; counts each press from
+  the title to the hub (2), the gym (3) and a live game (5)) and `hub-arrive` (fast tier: saves made in each scene open
+  at the hub on the same day; the post-game ends on the hub; Go outside still works and is counted; the Skip label;
+  the six rows; Friday's question; a new career's intro ends on the hub). `calendar`, `world-flow` and `world-save` now
+  expect the hub where they expected home (the neighbourhood checks themselves are unchanged). The Review Studio has a
+  new screen, "hub: Jumu'ah question". The fast tier takes 4.0 min.
+
 ## 9.17.10: the shove is gone
 The shove is gone. Turbo + Pass on defense is just a steal. All other fouls are the same.
 - **What changed:** sprint + Pass on defense (Turbo + Steal on keys and pads) is a steal attempt, exactly like Pass

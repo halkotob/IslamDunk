@@ -117,6 +117,7 @@ import { phoneTapTextTests } from './phone-tap-text.mjs';
 import { holdTapTests } from './hold-tap.mjs';
 import { navTests } from './nav-919.mjs';
 import { noShoveTests } from './no-shove.mjs';
+import { hubFirstTests } from './hub-first.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
 import { animFixTests } from './anim-fix.mjs';
@@ -2031,7 +2032,7 @@ T['calendar'] = async ({ browser, base }) => {
     calContinue(); const d1 = C.cal.d, t1 = calDay(d1).type, s1 = Game.screen;
     if (Game.screen === 'world') { Game.worldSuppress = true; careerHub(); } calContinue(); const d2 = C.cal.d, s2 = Game.screen;
     o.cont = { d0: calText(d0), d1: calText(d1), t1, s1, d2: calText(d2), s2 };
-    o.continueOk = d1 > d0 + 1 && t1 === 'jumuah' && (s1 === 'world' && World.scene === 'home') &&   // v9.2: a non-game day starts at home
+    o.continueOk = d1 > d0 + 1 && t1 === 'jumuah' && s1 === 'hub' &&   // v9.18: a non-game day opens at the hub (v9.2-9.17: at home)
       calDay(d2).type === 'game' && d2 === calGameDay() && ['scout', 'story'].includes(s2);
     careerHub(); calContinue(); o.noSkip = C.cal.d === d2;   // a game day isn't passed by Continue...
     careerHub(); calNextDay(); o.noSkipNext = C.cal.d === d2 && ['scout', 'story'].includes(Game.screen);   // ...or by Next day
@@ -2189,26 +2190,27 @@ T['world-flow'] = async ({ browser, base }) => {
     window.__seed(92); const o = {}, step = n => { for (let i = 0; i < n; i++) careerUpdate(1 / 60); for (let i = 0; i < 120 && Game.screen === 'world' && World.fadeDir; i++) careerUpdate(1 / 60); }, press = k => { Input.pressed[k] = true; careerUpdate(1 / 60); Input.pressed = {}; };
     const where = () => Game.screen === 'world' ? World.scene + '/' + worldLoc().tod : Game.screen;
     const portal = id => World.def.portals.find(q => q.id === id), use = id => World.def.uses.find(q => q.id === id);
-    // a free day starts at home in the morning, with Go out and Skip the day on screen
-    window.__worldDay(); worldStartDay(); step(30);
-    o.start = where() === 'home/0' && worldButtons().map(b => b.label).join() === 'Skip the day,Go out';
+    // a free day opens at the hub (v9.18); home in the morning still has Go out and Skip the day on screen
+    window.__worldDay(); worldStartDay(); step(30); const hubFirst = Game.screen === 'hub';
+    worldEnter('home', 'start', { noFade: true }); step(30);
+    o.start = hubFirst && where() === 'home/0' && worldButtons().map(b => b.label).join() === 'Skip the day,Go out';
     // G goes out; the store (once a day) moves the time on when you leave it
     press('KeyG'); step(30); o.out = where() === 'street/0';
     portal('store').act(); step(30); o.store = where() === 'store/0' && !!worldLoc().vis.store && C.cal.done.visit_store === 1;
     portal('out').act(); step(30); o.afterStore = where() === 'street/1' && worldStoreOk() === 'You went to the store today';
     // the masjid: the door goes into the hub (inside the masjid); Go outside comes back out, an hour on
     portal('masjid').act(); step(30); portal('door').act(); step(30);
-    const hub = HUB_MENU().map(e => e.label); o.hub = Game.screen === 'hub' && /^Continue/.test(hub[0]) && hub[1] === 'Go outside';
+    const hub = HUB_MENU().map(e => e.label); o.hub = Game.screen === 'hub' && /^(Play|Continue)/.test(hub[0]) && hub.includes('Go outside');
     hub && HUB_MENU().find(e => e.label === 'Go outside').act(); step(30);
     o.outside = where() === 'masjidfront/2' && worldMasjidOk() !== true;
     // home at dusk: night; at night only home is open
     portal('street').act(); step(30); portal('home').act(); step(30);
     o.night = where() === 'home/3' && worldStoreOk() !== true && worldNightOk() !== true;
-    // End the day at the bed: tomorrow, home, morning, nothing visited
+    // End the day at the bed: tomorrow, the hub (v9.18; home before), nothing visited
     const d0 = C.cal.d; use('bed').act(); step(30);
-    o.endDay = C.cal.d === d0 + 1 && where() === 'home/0' && !worldLoc().vis.store;
-    // Skip the day: jumps like Continue (a game day goes to the pregame)
-    let k = 0; while (Game.screen === 'world' && k++ < 12) { press('KeyN'); step(30); }
+    o.endDay = C.cal.d === d0 + 1 && where() === 'hub' && !worldLoc().vis.store;
+    // Play on the hub: straight to the next game (a game day goes to the pregame)
+    Game.hubJum = null; HUB_MENU()[0].act(); for (let i = 0; i < 4 && Game.screen === 'story'; i++) Game.story.then();
     o.skipToGame = ['scout', 'story', 'pregame'].includes(Game.screen) && calGameToday();
     // after the game: the next morning at home
     careerHub(); for (let i = 0; i < 6 && Game.screen === 'story'; i++) Game.story.then();
@@ -2218,10 +2220,10 @@ T['world-flow'] = async ({ browser, base }) => {
     if (Game.screen === 'pregame') startCareerMatch(); for (let i = 0; i < 6 && Game.screen === 'story'; i++) Game.story.then();
     M.teams[0].score = 30; M.teams[1].score = 20; M.winner = 0; M.phase = 'over'; careerAfterMatch(); postgameContinue();
     for (let i = 0; i < 12 && Game.screen === 'story'; i++) Game.story.then();
-    o.wake = where() === 'home/0' && !calGameToday();
+    o.wake = where() === 'hub' && !calGameToday();   // (v9.18: the hub, not home)
     // Jumu'ah: the way to the masjid is highlighted
     let fri = C.cal.d; while (calWd(fri) !== 5) fri++; calSetDay(fri); worldStartDay(); step(20);
-    o.jumuah = World.bannerT > 0 && /Jumu/.test(World.banner); press('KeyG'); step(30); o.beacon = !!portal('masjid').beacon();
+    o.jumuah = Game.screen === 'hub' && !!Game.hubJum; Game.hubJum = null; worldEnter('street', 'start', { noFade: true }); step(30); o.beacon = !!portal('masjid').beacon();   // (v9.18: the hub asks first)
     // talking: short, leavable, a different set the next day
     worldEnter('street', { x: 1000, d: 0.32, face: -1 }, { noFade: true }); step(2);
     const yusuf = World.npcs.find(q => q.id === 'yusuf'); worldTalkTo(yusuf); const L1 = JSON.stringify(World.talk.lines);
@@ -2240,10 +2242,10 @@ T['world-flow'] = async ({ browser, base }) => {
     // the mirror opens the look editor and comes back to the same spot
     worldEnter('home', 'mirror', { noFade: true }); const mx = World.x; use('mirror').act(); o.mirror = Game.screen === 'creator';
     careerHub(); o.mirrorBack = Game.screen === 'world' && World.scene === 'home' && World.x === mx;
-    // an old save (no location) loads and starts at home; a saved location comes back
-    worldEnter('street', { x: 1500, d: 0.5, face: 1 }, { noFade: true }); worldSaveLoc(); const keep = JSON.stringify(C.cal.loc);
-    delete C.cal.loc; saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); o.oldSave = where() === 'home/0';
-    C.cal.loc = JSON.parse(keep); saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); o.resume = where() === 'street/0' && Math.round(World.x) === 1500;
+    // an old save (no location) loads; a save made on the street opens at the hub, the same day (v9.18; it came back to the street before)
+    worldEnter('street', { x: 1500, d: 0.5, face: 1 }, { noFade: true }); worldSaveLoc(); const keep = JSON.stringify(C.cal.loc), dk = C.cal.d;
+    delete C.cal.loc; saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); o.oldSave = where() === 'hub';
+    C.cal.loc = JSON.parse(keep); saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); o.resume = where() === 'hub' && C.cal.d === dk;
     // text baked into scenes (signs) is big enough for the smallest phone: >= 19.8 game px (11 CSS px at 667x300),
     // with every masjid upgrade at its top level and at every time of day
     const keepUp = C.up; C.up = {}; for (const pj of PROJECTS.masjid) C.up[pj.key] = pj.tiers.length;
@@ -2409,6 +2411,7 @@ T['world-save'] = async ({ browser, base }) => {
       const want = { sc, x: Math.round(World.x), d: Math.round(World.d * 1000) / 1000, tod, store: L.vis.store, day: C.cal.d };
       worldSaveLoc(); C = null; World.scene = null; Game.screen = 'title';
       loadCareer(SAVE_AUTO); careerHub();
+      want.sc = 'hub';   // v9.18: a save made anywhere in the neighbourhood opens at the hub, the same day and time
       const got = { sc: Game.screen === 'world' ? World.scene : Game.screen, x: Math.round(World.x), d: Math.round(World.d * 1000) / 1000, tod: worldLoc().tod, store: worldLoc().vis.store || 0, day: C.cal.d };
       const same = JSON.stringify(want) === JSON.stringify(got); if (!same) fails.push(JSON.stringify(want) + ' -> ' + JSON.stringify(got));
       out.push(sc + '/' + tod + (same ? ' ok' : ' MOVED'));
@@ -2416,13 +2419,13 @@ T['world-save'] = async ({ browser, base }) => {
     // inside the masjid (the hub): comes back to the hub
     window.__worldDay(); worldStartDay(); worldEnter('masjidfront', 'door', { noFade: true }); WORLD_SCENES.masjidfront.portals[0].act(); for (let i = 0; i < 60; i++) careerUpdate(1 / 60);
     const inHub = Game.screen === 'hub'; saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); const hubBack = inHub && Game.screen === 'hub';
-    // a save from before 9.2 (no location) starts at home
-    delete C.cal.loc; saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); const oldHome = Game.screen === 'world' && World.scene === 'home' && worldLoc().tod === 0;
+    // a save from before 9.2 (no location) opens at the hub too (v9.18; at home before), in the morning
+    delete C.cal.loc; saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); const oldHome = Game.screen === 'hub' && worldLoc().tod === 0;
     return { out, fails, hubBack, oldHome };
   });
   await ctx.close();
   const ok = !r.fails.length && r.out.length === 16 && r.hubBack && r.oldHome && !errs.length;
-  return { ok, detail: [r.out.join(', '), 'hub comes back as the hub: ' + r.hubBack, 'old save starts at home: ' + r.oldHome, ...r.fails, ...errs] };
+  return { ok, detail: [r.out.join(', '), 'hub comes back as the hub: ' + r.hubBack, 'old save opens at the hub: ' + r.oldHome, ...r.fails, ...errs] };
 };
 
 // v9.2: visual regression. Every view at every time of day on desktop and both phone sizes, rendered as a frozen
@@ -2629,6 +2632,7 @@ Object.assign(T, phoneTapTextTests({ newContext, open }));   // v9.17.7 phone ta
 Object.assign(T, holdTapTests({ newContext, open }));   // v9.17.8 Defend and Sprint as hold or tap (tests/hold-tap.mjs)
 Object.assign(T, navTests({ newContext, open }));   // v9.17.9 one way back, leave words, the gamepad hint (tests/nav-919.mjs)
 Object.assign(T, noShoveTests({ newContext, open }));   // v9.17.10 the shove is removed (tests/no-shove.mjs)
+Object.assign(T, hubFirstTests({ newContext, open }));   // v9.18.0 the career opens at the hub (tests/hub-first.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
 Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)
