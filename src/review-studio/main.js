@@ -56,7 +56,7 @@ async function boot() {
   window.__studio.ready = true;
 }
 const textsOf = it => it.kind === 'trivia' ? [it.trivia.q, it.trivia.right, it.trivia.why, ...it.trivia.wrong] : it.parts ? it.parts.map(p => p[1]) : it.text ? [it.text] : [];
-const isNew = it => cmpVer(it.version, store.state.lastReviewed) > 0;
+const isNew = it => cmpVer(it.version, store.state.lastReviewed) > 0 || (!!it.changed && cmpVer(it.changed, store.state.lastReviewed) > 0);   // (v9.19.1: or changed since: re-review)
 const myMark = it => store.mark(it.id);
 
 // ------------------------------------------------------------------ header: search, filters, reviewer, import / export
@@ -134,7 +134,7 @@ function setupList() {
     else if (it.kind === 'line') { const c = el('canvas', { width: 72, height: 72 }); const t = face(S.G, it.speaker, 72); if (t) c.getContext('2d').drawImage(t, 0, 0); r.append(c); }
     r.append(el('span', { class: 'dot ' + (m ? m.verdict : ''), title: m && m.verdict ? VLABEL[m.verdict] : 'Not reviewed' }));
     r.append(el('div', { class: 't' }, it.name, el('small', {}, (it.kind === 'line' ? it.unit.title + ' · ' : '') + it.group)));
-    if (isNew(it)) r.append(el('span', { class: 'tag new', title: 'Added in ' + it.version }, 'new'));
+    if (isNew(it)) r.append(el('span', { class: 'tag new', title: it.changed && cmpVer(it.version, store.state.lastReviewed) <= 0 ? 'Changed in v' + it.changed + ': ' + it.changeNote : 'Added in ' + it.version }, it.changed && cmpVer(it.version, store.state.lastReviewed) <= 0 ? 're-review' : 'new'));
     if (it.religious) r.append(el('span', { class: 'tag rel', title: 'Religious review' }, 'rel'));
   } });
 }
@@ -265,7 +265,7 @@ function drawSide() {
     el('dt', {}, 'Category'), el('dd', {}, it.cat + ' · ' + it.group),
     el('dt', {}, 'Where'), el('dd', { class: 'where' }, occ.length > 1 ? occ.map(o => el('div', {}, o.file + ':' + o.line)) : it.where || '—', (it.occ || []).length > 8 ? el('div', {}, '+' + (it.occ.length - 8) + ' more') : null),
     el('dt', {}, 'When'), el('dd', {}, it.when || TRIGGERS[it.group] || (it.section ? 'Shown in: ' + it.section : '—')),
-    el('dt', {}, 'Added'), el('dd', {}, (it.version === 'phase1' ? 'Phase 1' : 'v' + it.version) + (isNew(it) ? ' · new since last review' : '')),
+    el('dt', {}, 'Added'), el('dd', {}, (it.version === 'phase1' ? 'Phase 1' : 'v' + it.version) + (isNew(it) ? (it.changed && cmpVer(it.version, store.state.lastReviewed) <= 0 ? ' · changed in v' + it.changed + ': ' + it.changeNote : ' · new since last review') : '')),
     it.flag || it.religious ? el('dt', {}, 'Flags') : null, it.flag || it.religious ? el('dd', {}, [it.religious ? 'Religious review' : null, it.flag].filter(Boolean).join(' · ')) : null));
   if (it.meta) side.append(metaBlock(it));
   const fl = it.kind === 'screen' && SC.flags[it.id];

@@ -9,7 +9,9 @@ export const SIZES = [['desktop', 'Desktop 16:9 (1280×720)', 1280, 720, false],
 export async function extraCategories(G, data, hooks) {
   const out = [];
   // ---- animations
+  // (v9.19.1: every animation that holds the ball is up for re-review: the ball now sits in the hand as drawn)
   for (const a of G.rs.anims()) out.push({ id: 'anim/' + a.id, cat: 'Animations', group: a.group, kind: 'anim', name: a.name, anim: a, text: '', src: 'sim/animation.js',
+    ...(a.ball || a.needBall ? { changed: '9.19.1', changeNote: 'the ball is held where the hand is drawn (facing, build, lean); check it sits in the hand' } : {}),
     when: 'Played by the rig in games. Drawn here by the game’s own animate() and drawPlayer(), one simulation step (1/60 s) per frame.', stage: hooks.stageAnim });
   // ---- screens
   const screens = data.screens.map(x => x.concat(['tests/phone-audit.mjs (SCREENS)'])).concat(STUDIO_SCREENS.map(x => x.concat(['src/review-studio/screens.js'])));

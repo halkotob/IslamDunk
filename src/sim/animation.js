@@ -114,19 +114,35 @@ function animate(p, dt) {
   // body rotation for knockdowns
   const rt = p.state === 'down' ? p.fallDir * 1.45 : -(p.leanX || 0) * 0.14;   // crossover lean
   p.rot += (rt - p.rot) * Math.min(1, dt * (p.state === 'down' ? 10 : 6));
-  // forward kinematics -> hand positions in world space
+  placeHands(p);
+  if (holding) attachBall(p, dt);
+}
+// the drawn facing: p.face, turned by a spin, never narrower than 0.2 (the renderer draws the body with the same)
+function faceK(p) { const sc = p.spin ? Math.cos(p.spin) : 1; return p.face * (Math.abs(sc) < 0.2 ? 0.2 * (Math.sign(sc) || 1) : sc); }
+// the body's drawn size: build (width) and height, and the squash on a landing (the renderer draws with these)
+function bodyScale(p) {
+  const def = p.def, lk = def.look, sq = p.sq || 0;
+  const sw = (lk ? BUILD_W[lk.build] : def.vw != null ? BUILD_W[def.vw] : def.bw != null ? BUILD_W[def.bw] : 1) * (1 - sq * 0.06);
+  const sh = (lk ? HEIGHT_S[lk.height] : def.vh != null ? HEIGHT_S[def.vh] : def.bh != null ? HEIGHT_S[def.bh] : 1) * (1 + sq * 0.08);   // CPU bodies: bh/bw (v9.17: the main cast's vh/vw are looks only)
+  return [sw, sh];
+}
+// forward kinematics -> hand positions in world space, where the body draws them (v9.19.1): the drawn facing (the
+// renderer's 0.2 floor on a spin; it was the raw cos), the body's build and height (they were left out: a tall or
+// broad player's hands were drawn up to 12 units from the ball) and its lean (p.rot: a crossover, a knockdown)
+function placeHands(p) {
   const J = p.j;
   const legY = (h, k) => 22 * Math.cos(h) + 22 * Math.cos(h - k);
   p.hipH = Math.max(legY(J.nh.a, J.nk.a), legY(J.fh.a, J.fk.a), 20);
   const lean = J.lean.a, shX = Math.sin(lean) * 30, shY = p.hipH + Math.cos(lean) * 30;
-  const fs = p.face * (p.spin ? Math.cos(p.spin) : 1);
+  const fs = faceK(p), [sw, sh] = bodyScale(p), rot = Math.abs(p.rot || 0) > 0.01 ? p.rot : 0, c = Math.cos(rot), sn = Math.sin(rot);
   for (const side of ['n', 'f']) {
     const s = J[side + 's'].a, e = J[side + 'e'].a;
     const ex = shX + Math.sin(s) * 16, ey = shY - Math.cos(s) * 16;
     const hx = ex + Math.sin(s + e) * 15, hy = ey - Math.cos(s + e) * 15;
-    const h = p.hands[side]; h.x = p.x + hx * fs; h.y = p.y + hy; h.z = p.z + (side === 'n' ? 6 : -6);
+    const a = hx * fs * sw, b = -hy * sh;                 // as drawn (screen axes: y down), then turned by the lean
+    const h = p.hands[side]; h.x = p.x + (c * a - sn * b); h.y = p.y - (sn * a + c * b); h.z = p.z + (side === 'n' ? 6 : -6);
   }
-  if (holding) attachBall(p, dt);
+  p._handsFace = p.face; p._handsSpin = p.spin || 0;
 }
 // dribble phase 0..1 (0 = in the hand, 0.5 = on the floor). Classic: one bounce per step.
 // (v8.2 adds a "Stride" option in Settings; see sim/v8-dribble.js)

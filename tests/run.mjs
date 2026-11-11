@@ -118,6 +118,7 @@ import { holdTapTests } from './hold-tap.mjs';
 import { navTests } from './nav-919.mjs';
 import { noShoveTests } from './no-shove.mjs';
 import { statCurveTests } from './stat-curves.mjs';
+import { ballHandsTests } from './ball-hands.mjs';
 import { hubFirstTests } from './hub-first.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
@@ -2633,6 +2634,7 @@ Object.assign(T, holdTapTests({ newContext, open }));   // v9.17.8 Defend and Sp
 Object.assign(T, navTests({ newContext, open }));   // v9.17.9 one way back, leave words, the gamepad hint (tests/nav-919.mjs)
 Object.assign(T, noShoveTests({ newContext, open }));   // v9.17.10 the shove is removed (tests/no-shove.mjs)
 Object.assign(T, statCurveTests({ newContext, open }));   // v9.19.0 stat curves, move needs, the Hikmah challenge (tests/stat-curves.mjs)
+Object.assign(T, ballHandsTests({ newContext, open }));   // v9.19.1 the ball stays in his hands (tests/ball-hands.mjs)
 Object.assign(T, hubFirstTests({ newContext, open }));   // v9.18.0 the career opens at the hub (tests/hub-first.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)

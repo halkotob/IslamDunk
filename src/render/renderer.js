@@ -321,8 +321,8 @@ function drawGroup(g, segs, f) {
 }
 function drawPlayer(g, p) {
   const T = p.T, def = p.def, lk = def.look, [bx, by] = P(p.x, p.y, p.z);
-  const sc = p.spin ? Math.cos(p.spin) : 1, fs = p.face * (Math.abs(sc) < 0.2 ? 0.2 * sgn(sc) : sc), f = sgn(fs);
-  const sq = p.sq || 0, sw = (lk ? BUILD_W[lk.build] : def.vw != null ? BUILD_W[def.vw] : def.bw != null ? BUILD_W[def.bw] : 1) * (1 - sq * 0.06), sh = (lk ? HEIGHT_S[lk.height] : def.vh != null ? HEIGHT_S[def.vh] : def.bh != null ? HEIGHT_S[def.bh] : 1) * (1 + sq * 0.08);   // CPU bodies: bh/bw (v9.17: the main cast's vh/vw are looks only)
+  const fs = faceK(p), f = sgn(fs);   // (v9.19.1: the same facing the sim places the hands with)
+  const sq = p.sq || 0, [sw, sh] = bodyScale(p);   // (v9.19.1: shared with the sim, which places the hands with it)
   const uncle = !!(M.fun && M.fun.uncle && !M.gym && p.team !== 9);
   const thobe = p.outfit === 'thobe', robe = uncle ? T.c1 : lk ? (lk.teamMatch ? T.c1 : THOBES_ALL[lk.thobe]) : (def.thobe || '#f4f4ef'), hemK = (lk ? lk.thobeLen % 2 : 0) && !uncle ? 0.5 : 0.82;
   const trim = lk && !uncle && (lk.thobeLen >= 2 || lk.teamMatch) ? (lk.teamMatch ? T.c2 : '#c9a24a') : null;   // trimmed thobes / team colors

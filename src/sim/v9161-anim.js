@@ -216,8 +216,9 @@ const ANIM_PICKED = p => !!(p.pick && ball.owner === p && (p.state === 'free' ||
   drawPlayer = function (g, p) {
     const hy = p.hopY || 0, kind = p.sigShot || p.shotType, turn = kind === 'hook' && (p.state === 'shoot' || p.state === 'windup') && ball.owner === p && !p.spin;
     if (!hy && !turn) return _dp.apply(this, arguments);
-    const y = p.y, sp = p.spin; p.y += hy; if (turn) p.spin = p.state === 'shoot' ? 0.85 : 0.5;
-    try { return _dp.apply(this, arguments); } finally { p.y = y; p.spin = sp; }
+    const y = p.y, sp = p.spin, bx = ball.x; p.y += hy; if (turn) p.spin = p.state === 'shoot' ? 0.85 : 0.5;
+    if (turn) ball.x = p.x + (ball.x - p.x) * Math.cos(p.spin);   // (v9.19.1: the ball turns with the drawn body, as the hands do)
+    try { return _dp.apply(this, arguments); } finally { p.y = y; p.spin = sp; ball.x = bx; }
   };
 }
 // ---- the nod: "YES, YES" over his head while he nods (drawn with him, so it shows wherever he's drawn)

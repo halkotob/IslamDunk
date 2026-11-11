@@ -1,5 +1,65 @@
 # Changelog
 
+## 9.19.1: the ball stays in the player's hands
+The held ball now sits in the hand as it's drawn, in every pose and both facings: the shot windup, the release, the
+dribble, the moves, catches, rebounds and steals. It no longer floats off to the side of his head.
+- **The cause** (measured, not guessed): the hands, and the ball held in them, were placed with a different body than
+  the one drawn.
+  - **Mainly, the facing changed after the hands were placed.** Within one sim step, `animate()` placed the hands and
+    the ball, then later code in the same step turned the player, and he was drawn turned.
+    - The step-back's "face the basket the whole way" (9.16.2) runs after the step. With the stick held away from
+      the basket, the step turned him toward the stick, the ball went into that hand, then he was turned back to the
+      basket. The ball sat on the far side of his body for the whole step-back and the moment after.
+    - A shot started out of a spin resets the spin after the hands were placed mid-spin, still turned the other way.
+      The first windup frame showed the ball 40 to 53 units on the side away from the hoop. That is the report: in the
+      gym, about 45 px to the left of his head with the hoop on his right.
+    - A catch, a rebound, a steal or an alley-oop hands him the ball after his own update, so for one frame it hung
+      where it was caught.
+  - **The hands were placed as if every body were the same size and upright.** The renderer draws each body with its
+    build and height (0.9 to 1.13 wide, 0.93 to 1.08 tall), its squash on a landing and its lean (`p.rot`), and turns a
+    spinning body no narrower than 0.2. The hands used none of that, so a tall, broad or leaning player's hands were
+    drawn up to about 12 units from the ball, and up to 24 mid-spin.
+  - **Two-hand holds whose hands are far apart.** Landing, a steal, getting up and a windup's first frame held the
+    ball midway between hands that can be 40 units apart, out of both of them.
+  - It was not the layup's ease into the shooting hand (v99-layups.js:135): 3 layup frames on 9.19.0, at the start
+    of a bank and a reverse, which are the same facing change. It was not the gym or the phone either: on 9.19.0 the
+    gym was 3.5% of its frames, your plays in matches 3.4%, the phone and desktop sizes 1.4% each. It looked
+    intermittent because it needs a spin or a step-back with the stick held away right before the shot.
+- **Before → after** (`node tools/ball-hands.mjs`, new). Every frame a player holds the ball is drawn on a real canvas,
+  and the tool measures the gap from the ball to the nearer drawn hand in game units. While dribbling only the
+  sideways gap counts; a ball crossing from hand to hand isn't counted mid-move. It covers 3 seeded CPU games plus
+  scripted plays as you (in a match facing each way, and in the gym), at desktop and phone size:
+  - Overall, more than 20 units from a hand: 9.19.0 501 of 36,162 held frames (worst 85.7); 9.19.1 0 of 37,371 (worst
+    15.8).
+  - The worst poses on 9.19.0: the step-back 62% of its frames, landing 66%, steals 80%, and the first windup frame
+    after a spin.
+  - Grouped by what came just before, the bad frames on 9.19.0 bunch up after a facing change: 9% on the frame the
+    facing changed, 14% 1 to 5 frames after, 4% 6 to 29 frames after, 1% after that. By the last move: 6% after a
+    step-back, about 1% after any other.
+  - The report's case (shooting straight out of a step-back or a spin with the stick held away, facing each way):
+    on 9.19.0, 7 windup frames up to 53.5 units off. On 9.19.1 none (worst 9.0).
+- **The fix, at the cause** (sim/animation.js, sim/v9191-ball-hands.js):
+  - The hands are placed with the body as drawn: the same facing (one shared function for the sim and the renderer,
+    `faceK`), the same build and height (`bodyScale`, also shared) and the same lean.
+  - When a player's facing or spin changes after his hands were placed, the hands and the held ball are placed again
+    in the same step. At the end of every step the holder's ball is attached again too (a catch, a rebound or an
+    alley-oop gives it to him after his own update).
+  - A two-hand hold whose ball touches neither hand puts it in the nearer hand.
+  - The hook shot's drawn quarter turn moves the ball with the body.
+  - Unchanged: the sim's facing, the joints, every animation's timing, move ids, the CPU, the shot results (whether a
+    shot goes in is decided before the ball leaves the hand). The shot now starts from the hand as drawn, so there's
+    no jump on the first frames of flight.
+- **Online:** the protocol is 6 (was 5). Where the held ball sits is part of an online match's state, so a 9.19.0
+  player and a 9.19.1 player can't start a game together.
+- **Review Studio:** every animation that holds the ball is marked "re-review" in the Animations tab: "the ball is
+  held where the hand is drawn (facing, build, lean); check it sits in the hand". The "new" filter includes them.
+- **New test** (fast tier), `ball-hands`: scripted plays as you in a match facing each way (desktop) and in the gym
+  (phone size), plus 40 s of a seeded CPU game. It covers stance, dribbling, the step-back, crossover,
+  behind-the-back, spin, hesitation, the drop step, a catch, a pass, a shot after each, layups (roll, bank, reverse,
+  euro), a drive, a free throw, and the report's case. It asserts 0 held frames more than 20 units from a hand,
+  including every windup frame of the report's case facing each way. On 9.19.0 it fails: 100 frames, worst 81.4. The fast tier takes 4.7 min (5 is the
+  limit).
+
 ## 9.19.0: stats scale properly, and the Noor challenge is the Hikmah challenge
 A low rating now plays low and a high one plays high, without going past 75% from range. A right answer gives a power-up at once.
 All numbers are from `node tools/stat-report.mjs` (new), on 9.18.0 and on this build.
