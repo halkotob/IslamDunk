@@ -18,8 +18,7 @@ export const OVERLAYS = [
   ['replay', 'Instant replay', /const Replay = \{/, ['match: replay']],
   ['break', 'Period break (END OF Q1)', /M\.phase = 'break'/, ['match: period break']],
   ['timeout', 'Timeout: call a play', /function drawTimeoutPanel\(/, ['match: timeout (call a play)']],
-  ['trivia', 'Noor trivia question', /function openTrivia\(/, ['match: noor question'], ['Game.trivia']],
-  ['noorpick', 'Noor power-up choice', /function noorOpenPick\(/, ['match: noor choice']],
+  ['trivia', 'The Hikmah challenge', /function openTrivia\(/, ['match: hikmah challenge', 'match: hikmah correct'], ['Game.trivia']],
   ['pause', 'Pause menu', /function pauseItems\(/, ['match: pause']],
   ['halftime', 'Halftime', /Game\.screen = 'halftime'/, ['halftime']],
   ['results', 'Final score', /Game\.screen = 'final'/, ['final']],
@@ -43,7 +42,7 @@ export const OVERLAYS = [
 export const NOT_VIEWS = {
   'Game.sel': 'the team select’s state (select)', 'Game.retPlay': 'where How to play / Settings return to from the pause menu',
   'Game.summary': 'the season summary’s data (csummary)', 'Game.stats': 'the career stats screen’s state (cstats)', 'Game.post': 'the postgame screen’s data',
-  'Game.office': 'the office screen’s state', 'Game.noorLRU': 'which Noor power-ups were offered lately (no view)', 'Game.mus': 'the musalla screen’s state',
+  'Game.office': 'the office screen’s state', 'Game.noorLRU': 'which power-ups were given lately (no view)', 'Game.mus': 'the musalla screen’s state',
   'Game.menus': 'which submenu is open on the title (no view of its own)', 'Game.lastMatch': 'the last match’s setup, for a rematch (no view)',
   'Game.cv': 'the clip video’s state (clipvideo)', 'Game.anim': 'a screen transition (no view)', 'Game.scout': 'the scouting report’s data (scout)',
   'World.btns': 'the neighbourhood’s on-screen buttons (part of each world scene)', 'World.next': 'where a door leads (no view)'

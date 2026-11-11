@@ -144,7 +144,7 @@ function laneBlocked(p, h) {
     if (!_cd.apply(this, arguments)) return false;
     if (M.mini || M.practice) return true;
     const h = attackHoop(p.team), d = dxz(p, h), turbo = p.cmd.turbo && p.turboOK();
-    const R = (turbo ? 195 : 115) + (p.fire ? 40 : 0) + (p.boost > 0 ? 20 : 0) + st7(p, 'dnk') * 3;   // runway was 250 + : take-offs from the arc
+    const R = (turbo ? 195 : 115) + (p.fire ? 40 : 0) + (p.boost > 0 ? 20 : 0) + dnkRange(st7(p, 'dnk'));   // runway was 250 + : take-offs from the arc
     if (d >= R) return false;
     return d <= 120 || !laneBlocked(p, h);
   };

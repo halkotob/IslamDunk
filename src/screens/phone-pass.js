@@ -125,7 +125,7 @@ function drawTouchStrip(g) {
     let cx = x0 + 158;
     if (p.fire) cx = hudChip(g, cx, y - 1, 'flame', 'ON FIRE', '#ff8a2a');
     if (noorActive(p)) { const F = NOOR_BY_ID[noorFxOf(p)]; cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, F.icon, ix, iy, 7, F.col), noorTagText(p), F.col); }
-    else if (canNoor(p) && p.hifz >= 100) cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, 'light', ix, iy, 7, '#ffe38a'), 'NOOR READY', '#ffe38a');
+    else if (canNoor(p) && p.hifz >= 100) cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, 'light', ix, iy, 7, '#ffe38a'), 'HIKMAH READY', '#ffe38a');
     if (!p.fire && (p.fat || 0) > 0.7) cx = hudChip(g, cx, y - 1, 'tired', 'WINDED', '#ffb08a');
     if (typeof pressureOf === 'function' && pressureOf(p) >= 0.3 && !p.fire) cx = hudChip(g, cx, y - 1, 'warn', 'PRESSURE', '#ffb07a');
     y += 26;

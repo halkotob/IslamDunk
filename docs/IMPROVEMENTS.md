@@ -61,7 +61,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | Q5 | Tests that send hostile online messages (with S1, S5) | testing | 2 | 3 | 2 | **20** | input packets done in 9.17.6 (`rb-hostile`); other messages (S5) open |
 | B8 | P2P: answering a new offer leaves the old channel half open | code review | 2 | 3 | 2 | **20** | open |
 | X3 | Raise contrast of grey labels, calendar chips and the red EXIT (about 140 texts below 4.5:1) | accessibility | 3 | 2 | 2 | **20** | open |
-| X4 | An option for more time on the Noor question (15 s now) | accessibility | 2 | 2 | 1 | **20** | open |
+| X4 | An option for more time on the Hikmah challenge's question (15 s now; it was the Noor question) | accessibility | 2 | 2 | 1 | **20** | open |
 | B12 | Online Barakah Run duos: the host can tap the guest's power-up card | code review | 2 | 2 | 1 | **20** | open |
 | B17 | The CPU difficulty formula is copied in 3 places (match, pre-game label, league sims) | code review | 2 | 2 | 1 | **20** | open |
 | B19 | Player portraits: a cache that never shrinks and a JSON copy every frame | code review | 2 | 2 | 1 | **20** | open |
@@ -130,12 +130,16 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | UI1 | Menus jump-cut between screens: short fades or slides | UI | 2 | 1 | 2 | **12** | done in 9.17.0 |
 | CD4 | Stance and idle pose are the same for everyone: posture that matches each personality | character design | 2 | 1 | 2 | **12** | done in 9.17.0 |
 | CD5 | Faces have joy, fierce and shock only: add disappointed (a miss, a loss) and focused (free throw) | character design | 2 | 1 | 2 | **12** | done in 9.17.0 |
-| GT7 | Check how often the Noor question stops play; an option to ask it at timeouts and halftime | game design | 2 | 1 | 2 | **12** | open |
+| GT7 | Check how often the Hikmah challenge (was the Noor question) stops play; an option to ask it at timeouts and halftime | game design | 2 | 1 | 2 | **12** | open |
 | VD4 | Results screen: animate the score count and Player of the Game, dim the court fully (with D1) | visual design | 2 | 1 | 2 | **12** | done in 9.17.0 |
 | GF3 | Small presses get no feedback: a tiny pop on a made free throw, a pass caught, a steal attempt | game feel | 2 | 1 | 2 | **12** | open |
 | UX2 | 16:10 (Steam Deck, many laptops) and ultrawide get black bars: let the height grow on 16:10 | UI | 2 | 1 | 2 | **12** | open |
 | UX3 | Buttons are fixed widths sized to English; translations will overflow (with UI2) | UI | 2 | 1 | 2 | **12** | open |
 | IN3 | One-button alternatives for two-button moves (Turbo + Block swipe, chase-down) | input | 2 | 1 | 2 | **12** | open |
+| SC1 | Stats don't feel like they matter: a 1 shot open mid-range 91% as well as a 5, a 10 sprinted 28% faster and every green jumper went in 95% at any rating; rescale speed, shooting and dunks, and gate the crossover and behind-the-back by ball handling | game design | 4 | 3 | 3 | **21** | done in 9.19.0: a 1 shoots 47% as well as a 5, a 10 133%, nothing from range above 75%; a 10 sprints 20% faster than a 5. A 10 overall still beats 5s every time in CPU games (open: SC2) |
+| SC2 | A 10-rated player with a 5 teammate beats two 5s in every seeded CPU game (by about 10 points); the brief's target was about 75%. Decide whether to compress the other ratings (defense, hustle, steals) or leave it | game design | 3 | 2 | 2 | **20** | open (9.19.0 kept the gap on purpose) |
+| EC1 | Barakah Points bought a 10 in the main stat by the 4th game of the first stage; scale every BP reward (ECON.bpK 0.27) so a 7 comes at the end of the first stage and a 10 late in the last | economy | 4 | 2 | 1 | **30** | done in 9.19.0 |
+| HK1 | The Noor question took two clicks (answer, then pick 1 of 3) and "Noor" named three things; one step (a random power-up) and the Hikmah challenge | game design | 3 | 2 | 1 | **25** | done in 9.19.0 |
 | CR1 | Career: Continue opened at home and a game or the gym was a walk away (a free day to the gym: ~10 presses and ~40 s of walking); open at the hub with Play and Practice one press away | career | 4 | 2 | 2 | **24** | done in 9.18.0: Continue opens the hub; Practice is 1 press, a live game 3 (Play, the scout's Got it, Tip off); Go outside is a hub row |
 | IN4 | Remove the shove (Turbo + Pass on defense: a two-button combo called as a hard foul more the more it's used; a new player mashing it got whistled) | input | 3 | 2 | 1 | **25** | done in 9.17.10: Turbo + Pass on defense is a steal; late and trailing it's still the foul on purpose. Every other foul unchanged |
 | GDS4 | A few cosmetics earned by feats (first posterizer, first buzzer-beater), not only by XP | game design | 2 | 1 | 2 | **12** | open |

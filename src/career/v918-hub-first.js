@@ -5,8 +5,8 @@
 //   - The hub's first row is Play (the next game: its day and its pregame, in one press, past any free days and
 //     Fridays on the way; with no game scheduled it's Continue as before), then Practice (the gym), then "Skip to Saturday: game day" (one day on, saying where it
 //     goes; not on a game day: games are never skipped), then Go outside (the masjid front, as before; counted in the
-//     day's counters as 'go_outside', local only, for the 9.18.1 decision), My Player, My Masjid. Schedule's Calendar
-//     and Bracket move into My Player, so six rows fit the panel at every size.
+//     day's counters as 'go_outside', local only, for the 9.18.1 decision), My Player, My Masjid. Schedule (Calendar
+//     and Bracket) moves into My Player, so six rows fit the panel at every size (v9.19.0: as one Schedule row).
 //   - One press each on a keyboard or a pad too: Play is where the focus starts; Practice is P on a keyboard and X on a
 //     pad, and its row says so (on touch it's a tap).
 //   - On a Friday the hub asks "Attend Jumu'ah" or "Not today" (the door's own question), one press either way.
@@ -49,7 +49,9 @@ worldStartDay = function () {
     // Schedule (Calendar, Bracket) moves into My Player: six rows fit the panel. Its Next day / Play today's game is
     // the Skip and Play rows now
     const si = R.findIndex(e => e.label === 'Schedule' && e.sub), mp = R.find(e => e.label === 'My Player' && e.sub);
-    if (si >= 0 && mp) { const sc = R.splice(si, 1)[0]; for (const x of sc.sub) if (x.label !== 'Next day' && x.label !== 'Play today’s game' && !mp.sub.some(y => y.label === x.label)) mp.sub.push(x); }
+    // (v9.19.0: as one row, Schedule, with Calendar and Bracket in it: two rows ran My Player's list off the bottom)
+    if (si >= 0 && mp) { const sc = R.splice(si, 1)[0], keep = sc.sub.filter(x => x.label !== 'Next day' && x.label !== 'Play today’s game');
+      if (keep.length && !mp.sub.some(y => y.label === 'Schedule')) mp.sub.push(Object.assign({}, sc, { sub: keep })); }
     void pi;
     return R;
   };

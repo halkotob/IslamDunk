@@ -305,7 +305,7 @@ function drawHowTo(g) {
   const tips = [
     'Turbo + shoot near the rim to dunk. Longer dunks get bigger, slower and louder.',
     'Without the ball: pass calls for it, shoot near the rim asks your teammate for an alley-oop.',
-    'Three baskets in a row and you catch fire. Some players fill a Noor meter. Answer its question correctly, then choose one of three Noor power-ups.',
+    'Three baskets in a row and you catch fire. Some players fill a Hikmah meter. Answer its question correctly for a power-up.',
     'Change direction while dribbling for a crossover. Hold turbo for a behind-the-back.',
     'Esc or P pauses. On a phone, use the on-screen stick and buttons.'
   ];
@@ -321,11 +321,11 @@ function wrapText(g, text, x, y, maxW, lh) {
 }
 function drawTrivia(g) {
   const tv = Game.trivia, [q, opts] = TRIVIA[tv.qi];
-  if (tv.remote && !tv.done) { dim(g, 0.5); banner(g, 'Noor challenge', 'Your friend is answering a question for a Noor power-up...'); return; }
+  if (tv.remote && !tv.done) { dim(g, 0.5); banner(g, 'Hikmah challenge', 'Your friend is answering a question for a power-up...'); return; }
   dim(g, 0.72);
   g.fillStyle = 'rgba(12,40,44,0.97)'; roundRect(g, 150, 70, 660, 400, 16); g.fill(); g.strokeStyle = GOLD; g.lineWidth = 2; g.stroke();
-  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText('NOOR CHALLENGE', W / 2, 108);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(tv.p.def.name + ' can earn a Noor power-up (you pick 1 of 3)', W / 2, 130);
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText('HIKMAH CHALLENGE', W / 2, 108);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(tv.p.def.name + ' can earn a power-up', W / 2, 130);
   g.fillStyle = '#fff'; g.font = `19px ${BODY}`; wrapText(g, q, W / 2, 170, 580, 26);
   if (C && C.learned && C.learned.includes(tv.qi)) { drawBook(g, 176, 88); g.textAlign = 'left'; g.fillStyle = '#9dffb0'; g.font = `12px ${BODY}`; g.fillText('Studied', 206, 104); g.textAlign = 'center'; }
   for (let i = 0; i < 4; i++) {
@@ -338,8 +338,8 @@ function drawTrivia(g) {
     addRect(200, y, 560, 40, () => { if (tv.remoteView) Net.guestAnswer(i); else { tv.sel = i; answerTrivia(i); } });
   }
   if (!tv.done) { g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(200, 440, 560, 6); g.fillStyle = GOLD; g.fillRect(200, 440, 560 * clamp(tv.t / 15, 0, 1), 6); }
-  else { g.textAlign = 'center'; g.fillStyle = tv.correct ? '#9dffb0' : '#ffb0b0'; g.font = `17px ${FONT}`; g.fillText(tv.correct ? 'Correct! Choose your Noor next' : 'The answer: ' + opts[0], W / 2, 450); }
-  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Press 1 to 4, or move and press Enter/K', W / 2, 462 + 0);
+  else { g.textAlign = 'center'; g.fillStyle = tv.correct ? '#9dffb0' : '#ffb0b0'; g.font = `17px ${FONT}`; g.fillText(fitText(g, tv.correct ? (tv.gift && NOOR_BY_ID[tv.gift] ? 'Correct! ' + NOOR_BY_ID[tv.gift].name + '. ' + NOOR_BY_ID[tv.gift].short : 'Correct!') : 'The answer: ' + opts[0], 600), W / 2, 450); }
+  if (!tv.done) { g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Press 1 to 4, or move and press Enter/K', W / 2, 462 + 0); }   // (v9.19.0: not under the answer line)
 }
 function drawPause(g) {
   dim(g, 0.65);

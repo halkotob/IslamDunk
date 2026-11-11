@@ -36,7 +36,7 @@ export function noShoveTests({ newContext, open }) {
       o.cleanText = (SCEN_TWISTS || []).find ? ((SCEN_TWISTS.find(t => t.id === 'clean') || {}).t) : null;
       // an online peer on the old protocol
       const keep = Lobby.guestPres, role = Net.role; Net.role = 'host';
-      Lobby.guestPres = () => ({ v: VERSION, pv: 3 }); o.oldProto = Lobby.versionOK();
+      Lobby.guestPres = () => ({ v: VERSION, pv: NET_PROTO - 1 }); o.oldProto = Lobby.versionOK();
       Lobby.guestPres = () => ({ v: VERSION, pv: NET_PROTO }); o.sameProto = Lobby.versionOK();
       Lobby.guestPres = keep; Net.role = role; o.proto = NET_PROTO;
       return o;
@@ -50,7 +50,7 @@ export function noShoveTests({ newContext, open }) {
     const loaded = await p.evaluate(() => { const ok = loadCareer(SAVE_AUTO); return { ok: !!ok, name: C && C.name, games: C && C.games && C.games.length }; });
     await ctx.close();
     const ok = !out.gone.length && out.same && out.grab.phase === 'ft' && out.grab.intF === 1 && out.grab.steals === 0 && out.grab.shots === 2
-      && out.bonus.phase === 'ft' && out.bonus.shots === 2 && out.oldProto === false && out.sameProto === true && out.proto === 4
+      && out.bonus.phase === 'ft' && out.bonus.shots === 2 && out.oldProto === false && out.sameProto === true && out.proto >= 4
       && out.cleanText === 'Win without committing a foul' && save && loaded.ok && loaded.name === 'Old' && !errs.length;
     return { ok, detail: [JSON.stringify(out), 'old save: ' + JSON.stringify(loaded), ...errs] };
   };

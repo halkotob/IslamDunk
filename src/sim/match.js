@@ -254,7 +254,7 @@ function finishMatch() {
   Game.overT = 2.2;
 }
 function grantBoost(p) {
-  p.boost = 12; FX.callout('NOOR!', '#ffe38a', p.def.name.toUpperCase() + ' IS GLOWING'); SFX.good();
+  p.boost = 12; FX.callout('LIGHT UPON LIGHT!', '#ffe38a', '12 SECONDS: BETTER SHOTS, LONGER DUNKS'); SFX.good();
   FX.burst(p.x, 60, p.z, 10, 'star', ['#ffe38a', '#ffffff']);
 }
 function onScreen(x) { return x - cam.x > -80 && x - cam.x < W + 80; }

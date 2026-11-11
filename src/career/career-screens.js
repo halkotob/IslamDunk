@@ -95,8 +95,9 @@ const HUB_CORNER = [['Save and load', () => { Game.hubMenu.open = false; Game.sc
 function hubUpdate() {
   const hm = Game.hubMenu || (Game.hubMenu = { open: false, idx: 0 });
   if (hm.open) {
-    if (menuHit('up')) { hm.idx = (hm.idx + 2) % 3; SFX.blip(); }
-    if (menuHit('down')) { hm.idx = (hm.idx + 1) % 3; SFX.blip(); }
+    const n = HUB_CORNER.length;                                     // (v9.19.0: 2 rows since 9.17.9; it cycled 3, and the third was missing)
+    if (menuHit('up')) { hm.idx = (hm.idx + n - 1) % n; SFX.blip(); }
+    if (menuHit('down')) { hm.idx = (hm.idx + 1) % n; SFX.blip(); }
     if (menuHit('ok')) { SFX.blip(); HUB_CORNER[hm.idx][1](); }
     else if (menuHit('back')) hm.open = false;
     return;

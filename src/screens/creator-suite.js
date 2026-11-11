@@ -328,7 +328,7 @@ function csEditRows() {
   const lookRow = key => { const r = csLookRows(key); if (!r) return null; const n = r.n || (r.sw || r.txt).length; return { label: r.label, sw: r.sw ? () => r.sw[lk[key]] : null, get: r.sw ? null : () => (r.txt ? r.txt[lk[key] || 0] : String(lk[key])), step: d => { lk[key] = ((lk[key] || 0) + d + n) % n; } }; };
   if (sec === 0) return [
     { label: 'Name', get: () => p.name, enter: () => csAskName('Player name', p.name, 14, v => { p.name = csClean(v, p.name); csSave(); }) },
-    { label: 'Role', get: () => (p.sheikh ? 'Sheikh (Noor meter)' : 'Player'), step: () => { p.sheikh = !p.sheikh; } },
+    { label: 'Role', get: () => (p.sheikh ? 'Sheikh (Hikmah meter)' : 'Player'), step: () => { p.sheikh = !p.sheikh; } },
     ...['skin', 'height', 'build', 'hair', 'beard', 'beardLen', 'num'].map(lookRow)].filter(Boolean);
   if (sec === 1) return ['cap', 'capColor', 'thobe', 'thobeLen', 'shoes', 'teamMatch'].map(lookRow).filter(Boolean);
   return [...CS_STATS.map(([k, l]) => ({ label: l, get: () => String(p.stats[k]), pips: () => p.stats[k], step: d => { p.stats[k] = clamp((p.stats[k] || 5) + d, 1, 10); } })),

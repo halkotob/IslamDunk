@@ -1,5 +1,137 @@
 # Changelog
 
+## 9.19.0: stats scale properly, and the Noor challenge is the Hikmah challenge
+A low rating now plays low and a high one plays high, without going past 75% from range. A right answer gives a power-up at once.
+All numbers are from `node tools/stat-report.mjs` (new), on 9.18.0 and on this build.
+- **Speed** (sprinting, game units a second, and against a 5):
+
+  | rating | 1 | 3 | 5 | 7 | 10 |
+  |---|---|---|---|---|---|
+  | before | 288 (77%) | 330 (88%) | 373 | 415 (111%) | 478 (128%) |
+  | now | 279 (75%) | 326 (87%) | 373 | 402 (108%) | 447 (120%) |
+
+  The stat wasn't the whole "too fast". The glow (+15%) and being on fire (+6%) stacked on top of the stat and the
+  sprint, so a 10 glowing and on fire ran at 583, 1.56 times a 5's sprint (0.44 court lengths a second). The two
+  together now add at most 10%: 492 (0.37 court lengths a second). Jogging and dribbling scale the same way.
+- **Shooting** (open shots from mid-range / from three, the chance a CPU shooter at Medium makes them with its own
+  release timing; 600 shots each. 9.18.0 is counted makes, about ±2%):
+
+  | rating | 1 | 3 | 5 | 7 | 10 | 10, glowing |
+  |---|---|---|---|---|---|---|
+  | mid-range before | 49% | 55% | 54% | 63% | 70% | 80% |
+  | mid-range now | 22% | 35% | 47% | 54% | 63% | 72% |
+  | three before | 48% | 47% | 54% | 57% | 63% | 73% |
+  | three now | 20% | 32% | 43% | 48% | 57% | 67% |
+
+  Against a 5, a 1 went from 91% to 47% (mid-range) and 89% to 46% (three). A 10 went from 130% to 134% and from
+  117% to 133%. The biggest change is for you: a green release used to go in 95% of the time at any rating. Open,
+  from range (200 units out and more), it's now 25% at a 1, 40% at a 3, 56% at a 5, 63% at a 7 and 75% at a 10.
+  Contested greens keep the same ratios as before. Close in, a green is as before, and free throws are unchanged.
+  Nothing from range goes in more than 75% of the time, whatever is on (glow, on fire, a signature shot, trailing).
+  The timing window still grows with the rating, but more gently: 33 / 35 / 38 / 40 / 43 ms either side
+  (was 28 / 33 / 38 / 42 / 49).
+- **Dunking:** a dunk starts from as far as before at a 5. Each point is 6 units more or less, from 24 less at a 1
+  to 30 more at most at a 10. Sprinting, 1 / 3 / 5 / 7 / 10 reach 185 / 195 / 205 / 220 / 235 (were 195 / 200 / 205 /
+  215 / 220). Walking: 105 / 115 / 125 / 140 / 150 (were 115 to 140). Signature dunks need the rating: the windmill
+  needs Dunking 6 and the 360 needs 7. Below that the same dunk is a tomahawk, or a two-hander under 4; its timing
+  and result are unchanged. The CPU follows the same rule.
+- **Moves:** the crossover needs Ball handling 3 and the behind-the-back needs 5. Ball handling is the average of
+  Speed and Passing. A new career player has 4: crossovers, and a behind-the-back input makes a crossover until
+  Ball handling reaches 5. Below the need, your input makes a hesitation, and the CPU doesn't use the move (a seeded
+  test game: 0 by the team below it, 5 by the other team). Signature moves keep the rating they need now. The move
+  ids are unchanged.
+- **The other ratings are unchanged:** defense, steals, passing, hustle, clutch, stamina. A single rating at 10
+  (everything else 5, 2 on 2, 16 games) is worth this many points a game: speed +4.6, dunking +4.0, hustle +3.6,
+  defense +2.2, steals +1.6, stamina +0.1, clutch -1.0, passing -1.3, shooting -2.4. Shooting alone does little for
+  the CPU, because its timing rarely finds the green.
+- **A 10 against 5s** (CPU vs CPU, Medium, 24 seeded games each) still wins every game, before and after:
+  - 1 on 1: 44.7 to 22.6 before, 42.6 to 23.1 now.
+  - A 10 and a 5 against two 5s: 42.2 to 29.5 before, 39.8 to 29.3 now.
+  - Two 10s against two 5s: 41.3 to 26.3 before, 44.1 to 24.0 now.
+
+  The brief's target was about 75%. That would mean cutting every rating to about a third of its effect, so it was
+  kept on purpose. CPU games swing about ±5 points; games with a person in them swing more. Open as SC2 in
+  IMPROVEMENTS.md.
+- **Barakah Points:** every point earned (games, drills, goals, the daily scenario) is multiplied by
+  `ECON.bpK = 0.27`. This is the only number changed; `statCost`, `STAGES` and the Halal Bucks are unchanged. Model:
+  a typical line every game (12 points, 4 rebounds, 3 assists, a steal, a block, no fouls) and one drill a game day.
+  - Points a game, Local / State / National / World: 159 / 174 / 231 / 265 before, 43 / 47 / 63 / 72 now.
+  - Winning every game (20 games), all points on shooting to 7 and then half: before, a 7 after game 1 and a 10
+    after game 7 (State). Now a 7 after game 5 (the end of Local), 8 after game 8, 9 after game 13 and a 10 after
+    game 18 (World).
+  - Every point on shooting: a 10 after game 4 before, after game 12 now.
+  - Winning 70% of games, the career takes 88 games over 9 seasons. A 7 comes after game 5 and a 10 after game 23.
+  - The rewards shown in the game use the new scale: goals +11 BP each and +27 for all five (were 40 and 100), the
+    weekly goals +14 (were 50), the daily scenario +16 BP (was 60).
+- **Halal Bucks** were already on target, so they're unchanged. The first item (40 HB) is affordable after game 1.
+  Everything (the store's 7 items, 560 HB, and the masjid and gym projects, 21,600 HB) isn't affordable by the end of
+  a 20-game career that wins every game. At 70% wins it becomes affordable in the World stage, after game 88.
+  `econSelfCheck()` reports no problems.
+- **The Hikmah challenge:** the question is now the Hikmah challenge and the meter is HIKMAH. A right answer gives
+  one power-up at once. It's chosen at random among those that can apply (Ukhuwwah needs a teammate without an
+  effect), using the match's random numbers. The reveal names it ("Correct! Sabr. Next 3 shots: wider green
+  window"), and its callout says what it does ("SABR!  NEXT 3 SHOTS: WIDER GREEN WINDOW"). The 3-card picker and its
+  10 second timer are gone. A wrong answer or a timeout still gives nothing, and the CPU keeps its situational pick.
+- **Renamed:** the glow is called Light Upon Light, on its callout, its tag and the Ukhuwwah text. The other power-ups
+  keep their names. The achievements are now "Hikmah" (was "Noor", earn a power-up in the Hikmah challenge) and
+  "Seeker" (was "Light Upon Light", earn 10). Their Steam API names (ACH_NOOR_1, ACH_NOOR_10) are unchanged; the
+  display names on Steamworks need the same change by hand. "Noor" also changed in How to play, the remote banner,
+  the scouting notes, the Jumu'ah card, the sheikh's office line, the creator's role row and the phone's HIKMAH READY
+  chip. A text census finds "Noor" only in Masjid Al-Noor and its short name. Unchanged: the team, the ids (`noor`,
+  `NOOR_FX` and its order, `p.boost`, `AchEvents.noor`), save keys and snapshot indexes.
+- **Barakah Run** works with the random power-ups: Sabr plus the run's green upgrade stays capped at +40%.
+- **Online:** the protocol is 5 (was 4), because the match's rules changed (stats, moves, dunks). A 9.18 player and a
+  9.19 player can't start a game together. In a rollback match (the default) there's still no Hikmah challenge, as
+  there was no Noor question. In the snapshot path (`?rb=0`) the host chooses the power-up and the guest's reveal
+  names the same one (`s.tvg`); the picker's `s.tvp` and the guest's card pick are gone.
+- **Loop report** (3 games a row; points a possession, scripted player / CPU):
+  - Very easy: every scripted style beat the CPU, before and after. The shooter is weaker now (1.59 to 1.43) and the
+    rusher stronger (1.64 to 1.72).
+  - Easy: the rusher and the spammer before; the rusher and the guard now.
+  - Medium: the rusher before (1.46 / 1.38); the rusher (1.53 / 1.50) and the spammer (1.39 / 1.27) now.
+  - Hard: none before; the rusher (1.39 / 1.36) and the guard (1.57 / 1.53) now, both inside what 3 games can tell
+    apart.
+
+  Jumpers miss more now and dunks don't, so sprint-and-dunk is the style to watch next.
+- **Defense report** (8 games a difficulty; steals / blocks a game): Very easy 0.3 / 0.5 to 1.0 / 0.9, Easy 2.0 /
+  4.9 to 1.1 / 3.5, Medium 3.9 / 5.3 to 3.5 / 5.0, Hard 5.0 / 5.6 to 5.5 / 6.3.
+- **Checked:** the phone audit is 0 overflow, 0 small text and 0 errors at both sizes. The touch hint under the
+  answers ("Tap your answer") no longer shows under the right-answer line.
+- **Review Studio:** the Studio has "match: hikmah challenge" and "match: hikmah correct" (was the question and the
+  3-card choice), and a Power-ups group (was Noor effects) with each callout. 33 old IDs are registered as removed:
+  the old screens, the old texts, and the BP amounts shown at the old scale. New strings are in
+  `docs/review/game-text.csv`, flagged for the Islamic wording review.
+- **Also fixed** (found by the full tier, which 9.17.9 and 9.18.0 hadn't run):
+  - The hub's corner menu (☰) cycled through 3 rows after 9.17.9 removed its Close row. Arrowing down twice then
+    pressing OK threw an error; it now cycles its 2 rows.
+  - 9.18.0's My Player list ran off the bottom of the screen at every size, because Calendar and Bracket were added
+    as two rows. They're now one Schedule row inside My Player, with Calendar and Bracket in it.
+  - The around-the-league fallback (used when a background league game can't be played in time) is recalibrated to
+    the new scoring. Real league games now score 32.9 a team and make 57% of their shots (36.3 and 64% before).
+  - Tests that still expected controls 9.17.9 removed: the office's Leave button (`v867`) and a conversation's Leave
+    button (`world-robust`). In `hub-layout`, Friday cases answer the hub's Jumu'ah question before the hub's own
+    layout is checked.
+  - Other full-tier tests that still expected older behaviour or had fixed waits that a busy machine outran:
+    - `v95`: the Accessibility rows now include 9.17.8's Hold or tap. The highlight reel gets up to 15 s to move
+      on, and My clips' list is polled instead of read after a fixed 300 ms.
+    - `phase5`: a rookie goal pays 40 × bpK.
+    - `gamepad`: one A press answers and gets the power-up.
+    - The phone audit's clip screens: the finished game's score pops and "+2" hot spot are cleared first.
+  - The tomahawk fixture is re-recorded on this build. Its 20 pose targets are identical to the 8.6.4 recording.
+    The sprung joints started up to 0.004 off, because the seeded tip-off before the dunk plays out differently with
+    the new stat curves; the recorder now fixes the one random draw that sets the dunk's timing to the 8.6.4 pick.
+- **New tests** (fast tier):
+  - `stat-curves`: speed, shooting, the green and the cap, dunk range and signature dunks, against the targets above.
+  - `move-needs`: below the need the move isn't offered and the CPU never uses it.
+  - `hikmah-text`: no "Noor" in the game's text or drawn on the question, the reveal, the HUD or How to play; the
+    economy check passes.
+
+  Changed tests: `noor` (one at random, no picker; 60 answers give all six power-ups), `mobile` (a tap on the right
+  answer gives a power-up), the online snapshot test (the host's choice, the guest's reveal), `phase4` (a jump is
+  now more than 18 units in a frame, was 14: a player pushed off the baseline wall moves 14 to 17, and 4 of 20 seeds
+  did that on 9.18.0 too) and `jumuah-visual` (the card's new wording). The fast tier takes 3.5 min. The full tier
+  passes (124 tests; the last two re-run alone after their setup fixes).
+
 ## 9.18.0: the career opens at the hub
 Continue now opens your career hub. Play and Practice are one press away. The neighbourhood is optional: Go outside from the hub.
 - **What changed:** Continue, the end of a game's post-game screen and every new day open the career hub, never at

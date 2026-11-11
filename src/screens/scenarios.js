@@ -61,7 +61,7 @@ function scenPossession(p) { const S = M.scenario; if (S && !S.done && S.stop ==
       Ach.unlock('scen_win');
       if (!d.rewarded) {
         const save = C || readSave(SAVE_AUTO);
-        if (save) { save.bp += 60; save.hb += 60; if (C) saveCareer(); else try { localStorage.setItem(SAVE_AUTO, JSON.stringify(save)); } catch (e) {} S.reward = true; }
+        if (save) { save.bp += Math.round(60 * ECON.bpK); save.hb += 60; if (C) saveCareer(); else try { localStorage.setItem(SAVE_AUTO, JSON.stringify(save)); } catch (e) {} S.reward = true; }
         Progress.update(o => { o.scen[S.day].rewarded = true; });
       }
     }
@@ -94,7 +94,7 @@ function drawScenBrief(g) {
   g.fillStyle = '#fff'; g.font = `19px ${FONT}`; g.fillText(S.twist.t, W / 2, 350);
   g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('You control ' + you.name + '  •  Poise matters here: pressure is on', W / 2, 376);
   g.fillStyle = pr.done ? '#9dffb0' : '#9fb3c8'; g.font = `13px ${BODY}`;
-  g.fillText(pr.done ? 'Completed today, masha’Allah. Play again for fun.' : pr.tries ? 'Attempts today: ' + pr.tries : 'First try today. Complete it for a career bonus (+60 BP, +60 HB).', W / 2, 414);
+  g.fillText(pr.done ? 'Completed today, masha’Allah. Play again for fun.' : pr.tries ? 'Attempts today: ' + pr.tries : 'First try today. Complete it for a career bonus (+' + Math.round(60 * ECON.bpK) + ' BP, +60 HB).', W / 2, 414);
   g.fillStyle = GOLD; roundRect(g, W / 2 - 90, 434, 180, 40, 20); g.fill();
   g.fillStyle = NIGHT; g.font = `17px ${FONT}`; g.fillText('Play', W / 2, 460);
   addRect(W / 2 - 90 + o, 434, 180, 40, startScenario);
@@ -112,7 +112,7 @@ function drawScenResult(g) {
   const line = (y, ok, t) => { g.fillStyle = ok ? '#57e389' : '#ff8a7a'; g.font = `16px ${FONT}`; g.fillText((ok ? '✓  ' : '✗  ') + t, W / 2, y); };
   line(240, S.won, 'Win the game'); if (S.twist.id !== 'win') line(268, S.twistOK, S.twist.t.replace(/^Win, and |^Win, with |^Win /, '').replace(/^./, c => c.toUpperCase()));
   g.fillStyle = IVORY; g.font = `14px ${BODY}`;
-  g.fillText(S.reward ? 'Career bonus added: +60 BP, +60 Halal Bucks' : S.ok ? 'Completed today' : 'Attempts today: ' + (S.tries || 1), W / 2, 316);
+  g.fillText(S.reward ? 'Career bonus added: +' + Math.round(60 * ECON.bpK) + ' BP, +60 Halal Bucks' : S.ok ? 'Completed today' : 'Attempts today: ' + (S.tries || 1), W / 2, 316);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('R to try again  •  Enter to finish  •  A new scenario tomorrow', W / 2, 400);
   W = rw; g.restore();
   addRect(0, 0, W, H, goTitle);

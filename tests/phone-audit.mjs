@@ -49,7 +49,8 @@ const LEAGUE_FIX = CAL_HELPERS + LEAGUE_HELPERS + ` if (!window.__lgReady) { win
 const SHARE = `if (!window.__shareReady) { window.__shareReady = 1;                       // a CPU game with at least one highlight
   for (let k = 0; k < 4 && !(window.__hl && window.__hl.length); k++) { newMatch(TEAMS[k], TEAMS[k + 1], { humans: [], fmt: { format: 'quarters', len: 30 } });
     for (let n = 0; n < 60 * 60 * 10 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; } window.__hl = M.highlights; } }
-  M.highlights = window.__hl; Game.screen = 'final';`;
+  M.highlights = window.__hl; Game.screen = 'final'; FX.pops.length = 0; M.hot = null;   // (v9.19.0: no score pops or hot spot ("+2") left from the game: one at the court's edge read as overflowing text, depending on how the unseeded game ended)
+`;
 const MATCH = `Input.touchMode = true; Game.trivia = null; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; M.introT = 0;
   for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP); M.players[0].def.huffath = true;`;
 export const SCREENS = [
@@ -90,8 +91,8 @@ export const SCREENS = [
   ['daily scenario', `goTitle(); openScenBrief();`],
   ['dunk lab', `goTitle(); startDunkLab();`],
   ['match HUD', MATCH],
-  ['match: noor question', MATCH + ` openTrivia(M.players[0]);`],
-  ['match: noor choice', MATCH + ` openTrivia(M.players[0]); answerTrivia(Game.trivia.order.indexOf(0)); Game.trivia.res = 1.79; triviaUpdate(0.05);`],
+  ['match: hikmah challenge', MATCH + ` openTrivia(M.players[0]);`],
+  ['match: hikmah correct', MATCH + ` openTrivia(M.players[0]); answerTrivia(Game.trivia.order.indexOf(0)); Game.trivia.gift = 'sabr'; Game.trivia.res = 0.3;`],
   ['match: pause', MATCH + ` Game.paused = true; Game.idx = 0;`],
   ['halftime', MATCH + ` M.nextStart = 1; Game.screen = 'halftime';`],   // (v9.17.9: who starts the half, as a real halftime sets it)
   ['final', MATCH + ` M.teams[0].score = 21; M.teams[1].score = 18; M.phase = 'over'; M.winner = 0; Game.screen = 'final';`],

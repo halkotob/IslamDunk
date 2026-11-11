@@ -275,10 +275,11 @@ const ECON = {
   hbWin: 80, hbRoundK: [1, 1.25, 1.5], hbLoss: 10, hbRival: 60,   // x STAGES[].mult (1, 2, 3.5, 6); titles: STAGES[].champ
   hbPractice: 3, hbPracticeBonus: 2,                                // per drill, x (1 + stage / 2)
   bpStageK: [1, 1.25, 1.55, 1.9], bpDrillK: [1, 1.15, 1.3, 1.45],
-  bpPB: 15, bpSalah: 10
+  bpPB: 15, bpSalah: 10,
+  bpK: 0.27   // v9.19.0: every Barakah Point earned (games, drills, goals) x this; it was 1, and a main stat reached 10 in the first stage
 };
 const stageOf = () => (C && C.stage) || 0;
-function drillBP(n, st = stageOf()) { return Math.round(n * ECON.bpDrillK[st]); }
+function drillBP(n, st = stageOf()) { return Math.round(n * ECON.bpDrillK[st] * ECON.bpK); }
 function practiceHB(bonus, st = stageOf()) { return Math.round((ECON.hbPractice + (bonus ? ECON.hbPracticeBonus : 0)) * (1 + st / 2)); }
 function careerRewards(won, champ, ctx = {}) {
   const me = M.players.find(p => p.human === 0), s = me.stats, st = ctx.stage != null ? ctx.stage : C.stage, S = STAGES[st];
@@ -301,6 +302,8 @@ function careerRewards(won, champ, ctx = {}) {
   else hb.push(['Game played', Math.round(ECON.hbLoss * S.mult)]);
   if (won && ctx.rival) hb.push(['Beat Al-Burhan', Math.round(ECON.hbRival * S.mult)]);
   if (champ) hb.push([S.name + ' champions', S.champ]);
+  for (const r of bp) r[1] = Math.round(r[1] * ECON.bpK);   // (v9.19.0)
+  for (let i = bp.length - 1; i > 0; i--) if (bp[i][1] <= 0) bp.splice(i, 1);   // (a row that rounds to nothing isn't shown)
   return { bp, hb, bpTotal: bp.reduce((a, b) => a + b[1], 0), hbTotal: hb.reduce((a, b) => a + b[1], 0) };
 }
 

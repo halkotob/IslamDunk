@@ -720,7 +720,7 @@ function drawHUD(g) {
     const sv = sprintVis(p);
     if (sv > 0.01) { g.save(); g.globalAlpha *= sv; g.shadowColor = '#8fe3ff'; g.shadowBlur = 10; g.fillStyle = 'rgba(143,227,255,0.35)'; roundRect(g, x + 61, y + 22, 156, 14, 7); g.fill(); g.restore(); }   // v7: sprint glow (v8.6.7: fades)
     meter(g, x + 64, y + 25, 150, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : turboCol(sv));   // red: winded, refilling
-    if (noor) { g.fillStyle = '#9fb3c8'; g.fillText('NOOR', x + 20, y + 45); meter(g, x + 64, y + 39, 150, 6, noorCardFrac(p), noorCardCol(p)); }
+    if (noor) { g.fillStyle = '#9fb3c8'; g.fillText(fitText(g, 'HIKMAH', 42), x + 20, y + 45); meter(g, x + 64, y + 39, 150, 6, noorCardFrac(p), noorCardCol(p)); }
     drawCompRow(g, p, x, y + ch - 16, y);
     g.globalAlpha = 1;
   }

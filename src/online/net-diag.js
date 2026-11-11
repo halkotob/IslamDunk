@@ -19,7 +19,7 @@
 //     render delay and prediction corrections in a small box. The lobby rates each player's connection (Good / OK /
 //     Poor) from a 5 s probe, and "Copy network report" copies a plain-text report. Nothing is sent anywhere.
 const ONLINE_ICE_URL = 'https://islamdunk-ice.islamdunk.workers.dev/ice';   // the Worker in worker/ice (TURN credentials)
-const NET_PROTO = 4;           // bump when the wire format or the match's rules change in a way older clients can't play (3: v9.11.1 trickle ICE, snapshot numbers; 4: v9.17.10 no shove)
+const NET_PROTO = 5;           // bump when the wire format or the match's rules change in a way older clients can't play (3: v9.11.1 trickle ICE, snapshot numbers; 4: v9.17.10 no shove; 5: v9.19.0 stat curves, one-step power-ups)
 const SNAP_V = 2;              // newest snapshot format this client reads
 
 // ---------------------------------------------------------------- ICE servers (TURN) from the Worker

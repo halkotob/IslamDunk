@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.18.0';
+const VERSION = '9.19.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -903,7 +903,7 @@ class Player {
   get opps() { return M.players.filter(q => q.team !== this.team); }
   turboOK() { return this.fire || this.turbo > 1; }
   speed() {
-    let s = 165 + this.st.spd * 13;
+    let s = spdBase(this.st.spd);
     if (this.cmd.turbo && this.turboOK()) s *= 1.42;
     if (this.boost > 0) s *= 1.15;
     if (this.fire) s *= 1.06;
@@ -1073,10 +1073,14 @@ function startShot(p) {
   if (p.human < 0) p.ai.relT = apexT(p) + gauss() * aiCfg(p.team).relErr;
   notifyShot(p);
 }
+// stat hooks (v9.19.0 sets the curves in sim/v919-stat-curves.js; these are the formulas before it)
+let spdBase = v => 165 + v * 13, shtK = v => 0.72 + v * 0.042, winK = v => 0.7 + v * 0.06;
+let dnkRange = v => v * 3;
+let greenOdds = (p, od, air) => od < 25 || air ? 0.65 : od < 70 ? 0.85 : 0.95, shotFinal = (p, prob) => prob;
 function shotProbability(p, x, z, contestDist) {
   const h = attackHoop(p.team), d = Math.hypot(x - h.x, z - h.z);
   let b = d < 70 ? 0.8 : clamp(0.86 - 0.00135 * d, 0.03, 0.9);
-  b *= 0.72 + p.st.sht * 0.042;
+  b *= shtK(p.st.sht);
   const od = (contestDist != null ? contestDist : nearestOppDist(x, z, p.team)) + sigContestBonus(p);   // fadeaway/euro/floater create space
   b *= od < 25 ? 0.5 : od < 60 ? 0.5 + (od - 25) / 35 * 0.3 : od < 110 ? 0.8 + (od - 60) / 50 * 0.2 : 1;
   if (p.fire) b += 0.2;
@@ -1098,7 +1102,7 @@ function shotWindow(p, x = p.x, z = p.z) {
   if (d >= 560) return 0;                                              // half court or farther: no green
   const dist = d > THREE_R + 80 ? 0.6 : isThree(x, z, h) ? 0.85 : 1.0;
   // base window ~17% tighter than before, and it shrinks further under a close contest
-  return 0.0375 * (0.7 + p.st.sht * 0.06) * (p.human >= 0 ? humanDiffMult() : 1) * dist * contestK(p, x, z) * (clutchTime() ? 1 + 0.05 * (st7(p, 'clu') - 5) : 1);   // clutch: calmer timing late
+  return 0.0375 * winK(p.st.sht) * (p.human >= 0 ? humanDiffMult() : 1) * dist * contestK(p, x, z) * (clutchTime() ? 1 + 0.05 * (st7(p, 'clu') - 5) : 1);   // clutch: calmer timing late
 }
 // Tiers: GREEN ignores the normal formula (open 95%, light contest 85%, heavy 65%);
 // GOOD is the normal formula +5%; OFF keeps the old early/late penalty.
@@ -1107,7 +1111,7 @@ function releaseShot(p) {
   const h = attackHoop(p.team), apex = apexT(p), e = Math.abs(p.st_t - apex), win = shotWindow(p);
   const od = nearestOppDist(p.x, p.z, p.team), air = p.opps.some(o => o.y > 25 && dxz(o, p) < 60);
   let prob, tier;
-  if (win > 0 && e <= win) { tier = 'green'; prob = od < 25 || air ? 0.65 : od < 70 ? 0.85 : 0.95; }
+  if (win > 0 && e <= win) { tier = 'green'; prob = greenOdds(p, od, air); }
   else {
     prob = shotProbability(p, p.x, p.z);
     if (win > 0 && e <= win * 3) { tier = 'good'; prob += 0.05; }
@@ -1115,7 +1119,7 @@ function releaseShot(p) {
     if (air) prob *= 0.78;                                             // hand in the face
     if (p.sigShot) prob *= 1.1;                                        // signature moves: slightly better odds
   }
-  const make = Math.random() < clamp(prob * clutchK(p) * (p.contactK || 1), 0.02, 0.97);   // contact (and-one chances) lowers it
+  const make = Math.random() < clamp(shotFinal(p, prob * clutchK(p) * (p.contactK || 1), tier), 0.02, 0.97);   // contact (and-one chances) lowers it
   const ftShot = M.phase === 'ft';
   const pts = ftShot ? 1 : isThree(p.x, p.z, h) ? 3 : 2;
   if (ftShot) p.stats.fta = (p.stats.fta || 0) + 1; else { p.stats.fga++; if (pts === 3) p.stats.tpa = (p.stats.tpa || 0) + 1; }
@@ -1159,7 +1163,7 @@ function canDunk(p) {
   const h = attackHoop(p.team);
   if ((p.x - h.x) * h.dir < 5) return false;     // under/behind the backboard
   const turbo = p.cmd.turbo && p.turboOK();
-  const R = (turbo ? 250 : 115) + (p.fire ? 40 : 0) + (p.boost > 0 ? 20 : 0) + p.st.dnk * 3;
+  const R = (turbo ? 250 : 115) + (p.fire ? 40 : 0) + (p.boost > 0 ? 20 : 0) + dnkRange(p.st.dnk);
   const d = dxz(p, h);
   if (d >= R) return false;
   // A long dunk is earned by a drive into the lane. Close finishes stay easy,
@@ -2131,7 +2135,7 @@ function finishMatch() {
   Game.overT = 2.2;
 }
 function grantBoost(p) {
-  p.boost = 12; FX.callout('NOOR!', '#ffe38a', p.def.name.toUpperCase() + ' IS GLOWING'); SFX.good();
+  p.boost = 12; FX.callout('LIGHT UPON LIGHT!', '#ffe38a', '12 SECONDS: BETTER SHOTS, LONGER DUNKS'); SFX.good();
   FX.burst(p.x, 60, p.z, 10, 'star', ['#ffe38a', '#ffffff']);
 }
 function onScreen(x) { return x - cam.x > -80 && x - cam.x < W + 80; }
@@ -2897,7 +2901,7 @@ function drawHUD(g) {
     const sv = sprintVis(p);
     if (sv > 0.01) { g.save(); g.globalAlpha *= sv; g.shadowColor = '#8fe3ff'; g.shadowBlur = 10; g.fillStyle = 'rgba(143,227,255,0.35)'; roundRect(g, x + 61, y + 22, 156, 14, 7); g.fill(); g.restore(); }   // v7: sprint glow (v8.6.7: fades)
     meter(g, x + 64, y + 25, 150, 8, p.fire ? 1 : p.turbo / 100, p.fire ? '#ff8a2a' : p.winded ? '#ff8a7a' : turboCol(sv));   // red: winded, refilling
-    if (noor) { g.fillStyle = '#9fb3c8'; g.fillText('NOOR', x + 20, y + 45); meter(g, x + 64, y + 39, 150, 6, noorCardFrac(p), noorCardCol(p)); }
+    if (noor) { g.fillStyle = '#9fb3c8'; g.fillText(fitText(g, 'HIKMAH', 42), x + 20, y + 45); meter(g, x + 64, y + 39, 150, 6, noorCardFrac(p), noorCardCol(p)); }
     drawCompRow(g, p, x, y + ch - 16, y);
     g.globalAlpha = 1;
   }
@@ -3479,7 +3483,7 @@ function drawHowTo(g) {
   const tips = [
     'Turbo + shoot near the rim to dunk. Longer dunks get bigger, slower and louder.',
     'Without the ball: pass calls for it, shoot near the rim asks your teammate for an alley-oop.',
-    'Three baskets in a row and you catch fire. Some players fill a Noor meter. Answer its question correctly, then choose one of three Noor power-ups.',
+    'Three baskets in a row and you catch fire. Some players fill a Hikmah meter. Answer its question correctly for a power-up.',
     'Change direction while dribbling for a crossover. Hold turbo for a behind-the-back.',
     'Esc or P pauses. On a phone, use the on-screen stick and buttons.'
   ];
@@ -3495,11 +3499,11 @@ function wrapText(g, text, x, y, maxW, lh) {
 }
 function drawTrivia(g) {
   const tv = Game.trivia, [q, opts] = TRIVIA[tv.qi];
-  if (tv.remote && !tv.done) { dim(g, 0.5); banner(g, 'Noor challenge', 'Your friend is answering a question for a Noor power-up...'); return; }
+  if (tv.remote && !tv.done) { dim(g, 0.5); banner(g, 'Hikmah challenge', 'Your friend is answering a question for a power-up...'); return; }
   dim(g, 0.72);
   g.fillStyle = 'rgba(12,40,44,0.97)'; roundRect(g, 150, 70, 660, 400, 16); g.fill(); g.strokeStyle = GOLD; g.lineWidth = 2; g.stroke();
-  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText('NOOR CHALLENGE', W / 2, 108);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(tv.p.def.name + ' can earn a Noor power-up (you pick 1 of 3)', W / 2, 130);
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText('HIKMAH CHALLENGE', W / 2, 108);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(tv.p.def.name + ' can earn a power-up', W / 2, 130);
   g.fillStyle = '#fff'; g.font = `19px ${BODY}`; wrapText(g, q, W / 2, 170, 580, 26);
   if (C && C.learned && C.learned.includes(tv.qi)) { drawBook(g, 176, 88); g.textAlign = 'left'; g.fillStyle = '#9dffb0'; g.font = `12px ${BODY}`; g.fillText('Studied', 206, 104); g.textAlign = 'center'; }
   for (let i = 0; i < 4; i++) {
@@ -3512,8 +3516,8 @@ function drawTrivia(g) {
     addRect(200, y, 560, 40, () => { if (tv.remoteView) Net.guestAnswer(i); else { tv.sel = i; answerTrivia(i); } });
   }
   if (!tv.done) { g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(200, 440, 560, 6); g.fillStyle = GOLD; g.fillRect(200, 440, 560 * clamp(tv.t / 15, 0, 1), 6); }
-  else { g.textAlign = 'center'; g.fillStyle = tv.correct ? '#9dffb0' : '#ffb0b0'; g.font = `17px ${FONT}`; g.fillText(tv.correct ? 'Correct! Choose your Noor next' : 'The answer: ' + opts[0], W / 2, 450); }
-  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Press 1 to 4, or move and press Enter/K', W / 2, 462 + 0);
+  else { g.textAlign = 'center'; g.fillStyle = tv.correct ? '#9dffb0' : '#ffb0b0'; g.font = `17px ${FONT}`; g.fillText(fitText(g, tv.correct ? (tv.gift && NOOR_BY_ID[tv.gift] ? 'Correct! ' + NOOR_BY_ID[tv.gift].name + '. ' + NOOR_BY_ID[tv.gift].short : 'Correct!') : 'The answer: ' + opts[0], 600), W / 2, 450); }
+  if (!tv.done) { g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('Press 1 to 4, or move and press Enter/K', W / 2, 462 + 0); }   // (v9.19.0: not under the answer line)
 }
 function drawPause(g) {
   dim(g, 0.65);
@@ -4448,10 +4452,11 @@ const ECON = {
   hbWin: 80, hbRoundK: [1, 1.25, 1.5], hbLoss: 10, hbRival: 60,   // x STAGES[].mult (1, 2, 3.5, 6); titles: STAGES[].champ
   hbPractice: 3, hbPracticeBonus: 2,                                // per drill, x (1 + stage / 2)
   bpStageK: [1, 1.25, 1.55, 1.9], bpDrillK: [1, 1.15, 1.3, 1.45],
-  bpPB: 15, bpSalah: 10
+  bpPB: 15, bpSalah: 10,
+  bpK: 0.27   // v9.19.0: every Barakah Point earned (games, drills, goals) x this; it was 1, and a main stat reached 10 in the first stage
 };
 const stageOf = () => (C && C.stage) || 0;
-function drillBP(n, st = stageOf()) { return Math.round(n * ECON.bpDrillK[st]); }
+function drillBP(n, st = stageOf()) { return Math.round(n * ECON.bpDrillK[st] * ECON.bpK); }
 function practiceHB(bonus, st = stageOf()) { return Math.round((ECON.hbPractice + (bonus ? ECON.hbPracticeBonus : 0)) * (1 + st / 2)); }
 function careerRewards(won, champ, ctx = {}) {
   const me = M.players.find(p => p.human === 0), s = me.stats, st = ctx.stage != null ? ctx.stage : C.stage, S = STAGES[st];
@@ -4474,6 +4479,8 @@ function careerRewards(won, champ, ctx = {}) {
   else hb.push(['Game played', Math.round(ECON.hbLoss * S.mult)]);
   if (won && ctx.rival) hb.push(['Beat Al-Burhan', Math.round(ECON.hbRival * S.mult)]);
   if (champ) hb.push([S.name + ' champions', S.champ]);
+  for (const r of bp) r[1] = Math.round(r[1] * ECON.bpK);   // (v9.19.0)
+  for (let i = bp.length - 1; i > 0; i--) if (bp[i][1] <= 0) bp.splice(i, 1);   // (a row that rounds to nothing isn't shown)
   return { bp, hb, bpTotal: bp.reduce((a, b) => a + b[1], 0), hbTotal: hb.reduce((a, b) => a + b[1], 0) };
 }
 
@@ -5118,8 +5125,9 @@ const HUB_CORNER = [['Save and load', () => { Game.hubMenu.open = false; Game.sc
 function hubUpdate() {
   const hm = Game.hubMenu || (Game.hubMenu = { open: false, idx: 0 });
   if (hm.open) {
-    if (menuHit('up')) { hm.idx = (hm.idx + 2) % 3; SFX.blip(); }
-    if (menuHit('down')) { hm.idx = (hm.idx + 1) % 3; SFX.blip(); }
+    const n = HUB_CORNER.length;                                     // (v9.19.0: 2 rows since 9.17.9; it cycled 3, and the third was missing)
+    if (menuHit('up')) { hm.idx = (hm.idx + n - 1) % n; SFX.blip(); }
+    if (menuHit('down')) { hm.idx = (hm.idx + 1) % n; SFX.blip(); }
     if (menuHit('ok')) { SFX.blip(); HUB_CORNER[hm.idx][1](); }
     else if (menuHit('back')) hm.open = false;
     return;
@@ -7021,7 +7029,7 @@ const TRIVIA_WHY = [
   'The Sunnah is what he said, did and approved.',
   'Tafsir explains the meanings of the Quran.',
   'Tajwid covers pronunciation, lengthening and pauses.',
-  'A hafiz (or hafizah) carries the whole Quran in memory. That\'s where Noor comes from on the court.',
+  'A hafiz (or hafizah) carries the whole Quran in memory. That\'s where the Hikmah meter comes from on the court.',
   'Sadaqah can be anything good, even a smile (Sunan at-Tirmidhi).'
 ];
 function shelfOpen() {
@@ -9929,8 +9937,8 @@ const ACHIEVEMENTS = [
   { id: 'ankles', api: 'ACH_ANKLES', name: 'Crossed Up', desc: 'Wrong-foot a defender with a crossover', icon: 'ball' },
   { id: 'charge', api: 'ACH_CHARGE', name: 'Take the Charge', desc: 'Draw an offensive foul', icon: 'hand' },
   { id: 'ft_20', api: 'ACH_FT_20', name: 'Money at the Line', desc: 'Make 20 free throws', icon: 'ball', goal: 20 },
-  { id: 'noor_1', api: 'ACH_NOOR_1', name: 'Noor', desc: 'Earn a Noor power-up', icon: 'moon' },
-  { id: 'noor_10', api: 'ACH_NOOR_10', name: 'Light Upon Light', desc: 'Earn 10 Noor power-ups', icon: 'moon', goal: 10 },
+  { id: 'noor_1', api: 'ACH_NOOR_1', name: 'Hikmah', desc: 'Earn a power-up in the Hikmah challenge', icon: 'moon' },
+  { id: 'noor_10', api: 'ACH_NOOR_10', name: 'Seeker', desc: 'Earn 10 power-ups in the Hikmah challenge', icon: 'moon', goal: 10 },
   { id: 'salah_1', api: 'ACH_SALAH_1', name: 'Answered the Call', desc: 'Play a career game with the salah bonus', icon: 'masjid' },
   { id: 'salah_10', api: 'ACH_SALAH_10', name: 'On Time, Every Time', desc: 'Play 10 career games with the salah bonus', icon: 'masjid', goal: 10 },
   { id: 'stage_state', api: 'ACH_STAGE_STATE', name: 'Going State', desc: 'Reach the State stage in career', icon: 'trophy' },
@@ -10495,7 +10503,7 @@ function buildScout() {
   const arch = star.arch || archetypeOf(star.stats), label = ARCHETYPES[arch] ? ARCHETYPES[arch].label : 'ALL-AROUND';
   const tot = opp.players.reduce((a, p) => { for (const k of ['sht', 'dnk', 'spd', 'def', 'stl']) a[k] = (a[k] || 0) + p.stats[k]; return a; }, {});
   const top = ['sht', 'dnk', 'spd', 'def', 'stl'].sort((a, c) => tot[c] - tot[a])[0];
-  let tip = SCOUT_TIPS[top][Math.floor(R() * 2)], note = (ARCH_NOTE[arch] || '') + (star.huffath ? ' He’s a hafiz, so expect a Noor power-up at some point.' : '');
+  let tip = SCOUT_TIPS[top][Math.floor(R() * 2)], note = (ARCH_NOTE[arch] || '') + (star.huffath ? ' He’s a hafiz, so expect a Hikmah challenge at some point.' : '');
   let extra = '';
   if (oppId === 1) {
     tip = 'Jalal loves his first move. Stay between him and the rim and don’t bite.';
@@ -12140,7 +12148,7 @@ function scoutCore(oppId) {
   const tot = opp.players.reduce((a, q) => { for (const k of ['sht', 'dnk', 'spd', 'def', 'stl']) a[k] = (a[k] || 0) + q.stats[k]; return a; }, {});
   const top = ['sht', 'dnk', 'spd', 'def', 'stl'].sort((a, c) => tot[c] - tot[a])[0];
   let tip = SCOUT_TIPS[top][Math.floor(R() * 2)];
-  const note = (ARCH_NOTE[arch] || '') + (star.huffath ? ' He\u2019s a hafiz, so expect a Noor power-up at some point.' : '');
+  const note = (ARCH_NOTE[arch] || '') + (star.huffath ? ' He\u2019s a hafiz, so expect a Hikmah challenge at some point.' : '');
   if (oppId === 1) tip = 'Jalal loves his first move. Hold Defend, stay in front, and don\u2019t bite on his fakes.';
   const v = Game.cv, road = !!(v && v.v.host === 1 && v.v.kind !== 'arena');
   return { oppId, opp, record: sw + '\u2013' + sl, path: [], star, label, note, tip, extra: '', where: v ? v.name : '', home: !!(v && v.v.host === 0), road };
@@ -12225,7 +12233,7 @@ function scenPossession(p) { const S = M.scenario; if (S && !S.done && S.stop ==
       Ach.unlock('scen_win');
       if (!d.rewarded) {
         const save = C || readSave(SAVE_AUTO);
-        if (save) { save.bp += 60; save.hb += 60; if (C) saveCareer(); else try { localStorage.setItem(SAVE_AUTO, JSON.stringify(save)); } catch (e) {} S.reward = true; }
+        if (save) { save.bp += Math.round(60 * ECON.bpK); save.hb += 60; if (C) saveCareer(); else try { localStorage.setItem(SAVE_AUTO, JSON.stringify(save)); } catch (e) {} S.reward = true; }
         Progress.update(o => { o.scen[S.day].rewarded = true; });
       }
     }
@@ -12258,7 +12266,7 @@ function drawScenBrief(g) {
   g.fillStyle = '#fff'; g.font = `19px ${FONT}`; g.fillText(S.twist.t, W / 2, 350);
   g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('You control ' + you.name + '  •  Poise matters here: pressure is on', W / 2, 376);
   g.fillStyle = pr.done ? '#9dffb0' : '#9fb3c8'; g.font = `13px ${BODY}`;
-  g.fillText(pr.done ? 'Completed today, masha’Allah. Play again for fun.' : pr.tries ? 'Attempts today: ' + pr.tries : 'First try today. Complete it for a career bonus (+60 BP, +60 HB).', W / 2, 414);
+  g.fillText(pr.done ? 'Completed today, masha’Allah. Play again for fun.' : pr.tries ? 'Attempts today: ' + pr.tries : 'First try today. Complete it for a career bonus (+' + Math.round(60 * ECON.bpK) + ' BP, +60 HB).', W / 2, 414);
   g.fillStyle = GOLD; roundRect(g, W / 2 - 90, 434, 180, 40, 20); g.fill();
   g.fillStyle = NIGHT; g.font = `17px ${FONT}`; g.fillText('Play', W / 2, 460);
   addRect(W / 2 - 90 + o, 434, 180, 40, startScenario);
@@ -12276,7 +12284,7 @@ function drawScenResult(g) {
   const line = (y, ok, t) => { g.fillStyle = ok ? '#57e389' : '#ff8a7a'; g.font = `16px ${FONT}`; g.fillText((ok ? '✓  ' : '✗  ') + t, W / 2, y); };
   line(240, S.won, 'Win the game'); if (S.twist.id !== 'win') line(268, S.twistOK, S.twist.t.replace(/^Win, and |^Win, with |^Win /, '').replace(/^./, c => c.toUpperCase()));
   g.fillStyle = IVORY; g.font = `14px ${BODY}`;
-  g.fillText(S.reward ? 'Career bonus added: +60 BP, +60 Halal Bucks' : S.ok ? 'Completed today' : 'Attempts today: ' + (S.tries || 1), W / 2, 316);
+  g.fillText(S.reward ? 'Career bonus added: +' + Math.round(60 * ECON.bpK) + ' BP, +60 Halal Bucks' : S.ok ? 'Completed today' : 'Attempts today: ' + (S.tries || 1), W / 2, 316);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('R to try again  •  Enter to finish  •  A new scenario tomorrow', W / 2, 400);
   W = rw; g.restore();
   addRect(0, 0, W, H, goTitle);
@@ -14813,7 +14821,7 @@ function laneBlocked(p, h) {
     if (!_cd.apply(this, arguments)) return false;
     if (M.mini || M.practice) return true;
     const h = attackHoop(p.team), d = dxz(p, h), turbo = p.cmd.turbo && p.turboOK();
-    const R = (turbo ? 195 : 115) + (p.fire ? 40 : 0) + (p.boost > 0 ? 20 : 0) + st7(p, 'dnk') * 3;   // runway was 250 + : take-offs from the arc
+    const R = (turbo ? 195 : 115) + (p.fire ? 40 : 0) + (p.boost > 0 ? 20 : 0) + dnkRange(st7(p, 'dnk'));   // runway was 250 + : take-offs from the arc
     if (d >= R) return false;
     return d <= 120 || !laneBlocked(p, h);
   };
@@ -17119,7 +17127,7 @@ function newWeek(G) {
   const pool = WEEK_POOL.slice(); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
   G.week = { n, start: C.gamesPlayed || 0, goals: pool.slice(0, 3).map(w => ({ id: w.id, need: w.need, prog: 0, done: false })), all: false };
 }
-function goalPay(bp, hb, why) { C.bp += bp; C.hb += hb; toast('✓ ' + why + '   +' + bp + ' BP' + (hb ? '  +' + hb + ' HB' : ''), 3.2); SFX.good && SFX.good(); saveCareer(); }
+function goalPay(bp, hb, why) { bp = Math.round(bp * ECON.bpK); C.bp += bp; C.hb += hb; toast('✓ ' + why + '   +' + bp + ' BP' + (hb ? '  +' + hb + ' HB' : ''), 3.2); SFX.good && SFX.good(); saveCareer(); }
 function rookieDo(id) {
   if (!C) return; const G = cg(); if (G.rookie[id]) return;
   G.rookie[id] = true; const s = ROOKIE.find(r => r[0] === id);
@@ -17226,9 +17234,9 @@ const CGame = { stops: 0, green: 0, close: 0, ft: 0, oppStart: 0, guarded: false
 // ---- the next goal (hub banner)
 function nextGoal() {
   const G = cg(), rk = ROOKIE.find(r => !G.rookie[r[0]]);
-  if (rk) return { txt: 'Rookie: ' + rk[1], pay: '+40 BP' };
+  if (rk) return { txt: 'Rookie: ' + rk[1], pay: '+' + Math.round(40 * ECON.bpK) + ' BP' };
   const w = G.week.goals.find(g => !g.done);
-  if (w) return { txt: 'This week: ' + WEEK_POOL.find(x => x.id === w.id).txt(w.need) + '  (' + w.prog + '/' + w.need + ')', pay: '+50 BP' };
+  if (w) return { txt: 'This week: ' + WEEK_POOL.find(x => x.id === w.id).txt(w.need) + '  (' + w.prog + '/' + w.need + ')', pay: '+' + Math.round(50 * ECON.bpK) + ' BP' };
   const b = C.bracket;
   if (b && !b.out && !b.champ) { const rn = typeof roundLabel === 'function' ? roundLabel(b) : 'next game'; return { txt: 'Win your ' + rn, pay: 'keeps the run going' }; }
   return { txt: 'All goals done this week. Next week starts in ' + (G.week.start + 3 - (C.gamesPlayed || 0)) + ' game(s)', pay: '' };
@@ -17308,7 +17316,7 @@ function drawGoals(g) {
   panel(g, 30, 74, 290, 210, false);
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('ROOKIE CHECKLIST', 48, 100);
   ROOKIE.forEach(([id, t], i) => { const ok = G.rookie[id]; g.fillStyle = ok ? '#9dffb0' : IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, (ok ? '✓ ' : '• ') + t, 262), 48, 128 + i * 26); });
-  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(TT ? '+40 BP each, +100 for all' : '+40 BP each, +100 BP for all five', 48, 268);
+  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; { const a = Math.round(40 * ECON.bpK), b = Math.round(100 * ECON.bpK); g.fillText(TT ? '+' + a + ' BP each, +' + b + ' for all' : '+' + a + ' BP each, +' + b + ' BP for all five', 48, 268); }
   // week
   panel(g, 30, 296, 290, 220, false);
   g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('WEEK ' + G.week.n, 48, 322);
@@ -17374,7 +17382,7 @@ function practicePlan() {
 function planDone(kind) {
   const P_ = practicePlan(); if (!P_ || !P_.ids.includes(kind) || P_.done.includes(kind)) return;
   P_.done.push(kind);
-  if (P_.done.length >= P_.ids.length && !P_.paid) { P_.paid = true; setTimeout(() => goalPay(drillBP(60), 15, 'Today’s practice plan'), 900); }
+  if (P_.done.length >= P_.ids.length && !P_.paid) { P_.paid = true; setTimeout(() => goalPay(Math.round(60 * ECON.bpDrillK[stageOf()]), 15, 'Today’s practice plan'), 900); }
   else gymToast('Today’s plan: ' + P_.done.length + ' of 3 done', 2.5);
   saveCareer();
 }
@@ -18574,7 +18582,7 @@ function csEditRows() {
   const lookRow = key => { const r = csLookRows(key); if (!r) return null; const n = r.n || (r.sw || r.txt).length; return { label: r.label, sw: r.sw ? () => r.sw[lk[key]] : null, get: r.sw ? null : () => (r.txt ? r.txt[lk[key] || 0] : String(lk[key])), step: d => { lk[key] = ((lk[key] || 0) + d + n) % n; } }; };
   if (sec === 0) return [
     { label: 'Name', get: () => p.name, enter: () => csAskName('Player name', p.name, 14, v => { p.name = csClean(v, p.name); csSave(); }) },
-    { label: 'Role', get: () => (p.sheikh ? 'Sheikh (Noor meter)' : 'Player'), step: () => { p.sheikh = !p.sheikh; } },
+    { label: 'Role', get: () => (p.sheikh ? 'Sheikh (Hikmah meter)' : 'Player'), step: () => { p.sheikh = !p.sheikh; } },
     ...['skin', 'height', 'build', 'hair', 'beard', 'beardLen', 'num'].map(lookRow)].filter(Boolean);
   if (sec === 1) return ['cap', 'capColor', 'thobe', 'thobeLen', 'shoes', 'teamMatch'].map(lookRow).filter(Boolean);
   return [...CS_STATS.map(([k, l]) => ({ label: l, get: () => String(p.stats[k]), pips: () => p.stats[k], step: d => { p.stats[k] = clamp((p.stats[k] || 5) + d, 1, 10); } })),
@@ -19424,24 +19432,25 @@ function addTov(p) { if (p && p.stats) p.stats.tov = (p.stats.tov || 0) + 1; }
     return r;
   };
 }
-// ================================================= v8.6.1: NOOR POWER-UPS
-// A correct Noor answer now opens a short choice: one of three effects, each named for a virtue. No
-// chance is involved: the three shown are always the three this player used least recently, and the
-// player sees exactly what each one does before picking. A wrong answer or a timeout still gives
-// nothing (unchanged). Only one effect is active per player at a time (as p.boost always was), and the
-// Noor meter doesn't fill while one is active.
+// ================================================= v8.6.1: POWER-UPS (the Hikmah challenge since v9.19.0)
+// v9.19.0: a correct answer gives one power-up at once, chosen at random among those that can apply now (Ukhuwwah
+// needs a teammate without an effect), with the match's random numbers (in an online match, the seeded ones both
+// phones share). Its callout names it and says what it does. There's no picker any more. A wrong answer or a
+// timeout still gives nothing. (v8.6.1-v9.18: a choice of the three used least recently.) The CPU keeps its
+// situational pick. Only one effect is active per player at a time (as p.boost always was), and the meter
+// doesn't fill while one is active. Player-facing words: the Hikmah challenge, the HIKMAH meter, and the glow is
+// Light Upon Light; the ids (noor, NOOR_FX, p.boost, AchEvents.noor) are unchanged.
 //   state: p.boost > 0 means Noor (the original glow, unchanged); p.nfx = { id, t, shots } is any other.
 //   NOOR_FX order is append-only: its indexes travel in online snapshots and replay frames.
 const NOOR_FX = [
-  { id: 'noor', name: 'Noor', mean: 'Light', desc: '12 seconds of glow: better shooting and a longer dunk range.', icon: 'light', col: '#ffe38a', t: 12 },
-  { id: 'sabr', name: 'Sabr', mean: 'Patience', desc: 'Your next 3 shots get a wider green window. Ends after 3 shots or 30 seconds.', icon: 'hourglass', col: '#8fe3ff', t: 30, shots: 3 },
-  { id: 'himmah', name: 'Himmah', mean: 'Determination', desc: 'For 15 seconds you reach further for loose balls and rebounds.', icon: 'reach', col: '#ffb36b', t: 15 },
-  { id: 'quwwah', name: 'Quwwah', mean: 'Strength', desc: 'Turbo refills fully now, and refills twice as fast for 10 seconds.', icon: 'bolt', col: '#9dffb0', t: 10 },
-  { id: 'yaqazah', name: 'Yaqazah', mean: 'Alertness', desc: 'Your next steal attempt within reach succeeds cleanly, with no foul. Expires after 20 seconds.', icon: 'eye', col: '#c9b8ff', t: 20 },
-  { id: 'ukhuwwah', name: 'Ukhuwwah', mean: 'Brotherhood', desc: 'Your teammate gets the Noor glow for 12 seconds.', icon: 'pair', col: '#ffd0e0', t: 12 }
+  { id: 'noor', name: 'Light Upon Light', mean: 'Light', desc: '12 seconds of glow: better shooting and a longer dunk range.', short: '12 seconds: better shots, longer dunks', icon: 'light', col: '#ffe38a', t: 12 },
+  { id: 'sabr', name: 'Sabr', mean: 'Patience', desc: 'Your next 3 shots get a wider green window. Ends after 3 shots or 30 seconds.', short: 'Next 3 shots: wider green window', icon: 'hourglass', col: '#8fe3ff', t: 30, shots: 3 },
+  { id: 'himmah', name: 'Himmah', mean: 'Determination', desc: 'For 15 seconds you reach further for loose balls and rebounds.', short: '15 seconds: longer reach for loose balls', icon: 'reach', col: '#ffb36b', t: 15 },
+  { id: 'quwwah', name: 'Quwwah', mean: 'Strength', desc: 'Turbo refills fully now, and refills twice as fast for 10 seconds.', short: 'Turbo full, refills twice as fast', icon: 'bolt', col: '#9dffb0', t: 10 },
+  { id: 'yaqazah', name: 'Yaqazah', mean: 'Alertness', desc: 'Your next steal attempt within reach succeeds cleanly, with no foul. Expires after 20 seconds.', short: 'Next steal in reach is clean', icon: 'eye', col: '#c9b8ff', t: 20 },
+  { id: 'ukhuwwah', name: 'Ukhuwwah', mean: 'Brotherhood', desc: 'Your teammate gets the Light Upon Light glow for 12 seconds.', short: 'Your teammate glows for 12 seconds', icon: 'pair', col: '#ffd0e0', t: 12 }
 ];
 const NOOR_BY_ID = Object.fromEntries(NOOR_FX.map(f => [f.id, f]));
-const NOOR_PICK_T = 10;                  // seconds to choose; then the highlighted card is taken
 const SABR_WIN = 1.25, SABR_CAP = 1.4;   // +25% green window; with Barakah Run 'green' the total is capped at +40%
 const HIMMAH_REACH = 12;                 // extra grab reach (game units)
 
@@ -19461,23 +19470,24 @@ function noorEligible(p, id) {
   if (id !== 'ukhuwwah') return true;
   const m = p.mate; return !!m && !noorActive(m);                // brotherhood needs a teammate without an effect
 }
-function noorOptions(p) { return noorLRU(p).filter(id => noorEligible(p, id)).slice(0, 3); }
+// one at random among the effects that can apply now (Math.random is the match's own: seeded in an online match)
+function noorGift(p) { const L = NOOR_FX.map(f => f.id).filter(id => noorEligible(p, id)); return L[Math.floor(Math.random() * L.length)] || 'noor'; }
 function noorUsed(p, id) { const L = noorLRU(p), i = L.indexOf(id); if (i >= 0) L.splice(i, 1); L.push(id); }
 
 // ---- applying effects
 function applyNoorFx(p, id) {
   const F = NOOR_BY_ID[id]; if (!F || !p) return;
   p.nfx = null;
-  if (id === 'noor') { grantBoost.noor(p); return; }              // the original effect, unchanged
+  if (id === 'noor') { grantBoost.noor(p); return; }              // the original effect, unchanged (its callout: match.js)
   p.boost = 0;
   if (id === 'ukhuwwah') {
     const m = p.mate; if (!m) return;
     m.nfx = null; m.boost = 12;                                    // the teammate glows; the picker keeps no effect
-    FX.callout('UKHUWWAH!', F.col, m.def.name.toUpperCase() + ' IS GLOWING'); SFX.good(); AchEvents.noor(p); return;
+    FX.callout('UKHUWWAH!', F.col, F.short.toUpperCase()); SFX.good(); AchEvents.noor(p); return;
   }
   p.nfx = { id, t: F.t, shots: F.shots || 0 };
   if (id === 'quwwah') { p.turbo = 100; p.winded = false; p._qt = 100; }
-  FX.callout(F.name.toUpperCase() + '!', F.col, F.mean.toUpperCase() + '  •  ' + p.def.name.toUpperCase()); SFX.good(); AchEvents.noor(p);
+  FX.callout(F.name.toUpperCase() + '!', F.col, F.short.toUpperCase()); SFX.good(); AchEvents.noor(p);
 }
 function noorExpire(p) {
   const F = p.nfx && NOOR_BY_ID[p.nfx.id]; p.nfx = null;
@@ -19560,32 +19570,21 @@ function cpuNoorPick(p) {
   };
 }
 
-// ---- the choice screen (after the correct-answer reveal)
-function noorOpenPick(tv) { tv.pick = { opts: noorOptions(tv.p), sel: 0, t: NOOR_PICK_T }; SFX.blip(); }
-function noorChoose(tv, i) {
-  const P = tv.pick; if (!P || P.done) return;
-  const id = P.opts[clamp(i | 0, 0, P.opts.length - 1)]; P.done = true;
-  Game.trivia = null; noorUsed(tv.p, id); applyNoorFx(tv.p, id);
-}
+// ---- a correct answer: one power-up at once. It's chosen when the answer is given (so the reveal can name it, and
+// a guest sees the same one) and given when the reveal closes
 {
+  const _aw = answerTrivia;
+  answerTrivia = function (i) {
+    const r = _aw.apply(this, arguments), tv = Game.trivia;
+    if (tv && tv.done && tv.correct && !tv.gift && tv.p) tv.gift = noorGift(tv.p);
+    return r;
+  };
   const _tu = triviaUpdate;
   triviaUpdate = function (rdt) {
     const tv = Game.trivia;
-    if (tv && tv.pick) {
-      const P = tv.pick, n = P.opts.length; P.t -= rdt;
-      if (tv.remote) { const a = Net.remoteAnswer(); if (a && a.qi === tv.qi && a.k != null) return noorChoose(tv, a.k); }
-      else {
-        if (menuHit('left') || menuHit('up')) { P.sel = (P.sel + n - 1) % n; SFX.blip(); }
-        if (menuHit('right') || menuHit('down')) { P.sel = (P.sel + 1) % n; SFX.blip(); }
-        for (let i = 0; i < n; i++) if (Input.pressed['Digit' + (i + 1)]) return noorChoose(tv, i);
-        if (menuHit('ok') || Input.pressed.KeyJ || Input.pressed.KeyK) return noorChoose(tv, P.sel);
-      }
-      if (P.t <= 0) noorChoose(tv, P.sel);
-      return;
-    }
-    if (tv && tv.done && tv.correct) {                              // correct: reveal as before, then the choice instead of the boost
+    if (tv && tv.done && tv.correct) {
       tv.res += rdt;
-      if (tv.res > 1.8 || (tv.res > 0.5 && menuHit('ok'))) noorOpenPick(tv);
+      if (tv.res > 1.8 || (tv.res > 0.5 && menuHit('ok'))) { Game.trivia = null; const id = tv.gift || noorGift(tv.p); noorUsed(tv.p, id); applyNoorFx(tv.p, id); }
       return;
     }
     return _tu.apply(this, arguments);
@@ -19602,39 +19601,6 @@ function noorIcon(g, icon, x, y, s, col) {
   else if (icon === 'pair') { g.arc(-3.2, 0, 5, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.arc(3.2, 0, 5, 0, Math.PI * 2); g.stroke(); }
   g.restore();
 }
-function drawNoorPick(g, tv) {
-  const P = tv.pick || tv.pickView; if (!P) return;
-  const mine = !tv.remote;                                          // host waiting on the guest sees a banner
-  if (!mine) { dim(g, 0.5); banner(g, 'Noor challenge', 'Your friend answered correctly and is choosing a power-up...'); return; }
-  dim(g, 0.72);
-  const T = Input.touchMode, py = T ? 44 : 70, cy = T ? 116 : 150, ch = T ? 318 : 252;   // v8.6.2: taller cards on phones (text is larger there)
-  g.fillStyle = 'rgba(12,40,44,0.97)'; roundRect(g, 150, py, 660, T ? 464 : 400, 16); g.fill(); g.strokeStyle = GOLD; g.lineWidth = 2; g.stroke();
-  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText('CHOOSE YOUR NOOR', W / 2, py + 38);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'Correct! ' + tv.p.def.name + ' picks one of these three', 620), W / 2, py + 62);
-  const sel = tv.remoteView ? (tv.psel || 0) : P.sel;
-  P.opts.forEach((id, i) => {
-    const F = NOOR_BY_ID[id]; if (!F) return;
-    const x = 168 + i * 212, y = cy, w = 200, h = ch, on = i === sel, d = T ? -8 : 0;
-    g.fillStyle = on ? 'rgba(232,195,90,0.18)' : 'rgba(255,255,255,0.06)'; roundRect(g, x, y, w, h, 12); g.fill();
-    g.strokeStyle = on ? GOLD : 'rgba(255,255,255,0.18)'; g.lineWidth = on ? 3 : 1; g.stroke();
-    g.fillStyle = 'rgba(0,0,0,0.3)'; g.beginPath(); g.arc(x + w / 2, y + 46 + d, 26, 0, Math.PI * 2); g.fill();
-    noorIcon(g, F.icon, x + w / 2, y + 46 + d, 16, F.col);
-    g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `22px ${FONT}`; g.fillText(F.name, x + w / 2, y + 102 + d);
-    g.fillStyle = F.col; g.font = `14px ${BODY}`; g.fillText(F.mean, x + w / 2, y + 124 + d);
-    g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapText(g, F.desc, x + w / 2, y + 152 + d * 1.5, w - 22, 19);
-    g.fillStyle = on ? GOLD : '#9fb3c8'; g.font = `13px ${FONT}`; g.fillText(String(i + 1), x + w / 2, y + h - 12);
-    addRect(x, y, w, h, () => { if (tv.remoteView) Net.guestPick(i); else { P.sel = i; noorChoose(tv, i); } });
-  });
-  const by = cy + ch + 14;
-  g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(200, by, 560, 6); g.fillStyle = GOLD; g.fillRect(200, by, 560 * clamp(P.t / NOOR_PICK_T, 0, 1), 6);
-  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
-  g.fillText(tv.sent2 ? 'Sent. Waiting for the game to continue...' : 'Press 1 to 3, or ← → and Enter. Tap a card on touch.', W / 2, by + (T ? 38 : 32));
-}
-{
-  const _dt = drawTrivia;
-  drawTrivia = function (g) { const tv = Game.trivia; if (tv && (tv.pick || tv.pickView)) return drawNoorPick(g, tv); return _dt.apply(this, arguments); };
-}
-
 // ---- HUD: the active effect next to the player (icon + name + time or shots left), and on the player card
 function noorTagText(p) {
   const id = noorFxOf(p); if (!id) return null;
@@ -19643,7 +19609,7 @@ function noorTagText(p) {
   if (!N) return F.name.toUpperCase();
   return F.name.toUpperCase() + ' ' + (id === 'sabr' ? N.shots + ' ' + (N.shots === 1 ? 'shot left' : 'shots left') : Math.ceil(N.t) + 's');
 }
-function noorCardLabel(p) { const t = noorTagText(p); return t ? t : 'NOOR ACTIVE'; }
+function noorCardLabel(p) { const t = noorTagText(p); return t ? t : 'POWER-UP ACTIVE'; }
 function noorCardFrac(p) {
   const id = noorFxOf(p); if (!id) return p.hifz / 100;
   if (id === 'noor') return p.boost / 12;
@@ -19685,39 +19651,17 @@ const REPLAY_FL = 7 + JOINTS.length + 5;
   };
 }
 
-// ---- online: host is authoritative. Effects ride in the snapshot (s.nfx, optional); the guest's pick
-// travels with its trivia answer (ans.k), and the choice screen is mirrored (s.tvp).
+// ---- online (the snapshot path, ?rb=0): host is authoritative. Effects ride in the snapshot (s.nfx, optional), and
+// so does the power-up a correct answer gives (s.tvg, its NOOR_FX index), for the guest's reveal. (In a rollback
+// match there's no Hikmah challenge yet: hifzUsed.)
 {
   const _sn = Net.snapshot;
   Net.snapshot = function () {
     const s = _sn.apply(this, arguments);
     if (!s || !s.p || !M.players) return s;
     if (M.players.some(p => p.nfx)) s.nfx = M.players.map(p => p.nfx ? [NOOR_FX.findIndex(x => x.id === p.nfx.id), Math.round(p.nfx.t * 10) / 10, p.nfx.shots || 0] : 0);
-    const tv = Game.trivia; if (tv && tv.remote && tv.pick) s.tvp = [tv.pick.opts.map(id => NOOR_FX.findIndex(x => x.id === id)), Math.round(tv.pick.t * 10) / 10];
+    const tv = Game.trivia; if (tv && tv.gift) s.tvg = NOOR_FX.findIndex(x => x.id === tv.gift);
     return s;
-  };
-  const _ra = Net.remoteAnswer;
-  Net.remoteAnswer = function () {                                 // { qi, i, k }: k = the chosen power-up card (when sent)
-    const a = _ra.apply(this, arguments); if (!a) return a;
-    return { qi: a.qi, i: a.i, k: a.k == null ? null : a.k | 0 };
-  };
-  Net.guestPick = function (k) {
-    const tv = Game.trivia; if (!tv || !tv.pickView || tv.sent2) return;
-    tv.sent2 = true; tv.psel = k; this.setP({ ans: { qi: tv.qi, i: tv.choice, k } }); SFX.blip();
-  };
-  const _gt = Net.guestTrivia;
-  Net.guestTrivia = function () {
-    const tv = Game.trivia;
-    if (tv && tv.pickView) {
-      if (tv.sent2) return;
-      const n = tv.pickView.opts.length; tv.psel = tv.psel || 0;
-      if (menuHit('left') || menuHit('up')) { tv.psel = (tv.psel + n - 1) % n; SFX.blip(); }
-      if (menuHit('right') || menuHit('down')) { tv.psel = (tv.psel + 1) % n; SFX.blip(); }
-      for (let i = 0; i < n; i++) if (Input.pressed['Digit' + (i + 1)]) return this.guestPick(i);
-      if (menuHit('ok') || Input.pressed.KeyJ || Input.pressed.KeyK) this.guestPick(tv.psel);
-      return;
-    }
-    return _gt.apply(this, arguments);
   };
   const _gf = Net.guestFrame;
   Net.guestFrame = function () {
@@ -19725,10 +19669,7 @@ const REPLAY_FL = 7 + JOINTS.length + 5;
     const s = this.lastS; if (!s || !M.players) return r;
     M.players.forEach((p, i) => { const e = s.nfx && s.nfx[i]; p.nfx = e && NOOR_FX[e[0]] ? { id: NOOR_FX[e[0]].id, t: e[1], shots: e[2] } : null; });
     const tv = Game.trivia;
-    if (tv && tv.remoteView) {
-      if (s.tvp && s.tv && s.tv[0] === tv.qi) tv.pickView = { opts: s.tvp[0].map(k => (NOOR_FX[k] || NOOR_FX[0]).id), t: s.tvp[1] };
-      else tv.pickView = null;
-    }
+    if (tv && tv.remoteView) tv.gift = s.tvg != null && NOOR_FX[s.tvg] ? NOOR_FX[s.tvg].id : null;
     return r;
   };
 }
@@ -19859,7 +19800,7 @@ function drawTouchStrip(g) {
     let cx = x0 + 158;
     if (p.fire) cx = hudChip(g, cx, y - 1, 'flame', 'ON FIRE', '#ff8a2a');
     if (noorActive(p)) { const F = NOOR_BY_ID[noorFxOf(p)]; cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, F.icon, ix, iy, 7, F.col), noorTagText(p), F.col); }
-    else if (canNoor(p) && p.hifz >= 100) cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, 'light', ix, iy, 7, '#ffe38a'), 'NOOR READY', '#ffe38a');
+    else if (canNoor(p) && p.hifz >= 100) cx = hudChip(g, cx, y - 1, (ix, iy) => noorIcon(g, 'light', ix, iy, 7, '#ffe38a'), 'HIKMAH READY', '#ffe38a');
     if (!p.fire && (p.fat || 0) > 0.7) cx = hudChip(g, cx, y - 1, 'tired', 'WINDED', '#ffb08a');
     if (typeof pressureOf === 'function' && pressureOf(p) >= 0.3 && !p.fire) cx = hudChip(g, cx, y - 1, 'warn', 'PRESSURE', '#ffb07a');
     y += 26;
@@ -22682,7 +22623,7 @@ MiniMenu.lineup = 0;
 
 // <jumuah-text> (pure: also run by scripts/review-export.mjs and scripts/review-jumuah.mjs for the review list)
 // questions left out of the khutbah, and why (their explanations speak about the game itself)
-const JUMUAH_SKIP = { 90: 'the explanation mentions our masjid’s name in the game', 166: 'the explanation mentions a game', 179: 'the explanation mentions Noor on the court' };
+const JUMUAH_SKIP = { 90: 'the explanation mentions our masjid’s name in the game', 166: 'the explanation mentions a game', 179: 'the explanation mentions the Hikmah meter on the court' };
 const JUMUAH_LEAD = ['Today’s reminder: ', 'Let us also remember: ', 'And a last reminder: '];
 const JUMUAH_NUM = { 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven', 10: 'ten', 12: 'twelve', 25: 'twenty-five', 1000: 'thousand' };
 function jumuahEligible() { return TRIVIA.map((_, i) => i).filter(i => !(i in JUMUAH_SKIP) && !!TRIVIA_WHY[i]); }
@@ -22850,7 +22791,7 @@ function drawJumuahCard(g, TT) {
     g.fillStyle = '#fff'; g.font = `15px ${BODY}`; g.textAlign = 'left'; g.fillText(fitText(g, jumuahTopic(qi), w - 100), x + 62, ry + 18);
   });
   let fy = y + 62 + rows * 40;
-  if (J.newly) { g.fillStyle = '#9dffb0'; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'These now show as Studied in the Noor challenge.', w - 56), x + 28, fy + 12); fy += 28; }
+  if (J.newly) { g.fillStyle = '#9dffb0'; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'These now show as Studied in the Hikmah challenge.', w - 56), x + 28, fy + 12); fy += 28; }
   const bw = 180, bx = W / 2 - bw / 2, by = fy + 14;
   goldPill(g, bx, by, bw, 40, 20, false); g.fillStyle = NIGHT; g.font = `16px ${FONT}`; g.textAlign = 'center'; g.fillText('Continue', W / 2, by + 26);
   addRect(bx, by, bw, 40, jumFinish);
@@ -22889,8 +22830,8 @@ BACK.jumuah = () => jumFinish();
 //   - The hub's first row is Play (the next game: its day and its pregame, in one press, past any free days and
 //     Fridays on the way; with no game scheduled it's Continue as before), then Practice (the gym), then "Skip to Saturday: game day" (one day on, saying where it
 //     goes; not on a game day: games are never skipped), then Go outside (the masjid front, as before; counted in the
-//     day's counters as 'go_outside', local only, for the 9.18.1 decision), My Player, My Masjid. Schedule's Calendar
-//     and Bracket move into My Player, so six rows fit the panel at every size.
+//     day's counters as 'go_outside', local only, for the 9.18.1 decision), My Player, My Masjid. Schedule (Calendar
+//     and Bracket) moves into My Player, so six rows fit the panel at every size (v9.19.0: as one Schedule row).
 //   - One press each on a keyboard or a pad too: Play is where the focus starts; Practice is P on a keyboard and X on a
 //     pad, and its row says so (on touch it's a tap).
 //   - On a Friday the hub asks "Attend Jumu'ah" or "Not today" (the door's own question), one press either way.
@@ -22933,7 +22874,9 @@ worldStartDay = function () {
     // Schedule (Calendar, Bracket) moves into My Player: six rows fit the panel. Its Next day / Play today's game is
     // the Skip and Play rows now
     const si = R.findIndex(e => e.label === 'Schedule' && e.sub), mp = R.find(e => e.label === 'My Player' && e.sub);
-    if (si >= 0 && mp) { const sc = R.splice(si, 1)[0]; for (const x of sc.sub) if (x.label !== 'Next day' && x.label !== 'Play today’s game' && !mp.sub.some(y => y.label === x.label)) mp.sub.push(x); }
+    // (v9.19.0: as one row, Schedule, with Calendar and Bracket in it: two rows ran My Player's list off the bottom)
+    if (si >= 0 && mp) { const sc = R.splice(si, 1)[0], keep = sc.sub.filter(x => x.label !== 'Next day' && x.label !== 'Play today’s game');
+      if (keep.length && !mp.sub.some(y => y.label === 'Schedule')) mp.sub.push(Object.assign({}, sc, { sub: keep })); }
     void pi;
     return R;
   };
@@ -23699,10 +23642,13 @@ function lgCollect(job) { return { sa: M.teams[0].score, sb: M.teams[1].score, r
 // player's points; rebounds, assists, steals, blocks, turnovers and charges are split on their own.
 // v9.8: steals, blocks and turnovers recalibrated (positional steals and blocks; 500 real games: 1.26 / 1.65 / 1.27 a player).
 const LG_CAL = {
-  ppm: { 30: 10.8, 45: 9.67, 60: 9.33, 120: 9.1 }, rel: { 30: 0.3, 45: 0.29, 60: 0.22, 120: 0.19 }, quartersK: 0.98,
-  first21: { lose: 0.77, loseSd: 0.17, over: 0.3 }, share: 0.5, shareSd: 0.14, dunkShare: 0.92,
-  rate: { fga: 0.689, tpa: 0.189, fta: 0.064, reb: 0.0994, ast: 0.184, stl: 0.0691, blk: 0.0892, tov: 0.0682, dnk: 0.347, chg: 0.0192 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more; v9.16: ast 0.1456 -> 0.184, real games 3.29 a player, 500 games)
-  pct: { fg: 0.644, tp: 0.343, ft: 0.764 }
+  // (v9.19.0: real league games score 9% less with the new shooting curves, 32.9 a team, and make 57% of their shots:
+  // points a minute x 0.907, the per-point rates of the counting stats / 0.907 so their totals stay, fg 0.644 -> 0.57,
+  // threes 0.343 -> 0.30, dunks 0.92 -> 0.87 of the twos)
+  ppm: { 30: 9.8, 45: 8.77, 60: 8.46, 120: 8.25 }, rel: { 30: 0.3, 45: 0.29, 60: 0.22, 120: 0.19 }, quartersK: 0.98,
+  first21: { lose: 0.77, loseSd: 0.17, over: 0.3 }, share: 0.5, shareSd: 0.14, dunkShare: 0.87,
+  rate: { fga: 0.689, tpa: 0.208, fta: 0.064, reb: 0.1096, ast: 0.203, stl: 0.0762, blk: 0.0983, tov: 0.0752, dnk: 0.347, chg: 0.0212 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more; v9.16: ast 0.1456 -> 0.184, real games 3.29 a player, 500 games)
+  pct: { fg: 0.57, tp: 0.30, ft: 0.764 }
 };
 // v9.11: how much of his game is threes, by play style (as the CPU plays them now: v911-cpu-style.js)
 const LG_THREE_K = { sharpshooter: 2.5, playmaker: 0.9, lockdown: 0.85, glue: 0.7, rimrunner: 0.1 };
@@ -25100,7 +25046,7 @@ for (let i = REWARDS.length - 1; i >= 0; i--) { const r = REWARDS[i]; if (r.kind
 //     render delay and prediction corrections in a small box. The lobby rates each player's connection (Good / OK /
 //     Poor) from a 5 s probe, and "Copy network report" copies a plain-text report. Nothing is sent anywhere.
 const ONLINE_ICE_URL = 'https://islamdunk-ice.islamdunk.workers.dev/ice';   // the Worker in worker/ice (TURN credentials)
-const NET_PROTO = 4;           // bump when the wire format or the match's rules change in a way older clients can't play (3: v9.11.1 trickle ICE, snapshot numbers; 4: v9.17.10 no shove)
+const NET_PROTO = 5;           // bump when the wire format or the match's rules change in a way older clients can't play (3: v9.11.1 trickle ICE, snapshot numbers; 4: v9.17.10 no shove; 5: v9.19.0 stat curves, one-step power-ups)
 const SNAP_V = 2;              // newest snapshot format this client reads
 
 // ---------------------------------------------------------------- ICE servers (TURN) from the Worker
@@ -28621,6 +28567,86 @@ const HOLD_TAP_TEXT = {
     const own = Object.prototype.hasOwnProperty.call(g, 'fillText'), f = g.fillText;
     g.fillText = function (t, ...a) { const s = String(t); const r = (SETTINGS.defToggle && HOLD_TAP_TEXT.def[s]) || (SETTINGS.sprToggle && HOLD_TAP_TEXT.spr[s]); return f.call(this, r || t, ...a); };
     try { return _hw.apply(this, arguments); } finally { if (own) g.fillText = f; else delete g.fillText; }
+  };
+}
+// ================================================= v9.19.0: STATS SCALE PROPERLY
+// Measured with tools/stat-report.mjs (the numbers are in the changelog). A 5 is where it was; the ends moved:
+//   Speed     a 10 sprints 20% faster than a 5 (was 28%), a 1 25% slower (was 23%). Glow and on fire together add
+//             at most 10% (they stacked to 21%), so a 10 glowing on fire is 1.32x a 5's sprint (was 1.56x).
+//   Shooting  one curve f for the shot odds and for a green release: a 1 is 0.45 of a 5, a 10 is 1.35 of a 5.
+//             A green jumper from range (past 200 units from the rim) is no longer 95% at any rating: open it's
+//             0.555 x f (1: 25%, 5: 56%, 10: 75%), lightly and heavily contested in the same ratios as before. Close
+//             (inside 120) a green release is as before; in between it blends. Free throws are unchanged.
+//             No jumper from range goes in more than 75% of the time, whatever is on (glow, on fire, a signature
+//             move, trailing). The timing window still grows with the rating, more gently (1: 0.88, 5: 1, 10: 1.15).
+//   Dunking   the range a dunk can start from: a 5 is as before; each point is 6 units, from -24 (a 1) to +30 at
+//             most (a 10). Signature dunks need the rating: the windmill needs Dunking 6, the 360 needs 7 (below
+//             that the same dunk is a tomahawk or a two-hander; the timing and the result don't change).
+//   Moves     the crossover needs Ball handling 3 and the behind-the-back 5, where Ball handling is the average of
+//             Speed and Passing (a new career player has 4). Below it the move isn't offered: your input makes a
+//             hesitation instead (a behind-the-back a crossover, if you have that), and the CPU doesn't use it.
+//             Signature moves keep the rating they need now. The move ids are unchanged.
+// Every rating is still a number from 1 to 10 (fractions too: the CPU's teams are around 4.6 to 7.5).
+const STAT_CURVE = { shtLo: 0.1375, shtHi: 0.07, spdLo: 0.0625, spdHi: 0.04, green: 0.555, cap: 0.75, far: 200, near: 120,
+  boostCap: 1.10, dnkPt: 6, dnkLo: -24, dnkHi: 30, windmill: 6, 'dunk360': 7, cross: 3, btb: 5 };
+function statF(v) { v = v == null ? 5 : v; return v <= 5 ? 1 - (5 - v) * STAT_CURVE.shtLo : 1 + (v - 5) * STAT_CURVE.shtHi; }
+function handleOf(p) { const s = (p && p.st) || {}; return ((s.spd == null ? 5 : s.spd) + (s.pas == null ? 5 : s.pas)) / 2; }
+function moveAllowed(p, kind) {
+  if (kind === 'cross') return handleOf(p) >= STAT_CURVE.cross;
+  if (kind === 'btb') return handleOf(p) >= STAT_CURVE.btb;
+  return true;
+}
+// how far from the rim a shot is a jumper "from range" (0 close .. 1 far)
+function rangeK(p) { const h = attackHoop(p.team), d = Math.hypot(p.x - h.x, p.z - h.z); return clamp((d - STAT_CURVE.near) / (STAT_CURVE.far - STAT_CURVE.near), 0, 1); }
+
+spdBase = v => 230 * (v == null || v >= 5 ? 1 + ((v == null ? 5 : v) - 5) * STAT_CURVE.spdHi : 1 - (5 - v) * STAT_CURVE.spdLo);
+shtK = v => 0.93 * statF(v);
+winK = v => { v = v == null ? 5 : v; return 0.85 + v * 0.03; };
+dnkRange = v => 15 + clamp(((v == null ? 5 : v) - 5) * STAT_CURVE.dnkPt, STAT_CURVE.dnkLo, STAT_CURVE.dnkHi);
+{
+  const old = greenOdds;
+  greenOdds = function (p, od, air) {
+    const was = old.apply(this, arguments);
+    if (M.phase === 'ft') return was;
+    const k = rangeK(p); if (k <= 0) return was;
+    const open = Math.min(STAT_CURVE.cap, STAT_CURVE.green * statF(p.st.sht)), now = open * was / 0.95;
+    return lerp(was, now, k);
+  };
+  shotFinal = function (p, prob) { return M.phase !== 'ft' && rangeK(p) >= 1 ? Math.min(prob, STAT_CURVE.cap) : prob; };
+}
+// ---- speed: glow and on fire together add at most 10%
+{
+  const _spd = Player.prototype.speed;
+  Player.prototype.speed = function () {
+    const s = _spd.apply(this, arguments), g = this.boost > 0 ? 1.15 : 1, f = this.fire ? 1.06 : 1;
+    return g * f > STAT_CURVE.boostCap ? s / (g * f) * STAT_CURVE.boostCap : s;
+  };
+}
+// ---- signature dunks need the rating (the look and the name only: timing and result are the dunk's own)
+{
+  const _sd = startDunk;
+  startDunk = function (p, opts) {
+    const r = _sd.apply(this, arguments), a = p.act;
+    if (!a || p.state !== 'dunk' || a.alley || (opts && opts.alley)) return r;
+    const dn = (p.st && p.st.dnk != null) ? p.st.dnk : 5;
+    if ((a.type === '360' && dn < STAT_CURVE.dunk360) || (a.type === 'windmill' && dn < STAT_CURVE.windmill)) a.type = dn >= 4 ? 'tomahawk' : 'twohand';
+    return r;
+  };
+}
+// ---- moves that need ball handling
+{
+  const _sdm = startDribbleMove;
+  startDribbleMove = function (p, kind, side) {
+    if (moveAllowed(p, kind)) return _sdm.apply(this, arguments);
+    if (!p || p.human < 0) return false;                                   // the CPU doesn't use it
+    const alt = kind === 'btb' && moveAllowed(p, 'cross') ? 'cross' : 'hesi';
+    return _sdm.call(this, p, alt, side);
+  };
+  const _sm = startMove;                                                   // the automatic crossover on a sharp turn
+  startMove = function (p, type) {
+    if (type === 'btb' && !moveAllowed(p, 'btb')) type = 'cross';
+    if (type === 'cross' && !moveAllowed(p, 'cross')) return;
+    return _sm.call(this, p, type);
   };
 }
 // v9.17.9: one way back on every screen, one name for leaving, and a gamepad hint on tap-only screens.

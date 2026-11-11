@@ -21,7 +21,7 @@ class Player {
   get opps() { return M.players.filter(q => q.team !== this.team); }
   turboOK() { return this.fire || this.turbo > 1; }
   speed() {
-    let s = 165 + this.st.spd * 13;
+    let s = spdBase(this.st.spd);
     if (this.cmd.turbo && this.turboOK()) s *= 1.42;
     if (this.boost > 0) s *= 1.15;
     if (this.fire) s *= 1.06;
@@ -191,10 +191,14 @@ function startShot(p) {
   if (p.human < 0) p.ai.relT = apexT(p) + gauss() * aiCfg(p.team).relErr;
   notifyShot(p);
 }
+// stat hooks (v9.19.0 sets the curves in sim/v919-stat-curves.js; these are the formulas before it)
+let spdBase = v => 165 + v * 13, shtK = v => 0.72 + v * 0.042, winK = v => 0.7 + v * 0.06;
+let dnkRange = v => v * 3;
+let greenOdds = (p, od, air) => od < 25 || air ? 0.65 : od < 70 ? 0.85 : 0.95, shotFinal = (p, prob) => prob;
 function shotProbability(p, x, z, contestDist) {
   const h = attackHoop(p.team), d = Math.hypot(x - h.x, z - h.z);
   let b = d < 70 ? 0.8 : clamp(0.86 - 0.00135 * d, 0.03, 0.9);
-  b *= 0.72 + p.st.sht * 0.042;
+  b *= shtK(p.st.sht);
   const od = (contestDist != null ? contestDist : nearestOppDist(x, z, p.team)) + sigContestBonus(p);   // fadeaway/euro/floater create space
   b *= od < 25 ? 0.5 : od < 60 ? 0.5 + (od - 25) / 35 * 0.3 : od < 110 ? 0.8 + (od - 60) / 50 * 0.2 : 1;
   if (p.fire) b += 0.2;
@@ -216,7 +220,7 @@ function shotWindow(p, x = p.x, z = p.z) {
   if (d >= 560) return 0;                                              // half court or farther: no green
   const dist = d > THREE_R + 80 ? 0.6 : isThree(x, z, h) ? 0.85 : 1.0;
   // base window ~17% tighter than before, and it shrinks further under a close contest
-  return 0.0375 * (0.7 + p.st.sht * 0.06) * (p.human >= 0 ? humanDiffMult() : 1) * dist * contestK(p, x, z) * (clutchTime() ? 1 + 0.05 * (st7(p, 'clu') - 5) : 1);   // clutch: calmer timing late
+  return 0.0375 * winK(p.st.sht) * (p.human >= 0 ? humanDiffMult() : 1) * dist * contestK(p, x, z) * (clutchTime() ? 1 + 0.05 * (st7(p, 'clu') - 5) : 1);   // clutch: calmer timing late
 }
 // Tiers: GREEN ignores the normal formula (open 95%, light contest 85%, heavy 65%);
 // GOOD is the normal formula +5%; OFF keeps the old early/late penalty.
@@ -225,7 +229,7 @@ function releaseShot(p) {
   const h = attackHoop(p.team), apex = apexT(p), e = Math.abs(p.st_t - apex), win = shotWindow(p);
   const od = nearestOppDist(p.x, p.z, p.team), air = p.opps.some(o => o.y > 25 && dxz(o, p) < 60);
   let prob, tier;
-  if (win > 0 && e <= win) { tier = 'green'; prob = od < 25 || air ? 0.65 : od < 70 ? 0.85 : 0.95; }
+  if (win > 0 && e <= win) { tier = 'green'; prob = greenOdds(p, od, air); }
   else {
     prob = shotProbability(p, p.x, p.z);
     if (win > 0 && e <= win * 3) { tier = 'good'; prob += 0.05; }
@@ -233,7 +237,7 @@ function releaseShot(p) {
     if (air) prob *= 0.78;                                             // hand in the face
     if (p.sigShot) prob *= 1.1;                                        // signature moves: slightly better odds
   }
-  const make = Math.random() < clamp(prob * clutchK(p) * (p.contactK || 1), 0.02, 0.97);   // contact (and-one chances) lowers it
+  const make = Math.random() < clamp(shotFinal(p, prob * clutchK(p) * (p.contactK || 1), tier), 0.02, 0.97);   // contact (and-one chances) lowers it
   const ftShot = M.phase === 'ft';
   const pts = ftShot ? 1 : isThree(p.x, p.z, h) ? 3 : 2;
   if (ftShot) p.stats.fta = (p.stats.fta || 0) + 1; else { p.stats.fga++; if (pts === 3) p.stats.tpa = (p.stats.tpa || 0) + 1; }
@@ -277,7 +281,7 @@ function canDunk(p) {
   const h = attackHoop(p.team);
   if ((p.x - h.x) * h.dir < 5) return false;     // under/behind the backboard
   const turbo = p.cmd.turbo && p.turboOK();
-  const R = (turbo ? 250 : 115) + (p.fire ? 40 : 0) + (p.boost > 0 ? 20 : 0) + p.st.dnk * 3;
+  const R = (turbo ? 250 : 115) + (p.fire ? 40 : 0) + (p.boost > 0 ? 20 : 0) + dnkRange(p.st.dnk);
   const d = dxz(p, h);
   if (d >= R) return false;
   // A long dunk is earned by a drive into the lane. Close finishes stay easy,

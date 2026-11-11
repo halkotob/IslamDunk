@@ -870,6 +870,12 @@
   "screen/match-free-throws/desktop": "9.13.0",
   "screen/match-free-throws/phone-667x300": "9.13.0",
   "screen/match-free-throws/phone-750x342": "9.13.0",
+  "screen/match-hikmah-challenge/desktop": "9.18.0",
+  "screen/match-hikmah-challenge/phone-667x300": "9.18.0",
+  "screen/match-hikmah-challenge/phone-750x342": "9.18.0",
+  "screen/match-hikmah-correct/desktop": "9.18.0",
+  "screen/match-hikmah-correct/phone-667x300": "9.18.0",
+  "screen/match-hikmah-correct/phone-750x342": "9.18.0",
   "screen/match-hot-spot/desktop": "9.13.0",
   "screen/match-hot-spot/phone-667x300": "9.13.0",
   "screen/match-hot-spot/phone-750x342": "9.13.0",
@@ -882,12 +888,6 @@
   "screen/match-leave-confirm/desktop": "9.13.0",
   "screen/match-leave-confirm/phone-667x300": "9.13.0",
   "screen/match-leave-confirm/phone-750x342": "9.13.0",
-  "screen/match-noor-choice/desktop": "9.2.2",
-  "screen/match-noor-choice/phone-667x300": "9.2.2",
-  "screen/match-noor-choice/phone-750x342": "9.2.2",
-  "screen/match-noor-question/desktop": "9.2.2",
-  "screen/match-noor-question/phone-667x300": "9.2.2",
-  "screen/match-noor-question/phone-750x342": "9.2.2",
   "screen/match-pause/desktop": "9.2.2",
   "screen/match-pause/phone-667x300": "9.2.2",
   "screen/match-pause/phone-750x342": "9.2.2",
@@ -1616,10 +1616,6 @@
   "text/career/career-goals/1-defense-wd70zd": "8.6.0",
   "text/career/career-goals/1-passing-79ws1m": "8.6.0",
   "text/career/career-goals/1-stamina-lbvchs": "8.6.0",
-  "text/career/career-goals/40-bp-each-100-bp-urw2df": "8.6.2",
-  "text/career/career-goals/40-bp-each-100-for-ourkcx": "8.6.2",
-  "text/career/career-goals/40-bp-faib3c": "8.6.0",
-  "text/career/career-goals/50-bp-qno90v": "8.6.0",
   "text/career/career-goals/a-little-steadier-when-you-8nizz2": "8.6.0",
   "text/career/career-goals/a-week-is-3-career-umypak": "8.6.2",
   "text/career/career-goals/all-goals-done-this-week-vnfqj5": "8.6.0",
@@ -1627,6 +1623,8 @@
   "text/career/career-goals/badge-earned-0esqq3": "8.6.0",
   "text/career/career-goals/badges-earned-on-the-court-ye7px4": "8.6.0",
   "text/career/career-goals/big-stage-2abd87": "8.6.0",
+  "text/career/career-goals/bp-each-fpcrbp": "9.18.0",
+  "text/career/career-goals/bp-for-all-five-ch9s09": "9.18.0",
   "text/career/career-goals/career-games-m08tlx": "8.6.0",
   "text/career/career-goals/contested-finishes-at-the-rim-nmfgay": "8.6.0",
   "text/career/career-goals/draw-a-charge-eu5yf8": "8.6.0",
@@ -1634,6 +1632,7 @@
   "text/career/career-goals/finish-6-conditioning-sessions-i-ytetlb": "8.6.0",
   "text/career/career-goals/finish-a-drill-in-the-dxgu6v": "8.6.0",
   "text/career/career-goals/floor-general-6zqkgd": "8.6.0",
+  "text/career/career-goals/for-all-ga6ns3": "9.18.0",
   "text/career/career-goals/free-throws-a-little-steadier-asku82": "8.6.0",
   "text/career/career-goals/game-s-left-this-week-kuh3yu": "8.6.2",
   "text/career/career-goals/games-without-committing-a-foul-q6e5fw": "9.17.10",
@@ -2111,9 +2110,9 @@
   "text/career/jumuah/sh-saleem-gives-the-khutbah-svcy5u": "9.4.0",
   "text/career/jumuah/the-brothers-sit-for-the-05hv88": "9.4.0",
   "text/career/jumuah/the-explanation-mentions-a-game-ca744d": "9.4.0",
-  "text/career/jumuah/the-explanation-mentions-noor-on-c9zec9": "9.4.0",
   "text/career/jumuah/the-explanation-mentions-our-mas-pynnyv": "9.4.0",
-  "text/career/jumuah/these-now-show-as-studied-ml0s3u": "9.4.0",
+  "text/career/jumuah/the-explanation-mentions-the-hik-mzxqph": "9.18.0",
+  "text/career/jumuah/these-now-show-as-studied-fsrb76": "9.18.0",
   "text/career/jumuah/today-s-khutbah-touched-on-3t6vwo": "9.4.0",
   "text/career/jumuah/today-s-reminder-cslwly": "9.4.0",
   "text/career/league/around-the-league-43esjk": "9.6.3",
@@ -2365,7 +2364,7 @@
   "text/career/progression/got-it-l8hqi2": "8.6.0",
   "text/career/progression/green-releases-9x98au": "8.6.0",
   "text/career/progression/greens-on-e1qof6": "8.6.0",
-  "text/career/progression/he-s-a-hafiz-so-dux1rp": "8.6.1",
+  "text/career/progression/he-s-a-hafiz-so-eyezvv": "9.18.0",
   "text/career/progression/head-to-head-you-are-5lasdl": "8.6.0",
   "text/career/progression/home-c58lbw": "8.6.0",
   "text/career/progression/in-a-row-masha-allah-wzq7jw": "8.6.0",
@@ -3136,7 +3135,7 @@
   "text/screens/creator-suite/select-the-code-and-copy-qqt9jg": "8.6.0",
   "text/screens/creator-suite/send-this-to-a-friend-fb88es": "8.6.0",
   "text/screens/creator-suite/share-code-5gnh65": "8.6.0",
-  "text/screens/creator-suite/sheikh-noor-meter-xpgd7z": "8.6.0",
+  "text/screens/creator-suite/sheikh-hikmah-meter-qbqjmv": "9.18.0",
   "text/screens/creator-suite/sheikh-pb1t85": "8.6.0",
   "text/screens/creator-suite/short-name-4keci4": "8.6.0",
   "text/screens/creator-suite/short-name-6-letters-555h6i": "8.6.0",
@@ -3196,7 +3195,7 @@
   "text/screens/menus/a-knockout-bracket-of-4-q5zgmy": "9.8.0",
   "text/screens/menus/a-new-scenario-and-a-e0ljzb": "9.8.0",
   "text/screens/menus/a-run-of-games-against-88nd0r": "9.8.0",
-  "text/screens/menus/can-earn-a-noor-power-y4kvil": "8.6.1",
+  "text/screens/menus/can-earn-a-power-up-aev9zj": "9.18.0",
   "text/screens/menus/captain-208ih7": "8.6.0",
   "text/screens/menus/change-direction-while-dribbling-cikmiz": "8.6.0",
   "text/screens/menus/choose-your-friend-s-masjid-sx774h": "8.6.0",
@@ -3205,7 +3204,7 @@
   "text/screens/menus/choose-your-player-ovjwy4": "8.6.0",
   "text/screens/menus/co-op-p1-plays-the-g86a5c": "8.6.0",
   "text/screens/menus/confirm-8tbqwf": "8.6.0",
-  "text/screens/menus/correct-choose-your-noor-next-nfqutj": "8.6.1",
+  "text/screens/menus/correct-tb0hlc": "9.18.0",
   "text/screens/menus/cpu-demo-in-progress-vt9j18": "8.6.0",
   "text/screens/menus/crossover-jk09s9": "8.6.0",
   "text/screens/menus/daily-challenges-3ey660": "9.8.0",
@@ -3218,6 +3217,8 @@
   "text/screens/menus/game-controls-accessibility-soun-xbdvot": "9.8.0",
   "text/screens/menus/get-join-code-g40pde": "8.6.0",
   "text/screens/menus/guard-m575se": "8.6.0",
+  "text/screens/menus/hikmah-challenge-8qlo4y": "9.18.0",
+  "text/screens/menus/hikmah-challenge-ks9oaa": "9.18.0",
   "text/screens/menus/import-a-code-pkewl0": "9.8.0",
   "text/screens/menus/jump-into-a-game-a-9ekxnf": "9.8.0",
   "text/screens/menus/k-hold-release-at-the-h9azng": "8.6.0",
@@ -3228,8 +3229,6 @@
   "text/screens/menus/make-your-own-players-and-3padx3": "9.8.0",
   "text/screens/menus/mini-games-3x9kc5": "9.8.0",
   "text/screens/menus/move-zaagxg": "8.6.0",
-  "text/screens/menus/noor-challenge-0kuuym": "8.6.0",
-  "text/screens/menus/noor-challenge-qsjmta": "8.6.1",
   "text/screens/menus/one-game-alone-with-a-llxcei": "9.8.0",
   "text/screens/menus/online-head-to-head-you-nssa7l": "8.6.0",
   "text/screens/menus/online-same-team-you-play-remfq2": "8.6.0",
@@ -3259,7 +3258,7 @@
   "text/screens/menus/the-answer-ia8pas": "8.6.1",
   "text/screens/menus/the-controls-one-step-at-r7clev": "9.8.0",
   "text/screens/menus/three-a-side-with-a-ysbhd8": "9.8.0",
-  "text/screens/menus/three-baskets-in-a-row-2gxvv2": "8.6.1",
+  "text/screens/menus/three-baskets-in-a-row-jwk0co": "9.18.0",
   "text/screens/menus/tip-off-qhwdsr": "8.6.0",
   "text/screens/menus/to-change-enter-to-confirm-sj6zui": "8.6.0",
   "text/screens/menus/tournament-x41ccy": "9.8.0",
@@ -3272,7 +3271,7 @@
   "text/screens/menus/who-made-islam-dunk-o0u04o": "9.8.0",
   "text/screens/menus/without-the-ball-pass-calls-cftt9e": "8.6.0",
   "text/screens/menus/you-and-a-cpu-teammate-6fzbrp": "9.8.0",
-  "text/screens/menus/your-friend-is-answering-a-4ktzfk": "8.6.1",
+  "text/screens/menus/your-friend-is-answering-a-k4i5cs": "9.18.0",
   "text/screens/menus/your-players-looks-and-skills-g7a4vn": "9.8.0",
   "text/screens/menus/your-profile-settings-extras-and-ltbwcn": "9.8.0",
   "text/screens/menus/your-story-at-masjid-al-bipp6h": "9.8.0",
@@ -3309,14 +3308,15 @@
   "text/screens/phone-pass/enter-edit-c-code-d-48cctw": "8.6.2",
   "text/screens/phone-pass/enter-edit-c-code-d-w617p3": "9.3.0",
   "text/screens/phone-pass/game-log-tap-a-game-mv4gs8": "8.6.2",
+  "text/screens/phone-pass/hikmah-ready-wej86g": "9.18.0",
   "text/screens/phone-pass/hold-let-go-at-the-gnmqm2": "8.6.2",
   "text/screens/phone-pass/how-to-play-is-in-p8lblp": "8.6.2",
   "text/screens/phone-pass/large-v0q9n8": "8.6.2",
   "text/screens/phone-pass/left-handed-layout-kwjit3": "8.6.2",
   "text/screens/phone-pass/make-video-4zor78": "8.7.1",
-  "text/screens/phone-pass/noor-ready-z7iayc": "8.6.7",
   "text/screens/phone-pass/play-the-tutorial-yn4hl6": "8.6.2",
   "text/screens/phone-pass/praying-gives-a-bonus-next-aqlczi": "8.6.2",
+  "text/screens/phone-pass/press-1-to-3-or-c5b0dr": "9.18.0",
   "text/screens/phone-pass/push-to-the-edge-dqcs82": "8.6.2",
   "text/screens/phone-pass/random-venue-tctzkl": "8.6.2",
   "text/screens/phone-pass/save-image-shdgxx": "8.7.1",
@@ -3439,13 +3439,15 @@
   "text/screens/review-mode/v-note-gduels": "8.6.0",
   "text/screens/review-mode/welcome-to-al-amanah-c0x54s": "8.6.0",
   "text/screens/scenarios/attempts-today-1d9hm4": "8.6.0",
-  "text/screens/scenarios/career-bonus-added-60-bp-np6lzm": "8.6.0",
+  "text/screens/scenarios/bp-60-halal-bucks-2r9742": "9.18.0",
+  "text/screens/scenarios/bp-60-hb-865ja3": "9.18.0",
+  "text/screens/scenarios/career-bonus-added-3tbla1": "9.18.0",
   "text/screens/scenarios/completed-today-masha-allah-play-2lz0by": "8.6.0",
   "text/screens/scenarios/completed-today-z0j6l3": "8.6.0",
   "text/screens/scenarios/daily-scenario-hujbgu": "8.6.0",
   "text/screens/scenarios/down-9o4rhx": "8.6.0",
   "text/screens/scenarios/enter-to-play-esc-to-ocgqqx": "8.6.0",
-  "text/screens/scenarios/first-try-today-complete-it-iyk6t9": "8.6.0",
+  "text/screens/scenarios/first-try-today-complete-it-apgunr": "9.18.0",
   "text/screens/scenarios/fourth-quarter-ysa6cb": "8.6.0",
   "text/screens/scenarios/get-a-stop-first-then-o6m04r": "phase1",
   "text/screens/scenarios/not-this-time-t7gwlv": "8.6.0",
@@ -3788,6 +3790,7 @@
   "text/sim/match-extras/win-any-career-trophy-or-rkm87e": "phase1",
   "text/sim/match-extras/you-got-me-fair-and-17p4s0": "phase1",
   "text/sim/match-extras/your-green-releases-6qp6nl": "8.6.0",
+  "text/sim/match/12-seconds-better-shots-longer-mn429y": "9.18.0",
   "text/sim/match/1st-half-xtpry8": "8.6.0",
   "text/sim/match/2nd-half-5tmdrg": "8.6.0",
   "text/sim/match/barakallahu-feek-7q8f0f": "phase1",
@@ -3799,8 +3802,8 @@
   "text/sim/match/first-to-8z31a6": "8.6.0",
   "text/sim/match/he-s-on-fire-0zwdgi": "8.6.0",
   "text/sim/match/hot-spot-wimulr": "phase1",
-  "text/sim/match/is-glowing-ajwbba": "8.6.0",
   "text/sim/match/laylatul-qadr-double-points-1c5a0t": "8.6.0",
+  "text/sim/match/light-upon-light-oi7dlg": "9.18.0",
   "text/sim/match/masha-allah-game-winner-vvtsj4": "8.6.0",
   "text/sim/match/nothing-but-net-yhpb9u": "phase1",
   "text/sim/match/off-the-glass-aj5wa5": "phase1",
@@ -3834,18 +3837,10 @@
   "text/sim/mini-games/to-shoot-first-gpmj5h": "8.6.0",
   "text/sim/mini-games/too-much-pressure-eolfli": "8.6.0",
   "text/sim/mini-games/wait-for-tyyyz3": "8.6.0",
-  "text/sim/noor-powers/choose-your-noor-2gkz57": "8.6.2",
-  "text/sim/noor-powers/correct-tb0hlc": "8.6.2",
   "text/sim/noor-powers/has-ended-79vmu7": "8.6.1",
-  "text/sim/noor-powers/is-glowing-ajwbba": "8.6.1",
-  "text/sim/noor-powers/noor-active-8udfwv": "8.6.1",
-  "text/sim/noor-powers/noor-challenge-qsjmta": "8.6.1",
-  "text/sim/noor-powers/picks-one-of-these-three-70z2kp": "8.6.2",
-  "text/sim/noor-powers/press-1-to-3-or-c5b0dr": "8.6.2",
-  "text/sim/noor-powers/sent-waiting-for-the-game-fbofbi": "8.6.2",
+  "text/sim/noor-powers/power-up-active-asc2tq": "9.18.0",
   "text/sim/noor-powers/shot-left-kpkm6e": "8.6.1",
   "text/sim/noor-powers/shots-left-t6e1g3": "8.6.1",
-  "text/sim/noor-powers/your-friend-answered-correctly-a-e1pc4l": "8.6.1",
   "text/sim/players/build-a-run-up-nzny3x": "8.6.0",
   "text/sim/players/crossed-up-xnxl0m": "phase1",
   "text/sim/players/drive-at-the-rim-3smfz3": "8.6.0",
@@ -4297,6 +4292,36 @@
    "version": "9.8.0",
    "was": "phase1"
   },
+  "screen/match-noor-choice/desktop": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "9.2.2"
+  },
+  "screen/match-noor-choice/phone-667x300": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "9.2.2"
+  },
+  "screen/match-noor-choice/phone-750x342": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "9.2.2"
+  },
+  "screen/match-noor-question/desktop": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "9.2.2"
+  },
+  "screen/match-noor-question/phone-667x300": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "9.2.2"
+  },
+  "screen/match-noor-question/phone-750x342": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "9.2.2"
+  },
   "screen/mini-game-room-import/desktop": {
    "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
    "version": "9.8.0",
@@ -4356,6 +4381,26 @@
    "reason": "9.12: How to play says Skill move for H/Y; run map footer says Esc asks first; Continue says where it goes (no badge)",
    "version": "9.12.0",
    "was": "9.0.0"
+  },
+  "text/career/career-goals/40-bp-each-100-bp-urw2df": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.2"
+  },
+  "text/career/career-goals/40-bp-each-100-for-ourkcx": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.2"
+  },
+  "text/career/career-goals/40-bp-faib3c": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.0"
+  },
+  "text/career/career-goals/50-bp-qno90v": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.0"
   },
   "text/career/career-goals/games-without-a-shove-4hcmaq": {
    "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
@@ -4452,6 +4497,16 @@
    "version": "9.9.0",
    "was": "8.6.0"
   },
+  "text/career/jumuah/the-explanation-mentions-noor-on-c9zec9": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "9.4.0"
+  },
+  "text/career/jumuah/these-now-show-as-studied-ml0s3u": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "9.4.0"
+  },
   "text/career/office/leave-office-f1ff8g": {
    "reason": "v9.17.9 (U2): one way back per screen and one word for leaving: duplicate Back / Leave / Close / Cancel buttons removed (the ‹ Back pill does it), and Quit to title, Leave game (no result), Leave online game, Back to title and Back to lobby renamed to Quit, Leave, Title and Back; Settings is Game settings; Leave this game? is Quit this game?; profile's Title is now listed under the hub's Title (same word)",
    "version": "9.17.9",
@@ -4461,6 +4516,11 @@
    "reason": "v9.17.9 (U2): one way back per screen and one word for leaving: duplicate Back / Leave / Close / Cancel buttons removed (the ‹ Back pill does it), and Quit to title, Leave game (no result), Leave online game, Back to title and Back to lobby renamed to Quit, Leave, Title and Back; Settings is Game settings; Leave this game? is Quit this game?; profile's Title is now listed under the hub's Title (same word)",
    "version": "9.17.9",
    "was": "8.6.7"
+  },
+  "text/career/progression/he-s-a-hafiz-so-dux1rp": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.1"
   },
   "text/career/seasons/stats-box-scores-drg63e": {
    "reason": "v9.7.0: the screen and its menu entry are now League & stats (leaders, around the league, player pages)",
@@ -4532,6 +4592,11 @@
    "version": "9.8.0",
    "was": "8.6.0"
   },
+  "text/screens/creator-suite/sheikh-noor-meter-xpgd7z": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.0"
+  },
   "text/screens/creator-suite/teams-fjpthp": {
    "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
    "version": "9.8.0",
@@ -4562,6 +4627,16 @@
    "version": "9.17.9",
    "was": "8.6.0"
   },
+  "text/screens/menus/can-earn-a-noor-power-y4kvil": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.1"
+  },
+  "text/screens/menus/correct-choose-your-noor-next-nfqutj": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.1"
+  },
   "text/screens/menus/leave-game-no-result-o9eznl": {
    "reason": "v9.17.9 (U2): one way back per screen and one word for leaving: duplicate Back / Leave / Close / Cancel buttons removed (the ‹ Back pill does it), and Quit to title, Leave game (no result), Leave online game, Back to title and Back to lobby renamed to Quit, Leave, Title and Back; Settings is Game settings; Leave this game? is Quit this game?; profile's Title is now listed under the hub's Title (same word)",
    "version": "9.17.9",
@@ -4572,20 +4647,45 @@
    "version": "9.17.9",
    "was": "8.6.0"
   },
+  "text/screens/menus/noor-challenge-0kuuym": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.0"
+  },
+  "text/screens/menus/noor-challenge-qsjmta": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.1"
+  },
   "text/screens/menus/quit-to-title-gbpe0p": {
    "reason": "v9.17.9 (U2): one way back per screen and one word for leaving: duplicate Back / Leave / Close / Cancel buttons removed (the ‹ Back pill does it), and Quit to title, Leave game (no result), Leave online game, Back to title and Back to lobby renamed to Quit, Leave, Title and Back; Settings is Game settings; Leave this game? is Quit this game?; profile's Title is now listed under the hub's Title (same word)",
    "version": "9.17.9",
    "was": "8.6.0"
+  },
+  "text/screens/menus/three-baskets-in-a-row-2gxvv2": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.1"
   },
   "text/screens/menus/turbo-pass-on-defense-is-hnn4b5": {
    "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
    "version": "9.17.10",
    "was": "8.6.0"
   },
+  "text/screens/menus/your-friend-is-answering-a-4ktzfk": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.1"
+  },
   "text/screens/minis-menu/mini-games-3x9kc5": {
    "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
    "version": "9.8.0",
    "was": "8.6.0"
+  },
+  "text/screens/phone-pass/noor-ready-z7iayc": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.7"
   },
   "text/screens/profile/around-the-world-wins-7tndg2": {
    "reason": "v9.8 play-test review: Around the World, 7 Up and the custom game room removed; Tariq and Siddiq left the intro; reworded lines; some strings now first appear in the title menu help, so their IDs moved",
@@ -4595,6 +4695,16 @@
   "text/screens/profile/title-a7vsmh": {
    "reason": "v9.17.9 (U2): one way back per screen and one word for leaving: duplicate Back / Leave / Close / Cancel buttons removed (the ‹ Back pill does it), and Quit to title, Leave game (no result), Leave online game, Back to title and Back to lobby renamed to Quit, Leave, Title and Back; Settings is Game settings; Leave this game? is Quit this game?; profile's Title is now listed under the hub's Title (same word)",
    "version": "9.17.9",
+   "was": "8.6.0"
+  },
+  "text/screens/scenarios/career-bonus-added-60-bp-np6lzm": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.0"
+  },
+  "text/screens/scenarios/first-try-today-complete-it-iyk6t9": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
    "was": "8.6.0"
   },
   "text/screens/scenarios/win-without-a-shove-or-xcy8je": {
@@ -4651,6 +4761,56 @@
    "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",
    "version": "9.17.10",
    "was": "8.6.0"
+  },
+  "text/sim/match/is-glowing-ajwbba": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.0"
+  },
+  "text/sim/noor-powers/choose-your-noor-2gkz57": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.2"
+  },
+  "text/sim/noor-powers/correct-tb0hlc": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.2"
+  },
+  "text/sim/noor-powers/is-glowing-ajwbba": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.1"
+  },
+  "text/sim/noor-powers/noor-active-8udfwv": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.1"
+  },
+  "text/sim/noor-powers/noor-challenge-qsjmta": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.1"
+  },
+  "text/sim/noor-powers/picks-one-of-these-three-70z2kp": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.2"
+  },
+  "text/sim/noor-powers/press-1-to-3-or-c5b0dr": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.2"
+  },
+  "text/sim/noor-powers/sent-waiting-for-the-game-fbofbi": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.2"
+  },
+  "text/sim/noor-powers/your-friend-answered-correctly-a-e1pc4l": {
+   "reason": "9.19.0: the Noor challenge is the Hikmah challenge (renamed text and screens), the power-up picker is gone (a right answer gives one at random), and BP rewards are shown at the new scale",
+   "version": "9.18.0",
+   "was": "8.6.1"
   },
   "text/sim/players/watch-the-adab-2egmde": {
    "reason": "v9.17.10: the shove is removed (Turbo + Pass on defense is a steal; late and trailing, the foul on purpose). Its animation, the hard-foul call and its words, and the shove tips and goals are gone; the clean goal and scenario count fouls instead",

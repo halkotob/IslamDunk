@@ -236,7 +236,7 @@ const TRIVIA_WHY = [
   'The Sunnah is what he said, did and approved.',
   'Tafsir explains the meanings of the Quran.',
   'Tajwid covers pronunciation, lengthening and pauses.',
-  'A hafiz (or hafizah) carries the whole Quran in memory. That\'s where Noor comes from on the court.',
+  'A hafiz (or hafizah) carries the whole Quran in memory. That\'s where the Hikmah meter comes from on the court.',
   'Sadaqah can be anything good, even a smile (Sunan at-Tirmidhi).'
 ];
 function shelfOpen() {

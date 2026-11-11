@@ -43,7 +43,7 @@ function newWeek(G) {
   const pool = WEEK_POOL.slice(); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
   G.week = { n, start: C.gamesPlayed || 0, goals: pool.slice(0, 3).map(w => ({ id: w.id, need: w.need, prog: 0, done: false })), all: false };
 }
-function goalPay(bp, hb, why) { C.bp += bp; C.hb += hb; toast('✓ ' + why + '   +' + bp + ' BP' + (hb ? '  +' + hb + ' HB' : ''), 3.2); SFX.good && SFX.good(); saveCareer(); }
+function goalPay(bp, hb, why) { bp = Math.round(bp * ECON.bpK); C.bp += bp; C.hb += hb; toast('✓ ' + why + '   +' + bp + ' BP' + (hb ? '  +' + hb + ' HB' : ''), 3.2); SFX.good && SFX.good(); saveCareer(); }
 function rookieDo(id) {
   if (!C) return; const G = cg(); if (G.rookie[id]) return;
   G.rookie[id] = true; const s = ROOKIE.find(r => r[0] === id);
@@ -150,9 +150,9 @@ const CGame = { stops: 0, green: 0, close: 0, ft: 0, oppStart: 0, guarded: false
 // ---- the next goal (hub banner)
 function nextGoal() {
   const G = cg(), rk = ROOKIE.find(r => !G.rookie[r[0]]);
-  if (rk) return { txt: 'Rookie: ' + rk[1], pay: '+40 BP' };
+  if (rk) return { txt: 'Rookie: ' + rk[1], pay: '+' + Math.round(40 * ECON.bpK) + ' BP' };
   const w = G.week.goals.find(g => !g.done);
-  if (w) return { txt: 'This week: ' + WEEK_POOL.find(x => x.id === w.id).txt(w.need) + '  (' + w.prog + '/' + w.need + ')', pay: '+50 BP' };
+  if (w) return { txt: 'This week: ' + WEEK_POOL.find(x => x.id === w.id).txt(w.need) + '  (' + w.prog + '/' + w.need + ')', pay: '+' + Math.round(50 * ECON.bpK) + ' BP' };
   const b = C.bracket;
   if (b && !b.out && !b.champ) { const rn = typeof roundLabel === 'function' ? roundLabel(b) : 'next game'; return { txt: 'Win your ' + rn, pay: 'keeps the run going' }; }
   return { txt: 'All goals done this week. Next week starts in ' + (G.week.start + 3 - (C.gamesPlayed || 0)) + ' game(s)', pay: '' };
@@ -232,7 +232,7 @@ function drawGoals(g) {
   panel(g, 30, 74, 290, 210, false);
   g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('ROOKIE CHECKLIST', 48, 100);
   ROOKIE.forEach(([id, t], i) => { const ok = G.rookie[id]; g.fillStyle = ok ? '#9dffb0' : IVORY; g.font = `13px ${BODY}`; g.fillText(fitText(g, (ok ? '✓ ' : '• ') + t, 262), 48, 128 + i * 26); });
-  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(TT ? '+40 BP each, +100 for all' : '+40 BP each, +100 BP for all five', 48, 268);
+  g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; { const a = Math.round(40 * ECON.bpK), b = Math.round(100 * ECON.bpK); g.fillText(TT ? '+' + a + ' BP each, +' + b + ' for all' : '+' + a + ' BP each, +' + b + ' BP for all five', 48, 268); }
   // week
   panel(g, 30, 296, 290, 220, false);
   g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('WEEK ' + G.week.n, 48, 322);

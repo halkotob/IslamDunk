@@ -33,7 +33,7 @@ function practicePlan() {
 function planDone(kind) {
   const P_ = practicePlan(); if (!P_ || !P_.ids.includes(kind) || P_.done.includes(kind)) return;
   P_.done.push(kind);
-  if (P_.done.length >= P_.ids.length && !P_.paid) { P_.paid = true; setTimeout(() => goalPay(drillBP(60), 15, 'Today’s practice plan'), 900); }
+  if (P_.done.length >= P_.ids.length && !P_.paid) { P_.paid = true; setTimeout(() => goalPay(Math.round(60 * ECON.bpDrillK[stageOf()]), 15, 'Today’s practice plan'), 900); }
   else gymToast('Today’s plan: ' + P_.done.length + ' of 3 done', 2.5);
   saveCareer();
 }

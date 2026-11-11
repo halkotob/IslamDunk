@@ -14,7 +14,7 @@
 
 // <jumuah-text> (pure: also run by scripts/review-export.mjs and scripts/review-jumuah.mjs for the review list)
 // questions left out of the khutbah, and why (their explanations speak about the game itself)
-const JUMUAH_SKIP = { 90: 'the explanation mentions our masjid’s name in the game', 166: 'the explanation mentions a game', 179: 'the explanation mentions Noor on the court' };
+const JUMUAH_SKIP = { 90: 'the explanation mentions our masjid’s name in the game', 166: 'the explanation mentions a game', 179: 'the explanation mentions the Hikmah meter on the court' };
 const JUMUAH_LEAD = ['Today’s reminder: ', 'Let us also remember: ', 'And a last reminder: '];
 const JUMUAH_NUM = { 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven', 10: 'ten', 12: 'twelve', 25: 'twenty-five', 1000: 'thousand' };
 function jumuahEligible() { return TRIVIA.map((_, i) => i).filter(i => !(i in JUMUAH_SKIP) && !!TRIVIA_WHY[i]); }
@@ -182,7 +182,7 @@ function drawJumuahCard(g, TT) {
     g.fillStyle = '#fff'; g.font = `15px ${BODY}`; g.textAlign = 'left'; g.fillText(fitText(g, jumuahTopic(qi), w - 100), x + 62, ry + 18);
   });
   let fy = y + 62 + rows * 40;
-  if (J.newly) { g.fillStyle = '#9dffb0'; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'These now show as Studied in the Noor challenge.', w - 56), x + 28, fy + 12); fy += 28; }
+  if (J.newly) { g.fillStyle = '#9dffb0'; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'These now show as Studied in the Hikmah challenge.', w - 56), x + 28, fy + 12); fy += 28; }
   const bw = 180, bx = W / 2 - bw / 2, by = fy + 14;
   goldPill(g, bx, by, bw, 40, 20, false); g.fillStyle = NIGHT; g.font = `16px ${FONT}`; g.textAlign = 'center'; g.fillText('Continue', W / 2, by + 26);
   addRect(bx, by, bw, 40, jumFinish);

@@ -1,21 +1,22 @@
-// ================================================= v8.6.1: NOOR POWER-UPS
-// A correct Noor answer now opens a short choice: one of three effects, each named for a virtue. No
-// chance is involved: the three shown are always the three this player used least recently, and the
-// player sees exactly what each one does before picking. A wrong answer or a timeout still gives
-// nothing (unchanged). Only one effect is active per player at a time (as p.boost always was), and the
-// Noor meter doesn't fill while one is active.
+// ================================================= v8.6.1: POWER-UPS (the Hikmah challenge since v9.19.0)
+// v9.19.0: a correct answer gives one power-up at once, chosen at random among those that can apply now (Ukhuwwah
+// needs a teammate without an effect), with the match's random numbers (in an online match, the seeded ones both
+// phones share). Its callout names it and says what it does. There's no picker any more. A wrong answer or a
+// timeout still gives nothing. (v8.6.1-v9.18: a choice of the three used least recently.) The CPU keeps its
+// situational pick. Only one effect is active per player at a time (as p.boost always was), and the meter
+// doesn't fill while one is active. Player-facing words: the Hikmah challenge, the HIKMAH meter, and the glow is
+// Light Upon Light; the ids (noor, NOOR_FX, p.boost, AchEvents.noor) are unchanged.
 //   state: p.boost > 0 means Noor (the original glow, unchanged); p.nfx = { id, t, shots } is any other.
 //   NOOR_FX order is append-only: its indexes travel in online snapshots and replay frames.
 const NOOR_FX = [
-  { id: 'noor', name: 'Noor', mean: 'Light', desc: '12 seconds of glow: better shooting and a longer dunk range.', icon: 'light', col: '#ffe38a', t: 12 },
-  { id: 'sabr', name: 'Sabr', mean: 'Patience', desc: 'Your next 3 shots get a wider green window. Ends after 3 shots or 30 seconds.', icon: 'hourglass', col: '#8fe3ff', t: 30, shots: 3 },
-  { id: 'himmah', name: 'Himmah', mean: 'Determination', desc: 'For 15 seconds you reach further for loose balls and rebounds.', icon: 'reach', col: '#ffb36b', t: 15 },
-  { id: 'quwwah', name: 'Quwwah', mean: 'Strength', desc: 'Turbo refills fully now, and refills twice as fast for 10 seconds.', icon: 'bolt', col: '#9dffb0', t: 10 },
-  { id: 'yaqazah', name: 'Yaqazah', mean: 'Alertness', desc: 'Your next steal attempt within reach succeeds cleanly, with no foul. Expires after 20 seconds.', icon: 'eye', col: '#c9b8ff', t: 20 },
-  { id: 'ukhuwwah', name: 'Ukhuwwah', mean: 'Brotherhood', desc: 'Your teammate gets the Noor glow for 12 seconds.', icon: 'pair', col: '#ffd0e0', t: 12 }
+  { id: 'noor', name: 'Light Upon Light', mean: 'Light', desc: '12 seconds of glow: better shooting and a longer dunk range.', short: '12 seconds: better shots, longer dunks', icon: 'light', col: '#ffe38a', t: 12 },
+  { id: 'sabr', name: 'Sabr', mean: 'Patience', desc: 'Your next 3 shots get a wider green window. Ends after 3 shots or 30 seconds.', short: 'Next 3 shots: wider green window', icon: 'hourglass', col: '#8fe3ff', t: 30, shots: 3 },
+  { id: 'himmah', name: 'Himmah', mean: 'Determination', desc: 'For 15 seconds you reach further for loose balls and rebounds.', short: '15 seconds: longer reach for loose balls', icon: 'reach', col: '#ffb36b', t: 15 },
+  { id: 'quwwah', name: 'Quwwah', mean: 'Strength', desc: 'Turbo refills fully now, and refills twice as fast for 10 seconds.', short: 'Turbo full, refills twice as fast', icon: 'bolt', col: '#9dffb0', t: 10 },
+  { id: 'yaqazah', name: 'Yaqazah', mean: 'Alertness', desc: 'Your next steal attempt within reach succeeds cleanly, with no foul. Expires after 20 seconds.', short: 'Next steal in reach is clean', icon: 'eye', col: '#c9b8ff', t: 20 },
+  { id: 'ukhuwwah', name: 'Ukhuwwah', mean: 'Brotherhood', desc: 'Your teammate gets the Light Upon Light glow for 12 seconds.', short: 'Your teammate glows for 12 seconds', icon: 'pair', col: '#ffd0e0', t: 12 }
 ];
 const NOOR_BY_ID = Object.fromEntries(NOOR_FX.map(f => [f.id, f]));
-const NOOR_PICK_T = 10;                  // seconds to choose; then the highlighted card is taken
 const SABR_WIN = 1.25, SABR_CAP = 1.4;   // +25% green window; with Barakah Run 'green' the total is capped at +40%
 const HIMMAH_REACH = 12;                 // extra grab reach (game units)
 
@@ -35,23 +36,24 @@ function noorEligible(p, id) {
   if (id !== 'ukhuwwah') return true;
   const m = p.mate; return !!m && !noorActive(m);                // brotherhood needs a teammate without an effect
 }
-function noorOptions(p) { return noorLRU(p).filter(id => noorEligible(p, id)).slice(0, 3); }
+// one at random among the effects that can apply now (Math.random is the match's own: seeded in an online match)
+function noorGift(p) { const L = NOOR_FX.map(f => f.id).filter(id => noorEligible(p, id)); return L[Math.floor(Math.random() * L.length)] || 'noor'; }
 function noorUsed(p, id) { const L = noorLRU(p), i = L.indexOf(id); if (i >= 0) L.splice(i, 1); L.push(id); }
 
 // ---- applying effects
 function applyNoorFx(p, id) {
   const F = NOOR_BY_ID[id]; if (!F || !p) return;
   p.nfx = null;
-  if (id === 'noor') { grantBoost.noor(p); return; }              // the original effect, unchanged
+  if (id === 'noor') { grantBoost.noor(p); return; }              // the original effect, unchanged (its callout: match.js)
   p.boost = 0;
   if (id === 'ukhuwwah') {
     const m = p.mate; if (!m) return;
     m.nfx = null; m.boost = 12;                                    // the teammate glows; the picker keeps no effect
-    FX.callout('UKHUWWAH!', F.col, m.def.name.toUpperCase() + ' IS GLOWING'); SFX.good(); AchEvents.noor(p); return;
+    FX.callout('UKHUWWAH!', F.col, F.short.toUpperCase()); SFX.good(); AchEvents.noor(p); return;
   }
   p.nfx = { id, t: F.t, shots: F.shots || 0 };
   if (id === 'quwwah') { p.turbo = 100; p.winded = false; p._qt = 100; }
-  FX.callout(F.name.toUpperCase() + '!', F.col, F.mean.toUpperCase() + '  •  ' + p.def.name.toUpperCase()); SFX.good(); AchEvents.noor(p);
+  FX.callout(F.name.toUpperCase() + '!', F.col, F.short.toUpperCase()); SFX.good(); AchEvents.noor(p);
 }
 function noorExpire(p) {
   const F = p.nfx && NOOR_BY_ID[p.nfx.id]; p.nfx = null;
@@ -134,32 +136,21 @@ function cpuNoorPick(p) {
   };
 }
 
-// ---- the choice screen (after the correct-answer reveal)
-function noorOpenPick(tv) { tv.pick = { opts: noorOptions(tv.p), sel: 0, t: NOOR_PICK_T }; SFX.blip(); }
-function noorChoose(tv, i) {
-  const P = tv.pick; if (!P || P.done) return;
-  const id = P.opts[clamp(i | 0, 0, P.opts.length - 1)]; P.done = true;
-  Game.trivia = null; noorUsed(tv.p, id); applyNoorFx(tv.p, id);
-}
+// ---- a correct answer: one power-up at once. It's chosen when the answer is given (so the reveal can name it, and
+// a guest sees the same one) and given when the reveal closes
 {
+  const _aw = answerTrivia;
+  answerTrivia = function (i) {
+    const r = _aw.apply(this, arguments), tv = Game.trivia;
+    if (tv && tv.done && tv.correct && !tv.gift && tv.p) tv.gift = noorGift(tv.p);
+    return r;
+  };
   const _tu = triviaUpdate;
   triviaUpdate = function (rdt) {
     const tv = Game.trivia;
-    if (tv && tv.pick) {
-      const P = tv.pick, n = P.opts.length; P.t -= rdt;
-      if (tv.remote) { const a = Net.remoteAnswer(); if (a && a.qi === tv.qi && a.k != null) return noorChoose(tv, a.k); }
-      else {
-        if (menuHit('left') || menuHit('up')) { P.sel = (P.sel + n - 1) % n; SFX.blip(); }
-        if (menuHit('right') || menuHit('down')) { P.sel = (P.sel + 1) % n; SFX.blip(); }
-        for (let i = 0; i < n; i++) if (Input.pressed['Digit' + (i + 1)]) return noorChoose(tv, i);
-        if (menuHit('ok') || Input.pressed.KeyJ || Input.pressed.KeyK) return noorChoose(tv, P.sel);
-      }
-      if (P.t <= 0) noorChoose(tv, P.sel);
-      return;
-    }
-    if (tv && tv.done && tv.correct) {                              // correct: reveal as before, then the choice instead of the boost
+    if (tv && tv.done && tv.correct) {
       tv.res += rdt;
-      if (tv.res > 1.8 || (tv.res > 0.5 && menuHit('ok'))) noorOpenPick(tv);
+      if (tv.res > 1.8 || (tv.res > 0.5 && menuHit('ok'))) { Game.trivia = null; const id = tv.gift || noorGift(tv.p); noorUsed(tv.p, id); applyNoorFx(tv.p, id); }
       return;
     }
     return _tu.apply(this, arguments);
@@ -176,39 +167,6 @@ function noorIcon(g, icon, x, y, s, col) {
   else if (icon === 'pair') { g.arc(-3.2, 0, 5, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.arc(3.2, 0, 5, 0, Math.PI * 2); g.stroke(); }
   g.restore();
 }
-function drawNoorPick(g, tv) {
-  const P = tv.pick || tv.pickView; if (!P) return;
-  const mine = !tv.remote;                                          // host waiting on the guest sees a banner
-  if (!mine) { dim(g, 0.5); banner(g, 'Noor challenge', 'Your friend answered correctly and is choosing a power-up...'); return; }
-  dim(g, 0.72);
-  const T = Input.touchMode, py = T ? 44 : 70, cy = T ? 116 : 150, ch = T ? 318 : 252;   // v8.6.2: taller cards on phones (text is larger there)
-  g.fillStyle = 'rgba(12,40,44,0.97)'; roundRect(g, 150, py, 660, T ? 464 : 400, 16); g.fill(); g.strokeStyle = GOLD; g.lineWidth = 2; g.stroke();
-  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText('CHOOSE YOUR NOOR', W / 2, py + 38);
-  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(fitText(g, 'Correct! ' + tv.p.def.name + ' picks one of these three', 620), W / 2, py + 62);
-  const sel = tv.remoteView ? (tv.psel || 0) : P.sel;
-  P.opts.forEach((id, i) => {
-    const F = NOOR_BY_ID[id]; if (!F) return;
-    const x = 168 + i * 212, y = cy, w = 200, h = ch, on = i === sel, d = T ? -8 : 0;
-    g.fillStyle = on ? 'rgba(232,195,90,0.18)' : 'rgba(255,255,255,0.06)'; roundRect(g, x, y, w, h, 12); g.fill();
-    g.strokeStyle = on ? GOLD : 'rgba(255,255,255,0.18)'; g.lineWidth = on ? 3 : 1; g.stroke();
-    g.fillStyle = 'rgba(0,0,0,0.3)'; g.beginPath(); g.arc(x + w / 2, y + 46 + d, 26, 0, Math.PI * 2); g.fill();
-    noorIcon(g, F.icon, x + w / 2, y + 46 + d, 16, F.col);
-    g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `22px ${FONT}`; g.fillText(F.name, x + w / 2, y + 102 + d);
-    g.fillStyle = F.col; g.font = `14px ${BODY}`; g.fillText(F.mean, x + w / 2, y + 124 + d);
-    g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapText(g, F.desc, x + w / 2, y + 152 + d * 1.5, w - 22, 19);
-    g.fillStyle = on ? GOLD : '#9fb3c8'; g.font = `13px ${FONT}`; g.fillText(String(i + 1), x + w / 2, y + h - 12);
-    addRect(x, y, w, h, () => { if (tv.remoteView) Net.guestPick(i); else { P.sel = i; noorChoose(tv, i); } });
-  });
-  const by = cy + ch + 14;
-  g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(200, by, 560, 6); g.fillStyle = GOLD; g.fillRect(200, by, 560 * clamp(P.t / NOOR_PICK_T, 0, 1), 6);
-  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
-  g.fillText(tv.sent2 ? 'Sent. Waiting for the game to continue...' : 'Press 1 to 3, or ← → and Enter. Tap a card on touch.', W / 2, by + (T ? 38 : 32));
-}
-{
-  const _dt = drawTrivia;
-  drawTrivia = function (g) { const tv = Game.trivia; if (tv && (tv.pick || tv.pickView)) return drawNoorPick(g, tv); return _dt.apply(this, arguments); };
-}
-
 // ---- HUD: the active effect next to the player (icon + name + time or shots left), and on the player card
 function noorTagText(p) {
   const id = noorFxOf(p); if (!id) return null;
@@ -217,7 +175,7 @@ function noorTagText(p) {
   if (!N) return F.name.toUpperCase();
   return F.name.toUpperCase() + ' ' + (id === 'sabr' ? N.shots + ' ' + (N.shots === 1 ? 'shot left' : 'shots left') : Math.ceil(N.t) + 's');
 }
-function noorCardLabel(p) { const t = noorTagText(p); return t ? t : 'NOOR ACTIVE'; }
+function noorCardLabel(p) { const t = noorTagText(p); return t ? t : 'POWER-UP ACTIVE'; }
 function noorCardFrac(p) {
   const id = noorFxOf(p); if (!id) return p.hifz / 100;
   if (id === 'noor') return p.boost / 12;
@@ -259,39 +217,17 @@ const REPLAY_FL = 7 + JOINTS.length + 5;
   };
 }
 
-// ---- online: host is authoritative. Effects ride in the snapshot (s.nfx, optional); the guest's pick
-// travels with its trivia answer (ans.k), and the choice screen is mirrored (s.tvp).
+// ---- online (the snapshot path, ?rb=0): host is authoritative. Effects ride in the snapshot (s.nfx, optional), and
+// so does the power-up a correct answer gives (s.tvg, its NOOR_FX index), for the guest's reveal. (In a rollback
+// match there's no Hikmah challenge yet: hifzUsed.)
 {
   const _sn = Net.snapshot;
   Net.snapshot = function () {
     const s = _sn.apply(this, arguments);
     if (!s || !s.p || !M.players) return s;
     if (M.players.some(p => p.nfx)) s.nfx = M.players.map(p => p.nfx ? [NOOR_FX.findIndex(x => x.id === p.nfx.id), Math.round(p.nfx.t * 10) / 10, p.nfx.shots || 0] : 0);
-    const tv = Game.trivia; if (tv && tv.remote && tv.pick) s.tvp = [tv.pick.opts.map(id => NOOR_FX.findIndex(x => x.id === id)), Math.round(tv.pick.t * 10) / 10];
+    const tv = Game.trivia; if (tv && tv.gift) s.tvg = NOOR_FX.findIndex(x => x.id === tv.gift);
     return s;
-  };
-  const _ra = Net.remoteAnswer;
-  Net.remoteAnswer = function () {                                 // { qi, i, k }: k = the chosen power-up card (when sent)
-    const a = _ra.apply(this, arguments); if (!a) return a;
-    return { qi: a.qi, i: a.i, k: a.k == null ? null : a.k | 0 };
-  };
-  Net.guestPick = function (k) {
-    const tv = Game.trivia; if (!tv || !tv.pickView || tv.sent2) return;
-    tv.sent2 = true; tv.psel = k; this.setP({ ans: { qi: tv.qi, i: tv.choice, k } }); SFX.blip();
-  };
-  const _gt = Net.guestTrivia;
-  Net.guestTrivia = function () {
-    const tv = Game.trivia;
-    if (tv && tv.pickView) {
-      if (tv.sent2) return;
-      const n = tv.pickView.opts.length; tv.psel = tv.psel || 0;
-      if (menuHit('left') || menuHit('up')) { tv.psel = (tv.psel + n - 1) % n; SFX.blip(); }
-      if (menuHit('right') || menuHit('down')) { tv.psel = (tv.psel + 1) % n; SFX.blip(); }
-      for (let i = 0; i < n; i++) if (Input.pressed['Digit' + (i + 1)]) return this.guestPick(i);
-      if (menuHit('ok') || Input.pressed.KeyJ || Input.pressed.KeyK) this.guestPick(tv.psel);
-      return;
-    }
-    return _gt.apply(this, arguments);
   };
   const _gf = Net.guestFrame;
   Net.guestFrame = function () {
@@ -299,10 +235,7 @@ const REPLAY_FL = 7 + JOINTS.length + 5;
     const s = this.lastS; if (!s || !M.players) return r;
     M.players.forEach((p, i) => { const e = s.nfx && s.nfx[i]; p.nfx = e && NOOR_FX[e[0]] ? { id: NOOR_FX[e[0]].id, t: e[1], shots: e[2] } : null; });
     const tv = Game.trivia;
-    if (tv && tv.remoteView) {
-      if (s.tvp && s.tv && s.tv[0] === tv.qi) tv.pickView = { opts: s.tvp[0].map(k => (NOOR_FX[k] || NOOR_FX[0]).id), t: s.tvp[1] };
-      else tv.pickView = null;
-    }
+    if (tv && tv.remoteView) tv.gift = s.tvg != null && NOOR_FX[s.tvg] ? NOOR_FX[s.tvg].id : null;
     return r;
   };
 }

@@ -39,6 +39,7 @@ export const HUB_HELPERS = `(() => {
       const S = STAGES[C.stage]; set(S, 'title', S.title + ' Invitational Championship Series');
     }
     if (Game.menus) Game.menus.hub = null; careerHub(); _achQ.length = 0; Game.toastT = 0;
+    if (Game.hubJum && typeof hubJumuahAnswer === 'function') { hubJumuahAnswer(false); careerHub(); }   // (v9.18.0: a Friday's hub asks about Jumu'ah first; the layout is the hub's, under it)
     if (o.open) { const it = HUB_MENU(), i = it.findIndex(e => e.label === 'My Player'); menuActivate('hub', it, i);
       if (o.open === 'Records') { const mp = HUB_MENU()[i], j = mp.sub.findIndex(e => e.label === 'Records'); menuActivate('hub', HUB_MENU(), j); } }
     return label;

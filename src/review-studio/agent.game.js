@@ -49,7 +49,7 @@ window.__RS = (() => {
   RS.speakerName = sp => sp === 'you' ? 'You' : sp === 'elder' ? 'An elder' : safe(() => castDef(sp).name, null) || (typeof WORLD_NPC_LOOK !== 'undefined' && WORLD_NPC_LOOK[sp] ? WORLD_NPC_LOOK[sp].name : sp);
   RS.trivia = () => TRIVIA.map((t, i) => ({ i, q: t[0], right: t[1][0], wrong: t[1].slice(1), why: (typeof TRIVIA_WHY !== 'undefined' && TRIVIA_WHY[i]) || '' }));
   RS.achievements = () => ACHIEVEMENTS.map(a => ({ id: a.id, name: a.name, desc: a.desc, icon: a.icon }));
-  RS.noor = () => NOOR_FX.map(f => ({ id: f.id, name: f.name, mean: f.mean, desc: f.desc, col: f.col }));
+  RS.noor = () => NOOR_FX.map(f => ({ id: f.id, name: f.name, mean: f.mean, desc: f.desc, short: f.short, col: f.col }));
   RS.taunts = () => TAUNTS.map(t => ({ id: t.id, name: t.name, pop: t.pop }));
   RS.tods = () => typeof TOD === 'undefined' ? [] : TOD.map(t => t.label);
   RS.calendar = () => typeof CAL_MONTHS === 'undefined' ? null : { months: CAL_MONTHS.slice(), weekdays: CAL_WEEKDAYS.slice(), holidays: CAL_HOLIDAYS.map(h => ({ name: h.name, m: h.m, day: h.day })) };

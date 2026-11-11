@@ -30,7 +30,7 @@
 //   online-fb    Firebase adapter (fake SDK): lobby -> game -> lobby
 //   noor         v8.6.1 Noor power-ups: choice of 3 (least recently used), each of the 6 applies and expires,
 //                a wrong answer gives nothing, Barakah Run stacking; turnovers by cause and the TOV column
-//   mobile       iPhone landscape/portrait layout, touch controls, the Noor choice screen (fits; tap picks), no errors
+//   mobile       iPhone landscape/portrait layout, touch controls, the Hikmah challenge (fits; a tap on the right answer gives a power-up), no errors
 //                plus the v8.6.2 phone text audit (tests/phone-audit.mjs) at iPhone landscape and 667x300
 //   v867         v8.6.7: seeded inbounds never go back to the inbounder; turbo colour and card fade flip at most once a
 //                second while sprinting; Sh. Saleem's 2-line limit and Leave buttons; who can earn Noor offline
@@ -117,6 +117,7 @@ import { phoneTapTextTests } from './phone-tap-text.mjs';
 import { holdTapTests } from './hold-tap.mjs';
 import { navTests } from './nav-919.mjs';
 import { noShoveTests } from './no-shove.mjs';
+import { statCurveTests } from './stat-curves.mjs';
 import { hubFirstTests } from './hub-first.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
@@ -552,8 +553,9 @@ T['phase4'] = async ({ browser, base }) => {
     window.__seed(99); const out = {};
     // half court restarts: nobody teleports into the check-up
     newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'first21', len: 120 } }); M.halfCourt = true; M.mustClear = [false, false]; formation(0); inbound(0);
+    // (v9.19.0: more than 18 in a frame, was 14: a player pushed off the baseline wall moves 14-17, in 4 of 20 seeds on 9.18 too; a teleport is hundreds)
     let jumps = 0; const prev = new Map();
-    for (let i = 0; i < 60 * 90; i++) { updateMatch(STEP); for (const q of M.players) { const a = prev.get(q); if (a && Math.hypot(q.x - a[0], q.z - a[1]) > 14 && q.state !== 'dunk') jumps++; prev.set(q, [q.x, q.z]); } }
+    for (let i = 0; i < 60 * 90; i++) { updateMatch(STEP); for (const q of M.players) { const a = prev.get(q); if (a && Math.hypot(q.x - a[0], q.z - a[1]) > 18 && q.state !== 'dunk') jumps++; prev.set(q, [q.x, q.z]); } }
     out.hcJumps = jumps;
     // Around the World, CPU vs CPU, plays to a winner
     setupMini('atw', { roster: ['saleem', 'khalil'], humans: [] }); { const mg = M.mini; for (let n = 0; n < 60 * 400 && !mg.done; n++) miniStep(STEP); out.atw = mg.done && mg.winner != null && mg.pos[mg.winner] === ATW_N; }
@@ -590,7 +592,7 @@ T['phase5'] = async ({ browser, base }) => {
     window.__seed(5); const out = {};
     C = freshCareer(); C.name = 'Yusuf'; C.bracket = makeBracket(0); saveCareer(); careerHub();
     // goals: rookie pays once, badges are earned (never bought), a week is 3 games
-    const bp0 = C.bp; rookieDo('masjid'); rookieDo('masjid'); out.rookie = C.bp - bp0 === 40;
+    const bp0 = C.bp; rookieDo('masjid'); rookieDo('masjid'); out.rookie = C.bp - bp0 === Math.round(40 * ECON.bpK);   // (v9.19.0: 40 x bpK)
     badgeAdd('lungs', 5); out.notYet = !hasBadge('lungs'); badgeAdd('lungs'); out.badge = hasBadge('lungs');
     // niyyah before a game, kept, opens the first lesson
     Game.screen = 'pregame'; startCareerMatch(); out.asked = Game.screen === 'story';
@@ -832,7 +834,7 @@ T['v95'] = async ({ browser, base }) => {
     const me = M.players.find(q => q.human === 0); giveBall(me, 'inbound'); me.state = 'shoot'; me.st_t = 0.05; humanCmd(0, me.cmd); const held = me.cmd.bHeld;
     me.st_t = 0.9; humanCmd(0, me.cmd); out.autoShot = held === true && me.cmd.bHeld === false; SETTINGS.autoShot = false;
     const gi = SET_GROUPS.findIndex(x => x.name === 'Accessibility');
-    out.settings = gi >= 0 && setGroupItems(gi).map(x => x.label).join() === 'Shot release,Text size,Team colors,Reduced motion,Camera shake,Flashes';
+    out.settings = gi >= 0 && setGroupItems(gi).map(x => x.label).join() === 'Shot release,Hold or tap,Text size,Team colors,Reduced motion,Camera shake,Flashes';   // (v9.17.8: Hold or tap after Shot release)
     // a CPU game for highlights
     window.__seed(7); newMatch(TEAMS[2], TEAMS[5], { humans: [], fmt: { format: 'quarters', len: 120 } });
     for (let n = 0; n < 60 * 60 * 14 && M.phase !== 'over'; n++) { if (Game.screen === 'halftime') Game.screen = 'title'; updateMatch(STEP); }
@@ -840,13 +842,14 @@ T['v95'] = async ({ browser, base }) => {
     Game.screen = 'final'; Game.finalTab = 0; reelStart(); out.reel = REEL.on && REEL.n >= 2;
     return out;
   });
-  await sleep(4500);
+  await p.waitForFunction(() => REEL.i >= 1 || !REEL.on, null, { timeout: 15000 }).catch(() => {});   // (v9.19.0: up to 15 s, was a fixed 4.5: the first highlight's length depends on the seeded game, and a busy machine runs slower)
   r.reelMoves = await p.evaluate(() => REEL.i >= 1 || !REEL.on);
   // My clips: keep one, list it, delete it
   r.clips = await p.evaluate(async () => {
     await mycTx('readwrite', s => { s.put({ id: 'test', at: Date.now(), name: 'test.webm', type: 'video/webm', blob: new Blob(['x'], { type: 'video/webm' }), poster: '', label: 'Big dunk', teams: ['A', 'B'], score: [21, 18] }); });
-    openMyClips(); await new Promise(r => setTimeout(r, 300)); const one = MYC.list.length === 1;
-    mycDelete(MYC.list[0]); mycDelete(MYC.list[0]); await new Promise(r => setTimeout(r, 300));
+    const until = async f => { for (let t = 0; t < 30 && !f(); t++) await new Promise(r => setTimeout(r, 100)); };   // (v9.19.0: IndexedDB took over 300 ms on a busy machine)
+    openMyClips(); await until(() => (MYC.list || []).length === 1); const one = (MYC.list || []).length === 1;
+    mycDelete(MYC.list[0]); mycDelete(MYC.list[0]); await until(() => (MYC.list || []).length === 0);
     const menu = TITLE_MENU().find(e => e.label === 'Settings').sub.find(e => e.label === 'Extras').sub.some(e => e.label === 'My clips');
     return one && MYC.list.length === 0 && menu;
   });
@@ -1014,8 +1017,8 @@ T['career-intro'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(checks), 'start: ' + JSON.stringify(s0), 'greeted by ' + greeted, 'gym: ' + JSON.stringify(s1), 'met: ' + JSON.stringify(s2), 'end: ' + JSON.stringify(end), ...errs] };
 };
 
-// v8.6.1: Noor power-ups (choice of 3, each of the 6 applies and expires, wrong answer gives nothing,
-// least-recently-used rotation, Barakah Run stacking) and turnovers (TOV column, each counted cause)
+// v8.6.1: power-ups (v9.19.0: one at random for a correct answer, no picker; each of the 6 applies and expires,
+// wrong answer gives nothing, Barakah Run stacking) and turnovers (TOV column, each counted cause)
 T['noor'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'noor');
   const r = await p.evaluate(() => {
@@ -1030,14 +1033,17 @@ T['noor'] = async ({ browser, base }) => {
       return me;
     };
     const steps = s => { for (let i = 0; i < Math.round(s * 60); i++) { M.shotClock = 24; updateMatch(STEP); } };
-    const correct = me => { openTrivia(me); answerTrivia(Game.trivia.order.indexOf(0)); for (let i = 0; i < 130 && !(Game.trivia && Game.trivia.pick); i++) triviaUpdate(1 / 60); return Game.trivia && Game.trivia.pick; };
-    // (a) a correct answer opens a 3-effect choice; the next one shows the 3 least recently used
-    let me = setup();
-    const pk = correct(me);
-    out.choice = pk ? pk.opts.join(',') : null;
-    noorChoose(Game.trivia, 1);                                          // sabr
-    out.picked = noorFxOf(me);
-    me.nfx = null; const pk2 = correct(me); out.next = pk2 ? pk2.opts.join(',') : null; noorChoose(Game.trivia, 0); me.nfx = null; me.boost = 0;
+    // (a) v9.19.0: a correct answer gives one power-up at once (no picker), at random among those that can apply;
+    // the reveal names it before it's given
+    const correct = me => { openTrivia(me); answerTrivia(Game.trivia.order.indexOf(0)); const named = Game.trivia.gift; let picker = false;
+      for (let i = 0; i < 130 && Game.trivia; i++) { triviaUpdate(1 / 60); if (Game.trivia && (Game.trivia.pick || Game.trivia.pickView)) picker = true; }
+      const on = M.players.filter(q => noorActive(q)).length; return { named, got: noorFxOf(me) || (me.mate && me.mate.boost > 0 ? 'ukhuwwah' : null), on, picker, closed: !Game.trivia }; };
+    let me = setup(); const gotN = {}; out.one = true;
+    for (let k = 0; k < 60; k++) { me.nfx = null; me.boost = 0; if (me.mate) { me.mate.nfx = null; me.mate.boost = 0; } const c = correct(me); gotN[c.got] = (gotN[c.got] || 0) + 1; if (c.on !== 1 || c.picker || !c.closed || c.named !== c.got) out.one = false; }
+    out.seen = Object.keys(gotN).sort().join(",");
+    // Ukhuwwah needs a teammate without an effect
+    let ukh = 0; for (let k = 0; k < 40; k++) { me.nfx = null; me.boost = 0; me.mate.nfx = null; me.mate.boost = 12; if (noorGift(me) === 'ukhuwwah') ukh++; } out.ukhBlocked = ukh === 0;
+    me.mate.boost = 0; me.nfx = null; me.boost = 0;
     // each of the 6: applies, then expires
     const fx = {};
     me = setup(); const w0 = shotWindow(me);
@@ -1097,7 +1103,7 @@ T['noor'] = async ({ browser, base }) => {
   });
   await ctx.close();
   const f = r.fx;
-  const ok = r.choice === 'noor,sabr,quwwah' && r.picked === 'sabr' && r.next === 'noor,quwwah,himmah'
+  const ok = r.one && r.seen === 'himmah,noor,quwwah,sabr,ukhuwwah,yaqazah' && r.ukhBlocked
     && f.noor.on && f.noor.glow12 && f.noor.off
     && f.sabr.on && f.sabr.wider > 1.2 && f.sabr.wider < 1.3 && f.sabr.offAfter3Shots && f.sabr.offAfter30s
     && f.himmah.reachesWith && !f.himmah.reachesWithout && f.himmah.off
@@ -1108,7 +1114,7 @@ T['noor'] = async ({ browser, base }) => {
     && r.run.green > 1.2 && r.run.greenPlusSabr <= 1.401 && r.run.greenPlusSabr > r.run.green && r.run.quwwahVsRecharge > 1.7 && r.run.turboCapped && r.run.fireAndNoor && r.run.shieldKept
     && r.tov.steal === 1 && r.tov.shotClock === 1 && r.tov.pickedUpCross === 0 && r.tov.outOfBounds === 1 && r.tov.boxHasTOV && r.tov.boxRowTov
     && !errs.length;
-  return { ok, detail: [`choice ${r.choice} -> picked ${r.picked}; next choice ${r.next}`, 'effects ' + JSON.stringify(r.fx), 'wrong answer ' + JSON.stringify(r.wrong), 'replay ' + JSON.stringify(r.replay), 'Barakah Run ' + JSON.stringify(r.run), 'turnovers ' + JSON.stringify(r.tov), ...errs] };
+  return { ok, detail: [`a right answer: one power-up, no picker ${r.one}; given over 60 answers: ${r.seen}; Ukhuwwah never with a glowing teammate ${r.ukhBlocked}`, 'effects ' + JSON.stringify(r.fx), 'wrong answer ' + JSON.stringify(r.wrong), 'replay ' + JSON.stringify(r.replay), 'Barakah Run ' + JSON.stringify(r.run), 'turnovers ' + JSON.stringify(r.tov), ...errs] };
 };
 
 async function onlineFlow(browser, base, { query = '', room = false, games = ['vs'], dropP2P = false, custom = false, noor = false }) {
@@ -1154,24 +1160,24 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
       const hf = await H.evaluate(() => [M.fmt.format, M.fmt.periods, M.fmt.len, periodLabel(1)].join('/')), gf = await G.evaluate(() => [M.fmt.format, M.fmt.periods, M.fmt.len, periodLabel(1)].join('/'));
       log.push(`format: host ${hf}, guest ${gf}`); ok = ok && hf === 'halves/2/120/1ST HALF' && gf === hf;
     }
-    if (noor && game === games[0]) {              // v8.6.1: a Noor pick on each side; the host stays authoritative
+    if (noor && game === games[0]) {              // v9.19.0: one power-up for a correct answer, chosen by the host; the guest sees the same one
       await H.evaluate(() => { M.introT = 0; const me = M.players.find(q => q.human === 0); openTrivia(me); answerTrivia(Game.trivia.order.indexOf(0)); Game.trivia.res = 1.7; });
-      await H.waitForFunction(() => Game.trivia && Game.trivia.pick, null, { timeout: 5000 }).catch(() => {});
-      const hostPick = await H.evaluate(() => { const tv = Game.trivia; if (!tv || !tv.pick) return null; const id = tv.pick.opts[1]; noorChoose(tv, 1); return id; });
+      await H.waitForFunction(() => !Game.trivia, null, { timeout: 5000 }).catch(() => {});
+      const hostGot = await H.evaluate(() => { const q = M.players.find(x => x.human === 0); return noorFxOf(q) || (q.mate && q.mate.boost > 0 ? 'ukhuwwah' : null); });
       await sleep(1200);
-      const hostSeen = await G.evaluate(() => { const q = M.players.find(x => x.human === 0); return q ? noorFxOf(q) : null; });
-      await H.evaluate(() => { const g = M.players.find(q => q.human === 1); openTrivia(g); });
+      const hostSeen = await G.evaluate(() => { const q = M.players.find(x => x.human === 0); return q ? noorFxOf(q) || (q.mate && q.mate.boost > 0 ? 'ukhuwwah' : null) : null; });
+      await H.evaluate(() => { for (const q of M.players) { q.nfx = null; q.boost = 0; } const g = M.players.find(q => q.human === 1); openTrivia(g); });
       await G.waitForFunction(() => Game.trivia && Game.trivia.remoteView, null, { timeout: 5000 }).catch(() => {});
       await G.evaluate(() => Net.guestAnswer(Game.trivia.order.indexOf(0)));
-      await G.waitForFunction(() => Game.trivia && Game.trivia.pickView, null, { timeout: 8000 }).catch(() => {});
-      const guestOpts = await G.evaluate(() => Game.trivia && Game.trivia.pickView ? Game.trivia.pickView.opts.slice() : null);
-      await G.evaluate(() => Net.guestPick(2));
-      await H.waitForFunction(() => { const g = M.players.find(q => q.human === 1); return !Game.trivia && g && noorActive(g); }, null, { timeout: 8000 }).catch(() => {});
-      const onHost = await H.evaluate(() => noorFxOf(M.players.find(q => q.human === 1)));
+      await G.waitForFunction(() => Game.trivia && Game.trivia.remoteView && Game.trivia.gift, null, { timeout: 8000 }).catch(() => {});
+      const guestNamed = await G.evaluate(() => Game.trivia && Game.trivia.gift);
+      await H.waitForFunction(() => { const g = M.players.find(q => q.human === 1); return !Game.trivia && g && (noorActive(g) || (g.mate && g.mate.boost > 0)); }, null, { timeout: 8000 }).catch(() => {});
+      const onHost = await H.evaluate(() => { const g = M.players.find(q => q.human === 1); return noorFxOf(g) || (g.mate && g.mate.boost > 0 ? 'ukhuwwah' : null); });
       await sleep(1200);
-      const onGuest = await G.evaluate(() => noorFxOf(M.players.find(q => q.human === 1)));
-      const good = hostPick === 'sabr' && hostSeen === 'sabr' && guestOpts && guestOpts.length === 3 && onHost === guestOpts[2] && onGuest === onHost;
-      log.push(`noor: host picked ${hostPick} (guest sees ${hostSeen}); guest offered ${guestOpts && guestOpts.join(',')}, picked card 3 -> host applied ${onHost}, guest sees ${onGuest}`);
+      const onGuest = await G.evaluate(() => { const g = M.players.find(q => q.human === 1); return noorFxOf(g) || (g.mate && g.mate.boost > 0 ? 'ukhuwwah' : null); });
+      const picker = await G.evaluate(() => !!(Game.trivia && (Game.trivia.pick || Game.trivia.pickView)));
+      const good = !!hostGot && hostSeen === hostGot && !!onHost && guestNamed === onHost && onGuest === onHost && !picker;
+      log.push(`power-up: the host's correct answer gave ${hostGot} (guest sees ${hostSeen}); the guest's gave ${onHost} (named on the guest's reveal: ${guestNamed}; guest sees ${onGuest})`);
       ok = ok && good;
     }
     if (noor && !custom && game === 'co') {        // v8.6.7: online, the guest earns Noor too (host authoritative), whoever his team's hafiz is
@@ -1185,15 +1191,13 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
       await G.waitForFunction(() => Game.trivia && Game.trivia.remoteView, null, { timeout: 8000 }).catch(() => {});
       const asked = await G.evaluate(() => !!(Game.trivia && Game.trivia.remoteView));
       if (asked) await G.evaluate(() => Net.guestAnswer(Game.trivia.order.indexOf(0)));
-      await G.waitForFunction(() => Game.trivia && Game.trivia.pickView, null, { timeout: 8000 }).catch(() => {});
-      const offered = await G.evaluate(() => !!(Game.trivia && Game.trivia.pickView));
-      if (offered) await G.evaluate(() => Net.guestPick(0));
-      await H.waitForFunction(() => { const g = M.players.find(q => q.human === 1); return !Game.trivia && g && noorActive(g); }, null, { timeout: 8000 }).catch(() => {});
-      const onHost = await H.evaluate(() => { const g = M.players.find(q => q.human === 1); return g && noorActive(g) ? noorFxOf(g) : null; });
+      const fxOf = () => { const g = M.players.find(q => q.human === 1); return !g ? null : noorActive(g) ? noorFxOf(g) : g.mate && g.mate.boost > 0 ? 'ukhuwwah' : null; };
+      await H.waitForFunction(fxOf, null, { timeout: 8000 }).catch(() => {});
+      const onHost = await H.evaluate(fxOf);
       await sleep(1200);
-      const onGuest = await G.evaluate(() => { const g = M.players.find(q => q.human === 1); return g && noorActive(g) ? noorFxOf(g) : null; });
-      log.push(`guest Noor on ${team} (guest is ${team === 'NOOR' ? 'not the hafiz' : 'the hafiz'}): guest meter ${meter}, asked ${asked}, 3 cards ${offered}, host applied ${onHost}, guest sees ${onGuest}`);
-      ok = ok && meter >= 50 && asked && offered && !!onHost && onGuest === onHost;
+      const onGuest = await G.evaluate(fxOf);
+      log.push(`guest power-up on ${team} (guest is ${team === 'NOOR' ? 'not the hafiz' : 'the hafiz'}): guest meter ${meter}, asked ${asked}, host gave ${onHost} (no picker), guest sees ${onGuest}`);
+      ok = ok && meter >= 50 && asked && !!onHost && onGuest === onHost;
     }
     if (noor && game === games[0]) {              // v8.6.3: the guest sees a hot spot's value (+2) and the pick-up pivot
       await H.evaluate(() => { M.cmdHook = q => { zeroCmd(q.cmd); return true; }; const g = M.players.find(q => q.human === 1), h = attackHoop(g.team);
@@ -1577,19 +1581,16 @@ T['mobile'] = async ({ browser, base, tier }) => {
     await p.evaluate(() => { Input.touchMode = true; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; });
     await sleep(1200);
     const r = await p.evaluate(() => { const c = canvas.getBoundingClientRect(); return { fits: c.right <= innerWidth + 1 && c.bottom <= innerHeight + 1 && c.width > 100, touch: TouchUI.shown, rotateCard: getComputedStyle(document.getElementById('rotate')).display }; });
-    // v8.6.1: the Noor choice screen fits the screen; in landscape a real tap on a card picks it
-    await p.evaluate(() => { const me = M.players[0]; openTrivia(me); answerTrivia(Game.trivia.order.indexOf(0)); Game.trivia.res = 1.7; });
-    await p.waitForFunction(() => Game.trivia && Game.trivia.pick, null, { timeout: 5000 }).catch(() => {});
+    // v9.19.0: the Hikmah challenge on a phone: a real tap on the right answer, and the power-up comes at once (no picker)
+    await p.evaluate(() => { const me = M.players[0]; for (const q of M.players) { q.nfx = null; q.boost = 0; } openTrivia(me); });
     await sleep(300);
-    const cards = await p.evaluate(() => { const c = canvas.getBoundingClientRect(), sx = c.width / W, sy = c.height / H;
-      return Game.rects.filter(q => q.w === 200 && q.h >= 252).map(q => ({ x: c.left + (q.x + q.w / 2) * sx, y: c.top + (q.y + q.h / 2) * sy, inside: q.x >= 0 && q.x + q.w <= W && q.y >= 0 && q.y + q.h <= H })); });
-    r.choiceCards = cards.length; r.choiceFits = cards.length === 3 && cards.every(q => q.inside);
-    if (!name.includes('portrait') && cards.length === 3) {
-      const want = await p.evaluate(() => Game.trivia.pick.opts[2]);
-      await p.touchscreen.tap(cards[2].x, cards[2].y); await sleep(300);
-      r.tapPicked = await p.evaluate(w => !Game.trivia && (noorFxOf(M.players[0]) === w || (w === 'ukhuwwah' && M.players[0].mate.boost > 0)), want);
-    }
-    const good = r.fits && r.touch && r.choiceFits && (name.includes('portrait') || r.tapPicked) && !errs.length && (name.includes('portrait') ? r.rotateCard !== 'none' : r.rotateCard === 'none');
+    const right = await p.evaluate(() => { const c = canvas.getBoundingClientRect(), sx = c.width / W, sy = c.height / H, i = Game.trivia.order.indexOf(0);
+      const q = Game.rects.filter(q => q.w === 560 && q.h === 40)[i]; return q ? { x: c.left + (q.x + q.w / 2) * sx, y: c.top + (q.y + q.h / 2) * sy, inside: q.x >= 0 && q.x + q.w <= W && q.y >= 0 && q.y + q.h <= H } : null; });
+    r.answerFits = !!right && right.inside;
+    if (right && !name.includes('portrait')) { await p.touchscreen.tap(right.x, right.y);
+      await p.waitForFunction(() => !Game.trivia, null, { timeout: 10000 }).catch(() => {});   // (the reveal closes after 1.8 s of game time)
+      r.given = await p.evaluate(() => { const me = M.players[0]; return !Game.trivia && (noorActive(me) || (me.mate && me.mate.boost > 0)); }); }
+    const good = r.fits && r.touch && r.answerFits && (name.includes('portrait') || r.given) && !errs.length && (name.includes('portrait') ? r.rotateCard !== 'none' : r.rotateCard === 'none');
     ok = ok && good; detail.push(`${name}: ${JSON.stringify(r)} ${errs.join('; ')}`);
     await ctx.close();
   }
@@ -1846,7 +1847,7 @@ T['v867'] = async ({ browser, base }) => {
     { C = freshCareer(); C.name = 'Abdullah'; if (!C.bracket) C.bracket = makeBracket(C.stage); C.gamesPlayed = 0;
       Game.screen = 'office'; openOffice(); const of = () => Game.office, sh = {};
       const draw = () => { Game.rects = []; const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540; drawOffice(cv.getContext('2d')); return Game.rects.slice(); };
-      let R = draw(); sh.leaveOffice = R.some(q => q.w >= 120 && q.h >= 30 && q.x > W / 2 && q.y > H - 80);
+      let R = draw(); sh.leaveOffice = !R.some(q => q.w >= 120 && q.h >= 30 && q.x > W / 2 && q.y > H - 80);   // (v9.17.9: no Leave office button; the corner pill, drawn over every screen, is the one way back: nav-census checks it)
       officeAct(1); sh.first = of().panel === 'talk' && of().lines === 1;
       R = draw(); sh.noFullScreen = !R.some(q => q.w >= W * 0.9 && q.h >= H * 0.6);
       sh.buttons = R.filter(q => q.y > 470).length;                       // Another + Leave
@@ -1922,17 +1923,15 @@ T['gamepad'] = async ({ browser, base }) => {
   await ev(() => window.__padPlug(0, false)); await sleep(250); await ev(() => window.__padPlug(0, true)); await sleep(250);
   out.plug = await ev(() => ({ order: Pad.order.length, screen: Game.screen }));
   await ev(() => window.__padPlug(1, false));
-  // trivia and a Noor card, with the pad
+  // the Hikmah challenge with the pad
   await ev(() => { newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }], fmt: { format: 'quarters', len: 120 } }); Game.screen = 'play'; Game.paused = false; M.introT = 0; });
   await p.waitForFunction(() => M.phase === 'live', null, { timeout: 15000 }).catch(() => {});
   await ev(() => { const me = M.players.find(q => q.human === 0); openTrivia(me); Game.trivia.sel = Game.trivia.order.indexOf(0); });
   await sleep(200);
   const tv0 = await ev(() => ({ open: !!Game.trivia, sel: Game.trivia && Game.trivia.sel, right: Game.trivia && Game.trivia.order.indexOf(0) }));
-  await press('A');
-  await p.waitForFunction(() => Game.trivia && Game.trivia.pick, null, { timeout: 6000 }).catch(() => {});
-  await press('RIGHT'); await press('A');
-  await p.waitForFunction(() => !Game.trivia, null, { timeout: 6000 }).catch(() => {});
-  out.trivia = { asked: tv0.open, noor: await ev(() => { const me = M.players.find(q => q.human === 0); return noorActive(me) ? noorFxOf(me) : null; }) };
+  await press('A');                                                       // (v9.19.0: the right answer gives a power-up at once; no card to pick)
+  await p.waitForFunction(() => !Game.trivia, null, { timeout: 8000 }).catch(() => {});
+  out.trivia = { asked: tv0.open, noor: await ev(() => { const me = M.players.find(q => q.human === 0); return noorActive(me) ? noorFxOf(me) : me.mate && me.mate.boost > 0 ? 'ukhuwwah' : null; }) };
   // the on-screen picker on a text-entry screen: it opens by itself, moves, taps, B leaves
   await ev(() => { Net.typed = ''; Game.screen = 'joincode'; });
   await sleep(250); await press('RIGHT'); await press('A');
@@ -2389,9 +2388,10 @@ T['world-robust'] = async ({ browser, base }) => {
       perf[sc] = await p.evaluate(() => { const f = window.__fr.slice(10), r = worldPerfReport()[World.scene] || {}; return { cpu: +((r.update || 0) + (r.draw || 0)).toFixed(2), frame: +(f.reduce((a, x) => a + x, 0) / Math.max(1, f.length)).toFixed(1) }; });
     }
     await ctx.close();
-    const good = talk && escLeft && btnLeft && !!leave && ['world', 'hub', 'scout', 'story', 'pregame', 'creator'].includes(end.s) && !errs.length;
+    // (v9.17.9: a conversation has no Leave button any more; the corner pill and Esc are the way out)
+    const good = talk && escLeft && !leave && ['world', 'hub', 'scout', 'story', 'pregame', 'creator'].includes(end.s) && !errs.length;
     ok = ok && good;
-    detail.push(`${dn}: mashed keys and taps in 4 scenes (states ${[...seen].length}), Esc leaves a talk ${escLeft}, Leave button ${btnLeft}, tab away/back + ${sizes.length} resizes ok, end ${JSON.stringify(end)}`);
+    detail.push(`${dn}: mashed keys and taps in 4 scenes (states ${[...seen].length}), Esc leaves a talk ${escLeft}, no Leave button ${!leave}, tab away/back + ${sizes.length} resizes ok, end ${JSON.stringify(end)}`);
     detail.push(`${dn}: night frame time per scene (ms, CPU update+draw / frame interval): ${JSON.stringify(perf)}`);
     for (const e of errs) detail.push('   pageerror ' + e);
   }
@@ -2632,6 +2632,7 @@ Object.assign(T, phoneTapTextTests({ newContext, open }));   // v9.17.7 phone ta
 Object.assign(T, holdTapTests({ newContext, open }));   // v9.17.8 Defend and Sprint as hold or tap (tests/hold-tap.mjs)
 Object.assign(T, navTests({ newContext, open }));   // v9.17.9 one way back, leave words, the gamepad hint (tests/nav-919.mjs)
 Object.assign(T, noShoveTests({ newContext, open }));   // v9.17.10 the shove is removed (tests/no-shove.mjs)
+Object.assign(T, statCurveTests({ newContext, open }));   // v9.19.0 stat curves, move needs, the Hikmah challenge (tests/stat-curves.mjs)
 Object.assign(T, hubFirstTests({ newContext, open }));   // v9.18.0 the career opens at the hub (tests/hub-first.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)

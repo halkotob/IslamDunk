@@ -1,6 +1,8 @@
 // v8.6.5: records a seeded tomahawk (joint targets from poseTargets, and the sprung joint angles) at 20
 // points through the dunk. Used by the 'tomahawk' test in tests/run.mjs; the fixture
-// tests/fixtures/tomahawk-classic.json was recorded from the 8.6.4 build, before the styles existed.
+// tests/fixtures/tomahawk-classic.json was recorded from the 8.6.4 build, before the styles existed. (v9.19.0: re-recorded on
+// 9.19.0: the 20 pose targets are identical to 8.6.4's; the sprung joints started up to 0.004 off, because the seeded
+// tip-off before the dunk plays out differently with the new stat curves.)
 //   node tests/tomahawk-rec.mjs [page.html] > tests/fixtures/tomahawk-classic.json
 export const TOMAHAWK_REC = `((style) => {
   if (style && typeof SETTINGS !== 'undefined') SETTINGS.tomahawk = style;
@@ -12,7 +14,12 @@ export const TOMAHAWK_REC = `((style) => {
   for (const q of M.players) if (q !== p) place(q, h.x - h.dir * 500, 640);
   place(p, h.x + h.dir * 140, h.z + 30); p.state = 'free'; p.vx = p.vz = 0; giveBall(p, 'steal'); M.possTeam = p.team; M.inb = null;
   M.cmdHook = q => { zeroCmd(q.cmd); return true; };
-  startDunk(p, { D: 0.9 }); p.act.type = 'tomahawk'; p.act.big = true;
+  // (v9.19.0: the dunk's timing comes from its random type pick, the first number startDunk draws; the seeded tip-off
+  // before it plays out differently once the sim changes, so that one draw is pinned to the 8.6.4 recording's pick:
+  // the windmill's timing, x1.08; the look is set to the tomahawk below, as before)
+  { const R = Math.random; let first = true; Math.random = function () { if (first) { first = false; return 0.5; } return R.apply(this, arguments); };
+    try { startDunk(p, { D: 0.9 }); } finally { Math.random = R; } }
+  p.act.type = 'tomahawk'; p.act.big = true;
   const K = ['nh', 'nk', 'fh', 'fk', 'ns', 'ne', 'fs', 'fe', 'lean'], r4 = v => Math.round(v * 1e4) / 1e4;
   // targets at 20 fixed points of dunk progress (a pure function of the pose state)
   const targets = [];

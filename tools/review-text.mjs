@@ -6,7 +6,7 @@ import path from 'node:path';
 
 // ---- sections by file
 export const SECTION = [
-  [/sim\/noor-powers/, 'Noor power-ups (v8.6.1: review the wording)'],
+  [/sim\/noor-powers/, 'Power-ups (v9.19.0: Hikmah challenge, Light Upon Light; review the wording)'],
   [/career\/calendar/, 'Career calendar (v9.0: review the month, weekday and holiday names)'],
   [/career\/world\//, 'Neighbourhood (v9.2: review the people, their lines, the signs and the store)'],
   [/career\/jumuah/, 'Jumu’ah (v9.4: the scene; the khutbah itself is built from the trivia bank)'],
@@ -19,7 +19,7 @@ export const SECTION = [
   [/screens\//, 'Menus and screens'], [/sim\//, 'Callouts and messages in play']
 ];
 // v8.6.1: rows to highlight for the Islamic-wording review (the Noor power-ups and the Noor text that changed with them)
-export const FLAG = { file: /sim\/noor-powers/, text: /Noor power-up|Choose your Noor/, note: 'REVIEW 8.6.1: Islamic wording (Noor power-ups)' };
+export const FLAG = { file: /sim\/noor-powers/, text: /Light Upon Light|Hikmah/, note: 'REVIEW 9.19.0: Islamic wording (the Hikmah challenge, Light Upon Light)' };
 // v9.0: the career calendar's month and holiday names (an in-game calendar, not real dates)
 export const FLAG9 = { file: /career\/calendar/, note: 'REVIEW 9.0: Islamic wording (calendar months and holidays)' };
 // v9.2: everything new in the neighbourhood (NPC lines, signs, the store, banners)
