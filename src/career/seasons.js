@@ -166,7 +166,7 @@ function drawBanners(g, X, Y) {
   drawGymBack = function (g, t, U = gymUp()) {
     _gb(g, t, U);
     const X = wx => wx - cam.x + FX.sx, Y = y => y + FX.sy;
-    drawBanners(g, X, Y);
+    const was = g.__deco; g.__deco = true; try { drawBanners(g, X, Y); } finally { g.__deco = was; }   // (v9.19.2: scenery text, like the rest of the gym's back wall)
   };
 }
 

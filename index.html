@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.19.1';
+const VERSION = '9.19.2';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -4300,7 +4300,7 @@ function genTeam(R, word, place, strength, stage, colors) {
   const used = new Set();
   const players = [0, 1].map(s => {
     let nm; do nm = pr(pool); while (used.has(nm)); used.add(nm);
-    const st = () => clamp(Math.round(strength + R() * 3 - 1.5), 3, 10);
+    const st = () => clamp(Math.round(strength + R() * 3 - 1.5), 2, 10);   // (v9.19.2: 2 at the lowest, was 3; only the Local stage gets that low)
     const p = { name: s === 0 ? 'Sh. ' + nm : nm, num: 1 + Math.floor(R() * 44), sheikh: s === 0, huffath: R() < 0.45, mufti: s === 0 && R() < 0.3, skin: pr(SKINS),
       hat: s === 0 ? pr(['kufi', 'imama', 'topi']) : pr(['hair', 'hair', 'kufi', 'crochet']), capColor: pr(CAPCOLS), hair: pr(HAIRS.slice(0, s === 0 ? 5 : 3)),
       stats: { spd: st(), sht: st(), dnk: st(), def: st(), stl: st() } };
@@ -5205,11 +5205,11 @@ function savesSelect(i) {
 function startCareerMatch() {
   const m = ourMatch(), oppId = m.a === 0 ? m.b : m.a;
   const lv = careerLevels(C.stage), tier = teamOf(C.stage, oppId).tier || 0;
-  lv.opp = Math.max(SETTINGS.difficulty === 'veryeasy' ? -1 : 0, lv.opp + tier * 0.2);              // v7.8: stronger teams also play a little smarter
+  lv.opp = Math.max(CAREER_FLOOR, lv.opp + tier * 0.2);              // v7.8: stronger teams also play a little smarter
   Game.lastMatch = null;
   if (!Game.cv) prepCareerVenue();
   const venue = Game.cv.v;
-  newMatch(amanahTeam(), teamOf(C.stage, oppId), { humans: [{ team: 0, slot: 1, pad: 0 }], career: true, aiCfg: [diffAt(lv.mate), diffAt(lv.opp)], venue, venueLayers: Game.cv.L });
+  newMatch(amanahTeam(), teamOf(C.stage, oppId), { humans: [{ team: 0, slot: 1, pad: 0 }], career: true, aiCfg: [diffAt(lv.mate), careerOppCfg(lv.opp, C.stage)], venue, venueLayers: Game.cv.L });
   Game.cv = null; startVenueIntro(venue);
   M.careerL = lv.opp;
   M.careerOpp = oppId; M.careerStage = C.stage; M.careerRound = C.bracket.round;
@@ -5534,7 +5534,7 @@ function drawPregame(g) {
   if (C.prayBonus) { g.fillStyle = '#9dffb0'; g.fillText('Salah bonus: +10% shooting, +10% stamina this game', 62, 380); }
   else { g.fillStyle = '#9fb3c8'; g.fillText(TT ? 'No salah bonus. Answer the adhan to earn one.' : 'No salah bonus. Answer the adhan during practice to earn one.', 62, 380); }
   const lv = careerLevels(C.stage), shift = diffShift(), oT = opp.tier || 0;
-  lv.opp = Math.max(SETTINGS.difficulty === 'veryeasy' ? -1 : 0, lv.opp + oT * 0.2);
+  lv.opp = Math.max(CAREER_FLOOR, lv.opp + oT * 0.2);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
   g.fillText(TT ? 'CPU difficulty: ' + diffLabel(lv.opp) : 'CPU difficulty: ' + diffLabel(lv.opp) + (shift ? ' (' + S.name + ' stage, one step ' + (shift < 0 ? 'easier' : 'harder') + ' because Difficulty is set to ' + diffName(SETTINGS.difficulty) + ')' : ' (' + S.name + ' stage)'), 62, TT ? 408 : 404);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(fitText(g, castDef(Game.tipBy || 'rafiq').name + ': \u201C' + (Game.tip || STORY.tips[0]) + '\u201D', TT ? 620 : 9999), 62, TT ? 438 : 434);
@@ -11943,7 +11943,7 @@ function drawBanners(g, X, Y) {
   drawGymBack = function (g, t, U = gymUp()) {
     _gb(g, t, U);
     const X = wx => wx - cam.x + FX.sx, Y = y => y + FX.sy;
-    drawBanners(g, X, Y);
+    const was = g.__deco; g.__deco = true; try { drawBanners(g, X, Y); } finally { g.__deco = was; }   // (v9.19.2: scenery text, like the rest of the gym's back wall)
   };
 }
 
@@ -15553,8 +15553,9 @@ function buildPips(g, x, y, base, mod) {
   }
 }
 function buildSummary(m) {
-  const up = BUILD_ROWS.filter(([k]) => m[k] > 0).map(r => r[1]), dn = BUILD_ROWS.filter(([k]) => m[k] < 0).map(r => r[1]);
-  return up.length ? 'Better at ' + up.join(', ').toLowerCase() + '. Weaker at ' + dn.join(', ').toLowerCase() + '.' : 'Even across the board. Change height, build or play style to specialise.';
+  // (v9.19.2: with the numbers, "Better at shooting +2, clutch +1. Weaker at dunking −2, defense −1.")
+  const up = BUILD_ROWS.filter(([k]) => m[k] > 0).map(([k, n]) => n.toLowerCase() + ' +' + m[k]), dn = BUILD_ROWS.filter(([k]) => m[k] < 0).map(([k, n]) => n.toLowerCase() + ' −' + -m[k]);
+  return up.length ? 'Better at ' + up.join(', ') + '. Weaker at ' + dn.join(', ') + '.' : 'Even across the board. Change height, build or play style to specialise.';
 }
 
 drawCreator = function (g) {
@@ -28709,6 +28710,40 @@ function rehand(p, dt, always) {
     return r;
   };
 }
+// v9.19.2 career difficulty, calibrated by results (tools/diff-report.mjs, tests/difficulty.mjs)
+// The CPU's level for each difficulty and stage is its own number, measured with the mixed-play bot at equal ratings
+// so that each step costs about the same win rate. Before, one shared ladder (LADDER) was shifted a notch per
+// difficulty, and the Medium-to-Hard dials made a cliff: Medium went 60 / 48 / 15 / 13% from Local to World.
+// The level is the same scale as before (diffAt: -1 Very easy dials, 0 Easy, 1 Medium, 2 Hard).
+//               Local  State  National  World
+const CAREER_L = {
+  veryeasy: [-1, -1, -1, -1],
+  easy:     [-0.9, -0.45, -0.45, -0.05],
+  medium:   [-0.6, 0.2, 0.2, 0.55],
+  hard:     [0.95, 1.2, 0.95, 0.9]
+};
+const CAREER_FLOOR = -1;                 // a weak team's tier can take the level down to Very easy's dials
+// Hard reads plays and doubles the ball at every stage (it keeps the Hard dials' read and double team; its other
+// dials sit lower to pay for it)
+function careerOppCfg(L, stage, smart) {
+  const o = diffAt(L);
+  if (smart == null ? SETTINGS.difficulty === 'hard' : smart) { o.read = 1; o.double = true; }
+  return o;
+}
+const careerLevelsBefore = careerLevels;
+careerLevels = (function (base) {
+  return function (stage) {
+    const row = CAREER_L[SETTINGS.difficulty] || CAREER_L.medium;
+    return { opp: row[clamp(stage, 0, row.length - 1)], mate: SETTINGS.difficulty === 'hard' ? base(stage).mate : 1 };   // your teammate plays at Medium (on Easy and Very easy he was made worse too, which made those harder)
+  };
+})(careerLevels);
+// The league's other games (CPU against CPU, both teams on the same dials) keep the old levels, so the league's
+// stats and its calibrated fallback (LG_CAL) stay as they were.
+lgLevel = function (stage, i) { const lv = careerLevelsBefore(stage); return Math.max(SETTINGS.difficulty === 'veryeasy' ? -1 : 0, lv.opp + (teamOf(stage, i).tier || 0) * 0.2); };
+// The Local teams' rating (was 4.6). A new player starts at 4 (3 to 6 by the build) with Sh. Saleem, and one rating
+// point is worth about 20 points of win rate, so a Local CPU near 4.9 made the first three games a loss at any
+// difficulty (Medium 19%). Later stages are unchanged (5.6, 6.6, 7.5): by State the player has bought levels.
+STAGES[0].stat = 2.6;
 // v9.17.9: one way back on every screen, one name for leaving, and a gamepad hint on tap-only screens.
 //   U2  The ‹ Back pill is the way back (with Esc on keys and B on a pad); the duplicate Back rows and buttons are gone
 //       (Settings, the online menu, Mini games, Profile, tournament setup, Career, Save and load, Upgrade stats, Fun

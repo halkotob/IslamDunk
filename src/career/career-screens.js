@@ -159,11 +159,11 @@ function savesSelect(i) {
 function startCareerMatch() {
   const m = ourMatch(), oppId = m.a === 0 ? m.b : m.a;
   const lv = careerLevels(C.stage), tier = teamOf(C.stage, oppId).tier || 0;
-  lv.opp = Math.max(SETTINGS.difficulty === 'veryeasy' ? -1 : 0, lv.opp + tier * 0.2);              // v7.8: stronger teams also play a little smarter
+  lv.opp = Math.max(CAREER_FLOOR, lv.opp + tier * 0.2);              // v7.8: stronger teams also play a little smarter
   Game.lastMatch = null;
   if (!Game.cv) prepCareerVenue();
   const venue = Game.cv.v;
-  newMatch(amanahTeam(), teamOf(C.stage, oppId), { humans: [{ team: 0, slot: 1, pad: 0 }], career: true, aiCfg: [diffAt(lv.mate), diffAt(lv.opp)], venue, venueLayers: Game.cv.L });
+  newMatch(amanahTeam(), teamOf(C.stage, oppId), { humans: [{ team: 0, slot: 1, pad: 0 }], career: true, aiCfg: [diffAt(lv.mate), careerOppCfg(lv.opp, C.stage)], venue, venueLayers: Game.cv.L });
   Game.cv = null; startVenueIntro(venue);
   M.careerL = lv.opp;
   M.careerOpp = oppId; M.careerStage = C.stage; M.careerRound = C.bracket.round;
@@ -488,7 +488,7 @@ function drawPregame(g) {
   if (C.prayBonus) { g.fillStyle = '#9dffb0'; g.fillText('Salah bonus: +10% shooting, +10% stamina this game', 62, 380); }
   else { g.fillStyle = '#9fb3c8'; g.fillText(TT ? 'No salah bonus. Answer the adhan to earn one.' : 'No salah bonus. Answer the adhan during practice to earn one.', 62, 380); }
   const lv = careerLevels(C.stage), shift = diffShift(), oT = opp.tier || 0;
-  lv.opp = Math.max(SETTINGS.difficulty === 'veryeasy' ? -1 : 0, lv.opp + oT * 0.2);
+  lv.opp = Math.max(CAREER_FLOOR, lv.opp + oT * 0.2);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
   g.fillText(TT ? 'CPU difficulty: ' + diffLabel(lv.opp) : 'CPU difficulty: ' + diffLabel(lv.opp) + (shift ? ' (' + S.name + ' stage, one step ' + (shift < 0 ? 'easier' : 'harder') + ' because Difficulty is set to ' + diffName(SETTINGS.difficulty) + ')' : ' (' + S.name + ' stage)'), 62, TT ? 408 : 404);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(fitText(g, castDef(Game.tipBy || 'rafiq').name + ': \u201C' + (Game.tip || STORY.tips[0]) + '\u201D', TT ? 620 : 9999), 62, TT ? 438 : 434);

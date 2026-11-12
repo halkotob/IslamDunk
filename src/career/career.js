@@ -107,7 +107,7 @@ function genTeam(R, word, place, strength, stage, colors) {
   const used = new Set();
   const players = [0, 1].map(s => {
     let nm; do nm = pr(pool); while (used.has(nm)); used.add(nm);
-    const st = () => clamp(Math.round(strength + R() * 3 - 1.5), 3, 10);
+    const st = () => clamp(Math.round(strength + R() * 3 - 1.5), 2, 10);   // (v9.19.2: 2 at the lowest, was 3; only the Local stage gets that low)
     const p = { name: s === 0 ? 'Sh. ' + nm : nm, num: 1 + Math.floor(R() * 44), sheikh: s === 0, huffath: R() < 0.45, mufti: s === 0 && R() < 0.3, skin: pr(SKINS),
       hat: s === 0 ? pr(['kufi', 'imama', 'topi']) : pr(['hair', 'hair', 'kufi', 'crochet']), capColor: pr(CAPCOLS), hair: pr(HAIRS.slice(0, s === 0 ? 5 : 3)),
       stats: { spd: st(), sht: st(), dnk: st(), def: st(), stl: st() } };

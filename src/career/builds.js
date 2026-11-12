@@ -23,8 +23,9 @@ function buildPips(g, x, y, base, mod) {
   }
 }
 function buildSummary(m) {
-  const up = BUILD_ROWS.filter(([k]) => m[k] > 0).map(r => r[1]), dn = BUILD_ROWS.filter(([k]) => m[k] < 0).map(r => r[1]);
-  return up.length ? 'Better at ' + up.join(', ').toLowerCase() + '. Weaker at ' + dn.join(', ').toLowerCase() + '.' : 'Even across the board. Change height, build or play style to specialise.';
+  // (v9.19.2: with the numbers, "Better at shooting +2, clutch +1. Weaker at dunking −2, defense −1.")
+  const up = BUILD_ROWS.filter(([k]) => m[k] > 0).map(([k, n]) => n.toLowerCase() + ' +' + m[k]), dn = BUILD_ROWS.filter(([k]) => m[k] < 0).map(([k, n]) => n.toLowerCase() + ' −' + -m[k]);
+  return up.length ? 'Better at ' + up.join(', ') + '. Weaker at ' + dn.join(', ') + '.' : 'Even across the board. Change height, build or play style to specialise.';
 }
 
 drawCreator = function (g) {

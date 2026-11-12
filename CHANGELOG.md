@@ -1,5 +1,106 @@
 # Changelog
 
+## 9.19.2: a new player can win the first three career games, and each difficulty step costs about the same
+On Medium, a new career's first three games went from 19% wins to 73%, with every play style between 69% and 75%.
+The CPU's level is now measured per difficulty and stage, not shifted a notch along one shared ladder.
+- **How it was measured** (`node tools/diff-report.mjs`, new). A mixed-play bot plays your slot through the same input
+  path as a person. Each possession it leans to a drive (40%), a jumper (40%) or a pass. It shoots when open, drives
+  while the lane is clear, passes to an open teammate, and releases near the top with about 50 ms of error. On defense
+  it stays between its man and the rim, contests and sometimes reaches. Your teammate and the other team are the CPU,
+  as in a career game. The same seeds are used every run, so two builds compare like for like. Games are 2 halves of
+  2:00, and the reports are 48 games a cell. The noise is about ±7 points a cell, so the average margin was used to
+  calibrate (it is far less noisy).
+- **The first three Local games of a new career** (starting stats, Sh. Saleem, the real bracket; Easy / Medium / Hard,
+  180 games a cell before, 240 after):
+  - 9.17.5: 45% / 24% / 27%
+  - 9.18.0: 36% / 22% / 21%
+  - 9.19.0: 36% / 24% / 20%
+  - 9.19.1: 39% / 19% / 19%. Medium by style: sharpshooter 17%, playmaker 14%, rimrunner 33%, lockdown 11%, glue 19%.
+  - **9.19.2: 75% / 73% / 56%.** Medium by style: sharpshooter 69%, playmaker 75%, rimrunner 75%, lockdown 71%,
+    glue 75%. Hard by style: 46% to 65%.
+- **The cause: no single build.** The first three games were already lost three times in four on 9.17.5. Each later
+  build moved them 2 to 9 points, within one or two noise widths. Two things did it:
+  - **The rating gap.** You start at 4 (about 3.8 on speed, shooting, dunking and defense once the build is applied),
+    and the Local CPU players were rated about 4.9. In this sim one rating point is worth about 20 points of win rate:
+    at Medium on the State dials, your team rated 3, 4, 5, 6, 7 against 5 won 4%, 17%, 33%, 67%, 83%.
+  - **The ladder had a cliff.** At equal ratings, Medium went 60 / 48 / 15 / 13% from Local to World, and Easy 79 /
+    69 / 42 / 19%. The drop sat between the Medium and Hard dials. CPU skill moves per 100 possessions went from 7 on
+    Very easy at Local to 123 on Medium at World.
+- **The ladder at equal ratings** (Very easy / Easy / Medium / Hard; the rating is the stage's, and Local's is now 2.6,
+  so the Local column isn't like for like):
+  - Local: before 85 / 79 / 60 / 40%, after 92 / 90 / 92 / 48%. At a 2.6 rating nobody makes skill moves, and the
+    ratings decide more than the dials. The dials were calibrated at the old 4.6.
+  - State: before 77 / 69 / 48 / 25%, after 81 / 79 / 63 / 56%.
+  - National: before 73 / 42 / 15 / 21%, after 73 / 52 / 60 / 46%.
+  - World: before 63 / 19 / 13 / 8%, after 79 / 58 / 54 / 40%.
+  - Average margin (State to World): before Very easy +3.7, Easy −1.0, Medium −4.6, Hard −5.7; after +5.6, +2.7,
+    +2.2, −0.3.
+  - CPU skill moves per 100 possessions on Medium: before 42 / 56 / 97 / 123, after 0 / 35 / 56 / 79. On Hard: before
+    56 / 66 / 106 / 119, after 36 / 63 / 80 / 91.
+- **Every changed number** (all in `src/career/v9192-difficulty.js` unless noted):
+  - **The other team's level.** The scale is the same as before: −1 is the Very easy dials, 0 Easy, 1 Medium, 2 Hard.
+    Each list is Local / State / National / World.
+    - Very easy: −1, −0.65, 0, 0.55 → −1 at every stage. Very easy's dials are already the floor, and at equal ratings
+      the bot tops out near 80 to 90% against them.
+    - Easy: 0, 0.35, 1, 1.55 → −0.9, −0.45, −0.45, −0.05.
+    - Medium: 0.35, 1, 1.55, 2 → −0.6, 0.2, 0.2, 0.55.
+    - Hard: 1, 1.55, 2, 2.5 → 0.95, 1.2, 0.95, 0.9. Hard also keeps the Hard dials' play reading and double teams at
+      every stage, so it still plays like Hard; its other dials sit lower to pay for that.
+    - National and World have the same or lower levels than State on some rows because the ratings rise by a point
+      a stage (5.6, 6.6, 7.5), and higher-rated CPU players make more of the same dials.
+  - **Your teammate on Easy and Very easy:** level 0.35 → 1 (Medium, as on Medium). Before, he was made worse too,
+    which made those settings harder for you.
+  - **The lowest level a weak team's tier can reach:** 0 (Very easy −1) → −1 at every difficulty (career-screens.js).
+  - The league's other games (CPU against CPU) keep the old levels, so the league's stats and its fallback stay
+    calibrated. On the new levels its steals and turnovers halved, and the league calibration test failed.
+  - **The Local teams' rating:** 4.6 → 2.6. The CPU players in the first three games now average about 3.2 (was 4.9).
+  - **The lowest stat a generated CPU player can get:** 3 → 2 (career.js). Only Local gets that low.
+  - Not changed: the stat curves, State, National and World ratings, Quick Play, Barakah Run (it never asks for a level
+    below −1), online (no protocol change: online games use the Quick Play dials), the fouls, and the ball-in-hands fix.
+- **Not met, and why:**
+  - **A rating point is still worth about 20 points of win rate**, not about 5. Getting to 5 would mean flattening
+    the 9.19.0 stat curves about four times, which this brief rules out. It's left as a decision (SC3 in
+    docs/IMPROVEMENTS.md).
+  - **Very easy at 90%+.** It's 73 to 92% by stage. Against the easiest dials there are, the bot's margin is about +6
+    in a 4-minute game, which wins about 80%.
+  - **Easy's first three games are 75%** (band 80 to 90%). At Local's low ratings, Easy's and Medium's dials play
+    almost alike.
+  - **Hard's first three are 56%** (band 45 to 55%), one point over and within the noise.
+  - **Medium Local can't be both about 65% (difficulty target) and about 75% (stage target).** The first-three bands
+    were followed, since they are what a new player plays.
+- **Starting stats follow the build: they already did.** Height, build and play style move the starting stats
+  (`applyBodyMods` on top of your levels). All 54 combinations total 36, each stat within ±3: a sharpshooter (average
+  height and build) starts at shooting 6, speed 4, dunking 2, defense 3, steals 4, stamina 4, passing 4, hustle 4,
+  clutch 5. Your levels start at 4 and the build sits on top of them, so a respec already refunds only what you bought.
+  New: the creator's summary gives the numbers ("Better at shooting +2, clutch +1. Weaker at dunking −2, defense −1.").
+- **Before → after, everything else:**
+  - The defense report (seeded Quick Play) is identical on 9.19.1 and 9.19.2: 54.8 shots, 7.1 blocks, 4.4 steals a
+    game.
+  - The loop report plays Quick Play, whose code didn't change. It isn't seeded, so it moves a little run to run.
+    Points per possession, before → after:
+    - CPU against CPU: Very easy 1.36 → 1.37, Easy 1.51 → 1.44, Medium 1.49 → 1.53, Hard 1.40 → 1.42.
+    - On Medium and Hard no scripted style beats the CPU-against-CPU line.
+    - On Very easy and Easy the rusher still does (1.63 and 1.50 before, 1.64 and 1.62 after). That was already
+      there, and it's Quick Play, which this brief doesn't touch.
+  - The league calibration test passes.
+- **Tests** (tests/difficulty.mjs, new):
+  - `build-stats` (fast): every build totals 36; a sharpshooter's shooting starts at 6 and a respec refunds nothing,
+    and bought to 6 it refunds only 4→5 and 5→6; an old save loads and keeps its levels; the creator gives the numbers.
+  - `first-three` (full tier): 20 new careers × 3 games at Easy, Medium and Hard, inside wide bands (Easy 60 to 100%,
+    Medium 50 to 95%, Hard 25 to 75%, every style at Medium 30% or more).
+  - `ladder` (full tier): at State and World, each difficulty's average margin no better than the one below it, Very
+    easy clearly above Hard, and Hard World neither hopeless nor easy.
+  - The bot lives in `tools/diff-bot.mjs` (shared by the tool and the tests).
+- **Also fixed, found by the full tests with the new Local results:**
+  - **The title banners on the gym ceiling** ("LOCAL / CHAMPS / S1") were drawn outside the scenery-text flag, so the
+    layout check counted them as text over the league screens at phone size. A new player now wins Local in the
+    league test's fixture, which brought this out (seasons.js).
+  - `league-determinism` uses seed 22. At seed 21, with the new Local rosters, the real league and the fallback gave
+    the other games different results, and your day-2 game came out different. At seeds 22 to 25 the next game is the
+    same.
+  - `fouls-kept` plays 6 games at each difficulty instead of 4. Shooting fouls are rare (2 in 16 games on 9.19.0),
+    and 9.19.1 had none in those 16 games, so it failed there too.
+
 ## 9.19.1: the ball stays in the player's hands
 The held ball now sits in the hand as it's drawn, in every pose and both facings: the shot windup, the release, the
 dribble, the moves, catches, rebounds and steals. It no longer floats off to the side of his head.

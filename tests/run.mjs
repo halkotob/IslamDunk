@@ -119,6 +119,7 @@ import { navTests } from './nav-919.mjs';
 import { noShoveTests } from './no-shove.mjs';
 import { statCurveTests } from './stat-curves.mjs';
 import { ballHandsTests } from './ball-hands.mjs';
+import { difficultyTests } from './difficulty.mjs';
 import { hubFirstTests } from './hub-first.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
@@ -2635,6 +2636,7 @@ Object.assign(T, navTests({ newContext, open }));   // v9.17.9 one way back, lea
 Object.assign(T, noShoveTests({ newContext, open }));   // v9.17.10 the shove is removed (tests/no-shove.mjs)
 Object.assign(T, statCurveTests({ newContext, open }));   // v9.19.0 stat curves, move needs, the Hikmah challenge (tests/stat-curves.mjs)
 Object.assign(T, ballHandsTests({ newContext, open }));   // v9.19.1 the ball stays in his hands (tests/ball-hands.mjs)
+Object.assign(T, difficultyTests({ newContext, open }));   // v9.19.2 career difficulty: starting stats, the first three games, the ladder (tests/difficulty.mjs)
 Object.assign(T, hubFirstTests({ newContext, open }));   // v9.18.0 the career opens at the hub (tests/hub-first.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
@@ -2655,6 +2657,7 @@ const FULL = process.argv.includes('--full');
 const HEAVY = new Set([
   // the brief's list
   'online-lag', 'online-loop', 'online-server', 'defense', 'cpu-variety', 'tomahawk',
+  'first-three', 'ladder',   // v9.19.2: a few hundred bot games each
   // over 13 s each when run alone on the 2-core container (v9.17.1 times), so the fast tier fits 3 minutes there
   'league-calibration', 'lag-profiles', 'studio', 'cpu-league', 'hub-layout', 'career-run', 'world-robust', 'world-visual',
   'league-formats', 'league-determinism', 'league-layout', 'league-time', 'cpu-handle', 'v863', 'career-intro', 'v867',

@@ -139,6 +139,7 @@
     "sim/v9178-hold-tap.js",
     "sim/v919-stat-curves.js",
     "sim/v9191-ball-hands.js",
+    "career/v9192-difficulty.js",
     "screens/v9179-nav.js",
     "boot.js"
   ]

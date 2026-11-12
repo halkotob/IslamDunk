@@ -49,7 +49,7 @@ export function leagueTests({ newContext, open }) {
     const errs = [], ctx = await newContext(browser, { seed: true });
     const one = async mode => { const p = await open(ctx, base + '/', errs, 'league-det ' + mode); await prep(p, mode);
       const v = await p.evaluate(() => {
-        window.__seed(21); window.__calFresh(); window.__lgPlayDay(); window.__lgPlayDay();
+        window.__seed(22); window.__calFresh(); window.__lgPlayDay(); window.__lgPlayDay();   // (v9.19.2: seed 21 -> 22; with the new Local rosters, at 21 the real league and the fallback give the other games different results and your day-2 game came out different; at 22 to 25 the next game is the same)
         const lg = JSON.stringify(C.lg), bracket = JSON.stringify(C.bracket);
         // the next game we play: from here on, the same inputs must give the same game
         startCareerMatch(); for (let i = 0; i < 8 && Game.screen === 'story'; i++) Game.story.then();

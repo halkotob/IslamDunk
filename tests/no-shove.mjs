@@ -4,7 +4,7 @@
 //                foul on purpose (2 shots, the clock stops); the bonus still sends a non-shooting foul to the line;
 //                an old career save with shoves and hardFouls loads; the "clean" scenario counts fouls; an online
 //                peer on the old protocol (3) can't start a game with this one
-//   fouls-kept   (full tier) 4 seeded CPU games at each difficulty, 2 of them with a scripted player mashing Turbo +
+//   fouls-kept   (full tier) 6 seeded CPU games at each difficulty, 3 of them with a scripted player mashing Turbo +
 //                Pass: every game finishes, no page errors, no shove, nobody knocked down by a defender; across them
 //                reach-ins, blocking fouls, shooting fouls, and-ones and fouls on purpose all still happen
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -65,8 +65,8 @@ export function noShoveTests({ newContext, open }) {
       humanCmd = function (pad, c) { _hc.apply(this, arguments); if (!mash || pad !== 0) return; const me = M.players.find(q => q.human === 0); if (!me) return; c.a = false; c.turbo = false; c.mx = c.mz = 0;
         if (ball.owner && ball.owner.team !== me.team) { const o = ball.owner, d = Math.hypot(o.x - me.x, o.z - me.z); c.mx = (o.x - me.x) / (d || 1); c.mz = (o.z - me.z) / (d || 1); c.turbo = true; if (d < 60 && Math.random() < 0.25) c.a = true; } };
       const games = [];
-      for (const d of ['veryeasy', 'easy', 'medium', 'hard']) for (let g = 0; g < 4; g++) {
-        SETTINGS.difficulty = d; mash = g >= 2; window.__seed(3000 + g * 7919 + d.length);
+      for (const d of ['veryeasy', 'easy', 'medium', 'hard']) for (let g = 0; g < 6; g++) {   // (v9.19.2: 4 -> 6 games each; shooting fouls are rare, 2 in 16 games on 9.19.0 and none on 9.19.1)
+        SETTINGS.difficulty = d; mash = g >= 3; window.__seed(3000 + g * 7919 + d.length);
         newMatch(TEAMS[g % 8], TEAMS[(g + 3) % 8], { humans: mash ? [{ team: 0, slot: 0, pad: 0 }] : [], fmt: { format: 'quarters', len: 60 } });
         let n = 0; for (; n < 60 * 60 * 15 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; if (Game.trivia) Game.trivia = null; }
         games.push({ d, mash, over: M.phase === 'over', shoves: M.players.reduce((t, q) => t + (q.shoves || 0), 0) });
