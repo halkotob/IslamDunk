@@ -13,7 +13,7 @@ export function rbSafetyTests({ newContext, open }) {
     const H = await open(ctx, base + '/' + q, errs, 'host'), G = await open(ctx, base + '/' + q, errs, 'guest');
     const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
     await G.evaluate(c => Lobby.join(c), code);
-    await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 15000 }).catch(() => {});
+    await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 15000 }).catch(() => {});
     await H.evaluate(() => { const o = Lobby.opts(); Object.assign(o, { game: 'vs', court: 'full', format: 'quarters', len: 120 }); Net.mode = 'vs'; Lobby.changed(); });
     await G.evaluate(() => Lobby.setReady(1)); await sleep(900);
     return { ctx, H, G, errs };

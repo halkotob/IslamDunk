@@ -120,6 +120,7 @@ import { noShoveTests } from './no-shove.mjs';
 import { statCurveTests } from './stat-curves.mjs';
 import { ballHandsTests } from './ball-hands.mjs';
 import { difficultyTests } from './difficulty.mjs';
+import { lobbyTests } from './lobby.mjs';
 import { hubFirstTests } from './hub-first.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
@@ -1129,8 +1130,8 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
   const idle = avail[1] === 'firebase' ? await H.evaluate(() => window.__fbOnline) : false;   // v9.9.1: no database connection until a room is opened
   const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
   await G.evaluate(c => Lobby.join(c), code);
-  await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 10000 }).catch(() => {});
-  let ok = (await G.evaluate(() => Game.screen)) === 'lobby' && await H.evaluate(() => !!Net.guestPeer);
+  await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 10000 }).catch(() => {});
+  let ok = await G.evaluate(() => Lobby.isIn()) && await H.evaluate(() => !!Net.guestPeer);   // (v9.20.0: the lobby starts in its gym)
   log.push('guest in lobby: ' + ok);
   if (avail[1] === 'firebase') {                  // v9.9.1: both signed in anonymously, each writes only rooms/<code>/peers/<its user id>
     const a = await Promise.all([H, G].map(pg => pg.evaluate(() => { const T = (typeof P2P !== 'undefined' && P2P.base) || Net.room; return { authed: !!T.authed, me: T.me, node: T.meRef && T.meRef.path, busy: Net.room.busy }; })));
@@ -1219,7 +1220,7 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
       ok = ok && after.screen === 'netplay' && after.gap < 1500;
     }
     await H.evaluate(() => Lobby.back());
-    await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 8000 }).catch(() => {});
+    await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 8000 }).catch(() => {});
     const back = await G.evaluate(() => Game.screen);
     log.push(`${game}: guest ${st.screen} (${st.players} players, ${st.snaps} snapshots buffered), host ${hs.screen}${word ? ', guest sees ' + word : ''}; back to ${back}`);
     ok = ok && good && back === 'lobby';
@@ -1236,7 +1237,7 @@ async function lagRun(browser, base, lat, jit) {
   const H = await open(ctx, base + q, errs, 'host'), G = await open(ctx, base + q, errs, 'guest');
   const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
   await G.evaluate(c => Lobby.join(c), code);
-  await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 10000 }).catch(() => {});
+  await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 10000 }).catch(() => {});
   await H.evaluate(() => { const o = Lobby.opts(); o.game = 'vs'; Net.mode = 'vs'; Lobby.changed(); });
   await G.evaluate(() => Lobby.setReady(1)); await sleep(600);
   await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
@@ -1347,7 +1348,7 @@ T['duo-run'] = async ({ browser, base }) => {
   const H = await open(ctx, base + q, errs, 'host'), G = await open(ctx, base + q, errs, 'guest');
   const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
   await G.evaluate(c => Lobby.join(c), code);
-  await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 10000 }).catch(() => {});
+  await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 10000 }).catch(() => {});
   await H.evaluate(() => { const o = Lobby.opts(); o.game = 'brun'; Net.mode = 'brun'; Lobby.changed(); });
   await G.evaluate(() => Lobby.setReady(1)); await sleep(600);
   await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
@@ -2636,7 +2637,8 @@ Object.assign(T, navTests({ newContext, open }));   // v9.17.9 one way back, lea
 Object.assign(T, noShoveTests({ newContext, open }));   // v9.17.10 the shove is removed (tests/no-shove.mjs)
 Object.assign(T, statCurveTests({ newContext, open }));   // v9.19.0 stat curves, move needs, the Hikmah challenge (tests/stat-curves.mjs)
 Object.assign(T, ballHandsTests({ newContext, open }));   // v9.19.1 the ball stays in his hands (tests/ball-hands.mjs)
-Object.assign(T, difficultyTests({ newContext, open }));   // v9.19.2 career difficulty: starting stats, the first three games, the ladder (tests/difficulty.mjs)
+Object.assign(T, difficultyTests({ newContext, open }));
+Object.assign(T, lobbyTests({ newContext, open }));   // v9.20.0 the online lobby: the gym, team select, the post-game menu (tests/lobby.mjs)   // v9.19.2 career difficulty: starting stats, the first three games, the ladder (tests/difficulty.mjs)
 Object.assign(T, hubFirstTests({ newContext, open }));   // v9.18.0 the career opens at the hub (tests/hub-first.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
@@ -2658,6 +2660,7 @@ const HEAVY = new Set([
   // the brief's list
   'online-lag', 'online-loop', 'online-server', 'defense', 'cpu-variety', 'tomahawk',
   'first-three', 'ladder',   // v9.19.2: a few hundred bot games each
+  'lobby-flow', 'lobby-layout',   // v9.20.0: two phones through the lobby, two short games; team select drawn 14 ways
   // over 13 s each when run alone on the 2-core container (v9.17.1 times), so the fast tier fits 3 minutes there
   'league-calibration', 'lag-profiles', 'studio', 'cpu-league', 'hub-layout', 'career-run', 'world-robust', 'world-visual',
   'league-formats', 'league-determinism', 'league-layout', 'league-time', 'cpu-handle', 'v863', 'career-intro', 'v867',
@@ -2668,7 +2671,7 @@ const HEAVY = new Set([
 // alone, after the parallel batch: frame-rate and speed checks, and the rollback and real-time online tests, which a
 // busy CPU makes desync (9.17.2 on 2 workers: rb-settings, rb-touch and rb-one each repaired 1-3 desyncs they don't alone)
 const SERIAL = new Set(['rb-slow', 'rb-lag', 'rb-freeze', 'lag-profiles', 'online-lag', 'league-time', 'net-rate',
-  'online-loop', 'online-server', 'online-fb', 'online-room', 'online-custom', 'net-modes', 'net-version', 'net-report']);
+  'online-loop', 'online-server', 'online-fb', 'online-room', 'online-custom', 'net-modes', 'net-version', 'net-report', 'lobby-flow']);
 const isSerial = n => SERIAL.has(n) || n.startsWith('rb-');
 // v9.17.6: run by hand before a release (--only, or --release), not by test:full on every push. online-lag counts exact
 // frames under random jitter and misses 1 run in 10 on 9.15.0 and now alike (30 runs each), with no desync; until that's

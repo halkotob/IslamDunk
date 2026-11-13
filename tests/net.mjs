@@ -28,7 +28,7 @@ export function netTests({ newContext, open }) {
     if (opts.noJoin) return { ctx, H, G, errs };
     const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
     await G.evaluate(c => Lobby.join(c), code);
-    await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 15000 }).catch(() => {});
+    await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 15000 }).catch(() => {});
     return { ctx, H, G, errs, code };
   }
   async function startVs(H, G) {
@@ -194,9 +194,9 @@ export function netTests({ newContext, open }) {
       await G.evaluate(asOld);
       const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
       await G.evaluate(c => Lobby.join(c), code);
-      await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 15000 }).catch(() => {});
+      await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 15000 }).catch(() => {});
       await G.evaluate(() => Lobby.setReady(1)); await sleep(1200);
-      const h = await H.evaluate(() => { const r = { ok: Lobby.versionOK(), can: Lobby.canStart(), v: Lobby.guestPres().v, pv: Lobby.guestPres().pv }; Lobby.start(); r.screen = Game.screen; return r; });
+      const h = await H.evaluate(() => { const r = { ok: Lobby.versionOK(), can: Lobby.canStart(), v: Lobby.guestPres().v, pv: Lobby.guestPres().pv }; Lobby.start(); r.screen = Lobby.isIn() ? 'lobby' : Game.screen; return r; });
       const good = !h.ok && !h.can && h.screen === 'lobby' && h.v === '9.9.1' && h.pv == null && !errs.length;
       ok = ok && good; detail.push(`old guest (9.9.1) in the lobby: host sees v${h.v}, versionOK ${h.ok}, can start ${h.can}, after Start: ${h.screen} ${good ? 'ok' : 'BAD'}`);
       await ctx.close();
@@ -235,7 +235,7 @@ export function netTests({ newContext, open }) {
       await H.evaluate(asOld);
       const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
       await G.evaluate(c => Lobby.join(c), code);
-      await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 15000 }).catch(() => {});
+      await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 15000 }).catch(() => {});
       const warn = await G.evaluate(() => !Lobby.versionOK());
       await H.evaluate(() => { const o = Lobby.opts(); o.game = 'vs'; Lobby.changed(); }); await G.evaluate(() => Lobby.setReady(1)); await sleep(900);
       await H.evaluate(() => Lobby.start()); await sleep(2500);

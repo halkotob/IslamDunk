@@ -28,7 +28,9 @@ export const META = {
   'venue: your own court': ['rare', 'The court list with a custom team’s own court.', 'Team select with a custom team that has a court.', null, null, 'v9.3', [NEAR('venue')]],
   'online': ['rare', 'Host or join an online game.', 'Title → Online.', T('Online'), null, 'v7.0'],
   'joincode': ['rare', 'Type a friend’s 4-letter code.', 'Online → Join with a code.', T('Online', 'Join with a code'), null, 'v7.0'],
-  'lobby': ['rare', 'The online lobby: game, settings, ready, start.', 'Online → Host a lobby, or a code / link.', T('Online', 'Host a lobby'), null, 'v7.4'],
+  'lobby': ['rare', 'Team select: each side picks a masjid and its players (headshots); the host picks the game in the middle.', 'Online → Host a lobby → your friend presses Ready → Continue to teams.', T('Online', 'Host a lobby'), null, 'v9.20.0'],
+  'lobby: shoot-around': ['rare', 'The lobby gym: you and your friend shoot around while you wait; Ready, Continue, the code.', 'Online → Host a lobby, or join with a code / link.', T('Online', 'Host a lobby'), null, 'v9.20.0'],
+  'lobby: post-game': ['rare', 'After an online game: Rematch (both pick it), Back to shoot-around, Pick new teams, Quit to Title.', 'An online game → Continue on the final screen.', null, null, 'v9.20.0'],
   'online: network report': ['rare', 'The network report preview and the network-type pick.', 'Online lobby or online pause → Network report.', T('Online', 'Host a lobby', 'Network report'), null, 'v9.11.1'],
   'minis': ['rare', 'The mini games menu.', 'Quick Play → Mini games.', T('Quick Play', 'Mini games'), null, 'v8.0'],
   'profile': ['rare', 'Your profile level, ball skins and stats.', 'Settings → Profile.', T('Settings', 'Profile'), null, 'v8.3'],
@@ -134,7 +136,8 @@ export const META = {
 export const NA_META = {
   hostlobby: ['rare', 'The older host screen: a join code and Tip off.', 'Only Barakah Run → Duos → Host online (every other mode uses the v7.4 lobby).', null, null, 'v7.0', ['legacy'], { v: 'merge', into: 'lobby', why: 'The v7.4 lobby replaced it everywhere but Barakah Run duos.' }],
   netplay: ['match', 'The guest’s view of an online match.', 'Joining an online game.', null, null, 'v7.0'],
-  netwait: ['rare', 'Joining: searching, the room is full, the host left, a version mismatch.', 'Joining an online game.', null, null, 'v7.0']
+  netwait: ['rare', 'Joining: searching, the room is full, the host left, a version mismatch.', 'Joining an online game.', null, null, 'v7.0'],
+  lobbyquit: ['rare', 'Quit to Title from an online screen: a blank moment while the other player is told.', 'Any online screen → Quit to Title.', null, null, 'v9.20.0']
 };
 // thresholds for the measured flags (from the screen census: tap targets and words drawn)
 export const CROWDED = 16, TEXT_HEAVY = 130;

@@ -121,7 +121,7 @@ try {
   await guest.waitForFunction(() => typeof Net !== 'undefined' && Net.avail === 'yes', null, { timeout: 20000 });
   const code = await win.evaluate(() => { Lobby.open(); return Net.code; });
   await guest.evaluate(c => Lobby.join(c), code);
-  await guest.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 10000 }).catch(() => {});
+  await guest.waitForFunction(() => Lobby.isIn(), null, { timeout: 10000 }).catch(() => {});
   await sleep(2500);
   await win.evaluate(() => { Lobby.opts().game = 'vs'; Net.mode = 'vs'; Lobby.changed(); });
   await guest.evaluate(() => Lobby.setReady(1)); await sleep(700);

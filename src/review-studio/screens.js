@@ -27,7 +27,7 @@ export const STUDIO_SCREENS = [
   ['match: timeout (call a play)', MATCH + ` giveBall(M.players[0], 'inbound'); M.possTeam = 0; callTimeout(0, true);`],
   ['match: leave? (confirm)', MATCH + ` Game.paused = true; Game.idx = 0; const it = pauseItems(); it[it.length - 1][1]();`],
   ['barakah run: abandon? (confirm)', RUN + ` runPickVow(0); runAskAbandon();`],
-  ['online: network report', `goTitle(); Lobby.open(); NetReport.open('lobby');`],
+  ['online: network report', `lobbyPreview('gym'); NetReport.open('lobby');`],
   ['hub: corner menu', `if (!C) { C = freshCareer(); C.name = 'Reviewer'; C.bracket = makeBracket(0); } careerHub(); Game.hubMenu = { open: true, idx: 0 };`],
   ['hub: Jumu’ah question', `if (!C) { C = freshCareer(); C.name = 'Reviewer'; C.bracket = makeBracket(0); } careerHub(); jumuahTalk(); Game.hubJum = { idx: 0 };`]
 ];
@@ -47,6 +47,8 @@ export const SCREEN_OF = {
   "online": "online",
   "joincode": "joincode",
   "lobby": "lobby",
+  "lobby: shoot-around": "gym",
+  "lobby: post-game": "lobby",
   "minis": "minis",
   "profile": "profile",
   "teams & players": "cslist",
@@ -158,11 +160,12 @@ export const SCREEN_OF = {
   "match: timeout (call a play)": "play",
   "match: leave? (confirm)": "play",
   "barakah run: abandon? (confirm)": "runmap",
-  "online: network report": "lobby",
+  "online: network report": "gym",
   "hub: corner menu": "hub",
   "hub: Jumu’ah question": "hub"
 };
 export const NOT_RENDERABLE = {
+  lobbyquit: 'A blank 0.3 s while Quit to Title tells the other player and leaves the room (v9.20.0).',
   hostlobby: 'Needs a live online session with you as host and a guest connected. The online-loop, online-room and online-fb tests play it with a fake network.',
   netplay: 'Needs a live online game between two browsers (it is the guest’s view of the host’s match). The online tests cover it.',
   netwait: 'Only shown when an online host leaves or a room is full; needs a live online session.'

@@ -19,7 +19,7 @@
 //     render delay and prediction corrections in a small box. The lobby rates each player's connection (Good / OK /
 //     Poor) from a 5 s probe, and "Copy network report" copies a plain-text report. Nothing is sent anywhere.
 const ONLINE_ICE_URL = 'https://islamdunk-ice.islamdunk.workers.dev/ice';   // the Worker in worker/ice (TURN credentials)
-const NET_PROTO = 6;           // bump when the wire format or the match's rules change in a way older clients can't play (3: v9.11.1 trickle ICE, snapshot numbers; 4: v9.17.10 no shove; 5: v9.19.0 stat curves, one-step power-ups; 6: v9.19.1 hands placed as drawn, the held ball with them)
+const NET_PROTO = 7;           // bump when the wire format or the match's rules change in a way older clients can't play (3: v9.11.1 trickle ICE, snapshot numbers; 4: v9.17.10 no shove; 5: v9.19.0 stat curves, one-step power-ups; 6: v9.19.1 hands placed as drawn, the held ball with them; 7: v9.20.0 the lobby gym, team select with picks, the post-game menu)
 const SNAP_V = 2;              // newest snapshot format this client reads
 
 // ---------------------------------------------------------------- ICE servers (TURN) from the Worker
@@ -291,7 +291,7 @@ function unpackEv(e) { if (typeof e[1] !== 'number') return e; const n = SNAP_EV
     dim(g, 0.72);
     g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('Joining ' + Net.code, W / 2, 150);
     g.fillStyle = IVORY; g.font = `17px ${BODY}`;
-    wrapText(g, `That game is on a different version (theirs ${Net.verOther || '?'}, yours ${VERSION}). Both players refresh the page, then try again.`, W / 2, 210, 640, 26);
+    wrapText(g, `That lobby is on a different version (theirs ${Net.verOther || '?'}, yours ${VERSION}). Since 9.20.0 the lobby is a gym with team select, and older versions can't join it. Both players refresh the page, then try again.`, W / 2, 210, 640, 26);
   };
   const _ou = onlineUpdate;
   onlineUpdate = function (rdt) {

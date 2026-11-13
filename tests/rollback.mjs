@@ -109,7 +109,7 @@ export function rollbackTests({ newContext, open }) {
     if (guestInit) await G.evaluate(guestInit);
     const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
     await G.evaluate(c => Lobby.join(c), code);
-    await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 15000 }).catch(() => {});
+    await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 15000 }).catch(() => {});
     await H.evaluate(S => { const o = Lobby.opts(); o.game = 'vs'; Net.mode = 'vs'; Object.assign(o, S || {}); Lobby.changed(); }, setup || null);
     await G.evaluate(() => Lobby.setReady(1)); await sleep(900);
     await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
@@ -142,11 +142,12 @@ export function rollbackTests({ newContext, open }) {
     out.final = { hf, gf, host: end[0], guest: end[1] };
     // the host goes on: both in the lobby
     await H.evaluate(() => finalContinue());
-    await G.waitForFunction(() => Game.screen === 'lobby', null, { timeout: 10000 }).catch(() => {});
+    await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 10000 }).catch(() => {});
     out.lobby = await Promise.all([H, G].map(p => p.evaluate(() => ({ screen: Game.screen, rb: RBN.on }))));
     // a rematch
     const id0 = await H.evaluate(() => RBN.id);
-    await sleep(600); await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
+    // (v9.20.0: a rematch is both players picking Rematch on the post-game menu; it starts by itself)
+    await sleep(600); await G.evaluate(() => Lobby.choose('rematch')); await H.evaluate(() => Lobby.choose('rematch'));
     await G.waitForFunction(() => RBN.on && Game.screen === 'play', null, { timeout: 15000 }).catch(() => {});
     await sleep(1500);
     out.rematch = await Promise.all([H, G].map(p => p.evaluate(() => ({ on: RBN.on, id: RBN.id, f: RBN.f, screen: Game.screen }))));

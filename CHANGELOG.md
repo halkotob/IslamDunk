@@ -1,5 +1,100 @@
 # Changelog
 
+## 9.20.0: the online lobby is a place: shoot around, pick teams, play, choose what's next
+Host a lobby and you land in the practice gym with a ball. Your friend walks in and you shoot around together until
+they press Ready. Then you both pick your teams on one split screen: the guest on the left, the host on the right,
+and the game in the middle. After the game, one menu on both phones offers Rematch, Back to shoot-around, Pick new
+teams or Quit to Title.
+- **Shoot-around** (`src/online/v920-lobby.js`).
+  - Each phone runs its own practice gym. There's no score and no stats, and nothing is saved.
+  - Each phone sends its player's position, facing, jump and state, plus the ball whenever it isn't in his hands
+    (`sa`, ten times a second). It also sends a note when a shot goes in, so the other phone shows a SWISH.
+  - The friend is drawn from those messages, eased between them, marked FRIEND and in his own colours. He isn't part
+    of the simulation, so there are no collisions.
+  - **Why not the rollback net:** rollback needs one shared, deterministic game with every input confirmed, and the
+    gym has nothing to agree on. `sa` is a "fast" key like the ping. It goes on the direct link when there is one
+    (unordered, a late one is dropped) and on the server copy four times a second when there isn't.
+  - **Measured** (loopback, 20 ms each way):
+    - Bytes: 527 bytes a second on the direct link and 211 through the server.
+    - Ping p95 is 32 ms with the shoot-around and 32 ms without it. The first try read 126 vs 84, but that measured
+      "with" in the first seconds after joining, while the direct link settles; the test now measures "without"
+      first.
+    - Match start, from the host's Start to the guest playing (rollback, 5 tries each, median): 9.19.2 288 ms;
+      9.20.0 236 ms from the gym and 202 ms from team select. The gym doesn't slow it.
+- **Ready and Continue.**
+  - The guest presses Ready any time (Enter, or LB on a pad). The host's Continue to teams works only once the guest
+    is Ready, and it says why when it waits.
+  - Both buttons are at the top, clear of the touch controls.
+- **Team select** (split screen).
+  - Each side has a masjid picker at the top (‹ crest name ›) and that masjid's players as headshot cards below it.
+  - The middle is the host's: the game (from the existing LOBBY_GAMES) and its existing settings (court, venue,
+    difficulty, format, period, Fun modes, the HORSE word and timer, the CPU opponent). The guest sees it read-only
+    and live.
+  - **Pick counts come from the game type.** Each entry in LOBBY_GAMES now says how many players a side picks:
+    - Head to head: 2 each. Pick 1 is the one you control.
+    - 1 on 1, Lightning, HORSE, King of the Court: 1 each.
+    - Same team vs CPU and Barakah Run duos: 1 each, from the host's masjid (you play together). The friend's pick
+      is marked FRIEND and can't be picked twice. In Same team vs CPU the CPU opponent is a setting in the middle.
+  - When the host changes the game, both screens re-lay out and the extra picks go.
+  - The host picks from its own team pool (masjids, its career team, its custom teams). The guest picks from the
+    masjids and its own career team. Each side sends the team it picked, so the other phone can draw it.
+  - **The picks become the start's teams.** Each picked team is copied with the picked players first.
+    - Rollback games carry the teams in their start message, as before.
+    - Snapshot games (Lightning, HORSE, King of the Court, Barakah Run duos, and any game without a direct link)
+      carry them in the host's `lm`, so the guest builds the same match.
+    - In Lightning, HORSE and King of the Court the two humans are the picked players (`lp:0`, `lp:1`); the CPU
+      players are unchanged.
+- **Headshots** (`src/render/v920-headshots.js`, look approved).
+  - Each one is drawn from the in-game character: drawPortrait's player, standing, in profile, cropped to head and
+    shoulders on the masjid's colours, at 128 px.
+  - Skin, hair, beard, cap, glasses and the jersey all come from the character, and the cards on each side face the
+    middle. No art files. It works for every masjid player and for career players.
+  - Each headshot is cached once per player, look and facing. A frame makes one, and more only while it has spent
+    under 4 ms. The gym also makes one every few frames for both teams, so team select usually opens with them all
+    drawn.
+  - **Measured:** all 16 masjid players plus the long-name test pair took 46 to 78 ms in total, 3 to 4 ms each and
+    7 to 10 ms for the slowest. From the cache, under a millisecond.
+- **Post-game menu** (both phones).
+  - The host's Continue on the final screen goes there, and now so does the guest's: it takes both.
+  - **Rematch:** each phone shows "Waiting for your friend… (tap to cancel)" until the other picks it. The rematch
+    then starts by itself with the same masjids and players.
+  - **Back to shoot-around** and **Pick new teams** take both phones, whoever picks them.
+  - **Quit to Title.**
+- **Quit to Title.**
+  - The ‹ pill on the lobby screens (gym, team select, post-game) and the waiting screen now says Quit to Title. It
+    leaves the lobby and tells the other player (`bye`).
+  - If the guest quits, the host is told "Your friend left the lobby" and stays in the gym with the lobby open. If
+    the host quits, the guest sees "the host left" at once instead of after 45 s.
+  - Esc, or a pad's B or Start, quits like the pill does: one press, as on every screen since 9.17.9. A
+    "press twice" guard was tried, but the navigation census counts that as a screen with no way out.
+  - The online menu and the join-code screen keep ‹ Back. You aren't in a lobby there, and Back goes up one, as in
+    9.17.9.
+- **Protocol 7** (was 6): the lobby's new presence fields and the start's `lm`. The version-mismatch text says the
+  lobby changed in 9.20.0 and that both players refresh.
+- **Layout:** names have fixed slots (they shrink, then end in an ellipsis), cards size to the number of players, and
+  every button is as wide as its label.
+- **Tests** (`tests/lobby.mjs`, new):
+  - **`lobby-flow`** (full tier): two phones, rollback on. It covers:
+    - joining, with each phone seeing the other in the gym (bytes and ping are reported);
+    - Continue being refused before Ready;
+    - every game type's pick count on both phones;
+    - 2 picks, then 1 on 1, clearing the extra pick on both;
+    - Head to head with picks, the same teams in the picked order on both phones;
+    - the guest's Continue to the post-game menu;
+    - Rematch not starting on one vote, then starting with the same teams and no desync (about 236 hashes compared);
+    - Back to shoot-around, Pick new teams, and the guest quitting.
+  - **`lobby-layout`** (full tier): team select for every game type at 667x300 (touch) and 1280x720, with the
+    longest names (the career team's name and the two longest player names), plus the gym and the post-game menu.
+    It checks that no text overlaps a headshot (the pick number and FRIEND are drawn on it on purpose, and are
+    marked) or other text, and that nothing is off the canvas. Screenshots go in `tests/output/lobby-*.png`.
+  - **Existing online tests:** they wait for `Lobby.isIn()`, since the lobby opens in its gym. `rb-flow`'s rematch is
+    both players picking Rematch. The phone audit and the Review Studio show the three screens with a pretend friend
+    (`lobbyPreview`).
+- **Not done or changed:**
+  - Match rules, scoring, the game's netcode, career mode, saves, Halal Bucks, the CPU and the game types are
+    untouched.
+  - The gym's back wall is the career gym's (Sh. Saleem's door).
+
 ## 9.19.2: a new player can win the first three career games, and each difficulty step costs about the same
 On Medium, a new career's first three games went from 19% wins to 73%, with every play style between 69% and 75%.
 The CPU's level is now measured per difficulty and stage, not shifted a notch along one shared ladder.
