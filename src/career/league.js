@@ -147,7 +147,8 @@ const LG_CAL = {
   // threes 0.343 -> 0.30, dunks 0.92 -> 0.87 of the twos)
   ppm: { 30: 9.8, 45: 8.77, 60: 8.46, 120: 8.25 }, rel: { 30: 0.3, 45: 0.29, 60: 0.22, 120: 0.19 }, quartersK: 0.98,
   first21: { lose: 0.77, loseSd: 0.17, over: 0.3 }, share: 0.5, shareSd: 0.14, dunkShare: 0.87,
-  rate: { fga: 0.689, tpa: 0.208, fta: 0.064, reb: 0.1096, ast: 0.203, stl: 0.0762, blk: 0.0983, tov: 0.0752, dnk: 0.347, chg: 0.0212 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more; v9.16: ast 0.1456 -> 0.184, real games 3.29 a player, 500 games)
+  rate: { fga: 0.689, tpa: 0.208, fta: 0.0227, reb: 0.1096, ast: 0.158, stl: 0.0762, blk: 0.0983, tov: 0.0752, dnk: 0.347, chg: 0.0044 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more; v9.16: ast 0.1456 -> 0.184, real games 3.29 a player, 500 games; v9.21.0: re-fit to the new CPU defense, which sags and fouls less: real games
+  // per player ast 2.55, fta 0.38, chg 0.07 (were 3.27, 1.07, 0.34 in the fallback): ast 0.203 -> 0.158, fta 0.064 -> 0.0227, chg 0.0212 -> 0.0044)
   pct: { fg: 0.57, tp: 0.30, ft: 0.764 }
 };
 // v9.11: how much of his game is threes, by play style (as the CPU plays them now: v911-cpu-style.js)

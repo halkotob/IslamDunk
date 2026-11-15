@@ -16,7 +16,7 @@ concurrency:
 jobs:
   full:
     runs-on: ubuntu-24.04   # (ubuntu-latest is 26.04: the pinned Playwright has no Chromium for it)
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

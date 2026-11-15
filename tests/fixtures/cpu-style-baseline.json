@@ -1,46 +1,58 @@
 {
- "version": "9.14.3",
+ "version": "9.21.0",
  "games": 60,
  "rows": {
   "veryeasy": {
    "diff": "veryeasy",
    "games": 60,
-   "poss": 2946,
-   "ptsPerPoss": 1.383,
-   "ptsSd": 1.078,
-   "secs": 6.66,
-   "secsSd": 3.58,
-   "tovPct": 19.8
+   "poss": 2818,
+   "ptsPerPoss": 1.389,
+   "secs": 6.58,
+   "tovPct": 20.1,
+   "gameSd": [
+    0.161,
+    0.39,
+    5.536
+   ]
   },
   "easy": {
    "diff": "easy",
    "games": 60,
-   "poss": 3111,
-   "ptsPerPoss": 1.546,
-   "ptsSd": 1.024,
-   "secs": 6.59,
-   "secsSd": 3.21,
-   "tovPct": 13.8
+   "poss": 3042,
+   "ptsPerPoss": 1.539,
+   "secs": 6.51,
+   "tovPct": 15.6,
+   "gameSd": [
+    0.193,
+    0.473,
+    6.49
+   ]
   },
   "medium": {
    "diff": "medium",
    "games": 60,
-   "poss": 3162,
-   "ptsPerPoss": 1.536,
-   "ptsSd": 1.053,
-   "secs": 6.28,
-   "secsSd": 3.07,
-   "tovPct": 16.5
+   "poss": 3101,
+   "ptsPerPoss": 1.433,
+   "secs": 6.25,
+   "tovPct": 16.1,
+   "gameSd": [
+    0.212,
+    0.462,
+    6.088
+   ]
   },
   "hard": {
    "diff": "hard",
    "games": 60,
-   "poss": 3429,
-   "ptsPerPoss": 1.506,
-   "ptsSd": 1.098,
-   "secs": 5.75,
-   "secsSd": 2.84,
-   "tovPct": 20.9
+   "poss": 3236,
+   "ptsPerPoss": 1.346,
+   "secs": 5.85,
+   "tovPct": 21.5,
+   "gameSd": [
+    0.164,
+    0.482,
+    5.632
+   ]
   }
  }
 }

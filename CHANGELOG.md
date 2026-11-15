@@ -68,6 +68,15 @@ they press. And the old half-court protection after a basket is gone, so anyone 
     did before too).
     - Possessions lost within 2 seconds of an inbound went from 0–1% to 4–10% for the scripted styles. That's the
       wall gone.
+  - **Re-baselined** (decided in review: keep the defense, move the 9.19.2 bands to match it).
+    - The CPU-vs-CPU league baseline (`tests/fixtures/cpu-style-baseline.json`, was 9.14.3) is re-recorded on 9.21.0,
+      60 games each. Points a possession: very easy 1.383 → 1.389, easy 1.546 → 1.539, medium 1.536 → 1.433, hard
+      1.506 → 1.346. Turnovers: 19.8 → 20.1%, 13.8 → 15.6%, 16.5 → 16.1%, 20.9 → 21.5%.
+    - The league fallback (`LG_CAL.rate`) is re-fit to the real games. The defense sags and fouls less, so per
+      player: assists 2.55 (the fallback gave 3.27), free throws attempted 0.38 (1.07), charges 0.07 (0.34). The
+      rates go ast 0.203 → 0.158, fta 0.064 → 0.0227, chg 0.0212 → 0.0044.
+    - CI's limit goes from 60 to 90 minutes. The runner this time ran every slow test 1.5–2× slower than for 9.20
+      (nav-census 860 → 1287 s, studio 201 → 352 s), and the run was cut off before the online tests.
   - **The CPU's signature dunks are what they were.** The first cut drew them from five dunks, which gave some
     players a new signature. They're drawn from the same three as before, and the two new dunks come in by the
     weights (`cpu-handle` counts them as flashy now).
