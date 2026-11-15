@@ -31,6 +31,8 @@ they press. And the old half-court protection after a basket is gone, so anyone 
   - **Threes** (`THREE_READ`). The defense looks at your team's last 8 shots. From a quarter of them being threes it
     starts to close out, and fully from half. The defender of whoever took the most closes out higher; the other
     one stays back. The read blends over about 4 seconds.
+  - **Very easy keeps the old guarding** (`DIFF.veryeasy.shell = 0`). With the shell, the career ladder's first rung
+    (Very easy, State) dropped to 44% wins in 16 games, under its 60% bar. It's back to 69%.
   - **Difficulty.** Easier CPUs play less of the frontcourt shell (`SHELL_W`: Easy 0, Medium 0.3, Hard 0.54+) and
     pick you up deeper.
   - **Bug fixed during the work:** the first version placed defenders from your true position, which skipped the

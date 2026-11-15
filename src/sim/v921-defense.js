@@ -101,6 +101,7 @@ function d921Spot(p, pl) {
   // where he sees them: the CPU's perception lag (ai.js perceive), as the old guarding used. Not the true spot, or an
   // Easy defender would react instantly to every move
   const cfg = p.ai && p.ai.cfg ? p.ai.cfg() : null, B = cfg ? perceive(bo, cfg) : bo, Mn = m === bo ? B : cfg ? perceive(m, cfg) : m;
+  if (cfg && cfg.shell === 0) return null;   // Very easy keeps the old guarding (DIFF.veryeasy.shell: the career ladder's first rung)
   let spot;
   if (back) {
     if (onBall) {
