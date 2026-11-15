@@ -24757,7 +24757,7 @@ function sigWorthIt(p) {
 }
 // dunks: the type by his ratings; a poor dunker lays it in some of the time
 const DUNK_TYPES = new Set(['twohand', 'windmill', '360', 'tomahawk', 'reverse', 'betweenlegs']);   // (v9.21.0: + reverse, between the legs)
-function cpuSigDunk(p) { return (p.st.dnk || 5) >= 8 ? ['windmill', '360', 'tomahawk', 'reverse', 'betweenlegs'][hash32('dunk|' + ((p.def && p.def.name) || p.slot)) % 5] : null; }
+function cpuSigDunk(p) { return (p.st.dnk || 5) >= 8 ? ['windmill', '360', 'tomahawk'][hash32('dunk|' + ((p.def && p.def.name) || p.slot)) % 3] : null; }   // (v9.21.0: the same signatures as before; the new dunks come in by the weights)
 // (picked by a hash of the player, his attempt count and the match frame, not Math.random: the same in a replayed or
 // rolled-back frame, and seeded games draw the same random numbers as before)
 function cpuDunkPick(p, allowed, fast) {

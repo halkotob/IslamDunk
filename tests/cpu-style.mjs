@@ -146,8 +146,8 @@ export function cpuStyleTests({ newContext, open }) {
     if (!r.shooter.three || !r.shooter.open || !r.shooter.shot || r.shooter.moved) bad.push('(3) the open sharpshooter did not shoot first');
     detail.push(`(4) the flat move rate decides in a mini-game: ${r.mini}, as an online guest: ${r.guest}; in a match the 9.16 spacing holds it back: ${!r.normal}`);
     if (!r.mini || !r.guest || r.normal) bad.push('(4) mini-games or online guests are affected (or the match is not)');
-    const flashy = c => ['360', 'windmill'].reduce((a, k) => a + (c[k] || 0), 0) / 200, plain = c => (c.twohand || 0) / 200;   // (tomahawks are a rim runner's own, at any Dunking)
-    detail.push(`dunk types from mid range: Dunking 10 / Speed 9 ${JSON.stringify(r.dunkHigh)} (windmill or 360 ${Math.round(100 * flashy(r.dunkHigh))}%), Dunking 4 / Speed 5 ${JSON.stringify(r.dunkLow)} (windmill or 360 ${Math.round(100 * flashy(r.dunkLow))}%, two hands ${Math.round(100 * plain(r.dunkLow))}%)`);
+    const flashy = c => ['360', 'windmill', 'reverse', 'betweenlegs'].reduce((a, k) => a + (c[k] || 0), 0) / 200, plain = c => (c.twohand || 0) / 200;   // (tomahawks are a rim runner's own, at any Dunking)
+    detail.push(`dunk types from mid range: Dunking 10 / Speed 9 ${JSON.stringify(r.dunkHigh)} (windmill, 360, reverse or between the legs ${Math.round(100 * flashy(r.dunkHigh))}%), Dunking 4 / Speed 5 ${JSON.stringify(r.dunkLow)} (those ${Math.round(100 * flashy(r.dunkLow))}%, two hands ${Math.round(100 * plain(r.dunkLow))}%)`);
     if (!(flashy(r.dunkHigh) > 0.4 && plain(r.dunkHigh) < 0.1 && flashy(r.dunkLow) < 0.05 && plain(r.dunkLow) > 0.4 && !r.dunkLow['360'])) bad.push('dunk types do not follow the dunker');
     return { ok: !bad.length && !errs.length, detail: [...detail, ...bad, ...errs] };
   };

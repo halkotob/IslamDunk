@@ -8,6 +8,8 @@
   "anim/dribble/stride": "9.2.2",
   "anim/dunk/360": "9.2.2",
   "anim/dunk/alley": "9.2.2",
+  "anim/dunk/betweenlegs": "9.21.0",
+  "anim/dunk/reverse": "9.21.0",
   "anim/dunk/tomahawk-float": "9.2.2",
   "anim/dunk/twohand": "9.2.2",
   "anim/dunk/windmill": "9.2.2",
@@ -3015,7 +3017,7 @@
   "text/online/v920-lobby/players-1-is-the-one-qxxk7n": "9.20.0",
   "text/online/v920-lobby/press-ready-when-you-are-mldrlw": "9.20.0",
   "text/online/v920-lobby/quit-to-title-ra3uft": "9.20.0",
-  "text/online/v920-lobby/rematch-needs-you-both-the-i3pazn": "9.20.0",
+  "text/online/v920-lobby/rematch-starts-when-you-both-aua9zk": "9.21.0",
   "text/online/v920-lobby/rematch-your-friend-wants-one-llio1c": "9.20.0",
   "text/online/v920-lobby/share-the-code-shoot-around-r6crza": "9.20.0",
   "text/online/v920-lobby/shoot-around-move-shoot-and-8qwm3f": "9.20.0",
@@ -3861,6 +3863,7 @@
   "text/sim/match/perfect-release-cv7ix7": "phase1",
   "text/sim/match/poster-dunk-5y2b6g": "phase1",
   "text/sim/match/power-jam-iwpsoi": "8.6.0",
+  "text/sim/match/reverse-jam-jju6md": "9.21.0",
   "text/sim/match/shot-clock-rsw2n2": "phase1",
   "text/sim/match/take-it-back-first-mbdxsn": "phase1",
   "text/sim/match/we-re-going-to-overtime-ernea5": "8.6.0",
@@ -4078,6 +4081,7 @@
   "text/sim/v86-play/taunt-7vuvuj": "8.6.0",
   "text/sim/v86-play/taunt-kydatf": "8.6.0",
   "text/sim/v86-play/taunt-v4dl59": "8.6.0",
+  "text/sim/v86-play/through-the-legs-oaa44d": "9.21.0",
   "text/sim/v9161-anim/hop-step-7ib7oa": "9.16.1",
   "text/sim/v9161-anim/yes-yes-bar0w7": "9.16.1",
   "text/sim/v9178-hold-tap/hold-cqyh94": "9.17.9",
@@ -4631,6 +4635,11 @@
    "reason": "9.15: the network report's rollback line now starts with the sync code",
    "version": "9.15.0",
    "was": "9.14.0"
+  },
+  "text/online/v920-lobby/rematch-needs-you-both-the-i3pazn": {
+   "reason": "9.20.0 reworded the rematch prompt; the old line went before the registry caught it",
+   "version": "9.21.0",
+   "was": "9.20.0"
   },
   "text/screens/creator-suite/enter-edit-c-code-d-w617p3": {
    "reason": "v9.3: Duplicate moved from D to U; the hint text changed",

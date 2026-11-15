@@ -68,6 +68,9 @@ they press. And the old half-court protection after a basket is gone, so anyone 
     did before too).
     - Possessions lost within 2 seconds of an inbound went from 0–1% to 4–10% for the scripted styles. That's the
       wall gone.
+  - **The CPU's signature dunks are what they were.** The first cut drew them from five dunks, which gave some
+    players a new signature. They're drawn from the same three as before, and the two new dunks come in by the
+    weights (`cpu-handle` counts them as flashy now).
   - **Defense report** (`scripts/defense-report.mjs`, 8 CPU-vs-CPU games per difficulty, per game before → after):
     - Points: Easy 56.4 → 55.3, Medium 54.8 → 53.4, Hard 53.9 → 53.8.
     - Steals: Easy 2.5 → 1.8, Medium 4.4 → 4.0, Hard 6.0 → 8.3.
