@@ -185,7 +185,10 @@ export function v921Tests({ newContext, open }) {
     await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
     await G.waitForFunction(() => RBN.on && Game.screen === 'play', null, { timeout: 15000 }).catch(() => {});
     // the two humans let the CPU play (Same team vs CPU: their CPU-driven... the humans stand; the CPU team dunks)
-    await sleep(30000);
+    // (until both have been dunked on both phones, 30 s at least and 80 s at most)
+    for (let t = 0; t < 80; t += 5) { await sleep(5000); if (t < 25) continue;
+      const nd = await Promise.all([H, G].map(x => x.evaluate(() => window.__nd || {})));
+      if (nd.every(o => o.reverse && o.betweenlegs)) break; }
     const rep = await Promise.all([H, G].map(x => x.evaluate(() => Object.assign({}, RBN.report() || {}, { nd: window.__nd, score: M.teams.map(t => t.score) }))));
     await ctx.close();
     const nd = rep[0].nd || {};

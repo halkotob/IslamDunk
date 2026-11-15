@@ -111,12 +111,15 @@ they press. And the old half-court protection after a basket is gone, so anyone 
     most 0.011 a frame.
   - `cpu-shell`: in the backcourt, one up (56 from half court) and one back (233 from the rim). In the frontcourt
     they're never both on the line. After 6 threes in 8 shots the shooter's defender moves up from 57 to 35.
-  - `dunk-new-online` (full tier): a rollback game where every dunk is one of the two, with no desync.
+  - `dunk-new-online` (full tier): a rollback game where every dunk is one of the two, with no desync. It plays
+    until both dunks have happened on both phones (30–80 s).
+  - The shadow rig of a non-Classic tomahawk is keyed by a stamp on the dunk, not the dunk object, which a rollback
+    replaces with a copy.
   - `ball-hands` no longer needs a held "pass" pose. The ball leaves the hand on the pass's first frame, and the
     one held frame the CPU game used to have was luck. `stat-curves` picks the windmill from the new four-dunk
     list. The tomahawk recording's pinned first draw moves from 0.5 to 0.3, so it's still the windmill's timing.
   - `cpu-variety`: the shell gave lockdown defenders the same cushion as everyone else, so they contested less than
-    playmakers. A stopper's cushion now shrinks with his style (`SHELL.stopperK`).
+    playmakers. A stopper's cushion now shrinks with his style (`SHELL.stopperK` 10).
   - `league-determinism` moves from seed 22 to 23, for the same reason as in 9.19.2: the other games' results line up
     differently between the real league and the fallback.
 

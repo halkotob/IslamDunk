@@ -20,7 +20,7 @@
 const INB_HOLD = 1.0;
 const THREE_READ = { shots: 8, lo: 0.25, hi: 0.5, tau: 4 };
 const PRESS = { margin: 6, lastFrac: 1 / 3, tau: 1.5 };
-const SHELL = { pickup: 60, back: 0.32, backMax: 230, sagOff: 0.5, sagOffHot: 0.2, cushionAt: 230, cushionK: 0.3, cushionMax: 90, onTight: 34, stopperK: 6 };
+const SHELL = { pickup: 60, back: 0.32, backMax: 230, sagOff: 0.5, sagOffHot: 0.2, cushionAt: 230, cushionK: 0.3, cushionMax: 90, onTight: 34, stopperK: 10 };
 // ---- 1. the wall
 bcStart = function () {};
 {

@@ -79,8 +79,11 @@ function tomahawkPose(style, u) {                       // a full pose (all join
   const _an = animate;
   animate = function (p, dt) {
     const tom = SETTINGS.tomahawk !== 'classic' && p.state === 'dunk' && p.act && p.act.type === 'tomahawk';
-    if (tom && p._cjAct !== p.act) { p._cjAct = p.act; p._cj = {}; for (const k of JOINTS) p._cj[k] = { a: p.j[k].a, v: p.j[k].v }; }   // starts where the real rig is
-    if (!tom) p._cjAct = p._cj = null;
+    // (v9.21.0: keyed by a stamp on the dunk, not the dunk object itself: the rollback restores copies, and a copy is a
+    // different object, so a replayed frame restarted the shadow rig and the two phones held the ball differently)
+    if (tom && !p.act.cjk) p.act.cjk = M.time + 1e-3 * (p.slot + 1);
+    if (tom && (p._cjKey !== p.act.cjk || !p._cj)) { p._cjKey = p.act.cjk; p._cj = {}; for (const k of JOINTS) p._cj[k] = { a: p.j[k].a, v: p.j[k].v }; }   // starts where the real rig is
+    if (!tom) p._cjKey = p._cj = null;
     const r = _an.apply(this, arguments);
     if (ball.vd && ball.vdP === p && (!tom || ball.owner !== p)) ball.vd = null;
     if (!tom || !p._cj) return r;
