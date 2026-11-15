@@ -23685,10 +23685,12 @@ const LG_CAL = {
   // (v9.19.0: real league games score 9% less with the new shooting curves, 32.9 a team, and make 57% of their shots:
   // points a minute x 0.907, the per-point rates of the counting stats / 0.907 so their totals stay, fg 0.644 -> 0.57,
   // threes 0.343 -> 0.30, dunks 0.92 -> 0.87 of the twos)
-  ppm: { 30: 9.8, 45: 8.77, 60: 8.46, 120: 8.25 }, rel: { 30: 0.3, 45: 0.29, 60: 0.22, 120: 0.19 }, quartersK: 0.98,
+  ppm: { 30: 8.94, 45: 8.00, 60: 7.72, 120: 7.52 }, rel: { 30: 0.3, 45: 0.29, 60: 0.22, 120: 0.19 }, quartersK: 0.98,
   first21: { lose: 0.77, loseSd: 0.17, over: 0.3 }, share: 0.5, shareSd: 0.14, dunkShare: 0.87,
-  rate: { fga: 0.689, tpa: 0.208, fta: 0.0227, reb: 0.1096, ast: 0.158, stl: 0.0762, blk: 0.0983, tov: 0.0752, dnk: 0.347, chg: 0.0044 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more; v9.16: ast 0.1456 -> 0.184, real games 3.29 a player, 500 games; v9.21.0: re-fit to the new CPU defense, which sags and fouls less: real games
-  // per player ast 2.55, fta 0.38, chg 0.07 (were 3.27, 1.07, 0.34 in the fallback): ast 0.203 -> 0.158, fta 0.064 -> 0.0227, chg 0.0212 -> 0.0044)
+  rate: { fga: 0.7555, tpa: 0.2281, fta: 0.02489, reb: 0.1202, ast: 0.1732, stl: 0.08355, blk: 0.1078, tov: 0.08246, dnk: 0.3805, chg: 0.004825 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more; v9.16: ast 0.1456 -> 0.184, real games 3.29 a player, 500 games; v9.21.0: re-fit to the new CPU defense, which sags and fouls less: real games
+  // per player ast 2.55, fta 0.38, chg 0.07 (were 3.27, 1.07, 0.34 in the fallback): ast 0.203 -> 0.158, fta 0.064 -> 0.0227, chg 0.0212 -> 0.0044;
+  // and real league games now score 30.0 a team (the fallback gave 32.9): points a minute x 0.912, every per-point rate / 0.912
+  // so the counting stats' totals stay)
   pct: { fg: 0.57, tp: 0.30, ft: 0.764 }
 };
 // v9.11: how much of his game is threes, by play style (as the CPU plays them now: v911-cpu-style.js)

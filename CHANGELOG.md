@@ -75,6 +75,9 @@ they press. And the old half-court protection after a basket is gone, so anyone 
     - The league fallback (`LG_CAL.rate`) is re-fit to the real games. The defense sags and fouls less, so per
       player: assists 2.55 (the fallback gave 3.27), free throws attempted 0.38 (1.07), charges 0.07 (0.34). The
       rates go ast 0.203 → 0.158, fta 0.064 → 0.0227, chg 0.0212 → 0.0044.
+      Real league games also score 30.0 a team (the fallback gave 32.9), so the fallback's points a minute go
+      × 0.912 and every per-point rate goes ÷ 0.912, so the counting stats' totals stay (the 9.19.0 recipe). The
+      fallback now gives 30.0 too.
     - CI's limit goes from 60 to 90 minutes. The runner this time ran every slow test 1.5–2× slower than for 9.20
       (nav-census 860 → 1287 s, studio 201 → 352 s), and the run was cut off before the online tests.
   - **The CPU's signature dunks are what they were.** The first cut drew them from five dunks, which gave some
