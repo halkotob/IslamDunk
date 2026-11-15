@@ -75,16 +75,6 @@ function tomahawkPose(style, u) {                       // a full pose (all join
 // ---- the styles stay cosmetic: where the ball is during a tomahawk counts for blocks and swipes, so the sim
 // keeps it in the hand of the Classic pose (a shadow rig, run alongside) and only the drawing (and replays)
 // put it in the hand you see. Seeded games come out the same whatever the style.
-function tkHands(p, J) {                                // the forward kinematics from animate(), for a given set of joints
-  const legY = (h, k) => 22 * Math.cos(h) + 22 * Math.cos(h - k);
-  const hipH = Math.max(legY(J.nh.a, J.nk.a), legY(J.fh.a, J.fk.a), 20);
-  const lean = J.lean.a, shX = Math.sin(lean) * 30, shY = hipH + Math.cos(lean) * 30, fs = p.face * (p.spin ? Math.cos(p.spin) : 1), out = {};
-  for (const side of ['n', 'f']) {
-    const s = J[side + 's'].a, e = J[side + 'e'].a, ex = shX + Math.sin(s) * 16, ey = shY - Math.cos(s) * 16;
-    out[side] = { x: p.x + (ex + Math.sin(s + e) * 15) * fs, y: p.y + ey - Math.cos(s + e) * 15, z: p.z + (side === 'n' ? 6 : -6) };
-  }
-  return out;
-}
 {
   const _an = animate;
   animate = function (p, dt) {
@@ -97,13 +87,16 @@ function tkHands(p, J) {                                // the forward kinematic
     const s0 = SETTINGS.tomahawk; let T; SETTINGS.tomahawk = 'classic';
     try { T = poseTargets(p, Math.hypot(p.vx, p.vz)); } finally { SETTINGS.tomahawk = s0; }
     for (const k of JOINTS) { const j = p._cj[k]; j.v += ((T[k] - j.a) * T.K - j.v * T.D) * dt; j.a += j.v * dt; }
+    if (T.direct != null) { p._cj.ns.a = T.direct; p._cj.ns.v = 0; } else if (p._cj.ns.a > 5) p._cj.ns.a -= Math.PI * 2;   // (as animate() does)
     if (ball.owner !== p) return r;
-    const H = tkHands(p, p._cj); let bx, by, bz;                    // where attachBall() would hold it in the Classic pose
-    if (p.act.s > 0.12) { bx = H.n.x; by = H.n.y + 4; bz = H.n.z; }
-    else { bx = (H.n.x + H.f.x) / 2 + p.face * 3; by = (H.n.y + H.f.y) / 2 + 2; bz = (H.n.z + H.f.z) / 2 + 3; }
-    by = Math.max(BALL_R, by);
-    ball.vd = [ball.x - bx, ball.y - by, ball.z - bz]; ball.vdP = p;
-    ball.x = bx; ball.y = by; ball.z = bz;
+    // where Classic holds it: v9.21.0 runs the game's own placeHands() and attachBall() on the Classic rig. (The copy of
+    // the old copy of the forward kinematics missed 9.19.1's drawn facing, build and lean, so the ball sat up to a few
+    // units off Classic's, and a block on the dunk, which measures from the ball, could go differently: the seeded game
+    // depended on the style, a setting each player picks, and online that's a desync.)
+    const vx = ball.x, vy = ball.y, vz = ball.z, J0 = p.j, hn = Object.assign({}, p.hands.n), hf = Object.assign({}, p.hands.f), hip = p.hipH, rot = ball.rot, beh = ball.behind, hfc = p._handsFace, hsp = p._handsSpin;
+    try { p.j = p._cj; placeHands(p); attachBall(p, dt); }
+    finally { p.j = J0; Object.assign(p.hands.n, hn); Object.assign(p.hands.f, hf); p.hipH = hip; ball.rot = rot; ball.behind = beh; p._handsFace = hfc; p._handsSpin = hsp; }
+    ball.vd = [vx - ball.x, vy - ball.y, vz - ball.z]; ball.vdP = p;
     return r;
   };
   const _sp = snapPrev;

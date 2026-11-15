@@ -15,7 +15,7 @@
 // one masjid (together: Same team vs CPU, Barakah Run duos: the host's masjid, each picks the one he controls). The
 // team select reads it; nothing per screen.
 // New presence: host lobby { ph, hp (host picks), ht (host team), vote }, lm (the start's teams and mini picks);
-// guest tp { m, d, p } (masjid, its team, picks), lph (where the guest is), vote, go; both sa, bye. NET_PROTO 7.
+// guest tp { m, d, p } (masjid, its team, picks), lph (where the guest is), vote, go; both sa, bye. NET_PROTO 8 (v9.21.0).
 LOBBY_GAMES.forEach(g => Object.assign(g, ({ co: { picks: 1, together: true }, vs: { picks: 2 }, one: { picks: 1 }, lightning: { picks: 1 }, horse: { picks: 1 }, kotc: { picks: 1 }, brun: { picks: 1, together: true } })[g.id] || { picks: 1 }));
 function lobbyGame(id) { return LOBBY_GAMES.find(g => g.id === id) || LOBBY_GAMES[0]; }
 P2P_FAST.add('sa'); if (typeof LOOP_FAST !== 'undefined') LOOP_FAST.add('sa');

@@ -158,15 +158,16 @@ function sigWorthIt(p) {
   };
 }
 // dunks: the type by his ratings; a poor dunker lays it in some of the time
-const DUNK_TYPES = new Set(['twohand', 'windmill', '360', 'tomahawk']);
-function cpuSigDunk(p) { return (p.st.dnk || 5) >= 8 ? ['windmill', '360', 'tomahawk'][hash32('dunk|' + ((p.def && p.def.name) || p.slot)) % 3] : null; }
+const DUNK_TYPES = new Set(['twohand', 'windmill', '360', 'tomahawk', 'reverse', 'betweenlegs']);   // (v9.21.0: + reverse, between the legs)
+function cpuSigDunk(p) { return (p.st.dnk || 5) >= 8 ? ['windmill', '360', 'tomahawk', 'reverse', 'betweenlegs'][hash32('dunk|' + ((p.def && p.def.name) || p.slot)) % 5] : null; }
 // (picked by a hash of the player, his attempt count and the match frame, not Math.random: the same in a replayed or
 // rolled-back frame, and seeded games draw the same random numbers as before)
 function cpuDunkPick(p, allowed, fast) {
   const dn = p.st.dnk == null ? 5 : p.st.dnk, sp = p.st.spd == null ? 5 : p.st.spd, arch = cpuArch(p), sig = cpuSigDunk(p);
   const hi = clamp((dn - 6) / 3, 0, 1) * clamp((sp - 4) / 4, 0.4, 1);         // 0 (plain) .. 1 (the big dunks)
-  const w = { twohand: 2.2 - 1.9 * hi, tomahawk: 0.8 + 0.8 * hi + (arch === 'rimrunner' ? 0.5 : 0) + (fast ? 0.6 : 0), windmill: 0.3 + 1.5 * hi, '360': 0.05 + 1.6 * hi };
-  if (dn <= 5) { w.windmill *= 0.3; w['360'] = 0; }
+  const w = { twohand: 2.2 - 1.9 * hi, tomahawk: 0.8 + 0.8 * hi + (arch === 'rimrunner' ? 0.5 : 0) + (fast ? 0.6 : 0), windmill: 0.3 + 1.5 * hi, '360': 0.05 + 1.6 * hi,
+    reverse: 0.15 + 1.0 * hi, betweenlegs: 1.2 * hi };                    // (v9.21.0: the reverse a little more often than the 360; between the legs only from good dunkers)
+  if (dn <= 5) { w.windmill *= 0.3; w['360'] = 0; w.reverse *= 0.3; w.betweenlegs = 0; }
   if (sig && hi > 0.3) w[sig] *= 2;
   const L = allowed.filter(t => w[t] > 0); if (!L.length) return null;
   let tot = 0; for (const t of L) tot += w[t];
@@ -180,7 +181,7 @@ function cpuDunkPick(p, allowed, fast) {
     const r = _sd.apply(this, arguments), a = p.act;
     if (!cpuStyleOn(p) || !p.st || M.practice || !a || p.state !== 'dunk' || a.alley || (opts && opts.alley) || !DUNK_TYPES.has(a.type)) return r;
     const d = dxz(p, a.hoop), fast = Math.hypot(p.vx || 0, p.vz || 0) > 180 || (M.trans && M.trans.team === p.team);
-    const allowed = d > 180 ? ['360', 'windmill', 'tomahawk'] : d > 100 ? ['tomahawk', 'windmill', 'twohand'] : ['twohand', 'tomahawk'];   // what fits the distance (as before)
+    const allowed = dunkTypesFor(d);   // what fits the distance (the game's own list)
     const t = cpuDunkPick(p, allowed, fast);
     if (t && t !== a.type) { a.type = t; if (t === 'twohand' && d <= 170) a.big = false; }   // the look only: the timing (D, peak) stays the random pick's, so what goes in is unchanged
     return r;

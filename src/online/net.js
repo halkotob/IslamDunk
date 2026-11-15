@@ -104,7 +104,7 @@ const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const NS = ['free', 'steal', 'shove', 'pass', 'land', 'getup', 'windup', 'shoot', 'post', 'jump', 'down', 'dunk', 'hang', 'sig'];   // appended only
 const NB = ['held', 'loose', 'shot', 'pass', 'scored'];
 const NP = ['tip', 'live', 'dead', 'break', 'over'];
-const ND = ['tomahawk', 'windmill', '360', 'twohand', 'alley'];   // append only: indices travel in snapshots
+const ND = ['tomahawk', 'windmill', '360', 'twohand', 'alley', 'reverse', 'betweenlegs'];   // append only: indices travel in snapshots (v9.21.0: + reverse, betweenlegs)
 const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
 // Online mini games: host is Khalil, the guest is Nasser; Lightning adds 3 CPU masjid members.
 const MINI_ONLINE = { lightning: ['khalil', 'nasser', 'saleem', 'mahmoud', 'hamid'], horse: ['khalil', 'nasser'] };

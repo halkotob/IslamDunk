@@ -142,6 +142,8 @@
     "career/v9192-difficulty.js",
     "render/v920-headshots.js",
     "online/v920-lobby.js",
+    "sim/v921-dunks.js",
+    "sim/v921-defense.js",
     "screens/v9179-nav.js",
     "boot.js"
   ]

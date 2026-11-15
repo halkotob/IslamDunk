@@ -37,18 +37,20 @@
   for (const [k, d, nm] of [['jumper', 330, 'Jump shot'], ['fade', 260, 'Fadeaway'], ['floater', 200, 'Floater'], ['hook', 150, 'Hook shot'], ['layup', 80, 'Layup'], ['reverse', 60, 'Reverse layup'], ['upunder', 80, 'Up and under']])
     add('Shots', 'shoot/' + k, nm, { n: 110, dist: d, ball: true, needBall: true, hoop: true, at: 8, start: c => { startShot(c.me); applyShotType(c.me, k); if (typeof TYPE_JUMP !== 'undefined' && TYPE_JUMP[k]) c.me.jumpVy = TYPE_JUMP[k]; } });
   // startDunk picks the dunk type at random; set the one we want and give it that type's length, as startDunk does
-  const DUNK_K = { windmill: 1.08, '360': 1.12, twohand: 0.94 };
+  const DUNK_K = typeof DUNK_LEN !== 'undefined' ? DUNK_LEN : { windmill: 1.08, '360': 1.12, twohand: 0.94 };
   const dunk = (type, d, style) => c => {
     if (style) SETTINGS.tomahawk = style;
     const h = attackHoop(c.me.team), dd = dxz(c.me, h);
     startDunk(c.me, {});
     const a = c.me.act, baseD = clamp(0.6 + dd / 450, 0.62, 1.15);
-    a.type = type; a.D = baseD * (DUNK_K[type] || 1); a.peak = 64 + (a.D - 0.7) * 30 + (type === '360' ? 8 : 0);
+    a.type = type; a.D = baseD * (DUNK_K[type] || 1); a.peak = 64 + (a.D - 0.7) * 30 + (typeof dunkPeakAdd === 'function' ? dunkPeakAdd(type) : type === '360' ? 8 : 0);
     if (style) a.big = true;
   };
   add('Dunks', 'dunk/twohand', 'Two-hand dunk', { n: 120, dist: 90, ball: true, needBall: true, hoop: true, at: 6, start: dunk('twohand') });
   add('Dunks', 'dunk/windmill', 'Windmill', { n: 130, dist: 150, ball: true, needBall: true, hoop: true, at: 6, start: dunk('windmill') });
   add('Dunks', 'dunk/360', '360', { n: 140, dist: 200, ball: true, needBall: true, hoop: true, at: 6, start: dunk('360') });
+  add('Dunks', 'dunk/reverse', 'Reverse dunk (back to the rim, backhand)', { n: 130, dist: 130, ball: true, needBall: true, hoop: true, at: 6, start: dunk('reverse') });   // v9.21.0
+  add('Dunks', 'dunk/betweenlegs', 'Between the legs', { n: 140, dist: 200, ball: true, needBall: true, hoop: true, at: 6, start: dunk('betweenlegs') });   // v9.21.0
   for (const st of (typeof TOMAHAWK_KEPT !== 'undefined' ? TOMAHAWK_KEPT : typeof TOMAHAWK_STYLES !== 'undefined' ? TOMAHAWK_STYLES : ['classic']))   // (v9.16.1: Float only)
     add('Dunks', 'dunk/tomahawk-' + st, 'Tomahawk, ' + st[0].toUpperCase() + st.slice(1) + ' style', { n: 130, dist: 170, ball: true, needBall: true, hoop: true, at: 6, start: dunk('tomahawk', 170, st) });
   add('Dunks', 'dunk/alley', 'Alley-oop (catch and dunk)', { n: 150, dist: 190, ball: false, hoop: true, at: 6,

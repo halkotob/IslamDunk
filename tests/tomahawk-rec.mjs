@@ -16,8 +16,9 @@ export const TOMAHAWK_REC = `((style) => {
   M.cmdHook = q => { zeroCmd(q.cmd); return true; };
   // (v9.19.0: the dunk's timing comes from its random type pick, the first number startDunk draws; the seeded tip-off
   // before it plays out differently once the sim changes, so that one draw is pinned to the 8.6.4 recording's pick:
-  // the windmill's timing, x1.08; the look is set to the tomahawk below, as before)
-  { const R = Math.random; let first = true; Math.random = function () { if (first) { first = false; return 0.5; } return R.apply(this, arguments); };
+  // the windmill's timing, x1.08; the look is set to the tomahawk below, as before. v9.21.0: four dunks to pick from at
+  // this distance now, so the windmill is 0.3, not 0.5)
+  { const R = Math.random; let first = true; Math.random = function () { if (first) { first = false; return 0.3; } return R.apply(this, arguments); };
     try { startDunk(p, { D: 0.9 }); } finally { Math.random = R; } }
   p.act.type = 'tomahawk'; p.act.big = true;
   const K = ['nh', 'nk', 'fh', 'fk', 'ns', 'ne', 'fs', 'fe', 'lean'], r4 = v => Math.round(v * 1e4) / 1e4;

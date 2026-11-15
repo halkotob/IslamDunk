@@ -1,5 +1,108 @@
 # Changelog
 
+## 9.21.0: two new dunks, a CPU defense that reads the game, and no wall at half court
+Good dunkers have two new finishes: the reverse and the between-the-legs. CPU defenders now pick you up at half court
+with one man back at the rim, sag off non-shooters and close out on a hot three-point shooter. In a close game late
+they press. And the old half-court protection after a basket is gone, so anyone can pressure the ball anywhere.
+- **The reverse** (`REVERSE JAM`). He takes off with his back to the rim, turns through the jump and finishes
+  backhand. He lands facing away from the rim. Needs Dunking 6.
+- **Between the legs** (`THROUGH-THE-LEGS`). At the top of the jump the ball passes under his legs from one hand to
+  the other, then goes up. Needs Dunking 8.
+  - Below the rating, the same dunk becomes a tomahawk (Dunking 4 and up) or a two-hander. The timing and the
+    result don't change, only the look (the 9.19.0 rule).
+  - The ball stays in a drawn hand every frame: at most 2 units from it in the reverse and 6 in the between the legs
+    (the 9.19.1 limit is 20).
+  - The CPU uses both. A Dunking 9 CPU over 240 starts: tomahawk 138, windmill 43, 360 28, reverse 16, between the
+    legs 10, two-hander 5.
+  - Sounds: the existing slam, plus the existing swipe when the ball changes hands (between the legs) or as he turns
+    (reverse). One new row in `docs/audio/sound-list.csv`.
+  - Both are in the Studio's Animations tab (`dunk/reverse`, `dunk/betweenlegs`) and work online with rollback.
+- **No wall at half court** (`src/sim/v921-defense.js`).
+  - Removed: the 8-second hold that kept the scoring team behind half court, the block on steals and pass picks
+    there, and the clamp that stopped a human defender at the line.
+  - What's left: during the inbound pass itself, a human defender is placed for at most 1 second (`INB_HOLD`). Then
+    he's free.
+  - Half-court games keep their check-ups exactly as they were.
+- **The CPU's default shell.**
+  - While the ball is in your backcourt, one defender picks you up just inside half court and the other stays near
+    the rim. There's no full-court chase.
+  - In the frontcourt: man to man. The on-ball defender gives a cushion the farther you are from the rim. The
+    off-ball defender sags halfway to the rim, so you never see two defenders on the three-point line.
+  - **Threes** (`THREE_READ`). The defense looks at your team's last 8 shots. From a quarter of them being threes it
+    starts to close out, and fully from half. The defender of whoever took the most closes out higher; the other
+    one stays back. The read blends over about 4 seconds.
+  - **Difficulty.** Easier CPUs play less of the frontcourt shell (`SHELL_W`: Easy 0, Medium 0.3, Hard 0.54+) and
+    pick you up deeper.
+  - **Bug fixed during the work:** the first version placed defenders from your true position, which skipped the
+    CPU's reaction lag. Easy defenders reacted instantly. The shell now uses the same lagged view of you as the old
+    guarding.
+- **The press** (`PRESS`). Within 6 points in the last third of the game (in first-to-21, once the leader is past two
+    thirds of the target), the CPU picks the handler up in his backcourt. Its second man plays the passing lane at
+    half court. It eases in and out over about 1.5 seconds, and otherwise drops back. How hard it presses depends on
+    difficulty (`PRESS_W`: Easy doesn't press, Medium 0.55, Hard 1).
+- **Measured.** `tools/def-report.mjs` (new): a scripted player plus a CPU teammate against the CPU, 256 games per
+  difficulty, 2 × 120 s halves (the final build).
+
+  | | Easy before | Easy after | Medium before | Medium after | Hard before | Hard after |
+  |---|---|---|---|---|---|---|
+  | CPU wins | 42% | 63% | 71% | 77% | 87% | 90% |
+  | Points, you vs CPU | 35.1–33.5 | 32.1–33.9 | 32.2–35.1 | 29.8–34.6 | 29.8–36.2 | 24.8–34.6 |
+  | Drives that score | 91% | 86% | 82% | 79% | 72% | 67% |
+  | Beaten off the dribble, your possessions | 65% | 54% | 58% | 43% | 44% | 29% |
+  | Turnovers a game, you (in your backcourt) | 3.3 (1.7) | 3.6 (2.3) | 3.8 (1.6) | 4.6 (2.5) | 4.6 (1.7) | 5.4 (2.9) |
+  | Turnovers a game, CPU (in its backcourt) | 4.4 (1.1) | 5.0 (1.8) | 4.2 (1.1) | 5.0 (1.9) | 4.6 (1.3) | 5.3 (1.9) |
+
+  - **The open problem: Easy got harder.** The bot's Easy win rate went from 42% to 63%. Drives are still 86%, and
+    that's what the shell is for.
+    - Removing the wall alone (no new shell) left wins where they were (43%). But then drives scored 95%, and
+      possessions went up to 28 a game, because the old guarding chases full court.
+    - So the shell causes the jump: it defends the bot harder than the bot (on defense) defends the CPU.
+    - A blend between the old and new shells on Easy brought wins to 52%, but drives went up to 94%, above today. A
+      shallower back man changed nothing. Both were dropped.
+  - **Turnovers.** Up to one more a game per team, mostly in the backcourt: the price of no wall. Of your team's
+    backcourt losses, the bot (you) lost about 1.1 a game and his CPU teammate the rest. A cap on backcourt
+    steals against CPU handlers changed nothing (the extra losses are loose balls and passes, not steals), so it
+    was dropped. Most possessions still get the ball up against a press.
+  - **Loop report** (`tests/perf/loop-report.mjs`, rusher points a possession before → after): very easy 1.81 →
+    1.65, easy 1.62 → 1.71, medium 1.37 → 1.38, hard 1.32 → 1.34. The rusher still leads at very easy and easy (it
+    did before too).
+    - Possessions lost within 2 seconds of an inbound went from 0–1% to 4–10% for the scripted styles. That's the
+      wall gone.
+  - **Defense report** (`scripts/defense-report.mjs`, 8 CPU-vs-CPU games per difficulty, per game before → after):
+    - Points: Easy 56.4 → 55.3, Medium 54.8 → 53.4, Hard 53.9 → 53.8.
+    - Steals: Easy 2.5 → 1.8, Medium 4.4 → 4.0, Hard 6.0 → 8.3.
+- **The tomahawk style no longer changes the game** (a fix to an older bug; `tomahawk-styles.js`). The style is a
+  look each player picks, but the same seeded game came out differently by style.
+  The old build fails that check on seeds 2025 and 2026, and 9.21's new defense made it fail on the test's seed too.
+  Online, two phones with different styles could drift apart.
+  - The cause: a non-Classic style placed the game's ball with an old copy of the hand maths, which didn't have
+    9.19.1's drawn facing, build and lean. A block on the dunk measures from the ball, so it could go differently.
+  - The style now runs the game's own `placeHands` and `attachBall` on the Classic shadow rig.
+  - Seeds 2024–2027 now give the same game in Classic and Float.
+- **Online.** `NET_PROTO` goes from 7 to 8. The guest's dunk intent can carry the two new types, and the rules
+  changed (no wall, new defense), so a 9.20 phone and a 9.21 phone won't start a game together. The snapshot list
+  of dunk types (`ND` in `net.js`, append-only) and the guest's dunk intent both take the two new types. The shell's state
+  lives in `M.d921`, so the rollback saves and replays it.
+  - Fixed before shipping: the shot log first keyed on the shot object itself. The rollback copies objects, so a
+    replay logged a shot twice and the two phones drifted apart. It's a flag now.
+- **Tests** (`tests/v921.mjs`):
+  - `dunk-new`: each new dunk, facing each way, completes, scores 2, and stays in a drawn hand. The reverse ends with
+    his back to the rim. The rating gate holds at 5, 6 and 8, the CPU picks both, and the names are right.
+  - `backcourt-steal`: after a basket, a human defender crosses half court in all 8 CPU inbounds and steals in the
+    CPU's backcourt.
+  - `cpu-press`: the press is on when it's close late (0.93) and off when it's early or 15 points apart. It moves at
+    most 0.011 a frame.
+  - `cpu-shell`: in the backcourt, one up (56 from half court) and one back (233 from the rim). In the frontcourt
+    they're never both on the line. After 6 threes in 8 shots the shooter's defender moves up from 57 to 35.
+  - `dunk-new-online` (full tier): a rollback game where every dunk is one of the two, with no desync.
+  - `ball-hands` no longer needs a held "pass" pose. The ball leaves the hand on the pass's first frame, and the
+    one held frame the CPU game used to have was luck. `stat-curves` picks the windmill from the new four-dunk
+    list. The tomahawk recording's pinned first draw moves from 0.5 to 0.3, so it's still the windmill's timing.
+  - `cpu-variety`: the shell gave lockdown defenders the same cushion as everyone else, so they contested less than
+    playmakers. A stopper's cushion now shrinks with his style (`SHELL.stopperK`).
+  - `league-determinism` moves from seed 22 to 23, for the same reason as in 9.19.2: the other games' results line up
+    differently between the real league and the fallback.
+
 ## 9.20.0: the online lobby is a place: shoot around, pick teams, play, choose what's next
 Host a lobby and you land in the practice gym with a ball. Your friend walks in and you shoot around together until
 they press Ready. Then you both pick your teams on one split screen: the guest on the left, the host on the right,

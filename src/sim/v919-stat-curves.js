@@ -9,15 +9,16 @@
 //             No jumper from range goes in more than 75% of the time, whatever is on (glow, on fire, a signature
 //             move, trailing). The timing window still grows with the rating, more gently (1: 0.88, 5: 1, 10: 1.15).
 //   Dunking   the range a dunk can start from: a 5 is as before; each point is 6 units, from -24 (a 1) to +30 at
-//             most (a 10). Signature dunks need the rating: the windmill needs Dunking 6, the 360 needs 7 (below
-//             that the same dunk is a tomahawk or a two-hander; the timing and the result don't change).
+//             most (a 10). Signature dunks need the rating: the windmill and (v9.21.0) the reverse need Dunking 6, the
+//             360 needs 7, between the legs (v9.21.0) 8 (below that the same dunk is a tomahawk or a two-hander; the
+//             timing and the result don't change).
 //   Moves     the crossover needs Ball handling 3 and the behind-the-back 5, where Ball handling is the average of
 //             Speed and Passing (a new career player has 4). Below it the move isn't offered: your input makes a
 //             hesitation instead (a behind-the-back a crossover, if you have that), and the CPU doesn't use it.
 //             Signature moves keep the rating they need now. The move ids are unchanged.
 // Every rating is still a number from 1 to 10 (fractions too: the CPU's teams are around 4.6 to 7.5).
 const STAT_CURVE = { shtLo: 0.1375, shtHi: 0.07, spdLo: 0.0625, spdHi: 0.04, green: 0.555, cap: 0.75, far: 200, near: 120,
-  boostCap: 1.10, dnkPt: 6, dnkLo: -24, dnkHi: 30, windmill: 6, 'dunk360': 7, cross: 3, btb: 5 };
+  boostCap: 1.10, dnkPt: 6, dnkLo: -24, dnkHi: 30, windmill: 6, 'dunk360': 7, reverse: 6, betweenlegs: 8, cross: 3, btb: 5 };   // (v9.21.0: the reverse needs Dunking 6, between the legs 8)
 function statF(v) { v = v == null ? 5 : v; return v <= 5 ? 1 - (5 - v) * STAT_CURVE.shtLo : 1 + (v - 5) * STAT_CURVE.shtHi; }
 function handleOf(p) { const s = (p && p.st) || {}; return ((s.spd == null ? 5 : s.spd) + (s.pas == null ? 5 : s.pas)) / 2; }
 function moveAllowed(p, kind) {
@@ -58,7 +59,7 @@ dnkRange = v => 15 + clamp(((v == null ? 5 : v) - 5) * STAT_CURVE.dnkPt, STAT_CU
     const r = _sd.apply(this, arguments), a = p.act;
     if (!a || p.state !== 'dunk' || a.alley || (opts && opts.alley)) return r;
     const dn = (p.st && p.st.dnk != null) ? p.st.dnk : 5;
-    if ((a.type === '360' && dn < STAT_CURVE.dunk360) || (a.type === 'windmill' && dn < STAT_CURVE.windmill)) a.type = dn >= 4 ? 'tomahawk' : 'twohand';
+    if ((a.type === '360' && dn < STAT_CURVE.dunk360) || (a.type === 'windmill' && dn < STAT_CURVE.windmill) || (a.type === 'reverse' && dn < STAT_CURVE.reverse) || (a.type === 'betweenlegs' && dn < STAT_CURVE.betweenlegs)) a.type = dn >= 4 ? 'tomahawk' : 'twohand';
     return r;
   };
 }

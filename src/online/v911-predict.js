@@ -53,10 +53,10 @@ function gpShot(me, kind, lk) {
 }
 function gpDunk(me) {
   const h = attackHoop(me.team), d = dxz(me, h);
-  const types = d > 180 ? ['360', 'windmill', 'tomahawk'] : d > 100 ? ['tomahawk', 'windmill', 'twohand'] : ['twohand', 'tomahawk'];
+  const types = dunkTypesFor(d);   // (v9.21.0: the game's own list, so the guest picks from the same types)
   const type = pick(types), baseD = clamp(0.6 + d / 450, 0.62, 1.15);
-  const D = baseD * (type === 'windmill' ? 1.08 : type === '360' ? 1.12 : type === 'twohand' ? 0.94 : 1);
-  const a = { type, D, s: 0, sx: me.x, sz: me.z, tx: h.x + h.dir * 20, tz: h.z + (me.z - h.z) * 0.12, peak: 64 + (D - 0.7) * 30 + (type === '360' ? 8 : 0), hoop: h, tried: new Set() };
+  const D = baseD * dunkLenK(type);
+  const a = { type, D, s: 0, sx: me.x, sz: me.z, tx: h.x + h.dir * 20, tz: h.z + (me.z - h.z) * 0.12, peak: 64 + (D - 0.7) * 30 + dunkPeakAdd(type), hoop: h, tried: new Set() };
   gpIntent('dunk', type, Math.round(D * 1000) / 1000);
   me.face = sgn(h.x - me.x) || me.face; SFX.squeak();
   GP.act = { k: 'dunk', a, t: 0, ok: false }; GP.hold = null; GP.off = null;
@@ -150,8 +150,8 @@ function gpActFrame(me, rdt) {
     } else {
       const a = A.a; a.s += rdt / a.D; const q = dunkPath(a, a.s);
       me.x = q.x; me.z = q.z; me.y = q.y; me.state = 'dunk'; me.act = a; me.st_t = A.t; me.vx = me.vz = 0;
-      const su = clamp((a.s - 0.14) / 0.52, 0, 1); me.spin = a.type === '360' ? su * Math.PI * 2 : a.type === 'windmill' ? Math.sin(su * Math.PI) * 0.2 : 0;
-      if (a.s >= 1) { done = true; me.spin = 0; }
+      me.spin = dunkSpin(a);
+      if (a.s >= 1) { done = true; if (a.type === 'reverse') me.face = -me.face; me.spin = 0; }
     }
     if (!A.ok && A.t > gpWait()) { GP.act = null; GP.off = { x: me.x - hx, z: me.z - hz, y: me.y - hy }; me.x = hx; me.z = hz; me.y = hy; return; }   // the host never played it
     if (done) { me.layAuto = false; GP.act = null; GP.hold = { k: A.k, t: 0, x: me.x, z: me.z, y: me.y, seen: A.ok }; }
@@ -261,8 +261,8 @@ function hostApplyRel(p, R) {                    // the guest's release: judged 
   startDunk = function (p, opts) {
     const I = opts && opts.alley ? null : gpTake(p, 'dunk');
     const r = _sd.apply(this, arguments);
-    if (I && p.act && p.state === 'dunk' && ['twohand', 'tomahawk', 'windmill', '360'].includes(I.a) && I.b > 0.3) {
-      p.act.type = I.a; p.act.D = I.b; p.act.peak = 64 + (I.b - 0.7) * 30 + (I.a === '360' ? 8 : 0); Net.gIntent = null;
+    if (I && p.act && p.state === 'dunk' && ['twohand', 'tomahawk', 'windmill', '360', 'reverse', 'betweenlegs'].includes(I.a) && I.b > 0.3) {
+      p.act.type = I.a; p.act.D = I.b; p.act.peak = 64 + (I.b - 0.7) * 30 + dunkPeakAdd(I.a); Net.gIntent = null;
     }
     return r;
   };

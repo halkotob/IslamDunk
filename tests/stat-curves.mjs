@@ -54,9 +54,9 @@ export function statCurveTests({ newContext, open }) {
       // dunks: the range a dunk starts from (sprinting), and the signature dunks
       const far = v => { set({ dnk: v }); let best = 0; for (let d = 60; d <= 420; d += 5) { calm(); giveBall(p); place(p, h.x + h.dir * d, h.z); p.state = 'free'; p.cmd.turbo = true; p.vx = -h.dir * p.speed(); p.vz = 0; if (canDunk(p)) best = d; } p.cmd.turbo = false; return best; };
       o.dunk = [far(1), far(5), far(10)];
-      // past 180 the dunk is picked from 360 / windmill / tomahawk: a fixed random number picks the one we want
+      // past 180 the dunk is picked from 360 / windmill / tomahawk / between the legs: a fixed random number picks the one we want
       const dunkAs = (v, type) => { set({ dnk: v }); calm(); giveBall(p); place(p, h.x + h.dir * 200, h.z); p.state = 'free'; p.vx = -h.dir * 300; p.cmd.turbo = true;
-        const keep = Math.random, u = type === '360' ? 0.1 : 0.5; Math.random = () => u; p.human = 0; try { startDunk(p, {}); } finally { Math.random = keep; p.cmd.turbo = false; p.human = -1; } const t = p.act && p.act.type; p.state = 'free'; p.act = null; return t; };
+        const keep = Math.random, u = type === '360' ? 0.1 : 0.3; /* (v9.21.0: four dunks to pick from past 180) */ Math.random = () => u; p.human = 0; try { startDunk(p, {}); } finally { Math.random = keep; p.cmd.turbo = false; p.human = -1; } const t = p.act && p.act.type; p.state = 'free'; p.act = null; return t; };
       o.sig = { wm5: dunkAs(5, 'windmill'), wm6: dunkAs(6, 'windmill'), d360_6: dunkAs(6, '360'), d360_7: dunkAs(7, '360') };
       return o;
     });

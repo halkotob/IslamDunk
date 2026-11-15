@@ -300,23 +300,37 @@ function dunkPath(a, s) {
   const u = Math.min(1, s / 0.8), e = 1 - (1 - u) * (1 - u);
   return { x: lerp(a.sx, a.tx, e), z: lerp(a.sz, a.tz, e), y: Math.max(0, a.peak * (1 - (typeof RB !== 'undefined' && RB.sim ? ((s - 0.6) / 0.6) * ((s - 0.6) / 0.6) : ((s - 0.6) / 0.6) ** 2))) };   // (v9.14: in an online match a plain multiply, the same bits on every engine; elsewhere ** as recorded)
 }
+// the dunk types by take-off distance (v9.21.0: + the reverse and between the legs), how long each takes, and how much
+// higher it goes. One table for the game, the online prediction and the review tools.
+function dunkTypesFor(d) { return d > 180 ? ['360', 'windmill', 'tomahawk', 'betweenlegs'] : d > 100 ? ['tomahawk', 'windmill', 'twohand', 'reverse'] : ['twohand', 'tomahawk', 'reverse']; }
+const DUNK_LEN = { windmill: 1.08, '360': 1.12, twohand: 0.94, reverse: 1.04, betweenlegs: 1.12 }, DUNK_PEAK = { '360': 8, betweenlegs: 8 };
+function dunkLenK(t) { return DUNK_LEN[t] || 1; }
+function dunkPeakAdd(t) { return DUNK_PEAK[t] || 0; }
 function startDunk(p, opts) {
   const h = attackHoop(p.team), d = dxz(p, h);
   p.face = sgn(h.x - p.x);
-  const types = opts.alley ? ['tomahawk', 'twohand', 'windmill'] : d > 180 ? ['360', 'windmill', 'tomahawk'] : d > 100 ? ['tomahawk', 'windmill', 'twohand'] : ['twohand', 'tomahawk'];
+  const types = opts.alley ? ['tomahawk', 'twohand', 'windmill'] : dunkTypesFor(d);
   const type = opts.alley ? 'alley' : pick(types), baseD = opts.D || clamp(0.6 + d / 450, 0.62, 1.15);
-  const D = baseD * (type === 'windmill' ? 1.08 : type === '360' ? 1.12 : type === 'twohand' ? 0.94 : 1);
-  p.act = { type, D, s: 0, sx: p.x, sz: p.z, tx: h.x + h.dir * 20, tz: h.z + (p.z - h.z) * 0.12, peak: 64 + (D - 0.7) * 30 + (type === '360' ? 8 : 0),
+  const D = baseD * dunkLenK(type);
+  p.act = { type, D, s: 0, sx: p.x, sz: p.z, tx: h.x + h.dir * 20, tz: h.z + (p.z - h.z) * 0.12, peak: 64 + (D - 0.7) * 30 + dunkPeakAdd(type),
     hoop: h, alley: !!opts.alley, slammed: false, didSlam: false, big: d > 170 || (type !== 'twohand' && chance(0.45)), tried: new Set() };
   p.state = 'dunk'; p.st_t = 0; p.vx = p.vz = 0; p.y = 0; p.move = null;
   if (ball.owner === p) p.stats.fga++;
   notifyDunk(p); SFX.squeak();
 }
+// the body's turn through a dunk: the 360 goes all the way round, the windmill rocks, the reverse (v9.21.0) turns his
+// back to the rim on the way up and keeps it there to the slam (a half turn: at the end it becomes his facing)
+function dunkSpin(a) {
+  const su = clamp((a.s - 0.14) / 0.52, 0, 1);
+  if (a.type === '360') return su * Math.PI * 2;
+  if (a.type === 'windmill') return Math.sin(su * Math.PI) * 0.2;
+  if (a.type === 'reverse') { const r = clamp((a.s - 0.1) / 0.34, 0, 1); return Math.PI * r * r * (3 - 2 * r); }
+  return 0;
+}
 function dunkUpdate(p, dt) {
   const a = p.act; a.s += dt / a.D;
   const q = dunkPath(a, a.s); p.x = q.x; p.z = q.z; p.y = q.y;
-  const spinU = clamp((a.s - 0.14) / 0.52, 0, 1);
-  p.spin = a.type === '360' ? spinU * Math.PI * 2 : a.type === 'windmill' ? Math.sin(spinU * Math.PI) * 0.2 : 0;
+  p.spin = dunkSpin(a);
   if (a.s > 0.74 && !a.impactCue) { a.impactCue = true; p.sq = -0.45; p.expr = { k: 'fierce', t: 0.55 }; }
   if (ball.owner === p && a.s > 0.25 && a.s < 0.8) {
     for (const o of p.opps) {
@@ -329,6 +343,7 @@ function dunkUpdate(p, dt) {
   }
   if (!a.slammed && a.s >= 0.8) { a.slammed = true; if (ball.owner === p) slam(p, a); }
   if (a.s >= 1) {
+    if (a.type === 'reverse') p.face = -p.face;   // (v9.21.0: he finished with his back to the rim: the half turn becomes his facing)
     p.spin = 0;
     if (a.didSlam) { p.state = 'hang'; p.st_t = 0; }
     else { p.state = 'jump'; p.vy = 0; p.st_t = 0; }

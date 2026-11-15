@@ -121,6 +121,7 @@ import { statCurveTests } from './stat-curves.mjs';
 import { ballHandsTests } from './ball-hands.mjs';
 import { difficultyTests } from './difficulty.mjs';
 import { lobbyTests } from './lobby.mjs';
+import { v921Tests } from './v921.mjs';
 import { hubFirstTests } from './hub-first.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
@@ -2638,7 +2639,8 @@ Object.assign(T, noShoveTests({ newContext, open }));   // v9.17.10 the shove is
 Object.assign(T, statCurveTests({ newContext, open }));   // v9.19.0 stat curves, move needs, the Hikmah challenge (tests/stat-curves.mjs)
 Object.assign(T, ballHandsTests({ newContext, open }));   // v9.19.1 the ball stays in his hands (tests/ball-hands.mjs)
 Object.assign(T, difficultyTests({ newContext, open }));
-Object.assign(T, lobbyTests({ newContext, open }));   // v9.20.0 the online lobby: the gym, team select, the post-game menu (tests/lobby.mjs)   // v9.19.2 career difficulty: starting stats, the first three games, the ladder (tests/difficulty.mjs)
+Object.assign(T, lobbyTests({ newContext, open }));
+Object.assign(T, v921Tests({ newContext, open }));   // v9.21.0 two dunks, the CPU's defense, no wall at half court (tests/v921.mjs)   // v9.20.0 the online lobby: the gym, team select, the post-game menu (tests/lobby.mjs)   // v9.19.2 career difficulty: starting stats, the first three games, the ladder (tests/difficulty.mjs)
 Object.assign(T, hubFirstTests({ newContext, open }));   // v9.18.0 the career opens at the hub (tests/hub-first.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
@@ -2660,7 +2662,7 @@ const HEAVY = new Set([
   // the brief's list
   'online-lag', 'online-loop', 'online-server', 'defense', 'cpu-variety', 'tomahawk',
   'first-three', 'ladder',   // v9.19.2: a few hundred bot games each
-  'lobby-flow', 'lobby-layout',   // v9.20.0: two phones through the lobby, two short games; team select drawn 14 ways
+  'lobby-flow', 'lobby-layout', 'dunk-new-online',   // v9.20.0: two phones through the lobby, two short games; team select drawn 14 ways
   // over 13 s each when run alone on the 2-core container (v9.17.1 times), so the fast tier fits 3 minutes there
   'league-calibration', 'lag-profiles', 'studio', 'cpu-league', 'hub-layout', 'career-run', 'world-robust', 'world-visual',
   'league-formats', 'league-determinism', 'league-layout', 'league-time', 'cpu-handle', 'v863', 'career-intro', 'v867',
@@ -2671,7 +2673,7 @@ const HEAVY = new Set([
 // alone, after the parallel batch: frame-rate and speed checks, and the rollback and real-time online tests, which a
 // busy CPU makes desync (9.17.2 on 2 workers: rb-settings, rb-touch and rb-one each repaired 1-3 desyncs they don't alone)
 const SERIAL = new Set(['rb-slow', 'rb-lag', 'rb-freeze', 'lag-profiles', 'online-lag', 'league-time', 'net-rate',
-  'online-loop', 'online-server', 'online-fb', 'online-room', 'online-custom', 'net-modes', 'net-version', 'net-report', 'lobby-flow']);
+  'online-loop', 'online-server', 'online-fb', 'online-room', 'online-custom', 'net-modes', 'net-version', 'net-report', 'lobby-flow', 'dunk-new-online']);
 const isSerial = n => SERIAL.has(n) || n.startsWith('rb-');
 // v9.17.6: run by hand before a release (--only, or --release), not by test:full on every push. online-lag counts exact
 // frames under random jitter and misses 1 run in 10 on 9.15.0 and now alike (30 runs each), with no desync; until that's

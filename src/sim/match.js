@@ -222,7 +222,7 @@ function onScore(h) {
   if (M.practice && M.teams[team].score >= 11) { M.phase = 'over'; M.winner = team; practiceGameOver(team); }
   for (const p of M.players) p.ai.t = 0;
 }
-function dunkName(t) { return { tomahawk: 'TOMAHAWK', windmill: 'WINDMILL', '360': '360', twohand: 'POWER JAM', alley: 'ALLEY-OOP' }[t] || 'JAM'; }
+function dunkName(t) { return { tomahawk: 'TOMAHAWK', windmill: 'WINDMILL', '360': '360', twohand: 'POWER JAM', alley: 'ALLEY-OOP', reverse: 'REVERSE JAM', betweenlegs: 'THROUGH-THE-LEGS' }[t] || 'JAM'; }
 function shotClockViolation() {
   SFX.buzzer(); FX.callout('SHOT CLOCK!', '#ff7070', 'TURNOVER');
   const o = ball.owner; if (o) { o.streak = 0; fumble(o); ball.vx = ball.vz = 0; }

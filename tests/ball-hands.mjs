@@ -3,7 +3,7 @@
 //                (tools/ball-hands-lib.mjs; a dribble counts only sideways, a hand-to-hand move isn't held mid-move).
 //                Scripted plays as you, in a match facing each way (desktop) and in the gym (phone size): stance,
 //                dribbling, step-back, crossover, behind-the-back, spin, hesitation, the drop step, a catch, a pass, a
-//                shot after each, layups (roll, bank, reverse, euro), a drive, a free throw; then 40 s of a seeded CPU game (dunks, layups, rebounds, steals).
+//                shot after each, layups (roll, bank, reverse, euro), a drive, a free throw; then 40 s of a seeded CPU game (or on until it has had a dunk; dunks, layups, rebounds, steals).
 //                0 frames more than 20 units from a hand
 //                And the report's case: move left (away from the hoop), stop, turn and shoot toward it, and shoot out of
 //                a step-back with the stick still held away: every windup frame within 20 units of a hand, facing each way
@@ -18,7 +18,8 @@ const PLAYS = `(async ({ gym, team, tag, cpu }) => {
   const shoot = t => { Input.down[keyB] = true; Input.pressed[keyB] = true; step(20, t); Input.down[keyB] = false; Input.released[keyB] = true; step(36, t); };
   if (cpu) {
     window.__seed(901); newMatch(TEAMS[3], TEAMS[6], { humans: [], fmt: { format: 'quarters', len: 45 } }); Game.screen = 'play'; M.introT = 0; for (const q of M.players) q.hifzUsed = true;
-    for (let n = 0; n < 60 * 40; n++) { snapPrev(); updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; if (Game.trivia) Game.trivia = null; B.frame++; if (ball.owner && n % 2 === 0) { updateCamera(STEP); const r = B.measure(tag); if (r) rows.push(r); } }
+    const seen = new Set();   // (40 s, then on until a dunk has been drawn: at most 75 s)
+    for (let n = 0; n < 60 * 75 && (n < 60 * 40 || !seen.has('dunk')); n++) { snapPrev(); updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; if (Game.trivia) Game.trivia = null; B.frame++; if (ball.owner && n % 2 === 0) { updateCamera(STEP); const r = B.measure(tag); if (r) { rows.push(r); seen.add(r.pose.split(/[/:]/)[0]); } } }
     return rows;
   }
   window.__seed(77); Input.down = {}; Input.pressed = {}; Input.released = {}; stick(0, 0);
@@ -66,8 +67,11 @@ export function ballHandsTests({ newContext, open }) {
     const worst = rows.reduce((a, r) => r.gap > a.gap ? r : a, { gap: 0 });
     // the report's case: moving away from the hoop, stopping and shooting, or shooting out of a step-back with the stick held away; each facing
     const rep = {}; for (const [f, k] of [[1, 'right'], [-1, 'left']]) { const w = rows.filter(r => r.st === 'windup' && r.face === f && / (shoot after moving away|shoot out of a held step-back)$/.test(r.where)); rep[k] = { n: w.length, over: w.filter(r => r.gap > 20).length, worst: Math.max(0, ...w.map(r => r.gap)) }; }
+    // (v9.21.0: 'pass' is no longer required. The ball leaves his hand on the pass's first frame and the follow-through
+    // is 12 frames, so he holds it in the pass pose only if it comes straight back inside that, which a real pass can't
+    // (a 50-unit pass is 14 frames in the air): the one held frame the CPU game used to have was a fluke of its seed.)
     const ok = rows.length > 2000 && !bad.length && faces.size === 2 && Object.values(rep).every(o => o.n > 20 && o.over === 0)
-      && ['stance', 'dribble-run', 'windup:jumper', 'shoot:jumper', 'mv:stepback', 'move:cross', 'move:btb', 'mv:drop', 'dunk', 'pass', 'shoot:lay-'].every(k => [...poses].some(x => x.startsWith(k))) && !errs.length;
+      && ['stance', 'dribble-run', 'windup:jumper', 'shoot:jumper', 'mv:stepback', 'move:cross', 'move:btb', 'mv:drop', 'dunk', 'shoot:lay-'].every(k => [...poses].some(x => x.startsWith(k))) && !errs.length;
     const by = {}; for (const r of bad) by[r.pose] = (by[r.pose] || 0) + 1;
     return { ok, detail: [`${rows.length} held frames, ${bad.length} more than 20 units from a hand; worst ${worst.gap} (${worst.pose || '-'}, ${worst.where || ''})`,
       `the report's case, windup frames facing right / left: ${JSON.stringify(rep)}`, `poses: ${[...poses].sort().join(', ')}`, bad.length ? 'over: ' + JSON.stringify(by) : '', ...errs] };

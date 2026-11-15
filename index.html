@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.20.0';
+const VERSION = '9.21.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -1182,23 +1182,37 @@ function dunkPath(a, s) {
   const u = Math.min(1, s / 0.8), e = 1 - (1 - u) * (1 - u);
   return { x: lerp(a.sx, a.tx, e), z: lerp(a.sz, a.tz, e), y: Math.max(0, a.peak * (1 - (typeof RB !== 'undefined' && RB.sim ? ((s - 0.6) / 0.6) * ((s - 0.6) / 0.6) : ((s - 0.6) / 0.6) ** 2))) };   // (v9.14: in an online match a plain multiply, the same bits on every engine; elsewhere ** as recorded)
 }
+// the dunk types by take-off distance (v9.21.0: + the reverse and between the legs), how long each takes, and how much
+// higher it goes. One table for the game, the online prediction and the review tools.
+function dunkTypesFor(d) { return d > 180 ? ['360', 'windmill', 'tomahawk', 'betweenlegs'] : d > 100 ? ['tomahawk', 'windmill', 'twohand', 'reverse'] : ['twohand', 'tomahawk', 'reverse']; }
+const DUNK_LEN = { windmill: 1.08, '360': 1.12, twohand: 0.94, reverse: 1.04, betweenlegs: 1.12 }, DUNK_PEAK = { '360': 8, betweenlegs: 8 };
+function dunkLenK(t) { return DUNK_LEN[t] || 1; }
+function dunkPeakAdd(t) { return DUNK_PEAK[t] || 0; }
 function startDunk(p, opts) {
   const h = attackHoop(p.team), d = dxz(p, h);
   p.face = sgn(h.x - p.x);
-  const types = opts.alley ? ['tomahawk', 'twohand', 'windmill'] : d > 180 ? ['360', 'windmill', 'tomahawk'] : d > 100 ? ['tomahawk', 'windmill', 'twohand'] : ['twohand', 'tomahawk'];
+  const types = opts.alley ? ['tomahawk', 'twohand', 'windmill'] : dunkTypesFor(d);
   const type = opts.alley ? 'alley' : pick(types), baseD = opts.D || clamp(0.6 + d / 450, 0.62, 1.15);
-  const D = baseD * (type === 'windmill' ? 1.08 : type === '360' ? 1.12 : type === 'twohand' ? 0.94 : 1);
-  p.act = { type, D, s: 0, sx: p.x, sz: p.z, tx: h.x + h.dir * 20, tz: h.z + (p.z - h.z) * 0.12, peak: 64 + (D - 0.7) * 30 + (type === '360' ? 8 : 0),
+  const D = baseD * dunkLenK(type);
+  p.act = { type, D, s: 0, sx: p.x, sz: p.z, tx: h.x + h.dir * 20, tz: h.z + (p.z - h.z) * 0.12, peak: 64 + (D - 0.7) * 30 + dunkPeakAdd(type),
     hoop: h, alley: !!opts.alley, slammed: false, didSlam: false, big: d > 170 || (type !== 'twohand' && chance(0.45)), tried: new Set() };
   p.state = 'dunk'; p.st_t = 0; p.vx = p.vz = 0; p.y = 0; p.move = null;
   if (ball.owner === p) p.stats.fga++;
   notifyDunk(p); SFX.squeak();
 }
+// the body's turn through a dunk: the 360 goes all the way round, the windmill rocks, the reverse (v9.21.0) turns his
+// back to the rim on the way up and keeps it there to the slam (a half turn: at the end it becomes his facing)
+function dunkSpin(a) {
+  const su = clamp((a.s - 0.14) / 0.52, 0, 1);
+  if (a.type === '360') return su * Math.PI * 2;
+  if (a.type === 'windmill') return Math.sin(su * Math.PI) * 0.2;
+  if (a.type === 'reverse') { const r = clamp((a.s - 0.1) / 0.34, 0, 1); return Math.PI * r * r * (3 - 2 * r); }
+  return 0;
+}
 function dunkUpdate(p, dt) {
   const a = p.act; a.s += dt / a.D;
   const q = dunkPath(a, a.s); p.x = q.x; p.z = q.z; p.y = q.y;
-  const spinU = clamp((a.s - 0.14) / 0.52, 0, 1);
-  p.spin = a.type === '360' ? spinU * Math.PI * 2 : a.type === 'windmill' ? Math.sin(spinU * Math.PI) * 0.2 : 0;
+  p.spin = dunkSpin(a);
   if (a.s > 0.74 && !a.impactCue) { a.impactCue = true; p.sq = -0.45; p.expr = { k: 'fierce', t: 0.55 }; }
   if (ball.owner === p && a.s > 0.25 && a.s < 0.8) {
     for (const o of p.opps) {
@@ -1211,6 +1225,7 @@ function dunkUpdate(p, dt) {
   }
   if (!a.slammed && a.s >= 0.8) { a.slammed = true; if (ball.owner === p) slam(p, a); }
   if (a.s >= 1) {
+    if (a.type === 'reverse') p.face = -p.face;   // (v9.21.0: he finished with his back to the rim: the half turn becomes his facing)
     p.spin = 0;
     if (a.didSlam) { p.state = 'hang'; p.st_t = 0; }
     else { p.state = 'jump'; p.vy = 0; p.st_t = 0; }
@@ -1415,6 +1430,15 @@ function poseTargets(p, sp) {
       if (a.type === 'tomahawk') Object.assign(t, { ns: 3.65, ne: 1.5, fs: 2.4, fe: 0.4 });
       else if (a.type === 'windmill') Object.assign(t, { ne: 0.05, fs: 2.3, fe: 0.4, direct: 0.4 + ((u - 0.12) / 0.66) * (Math.PI * 2 + 1.9) });
       else if (a.type === '360') Object.assign(t, { ns: 2.7, fs: 2.7, ne: 1.4, fe: 1.4 });
+      // v9.21.0 the reverse: back to the rim, both arms reach up and back over his head, the ball in the near hand (backhand)
+      else if (a.type === 'reverse') Object.assign(t, u < 0.4 ? { ns: 2.5, fs: 2.3, ne: 1.3, fe: 1.4, lean: 0.05 } : { ns: 3.75, fs: 3.55, ne: 0.35, fe: 0.5, lean: -0.16, nh: 0.8, fh: -0.1 });
+      // v9.21.0 between the legs: the ball down to his waist, legs split and tucked at the top while it goes under the near
+      // thigh from the near hand to the far hand, then the far arm swings it up to the rim
+      else if (a.type === 'betweenlegs') {
+        if (u < 0.3) Object.assign(t, { ns: 1.35, fs: 1.25, ne: 1.25, fe: 1.3, nk: 1.3, fk: 1.0, nh: 0.9, fh: 0.2 });
+        else if (u < 0.56) Object.assign(t, { ns: 0.55, fs: 0.45, ne: 0.75, fe: 0.8, nk: 1.7, fk: 1.5, nh: 1.45, fh: -0.35, lean: 0.12 });
+        else Object.assign(t, { ns: 2.2, fs: 3.55, ne: 1.2, fe: 0.35, nk: 1.2, fk: 0.7, nh: 0.7, fh: 0.0 });
+      }
       else Object.assign(t, { ns: 3.3, fs: 3.3, ne: 1.1, fe: 1.1 });
     } else Object.assign(t, { ns: 2.2, fs: a.type === 'tomahawk' || a.type === 'windmill' ? 2.0 : 2.2, ne: 0.15, fe: 0.15, nk: 0.8, fk: 0.8, nh: 0.3, fh: 0.2 });
   }
@@ -1513,8 +1537,13 @@ function attachBall(p) {
       by = BALL_R + (top - BALL_R) * (fast ? stride * 0.72 : stride);
       bx = hd.x + p.face * 2.5; bz = hd.z + (p.dh === 'n' ? 2 : -2); behind = p.dh === 'f';
     }
-  } else if (p.state === 'dunk' && (p.act.type === 'tomahawk' || p.act.type === 'windmill') && p.act.s > 0.12) {
+  } else if (p.state === 'dunk' && (p.act.type === 'tomahawk' || p.act.type === 'windmill' || p.act.type === 'reverse') && p.act.s > 0.12) {
     const hd = p.hands.n; bx = hd.x; by = hd.y + 4; bz = hd.z;
+  } else if (p.state === 'dunk' && p.act.type === 'betweenlegs' && p.act.s > 0.3) {
+    // (v9.21.0) under the near thigh from the near hand to the far hand, then in the far hand up to the rim
+    const u = p.act.s, k = clamp((u - 0.33) / 0.19, 0, 1), e = k * k * (3 - 2 * k), n = p.hands.n, f = p.hands.f;
+    if (u < 0.56) { bx = lerp(n.x, f.x, e); by = lerp(n.y, f.y, e) - Math.sin(e * Math.PI) * 3; bz = lerp(n.z + 3, f.z - 3, e); behind = e > 0.5; }
+    else { bx = f.x; by = f.y + 4; bz = f.z; }
   } else {
     const m = handsMid(p); bx = m.x + p.face * 3; by = m.y + (p.state === 'shoot' ? 7 : 2); bz = m.z + 3;
   }
@@ -2119,7 +2148,7 @@ function onScore(h) {
   if (M.practice && M.teams[team].score >= 11) { M.phase = 'over'; M.winner = team; practiceGameOver(team); }
   for (const p of M.players) p.ai.t = 0;
 }
-function dunkName(t) { return { tomahawk: 'TOMAHAWK', windmill: 'WINDMILL', '360': '360', twohand: 'POWER JAM', alley: 'ALLEY-OOP' }[t] || 'JAM'; }
+function dunkName(t) { return { tomahawk: 'TOMAHAWK', windmill: 'WINDMILL', '360': '360', twohand: 'POWER JAM', alley: 'ALLEY-OOP', reverse: 'REVERSE JAM', betweenlegs: 'THROUGH-THE-LEGS' }[t] || 'JAM'; }
 function shotClockViolation() {
   SFX.buzzer(); FX.callout('SHOT CLOCK!', '#ff7070', 'TURNOVER');
   const o = ball.owner; if (o) { o.streak = 0; fumble(o); ball.vx = ball.vz = 0; }
@@ -3754,7 +3783,7 @@ const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const NS = ['free', 'steal', 'shove', 'pass', 'land', 'getup', 'windup', 'shoot', 'post', 'jump', 'down', 'dunk', 'hang', 'sig'];   // appended only
 const NB = ['held', 'loose', 'shot', 'pass', 'scored'];
 const NP = ['tip', 'live', 'dead', 'break', 'over'];
-const ND = ['tomahawk', 'windmill', '360', 'twohand', 'alley'];   // append only: indices travel in snapshots
+const ND = ['tomahawk', 'windmill', '360', 'twohand', 'alley', 'reverse', 'betweenlegs'];   // append only: indices travel in snapshots (v9.21.0: + reverse, betweenlegs)
 const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
 // Online mini games: host is Khalil, the guest is Nasser; Lightning adds 3 CPU masjid members.
 const MINI_ONLINE = { lightning: ['khalil', 'nasser', 'saleem', 'mahmoud', 'hamid'], horse: ['khalil', 'nasser'] };
@@ -18999,6 +19028,7 @@ function ankleFall(o, p) {
       else Object.assign(ball, { vx: h.dir * rand(210, 420), vz: rand(-280, 280), vy: rand(320, 480) });
       ball.grabLock = 0.35;
     } else if (a.didSlam && a.type === 'tomahawk' && a.big) FX.pop(h.x, RIM_Y + 70, h.z, 'TOMAHAWK!', '#ffd76a');
+    else if (a.didSlam && (a.type === 'reverse' || a.type === 'betweenlegs')) FX.pop(h.x, RIM_Y + 70, h.z, a.type === 'reverse' ? 'REVERSE!' : 'THROUGH THE LEGS!', '#ffd76a');   // (v9.21.0)
     return r;
   };
   const _bb = blockBall;
@@ -20202,16 +20232,6 @@ function tomahawkPose(style, u) {                       // a full pose (all join
 // ---- the styles stay cosmetic: where the ball is during a tomahawk counts for blocks and swipes, so the sim
 // keeps it in the hand of the Classic pose (a shadow rig, run alongside) and only the drawing (and replays)
 // put it in the hand you see. Seeded games come out the same whatever the style.
-function tkHands(p, J) {                                // the forward kinematics from animate(), for a given set of joints
-  const legY = (h, k) => 22 * Math.cos(h) + 22 * Math.cos(h - k);
-  const hipH = Math.max(legY(J.nh.a, J.nk.a), legY(J.fh.a, J.fk.a), 20);
-  const lean = J.lean.a, shX = Math.sin(lean) * 30, shY = hipH + Math.cos(lean) * 30, fs = p.face * (p.spin ? Math.cos(p.spin) : 1), out = {};
-  for (const side of ['n', 'f']) {
-    const s = J[side + 's'].a, e = J[side + 'e'].a, ex = shX + Math.sin(s) * 16, ey = shY - Math.cos(s) * 16;
-    out[side] = { x: p.x + (ex + Math.sin(s + e) * 15) * fs, y: p.y + ey - Math.cos(s + e) * 15, z: p.z + (side === 'n' ? 6 : -6) };
-  }
-  return out;
-}
 {
   const _an = animate;
   animate = function (p, dt) {
@@ -20224,13 +20244,16 @@ function tkHands(p, J) {                                // the forward kinematic
     const s0 = SETTINGS.tomahawk; let T; SETTINGS.tomahawk = 'classic';
     try { T = poseTargets(p, Math.hypot(p.vx, p.vz)); } finally { SETTINGS.tomahawk = s0; }
     for (const k of JOINTS) { const j = p._cj[k]; j.v += ((T[k] - j.a) * T.K - j.v * T.D) * dt; j.a += j.v * dt; }
+    if (T.direct != null) { p._cj.ns.a = T.direct; p._cj.ns.v = 0; } else if (p._cj.ns.a > 5) p._cj.ns.a -= Math.PI * 2;   // (as animate() does)
     if (ball.owner !== p) return r;
-    const H = tkHands(p, p._cj); let bx, by, bz;                    // where attachBall() would hold it in the Classic pose
-    if (p.act.s > 0.12) { bx = H.n.x; by = H.n.y + 4; bz = H.n.z; }
-    else { bx = (H.n.x + H.f.x) / 2 + p.face * 3; by = (H.n.y + H.f.y) / 2 + 2; bz = (H.n.z + H.f.z) / 2 + 3; }
-    by = Math.max(BALL_R, by);
-    ball.vd = [ball.x - bx, ball.y - by, ball.z - bz]; ball.vdP = p;
-    ball.x = bx; ball.y = by; ball.z = bz;
+    // where Classic holds it: v9.21.0 runs the game's own placeHands() and attachBall() on the Classic rig. (The copy of
+    // the old copy of the forward kinematics missed 9.19.1's drawn facing, build and lean, so the ball sat up to a few
+    // units off Classic's, and a block on the dunk, which measures from the ball, could go differently: the seeded game
+    // depended on the style, a setting each player picks, and online that's a desync.)
+    const vx = ball.x, vy = ball.y, vz = ball.z, J0 = p.j, hn = Object.assign({}, p.hands.n), hf = Object.assign({}, p.hands.f), hip = p.hipH, rot = ball.rot, beh = ball.behind, hfc = p._handsFace, hsp = p._handsSpin;
+    try { p.j = p._cj; placeHands(p); attachBall(p, dt); }
+    finally { p.j = J0; Object.assign(p.hands.n, hn); Object.assign(p.hands.f, hf); p.hipH = hip; ball.rot = rot; ball.behind = beh; p._handsFace = hfc; p._handsSpin = hsp; }
+    ball.vd = [vx - ball.x, vy - ball.y, vz - ball.z]; ball.vdP = p;
     return r;
   };
   const _sp = snapPrev;
@@ -24733,15 +24756,16 @@ function sigWorthIt(p) {
   };
 }
 // dunks: the type by his ratings; a poor dunker lays it in some of the time
-const DUNK_TYPES = new Set(['twohand', 'windmill', '360', 'tomahawk']);
-function cpuSigDunk(p) { return (p.st.dnk || 5) >= 8 ? ['windmill', '360', 'tomahawk'][hash32('dunk|' + ((p.def && p.def.name) || p.slot)) % 3] : null; }
+const DUNK_TYPES = new Set(['twohand', 'windmill', '360', 'tomahawk', 'reverse', 'betweenlegs']);   // (v9.21.0: + reverse, between the legs)
+function cpuSigDunk(p) { return (p.st.dnk || 5) >= 8 ? ['windmill', '360', 'tomahawk', 'reverse', 'betweenlegs'][hash32('dunk|' + ((p.def && p.def.name) || p.slot)) % 5] : null; }
 // (picked by a hash of the player, his attempt count and the match frame, not Math.random: the same in a replayed or
 // rolled-back frame, and seeded games draw the same random numbers as before)
 function cpuDunkPick(p, allowed, fast) {
   const dn = p.st.dnk == null ? 5 : p.st.dnk, sp = p.st.spd == null ? 5 : p.st.spd, arch = cpuArch(p), sig = cpuSigDunk(p);
   const hi = clamp((dn - 6) / 3, 0, 1) * clamp((sp - 4) / 4, 0.4, 1);         // 0 (plain) .. 1 (the big dunks)
-  const w = { twohand: 2.2 - 1.9 * hi, tomahawk: 0.8 + 0.8 * hi + (arch === 'rimrunner' ? 0.5 : 0) + (fast ? 0.6 : 0), windmill: 0.3 + 1.5 * hi, '360': 0.05 + 1.6 * hi };
-  if (dn <= 5) { w.windmill *= 0.3; w['360'] = 0; }
+  const w = { twohand: 2.2 - 1.9 * hi, tomahawk: 0.8 + 0.8 * hi + (arch === 'rimrunner' ? 0.5 : 0) + (fast ? 0.6 : 0), windmill: 0.3 + 1.5 * hi, '360': 0.05 + 1.6 * hi,
+    reverse: 0.15 + 1.0 * hi, betweenlegs: 1.2 * hi };                    // (v9.21.0: the reverse a little more often than the 360; between the legs only from good dunkers)
+  if (dn <= 5) { w.windmill *= 0.3; w['360'] = 0; w.reverse *= 0.3; w.betweenlegs = 0; }
   if (sig && hi > 0.3) w[sig] *= 2;
   const L = allowed.filter(t => w[t] > 0); if (!L.length) return null;
   let tot = 0; for (const t of L) tot += w[t];
@@ -24755,7 +24779,7 @@ function cpuDunkPick(p, allowed, fast) {
     const r = _sd.apply(this, arguments), a = p.act;
     if (!cpuStyleOn(p) || !p.st || M.practice || !a || p.state !== 'dunk' || a.alley || (opts && opts.alley) || !DUNK_TYPES.has(a.type)) return r;
     const d = dxz(p, a.hoop), fast = Math.hypot(p.vx || 0, p.vz || 0) > 180 || (M.trans && M.trans.team === p.team);
-    const allowed = d > 180 ? ['360', 'windmill', 'tomahawk'] : d > 100 ? ['tomahawk', 'windmill', 'twohand'] : ['twohand', 'tomahawk'];   // what fits the distance (as before)
+    const allowed = dunkTypesFor(d);   // what fits the distance (the game's own list)
     const t = cpuDunkPick(p, allowed, fast);
     if (t && t !== a.type) { a.type = t; if (t === 'twohand' && d <= 170) a.big = false; }   // the look only: the timing (D, peak) stays the random pick's, so what goes in is unchanged
     return r;
@@ -25064,7 +25088,7 @@ for (let i = REWARDS.length - 1; i >= 0; i--) { const r = REWARDS[i]; if (r.kind
 //     render delay and prediction corrections in a small box. The lobby rates each player's connection (Good / OK /
 //     Poor) from a 5 s probe, and "Copy network report" copies a plain-text report. Nothing is sent anywhere.
 const ONLINE_ICE_URL = 'https://islamdunk-ice.islamdunk.workers.dev/ice';   // the Worker in worker/ice (TURN credentials)
-const NET_PROTO = 7;           // bump when the wire format or the match's rules change in a way older clients can't play (3: v9.11.1 trickle ICE, snapshot numbers; 4: v9.17.10 no shove; 5: v9.19.0 stat curves, one-step power-ups; 6: v9.19.1 hands placed as drawn, the held ball with them; 7: v9.20.0 the lobby gym, team select with picks, the post-game menu)
+const NET_PROTO = 8;           // bump when the wire format or the match's rules change in a way older clients can't play (3: v9.11.1 trickle ICE, snapshot numbers; 4: v9.17.10 no shove; 5: v9.19.0 stat curves, one-step power-ups; 6: v9.19.1 hands placed as drawn, the held ball with them; 7: v9.20.0 the lobby gym, team select with picks, the post-game menu; 8: v9.21.0 two new dunk types in the guest's intents, no wall at half court, the CPU's new defense)
 const SNAP_V = 2;              // newest snapshot format this client reads
 
 // ---------------------------------------------------------------- ICE servers (TURN) from the Worker
@@ -25531,10 +25555,10 @@ function gpShot(me, kind, lk) {
 }
 function gpDunk(me) {
   const h = attackHoop(me.team), d = dxz(me, h);
-  const types = d > 180 ? ['360', 'windmill', 'tomahawk'] : d > 100 ? ['tomahawk', 'windmill', 'twohand'] : ['twohand', 'tomahawk'];
+  const types = dunkTypesFor(d);   // (v9.21.0: the game's own list, so the guest picks from the same types)
   const type = pick(types), baseD = clamp(0.6 + d / 450, 0.62, 1.15);
-  const D = baseD * (type === 'windmill' ? 1.08 : type === '360' ? 1.12 : type === 'twohand' ? 0.94 : 1);
-  const a = { type, D, s: 0, sx: me.x, sz: me.z, tx: h.x + h.dir * 20, tz: h.z + (me.z - h.z) * 0.12, peak: 64 + (D - 0.7) * 30 + (type === '360' ? 8 : 0), hoop: h, tried: new Set() };
+  const D = baseD * dunkLenK(type);
+  const a = { type, D, s: 0, sx: me.x, sz: me.z, tx: h.x + h.dir * 20, tz: h.z + (me.z - h.z) * 0.12, peak: 64 + (D - 0.7) * 30 + dunkPeakAdd(type), hoop: h, tried: new Set() };
   gpIntent('dunk', type, Math.round(D * 1000) / 1000);
   me.face = sgn(h.x - me.x) || me.face; SFX.squeak();
   GP.act = { k: 'dunk', a, t: 0, ok: false }; GP.hold = null; GP.off = null;
@@ -25628,8 +25652,8 @@ function gpActFrame(me, rdt) {
     } else {
       const a = A.a; a.s += rdt / a.D; const q = dunkPath(a, a.s);
       me.x = q.x; me.z = q.z; me.y = q.y; me.state = 'dunk'; me.act = a; me.st_t = A.t; me.vx = me.vz = 0;
-      const su = clamp((a.s - 0.14) / 0.52, 0, 1); me.spin = a.type === '360' ? su * Math.PI * 2 : a.type === 'windmill' ? Math.sin(su * Math.PI) * 0.2 : 0;
-      if (a.s >= 1) { done = true; me.spin = 0; }
+      me.spin = dunkSpin(a);
+      if (a.s >= 1) { done = true; if (a.type === 'reverse') me.face = -me.face; me.spin = 0; }
     }
     if (!A.ok && A.t > gpWait()) { GP.act = null; GP.off = { x: me.x - hx, z: me.z - hz, y: me.y - hy }; me.x = hx; me.z = hz; me.y = hy; return; }   // the host never played it
     if (done) { me.layAuto = false; GP.act = null; GP.hold = { k: A.k, t: 0, x: me.x, z: me.z, y: me.y, seen: A.ok }; }
@@ -25739,8 +25763,8 @@ function hostApplyRel(p, R) {                    // the guest's release: judged 
   startDunk = function (p, opts) {
     const I = opts && opts.alley ? null : gpTake(p, 'dunk');
     const r = _sd.apply(this, arguments);
-    if (I && p.act && p.state === 'dunk' && ['twohand', 'tomahawk', 'windmill', '360'].includes(I.a) && I.b > 0.3) {
-      p.act.type = I.a; p.act.D = I.b; p.act.peak = 64 + (I.b - 0.7) * 30 + (I.a === '360' ? 8 : 0); Net.gIntent = null;
+    if (I && p.act && p.state === 'dunk' && ['twohand', 'tomahawk', 'windmill', '360', 'reverse', 'betweenlegs'].includes(I.a) && I.b > 0.3) {
+      p.act.type = I.a; p.act.D = I.b; p.act.peak = 64 + (I.b - 0.7) * 30 + dunkPeakAdd(I.a); Net.gIntent = null;
     }
     return r;
   };
@@ -28598,15 +28622,16 @@ const HOLD_TAP_TEXT = {
 //             No jumper from range goes in more than 75% of the time, whatever is on (glow, on fire, a signature
 //             move, trailing). The timing window still grows with the rating, more gently (1: 0.88, 5: 1, 10: 1.15).
 //   Dunking   the range a dunk can start from: a 5 is as before; each point is 6 units, from -24 (a 1) to +30 at
-//             most (a 10). Signature dunks need the rating: the windmill needs Dunking 6, the 360 needs 7 (below
-//             that the same dunk is a tomahawk or a two-hander; the timing and the result don't change).
+//             most (a 10). Signature dunks need the rating: the windmill and (v9.21.0) the reverse need Dunking 6, the
+//             360 needs 7, between the legs (v9.21.0) 8 (below that the same dunk is a tomahawk or a two-hander; the
+//             timing and the result don't change).
 //   Moves     the crossover needs Ball handling 3 and the behind-the-back 5, where Ball handling is the average of
 //             Speed and Passing (a new career player has 4). Below it the move isn't offered: your input makes a
 //             hesitation instead (a behind-the-back a crossover, if you have that), and the CPU doesn't use it.
 //             Signature moves keep the rating they need now. The move ids are unchanged.
 // Every rating is still a number from 1 to 10 (fractions too: the CPU's teams are around 4.6 to 7.5).
 const STAT_CURVE = { shtLo: 0.1375, shtHi: 0.07, spdLo: 0.0625, spdHi: 0.04, green: 0.555, cap: 0.75, far: 200, near: 120,
-  boostCap: 1.10, dnkPt: 6, dnkLo: -24, dnkHi: 30, windmill: 6, 'dunk360': 7, cross: 3, btb: 5 };
+  boostCap: 1.10, dnkPt: 6, dnkLo: -24, dnkHi: 30, windmill: 6, 'dunk360': 7, reverse: 6, betweenlegs: 8, cross: 3, btb: 5 };   // (v9.21.0: the reverse needs Dunking 6, between the legs 8)
 function statF(v) { v = v == null ? 5 : v; return v <= 5 ? 1 - (5 - v) * STAT_CURVE.shtLo : 1 + (v - 5) * STAT_CURVE.shtHi; }
 function handleOf(p) { const s = (p && p.st) || {}; return ((s.spd == null ? 5 : s.spd) + (s.pas == null ? 5 : s.pas)) / 2; }
 function moveAllowed(p, kind) {
@@ -28647,7 +28672,7 @@ dnkRange = v => 15 + clamp(((v == null ? 5 : v) - 5) * STAT_CURVE.dnkPt, STAT_CU
     const r = _sd.apply(this, arguments), a = p.act;
     if (!a || p.state !== 'dunk' || a.alley || (opts && opts.alley)) return r;
     const dn = (p.st && p.st.dnk != null) ? p.st.dnk : 5;
-    if ((a.type === '360' && dn < STAT_CURVE.dunk360) || (a.type === 'windmill' && dn < STAT_CURVE.windmill)) a.type = dn >= 4 ? 'tomahawk' : 'twohand';
+    if ((a.type === '360' && dn < STAT_CURVE.dunk360) || (a.type === 'windmill' && dn < STAT_CURVE.windmill) || (a.type === 'reverse' && dn < STAT_CURVE.reverse) || (a.type === 'betweenlegs' && dn < STAT_CURVE.betweenlegs)) a.type = dn >= 4 ? 'tomahawk' : 'twohand';
     return r;
   };
 }
@@ -28813,7 +28838,7 @@ function headshotWarm(list) { if ((Headshots.warmN = (Headshots.warmN | 0) + 1) 
 // one masjid (together: Same team vs CPU, Barakah Run duos: the host's masjid, each picks the one he controls). The
 // team select reads it; nothing per screen.
 // New presence: host lobby { ph, hp (host picks), ht (host team), vote }, lm (the start's teams and mini picks);
-// guest tp { m, d, p } (masjid, its team, picks), lph (where the guest is), vote, go; both sa, bye. NET_PROTO 7.
+// guest tp { m, d, p } (masjid, its team, picks), lph (where the guest is), vote, go; both sa, bye. NET_PROTO 8 (v9.21.0).
 LOBBY_GAMES.forEach(g => Object.assign(g, ({ co: { picks: 1, together: true }, vs: { picks: 2 }, one: { picks: 1 }, lightning: { picks: 1 }, horse: { picks: 1 }, kotc: { picks: 1 }, brun: { picks: 1, together: true } })[g.id] || { picks: 1 }));
 function lobbyGame(id) { return LOBBY_GAMES.find(g => g.id === id) || LOBBY_GAMES[0]; }
 P2P_FAST.add('sa'); if (typeof LOOP_FAST !== 'undefined') LOOP_FAST.add('sa');
@@ -29381,6 +29406,176 @@ function lobbyPreview(ph, game) {
 {
   const _gt = goTitle;
   goTitle = function () { if (Lobby.previewRoom) { Net.room = Lobby.previewRoom === 'none' ? null : Lobby.previewRoom; Lobby.previewRoom = null; Net.role = null; Net.guestPeer = null; } return _gt.apply(this, arguments); };
+}
+// ================================================= v9.21.0: TWO NEW DUNKS
+// The reverse ('reverse': he turns his back to the rim on the way up and finishes backhand over his head) and between
+// the legs ('betweenlegs': the ball goes under his near thigh from hand to hand at the top, then the far arm slams it).
+// The types, their length and height are in players.js (dunkTypesFor, DUNK_LEN, DUNK_PEAK); the poses and the ball
+// in animation.js; the body's turn in dunkSpin; the rating gate in v919-stat-curves.js (the reverse needs Dunking 6,
+// between the legs 8: below that the same dunk is a tomahawk or a two-hander, its timing unchanged); the CPU's choice
+// in v916-cpu-handle.js; the names in dunkName ('REVERSE JAM', 'THROUGH-THE-LEGS') and the pop over the rim.
+// The sound: the slam as every dunk, and the existing swipe (a whoosh) as the ball goes under the legs / as he turns.
+{
+  const _du = dunkUpdate;
+  dunkUpdate = function (p, dt) {
+    const a = p.act, s0 = a ? a.s : 0;
+    const r = _du.apply(this, arguments);
+    if (a && (a.type === 'betweenlegs' || a.type === 'reverse')) {
+      const at = a.type === 'betweenlegs' ? 0.38 : 0.26;
+      if (s0 < at && a.s >= at && ball.owner === p && onScreen(p.x)) SFX.swipe && SFX.swipe();
+    }
+    return r;
+  };
+}
+// ================================================= v9.21.0: CPU DEFENSE THAT READS THE GAME, NO WALL AT HALF COURT
+// 1. The half-court wall is gone. v8-resets.js kept the scoring team's defense behind half court for up to 8 s after a
+//    basket (no steals or pass pick-offs there, and a human defender was stopped at the line). Now nobody is held:
+//    bcStart starts nothing. During the inbound itself (the pass in from under the basket) a human defender is placed
+//    by the inbound for at most INB_HOLD seconds, then he's free to go and pressure the ball anywhere.
+// 2. The CPU's default shell. Until the ball handler is in his frontcourt: one defender picks him up just inside half
+//    court (in front of him, between him and the rim), the other stays back near the rim, across from his man. In the
+//    frontcourt: man to man with a sag. The on-ball defender gives the handler a cushion the farther he is from the
+//    rim (he can't simply blow by), and the off-ball defender sits halfway between his man and the rim (never two on
+//    the three-point line).
+// 3. Threes. THREE_READ looks at the offense's last 8 shots: when a quarter of them or more are threes the defense
+//    starts to close out, fully from half of them. The defender of the man who took the most of those threes closes
+//    out higher (on the ball: up on him; off the ball: denying him); the other one stays back. The read changes
+//    slowly (time constant tau), so it blends; nothing flips from one frame to the next.
+// 4. The press. In a close game late (PRESS: within 6 points, the last third of the game; first-to-21: the leader past
+//    two thirds of the target) the CPU picks the ball handler up in his backcourt, and its second defender plays the
+//    passing lane at half court. It eases in and out over ~1.5 s. Otherwise it drops back as above.
+// Everything here lives in M.d921 (the rollback saves and replays it) and runs in the simulation, so online stays in
+// step. Half-court games (M.halfCourt) keep their check-ups; there's no backcourt there, so only the sag applies.
+const INB_HOLD = 1.0;
+const THREE_READ = { shots: 8, lo: 0.25, hi: 0.5, tau: 4 };
+const PRESS = { margin: 6, lastFrac: 1 / 3, tau: 1.5 };
+const SHELL = { pickup: 60, back: 0.32, backMax: 230, sagOff: 0.5, sagOffHot: 0.2, cushionAt: 230, cushionK: 0.3, cushionMax: 90, onTight: 34, stopperK: 6 };
+// ---- 1. the wall
+bcStart = function () {};
+{
+  const _ic = inbCmd;
+  inbCmd = function (p) {
+    if (M.inb && !M.check && p.human >= 0 && p.team !== M.inb.team && M.inb.t > INB_HOLD) return false;   // free after the beat
+    return _ic.apply(this, arguments);
+  };
+}
+// ---- state: the shots log, the read and the press, per defending team
+function d921() { return M.d921 || (M.d921 = { log: [[], []], k3: [0, 0], press: [0, 0], shooter: [-1, -1], inShot: false }); }
+// the offense's three-point read: 0 .. 1 (the defending team's view of team o)
+function threeHeat(o) { return M.d921 ? M.d921.k3[o] : 0; }
+// the press weight of defending team t, 0 .. 1
+function cpuPressK(t) { return M.d921 ? M.d921.press[t] : 0; }
+function gameProgress() {
+  const F = M.fmt || {};
+  if (F.first21) return Math.max(M.teams[0].score, M.teams[1].score) / (F.target || 21);
+  const N = F.periods || 2, L = F.len || 120;
+  if (M.quarter > N) return 1;
+  return clamp(((M.quarter - 1) * L + (L - (isFinite(M.clock) ? M.clock : L))) / (N * L), 0, 1);
+}
+function pressWanted() {
+  if (M.halfCourt || M.practice || M.mini || !M.teams) return false;
+  return Math.abs(M.teams[0].score - M.teams[1].score) <= PRESS.margin && gameProgress() >= 1 - PRESS.lastFrac;
+}
+function d921Step(dt) {
+  if (M.mini || M.practice || !M.teams) return;
+  const S = d921();
+  // a new shot: log it for its team (three or not, and who)
+  // (a flag, not a reference to the shot: the rollback copies objects, so a reference wouldn't survive a replay)
+  const inShot = ball.state === 'shot' && !!ball.shot;
+  if (inShot && !S.inShot) {
+    const sh = ball.shot, t = sh.team;
+    if (t === 0 || t === 1) { const L = S.log[t]; L.push([sh.pts === 3 ? 1 : 0, sh.shooter ? M.players.indexOf(sh.shooter) : -1]); if (L.length > THREE_READ.shots) L.shift(); }
+  }
+  S.inShot = inShot;
+  for (let t = 0; t < 2; t++) {
+    const L = S.log[t], n = L.length, threes = L.filter(x => x[0]).length;
+    const raw = n >= 4 ? clamp((threes / THREE_READ.shots - THREE_READ.lo) / (THREE_READ.hi - THREE_READ.lo), 0, 1) : 0;
+    S.k3[t] += (raw * raw * (3 - 2 * raw) - S.k3[t]) * Math.min(1, dt / THREE_READ.tau);
+    const by = {}; for (const [th, i] of L) if (th && i >= 0) by[i] = (by[i] || 0) + 1;
+    let best = -1, bn = 0; for (const i in by) if (by[i] > bn) { bn = by[i]; best = +i; }
+    S.shooter[t] = best;
+    // the defending team t presses the other team when the game is close late
+    const want = pressWanted() ? 1 : 0;
+    S.press[t] += (want - S.press[t]) * Math.min(1, dt / PRESS.tau);
+  }
+}
+{
+  const _um = updateMatch;
+  updateMatch = function (dt) { const r = _um.apply(this, arguments); if (!M.mini) d921Step(dt); return r; };
+  // a new match starts with a clean read
+  const _nm = newMatch;
+  newMatch = function () { const r = _nm.apply(this, arguments); M.d921 = null; return r; };
+}
+// ---- 2-4. where a CPU defender stands
+// the share of the new half-court shell a defender plays, by his difficulty's anticipation dial (Very easy and Easy 0:
+// SHELL_W.lo, Medium 0.5, Hard 0.9 and up: 1). Easier CPUs also press less hard (PRESS_W) and pick the handler up deeper in their own half.
+const SHELL_W = { lo: 0, k: 0.6 };
+// how hard each difficulty presses (Very easy and Easy don't, Medium 0.55, Hard 1) and how high it picks up
+const PRESS_W = { lo: 0, k: 1.1 }, PICKUP_FAR = 200;
+function pressWeight(p) { const c = p.ai && p.ai.cfg ? p.ai.cfg() : null; return clamp(PRESS_W.lo + ((c && c.antic) || 0) * PRESS_W.k, 0, 1); }
+function shellWeight(p) { const c = p.ai && p.ai.cfg ? p.ai.cfg() : null; return clamp(SHELL_W.lo + ((c && c.antic) || 0) * SHELL_W.k, SHELL_W.lo, 1); }
+// returns the target spot for a CPU defender with a guardBall / deny plan, or null to keep the old one
+function d921Spot(p, pl) {
+  const bo = ball.owner;
+  if (!bo || bo.team === p.team || M.mini || M.practice || p.state !== 'free') return null;
+  const h = defendHoop(p.team), m = pl.man || bo; if (!m) return null;
+  if (bo.state === 'dunk' || m.state === 'dunk' || bo.state === 'windup' || bo.state === 'shoot') return null;   // contests and rim protection: the old logic
+  if (typeof hotLive === 'function' && hotLive() && M.hot && Math.hypot(m.x - M.hot.x, m.z - M.hot.z) < HOT_R * 1.2) return null;   // the hot spot's own close-out
+  const o = bo.team, S = d921(), K3 = S.k3[o], hot = S.shooter[o] >= 0 ? M.players[S.shooter[o]] : null, Pw = S.press[p.team] * pressWeight(p);
+  const toward = (q, k) => { const ux = h.x - q.x, uz = h.z - q.z; return { x: q.x + ux * k, z: q.z + uz * k }; };   // k of the way from q to the rim
+  const atGap = (q, gap) => { const ux = h.x - q.x, uz = h.z - q.z, L = Math.hypot(ux, uz) || 1; return { x: q.x + ux / L * Math.min(gap, L - 10), z: q.z + uz / L * Math.min(gap, L - 10) }; };
+  const back = !M.halfCourt && typeof inBackcourt === 'function' && inBackcourt(bo.x, o);   // the handler is still in his backcourt
+  const mid = COURT.L / 2, ourSide = sgn(h.x - mid) || 1;
+  const onBall = pl.type === 'guardBall';
+  // where he sees them: the CPU's perception lag (ai.js perceive), as the old guarding used. Not the true spot, or an
+  // Easy defender would react instantly to every move
+  const cfg = p.ai && p.ai.cfg ? p.ai.cfg() : null, B = cfg ? perceive(bo, cfg) : bo, Mn = m === bo ? B : cfg ? perceive(m, cfg) : m;
+  let spot;
+  if (back) {
+    if (onBall) {
+      // pick him up just inside half court, in front of him; pressing: on him wherever he is
+      const pu = lerp(PICKUP_FAR, SHELL.pickup, shellWeight(p)), pick = atGap(B, 40); pick.x = ourSide > 0 ? Math.max(pick.x, mid + pu) : Math.min(pick.x, mid - pu);
+      pick.z = lerp(pick.z, h.z, 0.15);
+      const tight = atGap(B, SHELL.onTight);
+      spot = { x: lerp(pick.x, tight.x, Pw), z: lerp(pick.z, tight.z, Pw) };
+    } else {
+      // the back man: near the rim, across from his man; pressing: up to the passing lane at half court
+      const bk = toward(Mn, 1 - SHELL.back), d = Math.hypot(bk.x - h.x, bk.z - h.z);
+      if (d > SHELL.backMax) { bk.x = h.x + (bk.x - h.x) / d * SHELL.backMax; bk.z = h.z + (bk.z - h.z) / d * SHELL.backMax; }
+      const lane = { x: lerp(B.x, Mn.x, 0.55), z: lerp(B.z, Mn.z, 0.55) }; lane.x = ourSide > 0 ? Math.max(lane.x, mid - 40) : Math.min(lane.x, mid + 40);
+      spot = { x: lerp(bk.x, lane.x, Pw * 0.85), z: lerp(bk.z, lane.z, Pw * 0.85) };
+    }
+  } else {
+    const closeOut = hot === m ? K3 : K3 * 0.25;                    // the three-point shooter's defender closes out; the other stays back
+    const W = shellWeight(p);                                        // how much of the new shell this difficulty plays (Easy less)
+    if (onBall) {
+      const hd = Math.hypot(h.x - B.x, h.z - B.z);
+      const cushion = clamp(SHELL.onTight + (hd - SHELL.cushionAt) * SHELL.cushionK, SHELL.onTight, SHELL.cushionMax);
+      const tightGap = SHELL.onTight + Math.max(0, hd - 420) * 0.3 - (typeof cpuPress === 'function' ? cpuPress(p) : 0);   // (the old gap)
+      const cush = Math.max(tightGap, cushion - (typeof cpuPress === 'function' ? cpuPress(p) : 0) * SHELL.stopperK);   // a stopper (lockdown style, high Defense) gives less cushion
+      spot = atGap(B, lerp(tightGap, lerp(cush, tightGap, closeOut), W));
+    } else {
+      const hd = Math.hypot(h.x - Mn.x, h.z - Mn.z), old = clamp(hd * 0.3, 25, 130) / (hd || 1);   // (the old sag)
+      const f = lerp(old, lerp(SHELL.sagOff, SHELL.sagOffHot, closeOut), W);
+      spot = toward(Mn, f);
+      const ref = B; spot.x += (ref.x - spot.x) * 0.1; spot.z += (ref.z - spot.z) * 0.1;   // shade toward the ball
+    }
+  }
+  return spot;
+}
+{
+  const BP = Brain.prototype, _ex = BP.exec;
+  BP.exec = function (dt) {
+    const r = _ex.apply(this, arguments), p = this.p, pl = this.plan;
+    if (p.human >= 0 || !pl || (pl.type !== 'guardBall' && pl.type !== 'deny')) return r;
+    const s = d921Spot(p, pl); if (!s) return r;
+    const c = p.cmd, steal = c.a, jump = c.b;
+    c.mx = c.mz = 0;
+    const far = Math.hypot(s.x - p.x, s.z - p.z);
+    this.moveTo(clamp(s.x, 20, COURT.L - 20), clamp(s.z, 30, COURT.D - 30), far > 160);
+    const ref = ball.owner || ball; c.face = sgn(ref.x - p.x) || p.face; c.a = steal; c.b = jump;
+    return r;
+  };
 }
 // v9.17.9: one way back on every screen, one name for leaving, and a gamepad hint on tap-only screens.
 //   U2  The ‹ Back pill is the way back (with Esc on keys and B on a pad); the duplicate Back rows and buttons are gone

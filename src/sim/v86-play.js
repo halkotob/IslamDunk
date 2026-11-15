@@ -136,6 +136,7 @@ function ankleFall(o, p) {
       else Object.assign(ball, { vx: h.dir * rand(210, 420), vz: rand(-280, 280), vy: rand(320, 480) });
       ball.grabLock = 0.35;
     } else if (a.didSlam && a.type === 'tomahawk' && a.big) FX.pop(h.x, RIM_Y + 70, h.z, 'TOMAHAWK!', '#ffd76a');
+    else if (a.didSlam && (a.type === 'reverse' || a.type === 'betweenlegs')) FX.pop(h.x, RIM_Y + 70, h.z, a.type === 'reverse' ? 'REVERSE!' : 'THROUGH THE LEGS!', '#ffd76a');   // (v9.21.0)
     return r;
   };
   const _bb = blockBall;

@@ -67,6 +67,15 @@ function poseTargets(p, sp) {
       if (a.type === 'tomahawk') Object.assign(t, { ns: 3.65, ne: 1.5, fs: 2.4, fe: 0.4 });
       else if (a.type === 'windmill') Object.assign(t, { ne: 0.05, fs: 2.3, fe: 0.4, direct: 0.4 + ((u - 0.12) / 0.66) * (Math.PI * 2 + 1.9) });
       else if (a.type === '360') Object.assign(t, { ns: 2.7, fs: 2.7, ne: 1.4, fe: 1.4 });
+      // v9.21.0 the reverse: back to the rim, both arms reach up and back over his head, the ball in the near hand (backhand)
+      else if (a.type === 'reverse') Object.assign(t, u < 0.4 ? { ns: 2.5, fs: 2.3, ne: 1.3, fe: 1.4, lean: 0.05 } : { ns: 3.75, fs: 3.55, ne: 0.35, fe: 0.5, lean: -0.16, nh: 0.8, fh: -0.1 });
+      // v9.21.0 between the legs: the ball down to his waist, legs split and tucked at the top while it goes under the near
+      // thigh from the near hand to the far hand, then the far arm swings it up to the rim
+      else if (a.type === 'betweenlegs') {
+        if (u < 0.3) Object.assign(t, { ns: 1.35, fs: 1.25, ne: 1.25, fe: 1.3, nk: 1.3, fk: 1.0, nh: 0.9, fh: 0.2 });
+        else if (u < 0.56) Object.assign(t, { ns: 0.55, fs: 0.45, ne: 0.75, fe: 0.8, nk: 1.7, fk: 1.5, nh: 1.45, fh: -0.35, lean: 0.12 });
+        else Object.assign(t, { ns: 2.2, fs: 3.55, ne: 1.2, fe: 0.35, nk: 1.2, fk: 0.7, nh: 0.7, fh: 0.0 });
+      }
       else Object.assign(t, { ns: 3.3, fs: 3.3, ne: 1.1, fe: 1.1 });
     } else Object.assign(t, { ns: 2.2, fs: a.type === 'tomahawk' || a.type === 'windmill' ? 2.0 : 2.2, ne: 0.15, fe: 0.15, nk: 0.8, fk: 0.8, nh: 0.3, fh: 0.2 });
   }
@@ -165,8 +174,13 @@ function attachBall(p) {
       by = BALL_R + (top - BALL_R) * (fast ? stride * 0.72 : stride);
       bx = hd.x + p.face * 2.5; bz = hd.z + (p.dh === 'n' ? 2 : -2); behind = p.dh === 'f';
     }
-  } else if (p.state === 'dunk' && (p.act.type === 'tomahawk' || p.act.type === 'windmill') && p.act.s > 0.12) {
+  } else if (p.state === 'dunk' && (p.act.type === 'tomahawk' || p.act.type === 'windmill' || p.act.type === 'reverse') && p.act.s > 0.12) {
     const hd = p.hands.n; bx = hd.x; by = hd.y + 4; bz = hd.z;
+  } else if (p.state === 'dunk' && p.act.type === 'betweenlegs' && p.act.s > 0.3) {
+    // (v9.21.0) under the near thigh from the near hand to the far hand, then in the far hand up to the rim
+    const u = p.act.s, k = clamp((u - 0.33) / 0.19, 0, 1), e = k * k * (3 - 2 * k), n = p.hands.n, f = p.hands.f;
+    if (u < 0.56) { bx = lerp(n.x, f.x, e); by = lerp(n.y, f.y, e) - Math.sin(e * Math.PI) * 3; bz = lerp(n.z + 3, f.z - 3, e); behind = e > 0.5; }
+    else { bx = f.x; by = f.y + 4; bz = f.z; }
   } else {
     const m = handsMid(p); bx = m.x + p.face * 3; by = m.y + (p.state === 'shoot' ? 7 : 2); bz = m.z + 3;
   }
