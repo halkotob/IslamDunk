@@ -17,9 +17,9 @@ export function serveDir(dir) {
   });
 }
 // open the studio; returns { page, errors, close }
-export async function openStudio(browser, dir, { viewport = { width: 1440, height: 900 }, storage = null } = {}) {
+export async function openStudio(browser, dir, { viewport = { width: 1440, height: 900 }, storage = null, mobile = false } = {}) {
   const { srv, base } = await serveDir(path.resolve(dir));
-  const ctx = await browser.newContext({ viewport });
+  const ctx = await browser.newContext(mobile ? { viewport, isMobile: true, hasTouch: true } : { viewport });
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   if (storage) await ctx.addInitScript(s => { try { localStorage.setItem('islamdunk.studio', s); } catch (e) {} }, storage);
   const page = await ctx.newPage(), errors = [];

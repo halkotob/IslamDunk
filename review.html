@@ -13,6 +13,7 @@
   <button id="navbtn" class="iconbtn" aria-label="Categories" title="Categories">☰</button>
   <div class="brand"><b>Review Studio</b><span id="build"></span></div>
   <input id="q" type="search" placeholder="Search text, id or file" aria-label="Search" autocomplete="off">
+  <button id="morebtn" class="iconbtn" aria-label="Name, import and export" title="Name, import and export" aria-expanded="false">⋯</button>
   <div id="filters" role="group" aria-label="Filter">
     <button data-st="all" class="chip on">All</button>
     <button data-st="todo" class="chip">Unreviewed</button>
@@ -23,16 +24,22 @@
     <button data-tg="religious" class="chip tog" title="Islamic wording: for the content / religious reviewer">Religious review</button>
   </div>
   <div id="progress"><span id="prog-text"></span><div class="bar"><i id="prog-bar"></i></div></div>
+  <div id="more">
   <div id="who">
     <input id="rname" placeholder="Your name" aria-label="Reviewer name" autocomplete="name">
     <select id="rrole" aria-label="Role"></select>
     <label class="lr" title="New since last review means added after this version">Last review <select id="lastrev" aria-label="Last reviewed version"></select></label>
   </div>
   <div id="io">
-    <button id="imp">Import…</button><input id="impfile" type="file" accept=".csv,text/csv" hidden>
+    <button id="share" hidden>Share CSV</button>
     <button id="dl">Download CSV</button>
     <button id="cp">Copy as CSV</button>
+    <button id="mail" hidden>Email to me</button>
+    <button id="imp">Import…</button><input id="impfile" type="file" accept=".csv,text/csv" hidden>
     <button id="confl" hidden>Conflicts</button>
+  </div>
+  <div id="saved" aria-live="polite"><span id="savedtxt"></span> <button id="clear" class="danger">Clear…</button></div>
+  <button id="moreclose" class="iconbtn" aria-label="Close">Done</button>
   </div>
 </header>
 <main id="app">
@@ -41,6 +48,8 @@
   <section id="stage" aria-live="polite"><div id="stagebar"></div><div id="view"></div></section>
   <aside id="side"></aside>
 </main>
+<nav id="actbar" aria-label="Verdict" hidden></nav>
+<div id="notesheet" hidden role="dialog" aria-label="Comment"></div>
 <div id="loading">Loading the game…</div>
 <dialog id="dlg"><form method="dialog"><div id="dlgbody"></div><menu><button value="ok">Close</button></menu></form></dialog>
 <div id="gamehost" aria-hidden="true"></div>

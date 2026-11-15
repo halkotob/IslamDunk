@@ -10,6 +10,7 @@ import { buildItems, locateSprites, CATS, TRIGGERS, cmpVer } from './items.js';
 import { drawSprite, natural, thumb, face, bbox } from './views.js';
 import { VList } from './vlist.js';
 import { extraCategories } from './extra.js';
+import { setupPhone, drawActbar } from './phone.js';
 import { stageSound as sndStage, stageCrowd as crowdStage, stageMix as mixStage, soundTabBar, stopAll } from './sounds.js';
 
 const $ = s => document.querySelector(s);
@@ -29,30 +30,37 @@ const S = {
 };
 const store = createStore();
 window.__studio = { S, store };          // for the tests and for debugging
+// what phone.js needs (v9.21.1)
+const PH = { $, el, store, S, step: d => step(d), afterMark: it => afterMark(it), refreshAll: () => refreshAll(), dialog: (...k) => dialog(...k),
+  csvText: () => csvText(), fileName: () => fileName(), exportRows: () => exportRows(), toCsv: rows => toCsv(rows, COLUMNS), downloadCsv: () => downloadCsv() };
+window.__studio.phone = PH;
 
 async function boot() {
+  const T = window.__studio.t = { start: performance.now() }, mark = k => { T[k] = Math.round(performance.now() - T.start); };   // boot timings (ms), for the tests
+  // the data and the game frame load side by side (v9.21.1: one after the other was a second more on a phone)
+  const gameP = openGame($('#gamehost')).then(g => { mark('game'); return g; });
   const res = await fetch('review-data.json', { cache: 'no-store' });
-  S.data = await res.json();
+  S.data = await res.json(); mark('data');
   $('#build').textContent = 'game ' + S.data.version;
-  S.G = await openGame($('#gamehost'));
-  S.items = buildItems(S.G.rs, S.data);
+  S.G = await gameP;
+  S.items = buildItems(S.G.rs, S.data); mark('items');
   const reg = (S.data.registry && S.data.registry.ids) || {};
   for (const it of await extraCategories(S.G, S.data, { stageAnim, stageScreen, stageNA, stageSound, stageCrowd, stageMix, stageVoice, stageVoiceEmpty, stageFirstRun, stageSheet })) {
     Object.assign(it, { version: reg[it.id] || S.data.version, where: it.where || it.src || '', occ: [], religious: !!it.religious, flag: '' });
     S.items.push(it);
   }
-  locateSprites(S.items, S.data.defs || {});
+  mark('extra'); locateSprites(S.items, S.data.defs || {});
   const ids = new Set();
   for (const it of S.items) {
     if (ids.has(it.id)) console.warn('duplicate id', it.id); ids.add(it.id);
     S.byId.set(it.id, it);
     for (const t of textsOf(it)) { const k = norm(t); if (!k) continue; if (!S.byText.has(k)) S.byText.set(k, []); const a = S.byText.get(k); if (!a.includes(it.id)) a.push(it.id); }
   }
-  setupHeader(); setupList(); setupKeys();
+  setupHeader(); setupList(); setupKeys(); setupPhone(PH);
   const ui = store.state.ui || {};
   Object.assign(S.f, ui.f || {}); Object.assign(S.sp, ui.sp || {});
   applyFilters(ui.cur);
-  $('#loading').classList.add('gone');
+  $('#loading').classList.add('gone'); mark('ready');
   window.__studio.ready = true;
 }
 const textsOf = it => it.kind === 'trivia' ? [it.trivia.q, it.trivia.right, it.trivia.why, ...it.trivia.wrong] : it.parts ? it.parts.map(p => p[1]) : it.text ? [it.text] : [];
@@ -257,6 +265,7 @@ function lens(c, src, z) {
 // ------------------------------------------------------------------ the item panel: where, when, verdict, comment, suggestion
 function drawSide() {
   const it = S.view[S.cur], side = $('#side'); side.replaceChildren();
+  if (!it || it.placeholder) drawActbar(PH, null);
   if (!it) return;
   const m = myMark(it) || {}, others = Object.entries(store.marksFor(it.id)).filter(([r]) => r !== store.who());
   const occ = (it.occ || []).slice(0, 8);
@@ -292,6 +301,7 @@ function drawSide() {
     return el('label', { class: 'blk' }, label, t); };
   side.append(ta('Comment', 'comment', 'What should change, and why (N)'));
   if (['line', 'trivia', 'text'].includes(it.kind)) side.append(ta('Suggested replacement', 'suggested', 'Exact new wording (optional)'));
+  drawActbar(PH, it);
   if (others.length) side.append(el('div', { class: 'others' }, el('b', {}, 'Other reviewers'), ...others.map(([r, o]) => el('div', {}, `${r} (${o.role || '—'}): `, el('b', {}, VLABEL[o.verdict] || '—'), o.comment ? ' · ' + o.comment : '', o.suggested ? ' → “' + o.suggested + '”' : ''))));
   side.append(el('div', { class: 'keys' }, el('kbd', {}, 'K'), ' keep ', el('kbd', {}, 'F'), ' fix ', el('kbd', {}, 'D'), ' delete (then next) · ', el('kbd', {}, '←'), el('kbd', {}, '→'), ' move · ', el('kbd', {}, 'N'), ' comment · ', el('kbd', {}, 'Ctrl/⌘ Z'), ' undo · ', el('kbd', {}, 'Esc'), ' leave a box'));
 }
@@ -334,8 +344,9 @@ export function exportRows() {
   return rows;
 }
 const csvText = () => toCsv(exportRows(), COLUMNS);
+const fileName = () => 'islamdunk-studio-' + (store.who().replace(/[^\w-]+/g, '_')) + '-' + new Date().toISOString().slice(0, 10) + '.csv';
 function downloadCsv() {
-  const name = 'islamdunk-studio-' + (store.who().replace(/[^\w-]+/g, '_')) + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+  const name = fileName();
   const a = el('a', { href: URL.createObjectURL(new Blob([csvText()], { type: 'text/csv' })), download: name });
   document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }

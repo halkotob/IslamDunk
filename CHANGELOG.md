@@ -1,5 +1,47 @@
 # Changelog
 
+## 9.21.1: the Review Studio opens on a phone from a link
+**How to use it:** open **https://halkotob.github.io/IslamDunk/studio/** on your phone. Type your name under ⋯ (the
+same name you use on the computer), then review: the bar at the bottom has Keep / Fix / Delete (and Merge on
+screens), ✎ for a comment, and ‹ › to move. Everything saves on every tap, on this phone only. To get the verdicts
+out, open ⋯ and use **Share CSV** (the phone's share sheet: send it to yourself, Files, Drive, AirDrop), or
+**Email to me** where the phone can't share a file, or **Copy**. On the computer, Import that file: it merges, and
+where you marked the same item on both, the later verdict wins and the other is kept under Conflicts.
+- **Published with the game.** `npm run publish:web` now builds the Studio too and copies it to `studio/` on the
+  Pages site, so it always matches main. It's public but unlisted: both pages say `noindex`, and nothing in the
+  game links to it. (A robots.txt rule wouldn't help: on a project site like this one, search engines only read
+  the robots.txt at the root of halkotob.github.io.) `review-data.json` was checked: game text with file:line,
+  screen data, the ID registry and its notes. There are no keys, no private notes and no art that isn't already
+  in the game.
+- **Phone layout** (390×844 and 844×390): one header row with ☰ (categories) and ⋯ (name, role, import, export),
+  filter chips in one scrolling row, every button and field at least 44 px, and no sideways scroll. The verdict
+  bar sits at the bottom in thumb reach and moves up with the keyboard (and so does the comment box). Text boxes
+  use 16 px so iPhones don't zoom. Held sideways, the list sits beside the stage.
+- **Getting verdicts out:** Share CSV (with a download where there's no share sheet), Copy, Download, and Email to
+  me (only the rows with a verdict; it imports the same; past 60 kB it asks you to use Download instead). The
+  CSV columns and the verdict format didn't change: old exports still import.
+- **Don't lose work:** ⋯ shows “Saved on this phone only”, the time of the last save and the count of verdicts.
+  The Studio asks the browser to keep its storage (`navigator.storage.persist()`); if it says no, it tells you to
+  export often. **Clear…** says how many verdicts would go and offers Share CSV first.
+- **Sounds:** until you tap a ▶, the Sounds tab says sound is off (phones block it before a tap) and reminds you
+  to turn an iPhone's silent switch off.
+- **Measured** (a phone emulated at 9 Mbps, 170 ms and a 4× slower CPU): the Studio is ready to tap in **4.7 s**
+  (it was 5.5 s: the data and the game frame now load side by side). The files were served uncompressed there;
+  Pages compresses the 3.4 MB that load at the start (game.html 2.2 MB, review-data.json 1.1 MB, the script 157 kB)
+  to about 0.9 MB. The whole studio/ folder is 8.3 MB, 4.9 MB of it the first-run screenshots, which only load
+  when you open them. Each publish adds about 3.5 MB to the repository, as the game page does.
+- **Not checked yet:** a real phone, iOS Safari and Chrome Android. This was tested in emulation only. The
+  Animations tab works on a phone, but its controls fill the top of the stage, so you scroll to see the player
+  (and held sideways the stage is short).
+- **Tests:** `studio-phone` (new, fast tier). It loads the published `studio/` at both phone sizes with no page
+  errors, no sideways scroll, nothing under 44 px and the bar at the bottom. A Fix and a comment set with the bar
+  and the note box export, clear, and import back the same. A 9.2-era export (without `merge_into` and `pick`)
+  still imports.
+- **Also:** `dunk-new-online` (9.21.0) gives the forced dunks turns by the match's score, not by each dunker's own
+  attempts. CI's slow runner saw only between-the-legs dunks in 80 s.
+- Per your call, the full test suite wasn't run for this release. These ran and passed: `studio-phone`,
+  `studio-csv`, `studio-excluded`, `sound-list` and `dunk-new-online`.
+
 ## 9.21.0: two new dunks, a CPU defense that reads the game, and no wall at half court
 Good dunkers have two new finishes: the reverse and the between-the-legs. CPU defenders now pick you up at half court
 with one man back at the rim, sag off non-shooters and close out on a hot three-point shooter. In a close game late

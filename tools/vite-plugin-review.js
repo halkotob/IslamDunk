@@ -29,7 +29,8 @@ ${AUDIT_INIT}
 
 export function studioGameHtml(root) {
   const html = pageHtml(root);
-  return html.replace('<script>\n', () => '<script>\n' + STUDIO_SANDBOX + '</script>\n<script>\n');   // the sandbox runs first
+  return html.replace('<script>\n', () => '<script>\n' + STUDIO_SANDBOX + '</script>\n<script>\n')   // the sandbox runs first
+    .replace('<head>', '<head>\n<meta name="robots" content="noindex, nofollow">');   // v9.21.1: the studio is published, unlisted
 }
 // where things are defined: the first `id: 'x'` / `short: 'x'` / `key: 'x'` (then `x: {` / `x: [`) in the game source
 export function sourceDefs(root) {

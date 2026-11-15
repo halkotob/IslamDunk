@@ -104,6 +104,7 @@ import { CAL_HELPERS } from './calendar-setup.js';
 import { WORLD_HELPERS, WORLD_VIEWS, WORLD_TODS } from './world-setup.js';
 import { PHONES as WORLD_PHONES } from './phone-audit.mjs';
 import { STUDIO_TESTS } from './studio.mjs';
+import { STUDIO_PHONE_TESTS } from './studio-phone.mjs';
 import { hubTests } from './hub-layout.mjs';
 import { leagueTests } from './league.mjs';
 import { netTests } from './net.mjs';
@@ -2646,6 +2647,7 @@ Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fix
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
 Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)
 Object.assign(T, STUDIO_TESTS);   // the Review Studio (tests/studio.mjs)
+Object.assign(T, STUDIO_PHONE_TESTS);   // v9.21.1 the Studio on a phone (tests/studio-phone.mjs)
 
 // ------------------------------------------------------------------ runner
 // v9.17.2: two tiers and parallel workers.

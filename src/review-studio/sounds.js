@@ -13,6 +13,8 @@ export function audio(G) {
   G.rs.audioWith(actx);
   return actx;
 }
+// v9.21.1: true until a tap has started the sound (phones block audio before one)
+export const audioLocked = () => !actx || actx.state !== 'running';
 export function stopAll(T) { if (T.loop) { clearInterval(T.loop); T.loop = null; } for (const t of T.timers) clearTimeout(t); T.timers = []; }
 
 export function stageSound(G, bar, view, it, h) {
@@ -20,6 +22,7 @@ export function stageSound(G, bar, view, it, h) {
   stopAll(T);
   const m = () => store.mark(it.id) || {};
   const st = el('div', { class: 'note' }, 'Press a variant (or 1-4). P plays the preview style. The game’s own Web Audio code makes every sound: there is no file.');
+  if (audioLocked()) view.append(el('div', { class: 'note lock' }, 'Sound is off until you tap a ▶ button: phones block it before a tap. On an iPhone, also turn the silent switch off.'));
   let last = S.sp.prev || 'A';
   const play = k => { try { audio(G); G.rs.playVariant(id, k, DEMO_ARGS[id]); last = k; st.textContent = `Played ${k} (${(vs.find(v => v.key === k) || {}).label}) at ${new Date().toLocaleTimeString()}`; drawPick(); } catch (e) { st.textContent = 'Could not play: ' + (e.message || e); } };
   const later = (ms, f) => T.timers.push(setTimeout(f, ms));

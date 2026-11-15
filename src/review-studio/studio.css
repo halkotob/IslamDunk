@@ -179,3 +179,60 @@ pre.code { background: var(--bg); border: 1px solid var(--line); border-radius: 
 .frun .step { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
 .frun .n { font-size: 20px; color: var(--accent); text-align: center; } .frun .shots { display: flex; gap: 8px; flex-wrap: wrap; } .frun .shots img { max-width: 48%; min-width: 220px; border-radius: 4px; }
 .frun .say { font-size: 12px; color: var(--dim); white-space: pre-wrap; } .frun .int { color: var(--fix); }
+
+/* v9.21.1: the Studio on a phone (body.phone: max-width 900px or max-height 520px, set by phone.js) */
+#more { display: contents; }
+#moreclose, #morebtn { display: none; }
+#actbar, #notesheet { display: none; }
+#saved { font-size: 12px; color: var(--dim); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+button.danger { border-color: #6b2a2a; color: #ffb4a9; }
+.row2 { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; margin-top: 10px; }
+body.phone { --barh: calc(56px + env(safe-area-inset-bottom)); }
+body.phone #morebtn { display: block; }
+body.phone button, body.phone select, body.phone input, body.phone .chip { min-height: 44px; }
+body.phone button, body.phone .chip { min-width: 44px; }
+body.phone .cat { min-height: 44px; display: flex; flex-direction: column; justify-content: center; }
+body.phone #side .verdicts, body.phone #side .keys { display: none; }       /* the bar at the bottom has them */
+body.phone #app { padding-bottom: var(--barh); }
+body.phone #more { display: none; }
+body.phone.moreopen #more { display: flex; flex-direction: column; gap: 12px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  max-height: 85dvh; overflow: auto; background: var(--panel); border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+  padding: 14px 14px calc(14px + env(safe-area-inset-bottom)); box-shadow: 0 -8px 30px #000a; }
+body.phone.moreopen #who, body.phone.moreopen #io { display: flex; flex-wrap: wrap; width: 100%; overflow: visible; gap: 8px; }
+body.phone.moreopen #io button { flex: 1 1 140px; }
+body.phone.moreopen #rname { flex: 1 1 100%; } body.phone.moreopen #rrole { flex: 1 1 auto; }
+body.phone.moreopen #moreclose { display: block; align-self: stretch; font-weight: 600; }
+body.phone #actbar:not([hidden]) { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; gap: 6px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: var(--panel); border-top: 1px solid var(--line); box-shadow: 0 -4px 16px #0008; }
+#actbar button { flex: 1 1 0; min-width: 44px; min-height: 44px; font-weight: 600; padding: 4px 2px; }
+#actbar button.nav, #actbar button.note { flex: 0 0 46px; font-size: 20px; }
+#actbar button.note.has { border-color: var(--accent); color: var(--accent); }
+#actbar .keep.on { background: var(--keep); border-color: var(--keep); color: #fff; }
+#actbar .fix.on { background: var(--fix); border-color: var(--fix); color: #111; }
+#actbar .delete.on { background: var(--delete); border-color: var(--delete); color: #fff; }
+#actbar .merge.on { background: #4f8fd4; border-color: #4f8fd4; color: #fff; }
+body.phone #notesheet:not([hidden]) { display: flex; flex-direction: column; gap: 10px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 31;
+  max-height: 70dvh; overflow: auto; background: var(--panel); border-top: 1px solid var(--accent); border-radius: 14px 14px 0 0;
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); box-shadow: 0 -8px 30px #000c; }
+#notesheet .nshead { display: flex; gap: 10px; align-items: center; justify-content: space-between; } #notesheet .nshead b { font-size: 14px; }
+#notesheet .done { font-weight: 600; } #notesheet label.blk { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--dim); }
+#notesheet textarea { font-size: 16px; }   /* 16px: iPhones zoom into smaller text boxes */
+body.phone input, body.phone select, body.phone textarea { font-size: 16px; }
+body.phone dialog { max-height: 80dvh; overflow: auto; }
+/* phones held sideways: one header row, the list beside the stage */
+@media (max-height: 520px) {
+  body.phone #top { flex-wrap: nowrap; gap: 6px; padding: 4px 8px; }
+  body.phone .brand span { display: none; } body.phone #q { flex: 0 1 180px; min-width: 110px; }
+  body.phone #filters { order: 0; width: auto; flex: 1 1 auto; min-width: 0; overflow-x: auto; flex-wrap: nowrap; }
+  body.phone #progress { display: none; }
+  body.phone #app { display: grid; grid-template-columns: minmax(200px, 34%) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  body.phone #listcol { grid-column: 1; grid-row: 1 / span 2; height: auto; border-right: 1px solid var(--line); border-bottom: 0; }
+  body.phone #stage { grid-column: 2; grid-row: 1; min-height: 0; } body.phone #view { padding: 8px; }
+  body.phone #side { grid-column: 2; grid-row: 2; max-height: 30vh; border-left: 0; border-top: 1px solid var(--line); padding: 8px 12px; }
+  body.phone #stagebar { min-height: 0; padding: 4px 8px; }
+}
+body.phone .chip { flex: none; }
+body.phone #filters { flex-wrap: nowrap; overflow-x: auto; }
+body.phone #q { flex: 1 1 100px; min-width: 0; }
+body.phone #top { flex-wrap: wrap; } body.phone #filters { order: 5; width: 100%; }
+@media (max-height: 520px) { body.phone #top { flex-wrap: nowrap; } body.phone #filters { order: 0; width: auto; } }
