@@ -143,6 +143,7 @@
     "career/story/story-league.js",
     "career/story/story-state.js",
     "career/story/story-nat.js",
+    "career/story/story-post.js",
     "boot.js"
   ]
 }

@@ -111,6 +111,8 @@ export const SCREENS = [
   ['story: tutorial', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.4'); SW.talk = null; SW.fade = 0; swGoal('walk');`],
   ['story: teammate pick', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C2.5');`],
   ['story: credits', STORY_HELPERS + ` window.__sNew('Abdullah'); storyCredits(SC['C5.11']); Game.credits.t = 9;`],
+  ['story: replay', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('P.R', { max: 1500 }); careerHub(); openReplay();`],
+  ['story: milestones', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('P.R', { max: 1500 }); careerHub(); C.chem.jamil = 100; storyMsCheck(); openMilestones();`],
   ['story: hub', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C1.1'); careerHub();`],
   ['cstats', CAREER + ` careerHub(); openStats();`],
   ['crecords', CAREER + ` careerHub(); openRecords();`],

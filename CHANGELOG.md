@@ -1,5 +1,42 @@
 # Changelog
 
+## 9.29.0: After the story: replays, milestones, moments and prizes
+The career goes on after The End:
+- **P.1** A week after the Cup, a talk in the gym. Sh. Saleem explains that the story is over but the masjid
+  isn't. The brothers have news (the youth league, full classrooms).
+- **Replays (P.R).** From then on, Continue opens **Replay a tournament**: any of the four tournaments as a new season
+  with a new draw (the Ummah Cup uses your last draw), the dunks-only all-star game, or CHAI. A title won again pays
+  a fifth of the title's fundraiser money and is counted on the list.
+- **21 milestones (P.2)** under My Player > Milestones:
+  - the four titles and the first league win
+  - maxed chemistry with each of the seven brothers
+  - a stat at 10, and every stat at 7 or more
+  - 50 games, and five wins over Al-Furqan
+  - five dunks in one all-star game, and a CHAI win
+  - every special event played
+  - $150,000 raised
+  - a tournament won again after The End
+
+  Each shows its progress, and a toast announces it when earned.
+- **Moments (P.3).** Each milestone unlocks a short walk-up talk with the brother it concerns. Rayyan has one too.
+  New ones play on the next Continue after The End, and any earned one can be watched again from the Milestones
+  screen.
+- **100% (P.4).** Every milestone: the brothers stay late after Isha with a gift, the golden ball.
+- **Prizes, all cosmetic and usable in the world** like the water cooler (walk up, F or tap):
+  - 5 milestones: Imam Dawud's **chai urn** in the gym. Pour a cup: steam, a line, and half your turbo back (gym
+    only).
+  - 10: the **team photos** on the gym wall, with a caption from the journey each time.
+  - 15: the kids' **mural** on the school wing, outside. Tap it and the painted team bounces.
+  - All 21: the **golden ball** on its stand in the gym. Lift it: sparkles and a cheer.
+
+  Nothing carries into a match, and `econSelfCheck()` stays empty.
+
+How it was checked: **new test** `story-post`. A new career is played to The End, then P.1, a league won again, a
+Nationals run lost, the all-star game and CHAI. Then every milestone is met, each moment plays, P.4 plays, each
+prize is used in the world, `econSelfCheck()` is empty, and a moment is watched again from Milestones. Also
+`story-*`, `studio-coverage` (two new Studio screens: the replay chooser and Milestones), `studio-phone` and the phone
+audit.
+
 ## 9.28.0: Chapter 5, the Ummah Cup, and The End
 The career's last chapter is in. After the National title, Continue plays:
 - **C5.1** Istanbul: the Ummah Cup. This is the checkpoint. Sh. Saleem explains the rules and the draw.

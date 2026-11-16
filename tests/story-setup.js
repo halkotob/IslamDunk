@@ -22,6 +22,7 @@ export const STORY_HELPERS = `(() => {
     const s = Game.screen;
     if (s === 'ssalams') { salamsNext(); return 'salams'; }
     if (s === 'scredits') { creditsDone(); return 'credits'; }
+    if (s === 'sreplay') { replaySelect(o.replay != null ? (typeof o.replay === 'function' ? o.replay() : o.replay) : 6); return 'replay'; }
     if (s === 'story' && Game.story) { const st = Game.story; if (o.choice != null && st.lines[st.i] && st.lines[st.i][0] === 'choice') storyChoose(st, o.choice); storySkip(st); return 'scene'; }
     if (s === 'gym' && Gym.story && SW) {
       flush();

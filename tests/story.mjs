@@ -13,7 +13,9 @@
 //   story-ch4      Chapter 4 by bot: the sixteen-team knockout (Al-Furqan on the other half), a lost quarterfinal (back to
 //                  C4.1), the title: the fundraiser delivered, the school wing on the Outside view, father and son
 //   story-ch5      Chapter 5 by bot: King of the Court for the draw (a better finish, an easier quarterfinal), a lost
-//                  semifinal (back to C5.1), the Cup, the credits, and the hub after The End
+//                  semifinal (back to C5.1), the Cup, the credits, the hub after The End, and Continue into P.1
+//   story-post     after The End: P.1, the replays (a title won again, a run lost, the all-star game, CHAI), all 21
+//                  milestones with their moments, P.4, every prize used in the world, econSelfCheck() empty
 //   story-reload   a save at every Chapter 0 and Chapter 1 scene, a reload, Continue: the same scene starts again
 //   story-hub      the hub has exactly its four entries (Continue, Gym, Masjid, My Player), the chapter's name and the
 //                  next event; every entry opens its screen; desktop and phone draw without errors
@@ -228,8 +230,57 @@ export function storyTests({ newContext, open }) {
     const ids = ['C5.1', 'C5.2', 'C5.3', 'C5.4', 'C5.5', 'C5.6', 'C5.7', 'C5.8', 'C5.9', 'C5.10', 'C5.11', 'C5.NS'], E = out.end, D = out.draw;
     const ok = out.toC5 === 'C5.1' && out.caps && out.caps.length === 4 && D.length >= 2 && D[0].draw === 1 && D[1].draw === 3 && D.every(d => d.ko && d.first === 4 && d.label === 'Quarterfinal') && D[0].opp !== D[1].opp
       && lostSF && out.afterLoss && out.credits && ids.every(id => E.s.seen.includes(id) && E.journal.includes(id))
-      && E.s.at === 'P.1' && E.s.screen === 'hub' && Number.isFinite(E.hb) && Number.isFinite(E.bp) && E.done && E.trophy && E.dome >= 1 && /next update/.test(E.label) && E.after.at === 'P.1' && E.after.screen === 'hub' && !out.draws.length && !errs.length;
+      && E.s.at === 'P.1' && E.s.screen === 'hub' && Number.isFinite(E.hb) && Number.isFinite(E.bp) && E.done && E.trophy && E.dome >= 1 && E.label === 'Continue' && E.after.screen === 'gym' && !out.draws.length && !errs.length;
     return { ok, detail: ['captains: ' + JSON.stringify(out.caps), 'draws: ' + JSON.stringify(D), steps.join(' '), 'end: ' + JSON.stringify(Object.assign({}, E, { journal: E.journal.slice(-14) })), ...out.draws, ...errs] };
+  };
+
+  T['story-post'] = async ({ browser, base }) => {
+    const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-post');
+    await prep(p);
+    const out = { draws: [] };
+    out.toP = await p.evaluate(() => { window.__sNew('Sami'); window.__sRun('P.1', { max: 1400 }); return C.story.at; });
+    // P.1, then replays: the masjid league won again, Nationals lost, the all-star game, CHAI
+    out.replays = await p.evaluate(() => {
+      const r = {};
+      r.p1 = window.__sRun('P.R', { max: 20 });
+      const one = (choice, lose, until = 'P.R') => { window.__sStep({ replay: choice }); const path = window.__sRun('__never', { max: 120, replay: 6, lose }); return path; };
+      storyRun(); r.screen = Game.screen;
+      r.local = (() => { replaySelect(0); const path = []; for (let n = 0; n < 200 && !(C.story.at === 'P.R' && Game.screen === 'hub'); n++) { if (!path.length || path[path.length - 1] !== C.story.at) path.push(C.story.at); window.__sStep({}); } return { path, rt: (C.story.rt || [])[0], replays: C.story.replays, season: C.season }; })();
+      storyRun(); replaySelect(2);
+      r.nat = (() => { const path = []; for (let n = 0; n < 200 && !(C.story.at === 'P.R' && Game.screen === 'hub'); n++) { if (!path.length || path[path.length - 1] !== C.story.at) path.push(C.story.at); window.__sStep({ lose: at => at === 'PR.g' }); } return { path }; })();
+      storyRun(); replaySelect(4); for (let n = 0; n < 30 && !(C.story.at === 'P.R' && Game.screen === 'hub'); n++) window.__sStep({}); r.allstar = { at: C.story.at, best: C.story.allstarBest };
+      storyRun(); replaySelect(5); for (let n = 0; n < 30 && !(C.story.at === 'P.R' && Game.screen === 'hub'); n++) window.__sStep({}); r.chai = { at: C.story.at, won: !!C.story.chaiWon };
+      return r;
+    });
+    // every milestone (the conditions set directly), each with its moment, then P.4 and every prize used
+    out.ms = await p.evaluate(() => {
+      for (const id of STORY_MATES) C.chem[id] = 100;
+      for (const [k] of STAT_ROWS) C.lv[k] = 10;
+      C.gamesPlayed = 60; C.rival.w = 6; C.story.allstarBest = 6; C.story.chaiWon = true; C.story.fund = 160000;
+      careerHub();
+      const r = { count: msCount(), queued: (C.story.mq || []).length, moments: [] };
+      for (let n = 0; n < 40 && (C.story.mq || []).length; n++) { const id = C.story.mq[0]; storyRun(); if (!Gym.story) break; window.__sStep({}); r.moments.push(id); }
+      r.full = !!C.story.full; r.mseen = Object.keys(C.story.mseen || {}).length;
+      r.journal = (C.journal || []).filter(e => /^M\.|^P\.4/.test(e.id || '')).length;
+      // the prizes, used: the urn, the photos and the golden ball in the gym, the mural outside
+      enterGym(); const me = M.players[0], used = {};
+      for (const id of ['urn', 'photos', 'gold']) { const pr = GYM_PROPS.find(x => x.id === id); place(me, pr.x, 70); const near = gymPropNear(); used[id] = !!near && near.id === id && pr.need(); if (near) { useGymProp(near); me.turbo = 0; for (let i = 0; i < 240 && Gym.prop; i++) gymUpdate(1 / 60); } if (id === 'urn') used.turbo = me.turbo; }
+      used.mural = extSpots().some(s => s.id === 'mural');
+      r.used = used; r.prizes = STORY_PRIZES.map(x => storyPrize(x.id)); r.econ = econSelfCheck();
+      openMilestones(); r.smiles = Game.screen; msWatch(0); r.watch = !!Gym.story; window.__sStep({}); r.back = Game.screen;
+      return r;
+    });
+    const shots = ['hub', 'smiles', 'sreplay'];
+    for (const sc of shots) { await p.evaluate(sc => { if (sc === 'hub') careerHub(); else if (sc === 'smiles') openMilestones(); else openReplay(); }, sc); const d = await draw(p); if (d !== true) out.draws.push(sc + ': ' + d); }
+    await p.evaluate(() => { careerHub(); Game.screen = 'masjid'; Game.masjidView = 'ext'; }); { const d = await draw(p); if (d !== true) out.draws.push('ext: ' + d); }
+    await ctx.close();
+    const R = out.replays, MS_ = out.ms;
+    const ok = out.toP === 'P.1' && R.screen === 'sreplay' && R.local.rt === 1 && R.local.path.includes('PR.t') && R.local.replays === 1 && R.nat.path.includes('PR.e')
+      && R.allstar.at === 'P.R' && R.allstar.best >= 0 && R.chai.at === 'P.R'
+      && MS_.count === 21 && MS_.moments.length >= 2 && MS_.moments[MS_.moments.length - 1] === 'P.4' && MS_.full && MS_.mseen === 22 && MS_.journal >= 22
+      && MS_.used.urn && MS_.used.photos && MS_.used.gold && MS_.used.mural && MS_.used.turbo >= 50 && MS_.prizes.every(Boolean) && MS_.econ.length === 0
+      && MS_.smiles === 'smiles' && MS_.watch && MS_.back === 'smiles' && !out.draws.length && !errs.length;
+    return { ok, detail: ['replays: ' + JSON.stringify(R), 'milestones: ' + JSON.stringify(MS_), ...out.draws, ...errs] };
   };
 
   T['story-reload'] = async ({ browser, base }) => {

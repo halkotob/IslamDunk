@@ -136,6 +136,8 @@ export const SCREEN_OF = {
   "story: walk bubble": "gym",
   "story: tutorial": "gym",
   "story: hub": "hub",
+  "story: replay": "sreplay",
+  "story: milestones": "smiles",
   "story: credits": "scredits",
   "story: teammate pick": "spick",
 };
