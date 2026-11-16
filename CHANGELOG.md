@@ -1,5 +1,19 @@
 # Changelog
 
+## 9.29.1: Career overhaul, finished
+The last checks of the career overhaul (docs/career-overhaul/PROMPT.md, step 5):
+- **Fix:** a story scene with a choice line (the old story's choices, still used outside the career) failed to draw
+  after 9.26's text-box change. Choice lines go back to the old drawer and its buttons.
+- `story-post` now names the after-the-story IDs it covers (P.1 replays, P.2 the milestones screen, P.3 every moment,
+  P.4 the last scene). Every scene ID in `docs/career-overhaul/SCENES.md` is named in a test's path.
+- `docs/audio/sound-list.csv` refreshed (the new prizes' sounds).
+
+How it was checked: `npm test`: 82/82. The bots play a new career from C0.1 to The End (`story-ch5` and
+`story-post`). Every chapter with a checkpoint restarts from it at least once (C2.4, C3.2, C4.1 and C5.1). C0.5 and
+C1.8 replay until they're won. Screenshots of each chapter's key scenes, the hub and the new screens were checked at
+phone and desktop sizes as each release went out.
+Known: `league-determinism` and `league-calibration` (the slow tier, not in `npm test`) failed before 9.25 too.
+
 ## 9.29.0: After the story: replays, milestones, moments and prizes
 The career goes on after The End:
 - **P.1** A week after the Cup, a talk in the gym. Sh. Saleem explains that the story is over but the masjid

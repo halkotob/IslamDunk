@@ -154,7 +154,9 @@ function drawStoryMusalla(g) {
     else if (s && s.bg === 'office') drawOfficeRoom(g, false);
     if (!storyOn() || !s) return _ds.apply(this, arguments);
     // v9.26: the lines between scenes (before and after a game, a pick) are a plain text box: no portraits
-    const line = s.lines[Math.min(s.i, s.lines.length - 1)], [sp, text] = line, who = stalkSpeaker(sp);
+    const line = s.lines[Math.min(s.i, s.lines.length - 1)], [sp, text] = line;
+    if (typeof text !== 'string' || sp === 'choice') return _ds.apply(this, arguments);   // (a choice line: the old drawer has its buttons)
+    const who = stalkSpeaker(sp);
     panel(g, 40, 392, 880, 132, true);
     g.textAlign = 'left'; if (who) { g.fillStyle = GOLD; g.font = `16px ${FONT}`; g.fillText(who, 62, 420); }
     g.fillStyle = sp === 'narr' ? IVORY : '#fff'; g.font = `${sp === 'narr' ? 'italic ' : ''}17px ${BODY}`;

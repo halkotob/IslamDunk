@@ -275,12 +275,14 @@ export function storyTests({ newContext, open }) {
     await p.evaluate(() => { careerHub(); Game.screen = 'masjid'; Game.masjidView = 'ext'; }); { const d = await draw(p); if (d !== true) out.draws.push('ext: ' + d); }
     await ctx.close();
     const R = out.replays, MS_ = out.ms;
-    const ok = out.toP === 'P.1' && R.screen === 'sreplay' && R.local.rt === 1 && R.local.path.includes('PR.t') && R.local.replays === 1 && R.nat.path.includes('PR.e')
+    // SCENES.md's after-the-story IDs, each by what shows it was played
+    const covered = { 'P.1': R.p1.includes('P.1'), 'P.2': MS_.count === 21 && MS_.smiles === 'smiles', 'P.3': MS_.mseen === 22 && MS_.watch, 'P.4': MS_.full };
+    const ok = Object.values(covered).every(Boolean) && out.toP === 'P.1' && R.screen === 'sreplay' && R.local.rt === 1 && R.local.path.includes('PR.t') && R.local.replays === 1 && R.nat.path.includes('PR.e')
       && R.allstar.at === 'P.R' && R.allstar.best >= 0 && R.chai.at === 'P.R'
       && MS_.count === 21 && MS_.moments.length >= 2 && MS_.moments[MS_.moments.length - 1] === 'P.4' && MS_.full && MS_.mseen === 22 && MS_.journal >= 22
       && MS_.used.urn && MS_.used.photos && MS_.used.gold && MS_.used.mural && MS_.used.turbo >= 50 && MS_.prizes.every(Boolean) && MS_.econ.length === 0
       && MS_.smiles === 'smiles' && MS_.watch && MS_.back === 'smiles' && !out.draws.length && !errs.length;
-    return { ok, detail: ['replays: ' + JSON.stringify(R), 'milestones: ' + JSON.stringify(MS_), ...out.draws, ...errs] };
+    return { ok, detail: ['covered: ' + JSON.stringify(covered), 'replays: ' + JSON.stringify(R), 'milestones: ' + JSON.stringify(MS_), ...out.draws, ...errs] };
   };
 
   T['story-reload'] = async ({ browser, base }) => {
