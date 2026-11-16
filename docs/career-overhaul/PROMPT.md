@@ -1,113 +1,126 @@
-# Prompt: overhaul Islam Dunk's career mode into a story campaign
+# Career overhaul: implementation brief
 
 You are rebuilding the career mode of Islam Dunk (2v2 masjid-league arcade basketball, this repo) into a
-chaptered story campaign: a new brother arrives in town, finds a community at the masjid, makes the team, and
-plays from the masjid league to the Ummah Cup while the masjid raises money for a school wing for the kids.
+chaptered story: a new brother finds a community at the masjid, makes the team, and plays from the masjid league
+to the Ummah Cup while the masjid raises money for a school wing for the kids.
 
-The story is fixed; the work is making it **playable, data-driven and finished**. The scene-by-scene story, cast
-and through-lines live in [`SCENES.md`](SCENES.md): read the whole file before step 1, then reread each chapter's
-table when you build that chapter. Every scene has an ID (`C2.10`); use the IDs in code, saves, tests and commits.
+Every design decision is settled; build straight through. The scene-by-scene story, cast, checkpoints and prizes
+live in [`SCENES.md`](SCENES.md): read the whole file before step 1, then reread each chapter's table when you
+build that chapter. Every scene has an ID (`C2.10`); use the IDs in code, saves, tests and commits.
 
-## What already exists (extend it, keep its behaviour)
+## The shape
+
+- **The story replaces the current career.** The main menu entry is still **Career**; the rest of the main menu
+  (quick play, online, fun modes and the rest) stays exactly as it is.
+- **Old career saves are discarded.** The game is still in testing: bump the career save's `sv`, and load any
+  older career save as a new career. No migration.
+- **The career hub** is four entries and nothing else: **Continue** (plays the next scene or game),
+  **Gym** (practice and drills), **Masjid** (walk around, talk, use props), **My Player** (stat upgrades, look,
+  Journal). Beside them: the chapter name, the next event, the fundraiser meter. Simple and in the game's style.
+- **Kept from today's career:** stat upgrades, prayer before a game (its bonus), masjid projects (now the
+  fundraiser), the Journal, the teammate pick with chemistry, the Sheikh's office (as a story location).
+- **Removed from career:** the calendar, Jumu'ah, the pregame intention picker, weekly goals, the rookie
+  checklist, badges, the eight office lessons, partner side-scenes, the end-of-season ceremony, Jalal, and the
+  old cast (Khalil, Nasser, Tariq, Uncle Mahmoud, Uncle Rafiq, Uncle Siddiq) as named characters.
+- **The Barakah Run stays in the game outside career, untouched.** Only its link from career goes.
+- **You write all dialogue, the milestone list and the prizes** (SCENES.md says what each scene must do). The
+  user edits after each release; ship your best draft.
+
+## What exists (read before designing)
 
 The career is in `src/career/` (one shared scope, concatenated in the order of `src/manifest.json`; a new file
-goes into the manifest). Read these before designing anything; most beats map onto a system already here:
+goes into the manifest, a removed one comes out). Systems the story is built on:
 
-| Need in the story | Existing system |
+| Story need | Existing system |
 |---|---|
-| Story scenes, choices, Journal | `cinema.js` (letterboxed scenes, `['choice', ...]` lines, every scene kept in the Journal) |
-| Walk-and-talk in the masjid | `intro-world.js` (first-visit walk), `musalla.js`, `musalla-walk.js`, `masjid-props.js` |
-| Stages and their difficulty | `career.js` (`STAGES`: Local, State, National, World; `CAST`), `league.js` (every bracket game is a real headless sim, seeded), `seasons.js` (group stage, partner + chemistry) |
-| Game days, Jumu'ah | `calendar.js` (games on Wednesdays and Saturdays, never a Friday or an Eid), `jumuah.js` |
-| Intentions, rival, partner scenes | `career-story.js` (niyyah before a game, Jalal, partner scenes) |
+| Story scenes, choices, Journal | `cinema.js` (letterboxed scenes, `['choice', ...]` lines, Journal) |
+| Walk-and-talk, props | `intro-world.js` (first-visit walk), `musalla.js`, `musalla-walk.js`, `masjid-props.js` (the water cooler: the model for usable prizes; the light switch: the lights-out game) |
+| Stages, difficulty, cast looks | `career.js` (`STAGES`: Local, State, National, World; `CAST`; `saleemDef`) |
+| Bracket games | `league.js` (every bracket game is a real headless sim, seeded), `seasons.js` (group stage, partner + chemistry) |
 | Drills, prayer | `gym-drills.js`, `gym-routines.js`, `salah.js` |
-| Mini games | `src/sim/mini-games.js` (Lightning, HORSE), `src/sim/v8-kotc.js` (King of the Court) |
-| Fundraiser and the masjid growing | `masjid-projects.js`, Halal Bucks in `progression.js` |
-| Goals, badges, checklists | `career-goals.js`, `src/data/achievements.js` |
-| Save | the career save in `career.js` (`sv` is the schema version inside the `v:1` envelope, with a migration for older saves) |
+| Mini games | `src/sim/mini-games.js` (Lightning, HORSE with custom words), `src/sim/v8-kotc.js` (King of the Court) |
+| Fundraiser, money | `masjid-projects.js`, Halal Bucks in `progression.js` |
+| Hub, career screens | `career-screens.js`, `office.js`, `hub-layout.js` |
+| Teams | `src/data/teams.js` (8 masjid teams) |
+
+The removed systems live mainly in `calendar.js`, `jumuah.js`, `career-story.js`, `career-goals.js`,
+`barakah-v2.js` / `barakah-run.js` (career links only) and parts of `progression.js` and `office.js`. Remove
+their career use cleanly: no dead screens, no orphaned save fields, no menu entries that lead nowhere.
 
 ## House rules
 
-These are the conventions the code relies on that no config file states:
+These are conventions the code relies on that no config states:
 
-- **Halal Bucks and everything the fundraiser buys stay cosmetic.** Rewards change how the masjid and gym look,
-  never stats or gameplay. `econSelfCheck()` in `progression.js` enforces this; it stays green.
-- **Prayer is shown with respect:** arriving, lining up, the musalla before and after. The prayer itself is
-  never animated or played (the same rule as `jumuah.js`).
-- **Determinism:** league games, draws and scene branches come from the career's seeded random stream, so a save
-  reloads into the same story. Keep the main random stream untouched by background sims (see `league.js`).
-- **Online, quick play, mini games and the title demo play exactly as before.** The overhaul only touches career.
-- **Lines are short:** one or two lines per bubble, the tone of the existing scenes. Islamic terms are used
-  accurately and respectfully.
+- **Prizes and Halal Bucks stay cosmetic.** Rewards change how the gym, masjid and player look, never stats or
+  match play. `econSelfCheck()` in `progression.js` enforces this; it stays empty. The one gameplay touch allowed
+  is a practice-gym prop's small gym-only effect, like the cooler's turbo refill.
+- **Prayer is shown with respect:** the closing salams as text, the musalla before and after, lining up. The
+  prayer itself is never animated or played.
+- **Determinism:** league games, draws, generated teams and scene branches come from the career's seeded random
+  stream, so a save reloads into the same story. Background sims keep the main random stream untouched (see
+  `league.js`).
+- **Everything outside career plays exactly as before:** quick play, online, mini games, fun modes, the title
+  demo, the Barakah Run.
 - **Each release** bumps `package.json`'s version and adds a `CHANGELOG.md` entry in the existing style (a
-  `## X.Y.Z: title` line, then what the player now sees and how it was measured).
-
-## Decisions (defaults; the user can override any row)
-
-| # | Question the outline left open | Default |
-|---|---|---|
-| D1 | Start with the prayer scene or go straight to the gym? | Prayer scene first (C0.1 to C0.2), skippable. |
-| D2 | Earn the spot outright or through an injury? | Win King of the Court; two losses play the injury scene (C1.8b). |
-| D3 | Names of Ammo and his son | _Ammo Haytham_ and _Zayd_ (placeholders). |
-| D4 | One new character for each of Imam, Mufti, Ustath, Hafiz, Qari, Hajji? | Yes; existing cast keep their roles. At least 6 pickable teammates in total, each with two standout stats. |
-| D5 | What happens after a lost season? | **Season loop:** a new year starts at the chapter's loop point (named in SCENES.md); progress, unlocks and the fundraiser total carry over; a short "next season" scene plays. |
-| D6 | Existing saves | Bump `sv`. An existing career migrates to the start of the chapter matching its current stage, with its unlocks, money and titles kept. |
-| D7 | All-star game format | Dunks only, built on the existing dunk system and the dunk contest rules. |
-| D8 | Lights-out drill | A dark variant of an existing mini game (vision radius around each player), not a new rule set. |
+  `## X.Y.Z: title` line, then what the player now sees and how it was checked).
 
 ## Steps
 
-### 1. Map the outline onto the code
+### 1. Map SCENES.md onto the code
 
-For every scene ID in SCENES.md, write one row in `docs/career-overhaul/MAP.md`: the ID, which existing system
-runs it, and whether it is **reuse**, **extend** or **new**. Then list the new systems the map calls for (expect
-at least: a chapter/scene graph that drives the career, pregame scenes by stakes, the season loop, teammate
-standout stats, the injury swap, the all-star dunks game, the lights-out variant, KOTC for the draw, milestones).
+Write `docs/career-overhaul/MAP.md`: one row per scene ID with the system that runs it and whether that is
+**reuse**, **extend** or **new**; then the list of new systems; then the list of removed systems with the files,
+save fields, screens and tests each one touches.
 
-**Done when** every ID in SCENES.md has a row and every **new** row names the system that will run it.
+**Done when** every scene ID in SCENES.md has a row, and every removed system lists everything it touches.
 
-### 2. Checkpoint with the user
+### 2. The foundation, with Chapter 0 as a tracer bullet
 
-Show the user MAP.md, the decision table above with any rows you think should change, and the save migration
-plan. Wait for their answer before writing code; their answers become edits to this file and SCENES.md.
+Build, in one release:
 
-**Done when** the user has approved the map and every decision row.
+- **The scene graph:** chapters and scenes as data (ID, kind, cast, lines, unlock conditions, outcomes such as
+  win, loss, choice), a runner that moves the career through it, checkpoints, and the save (current scene ID,
+  checkpoint, carried-over progress).
+- **The new hub and the save reset** described in "The shape".
+- **The removals:** every removed system out of career, with its tests replaced by story tests or retired.
+- **The new cast** in `CAST` (looks, numbers, stats with the standout pairs from SCENES.md).
+- **Chapter 0** end to end through the graph: salams on black, the musalla, the gym, the tutorial, the pickup
+  game (retry until won), the invitation.
 
-### 3. Build the story graph, with Chapter 0 as a tracer bullet
+**Done when** a new career plays C0.1 to C0.6 and lands in Chapter 1; a reload at any Chapter 0 scene resumes
+there; the scenes are in the Journal; the hub shows exactly its four entries; a bot test in `tests/run.mjs`
+drives the path; and `npm test` passes.
 
-Build the scene graph first: chapters and scenes as **data** (ID, kind, cast, lines, the conditions that unlock
-it, and its outcomes such as win, loss or choice), and a runner that moves the career through it and saves the
-current scene ID. Then build Chapter 0 end to end through that graph: arrival, prayer, gym, tutorial, pickup game,
-invitation. Chapter 0 proves the graph, the save and the test harness on the smallest real slice.
+### 3. Chapters 1 to 5, one release each
 
-**Done when** a new career plays C0.1 to C0.6 and lands in Chapter 1, a reload at any scene resumes at that scene,
-the scenes appear in the Journal, and a test in `tests/run.mjs` drives that path by bot.
+Build the chapters in order. For each: reread its table in SCENES.md, build every scene, give every `play`
+scene its win and loss outcomes, give every pregame scene lines for its stakes, wire its checkpoint and its next
+season scene, and build its new modes (lights out, CHAI HORSE, the dunks-only all-star game, the 9-team state
+table, the 16-team knockout with generated teams, King of the Court for the draw).
 
-### 4. Build the chapters in order, one release each
+**Done when**, for that chapter: every scene ID in its table is reachable in play; every loss reaches its
+checkpoint (or replays, for retry scenes); a bot test plays the chapter on the winning path and through at least
+one loss; and `npm test` passes.
 
-Build Chapters 1 to 5 and the post-story, in order. For each chapter: reread its table in SCENES.md, build every
-scene in it, give every `play` scene both its win and loss outcomes, give every pregame scene a line set for its
-stakes, and ship it as its own release (version, changelog, tests).
+### 4. After the story
 
-**Done when**, for that chapter, every scene ID in its table is reachable in play, every loss path reaches its
-season loop or retry, the bot test plays the chapter both on the winning path and through at least one loss, and
-`npm test` passes.
+Milestones, moments, the 100% scene, and the usable prizes (P.1 to P.4).
+
+**Done when** every milestone can be earned, each unlocks its moment, 100% unlocks the final prizes and scene,
+every prize is usable in the world, and `econSelfCheck()` is empty.
 
 ### 5. Finish
 
 **Done when** all of this holds:
 
-- `career-run` (or its successor) plays a new career from C0.1 to **The End** (C5.11), and through at least one
-  season loop in each chapter that has one.
-- An existing save from the current release loads, migrates (D6), and continues.
+- A bot plays a new career from C0.1 to **The End** (C5.11), and through at least one checkpoint restart in
+  every chapter that has one.
 - Every scene ID in SCENES.md appears in at least one test's path.
-- Milestones, moments and 100% completion work (P.1 to P.4) and award cosmetic prizes only.
-- `econSelfCheck()` is empty, and `npm test` is green.
-- A short review pass: screenshots of each chapter's key scenes (the repo's review scripts in `scripts/` show
-  how), checked for text overlap at phone and desktop sizes.
+- `npm test` is green, and nothing outside career changed behaviour.
+- A review pass: screenshots of each chapter's key scenes and the hub (the repo's review scripts in `scripts/`
+  show how), checked for overlapping text at phone and desktop sizes.
 
-## Working with the issue tracker
+## Tracking
 
-This repo tracks work in GitHub Issues (see `docs/agents/issue-tracker.md`). After step 2, file one issue per
-chapter (and one for the scene graph) so each release maps to an issue, labelled `ready-for-agent` once it is
-fully specified.
+This repo tracks work in GitHub Issues (see `docs/agents/issue-tracker.md`). After step 1, file one issue per
+release (foundation + Chapter 0, each chapter, the post-story) and close each with its release.
