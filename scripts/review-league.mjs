@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import { chromium } from 'playwright';
-import { CAL_HELPERS } from '../tests/calendar-setup.js';
+import { CAREER_HELPERS } from '../tests/career-setup.js';
 import { LEAGUE_HELPERS, LEAGUE_CASES } from '../tests/league-setup.js';
 import { HUB_SIZES } from '../tests/hub-setup.js';
 
@@ -18,7 +18,7 @@ const srv = await new Promise(res => { const s = http.createServer((q, r) => { c
 const base = `http://127.0.0.1:${srv.address().port}/`, browser = await chromium.launch(), errs = [];
 const ready = p => p.waitForFunction(() => typeof Game !== 'undefined' && Game.screen !== undefined && typeof Net !== 'undefined' && Net.avail !== 'checking', null, { timeout: 20000 });
 const b0 = await browser.newPage(); await b0.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort()); await b0.goto(base); await ready(b0);
-await b0.evaluate(([a, b]) => { (0, eval)(a); (0, eval)(b); }, [CAL_HELPERS, LEAGUE_HELPERS]);
+await b0.evaluate(([a, b]) => { (0, eval)(a); (0, eval)(b); }, [CAREER_HELPERS, LEAGUE_HELPERS]);
 const built = await b0.evaluate(d => { window.requestAnimationFrame = () => 0; return window.__lgBuild(d, 'real'); }, DAYS);
 const json = await b0.evaluate(() => window.__lgDump()), other = await b0.evaluate(() => { const e = lgBoard('stage', 'ppg').find(x => !lgMinesFor().includes(x.p.pid)); return e && e.p.pid; });
 await b0.close(); console.log('built', JSON.stringify(built));
@@ -26,7 +26,7 @@ for (const [sz, dev] of HUB_SIZES) {
   if (SIZES.length && !SIZES.includes(sz)) continue;
   const ctx = await browser.newContext(dev); await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(sz + ': ' + e.message)); await p.goto(base); await ready(p);
-  await p.evaluate(([a, b, j, touch]) => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} (0, eval)(a); (0, eval)(b); LEAGUE.mode = 'fallback'; Input.touchMode = touch; window.__lgLoad(j); }, [CAL_HELPERS, LEAGUE_HELPERS, json, !!dev.hasTouch]);
+  await p.evaluate(([a, b, j, touch]) => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} (0, eval)(a); (0, eval)(b); LEAGUE.mode = 'fallback'; Input.touchMode = touch; window.__lgLoad(j); }, [CAREER_HELPERS, LEAGUE_HELPERS, json, !!dev.hasTouch]);
   for (const [name, o] of LEAGUE_CASES) {
     await p.evaluate(([o, other]) => window.__lgOpen(o.view, Object.assign({}, o, { pid: o.pid === null ? other : o.pid })), [o, other]); await p.waitForTimeout(500);
     await p.screenshot({ path: path.join(OUT, `league-${sz}-${name}.png`) });

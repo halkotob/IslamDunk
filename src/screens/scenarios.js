@@ -146,24 +146,19 @@ function migrateV6(o) {
   const b = C.bracket;
   if (b && !b.fmt && !b.out && !b.champ && b.round === 0 && b.rounds && b.rounds[0] && b.rounds[0].every(m => m.w == null)) C.bracket = makePoolBracket(C.stage);
 }
-CAREER_SCREENS.add('cstats'); CAREER_SCREENS.add('newseason');
+CAREER_SCREENS.add('cstats');
 {
   const _cu = careerUpdate;
   careerUpdate = function (rdt) {
     if (Game.screen === 'cstats') return statsUpdate();
-    if (Game.screen === 'newseason') return newSeasonUpdate();
     if (Game.screen === 'pregame' && (menuHit('left') || menuHit('right'))) { cyclePartner(menuHit('left') ? -1 : 1); return; }
     _cu(rdt);
   };
   const _cr = careerRender;
   careerRender = function (g) {
     if (Game.screen === 'cstats') { dim(g, 0.6); drawStats(g); return; }
-    if (Game.screen === 'newseason') { dim(g, 0.6); drawNewSeason(g); return; }
     _cr(g);
     if (Game.screen === 'pregame') drawPartnerPicker(g);
-    if (Game.screen === 'hub' && (C.season || 1) > 1 && !(Input.touchMode && g === ctx && typeof calShown === 'function' && calShown())) { g.textAlign = 'left';   // v9.0: phones show the season in the subtitle
-      g.font = `26px ${FONT}`; const sx = typeof calShown === 'function' && calShown() ? 118 + g.measureText('Masjid Al-Amanah').width : 360;   // v9.0: clear of the calendar strip
-      g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('SEASON ' + C.season, sx, 32); }
   };
   const _sm = startMini;
   startMini = function (kind, opp) { Gym.miniOpp = opp; _sm(kind, opp); };

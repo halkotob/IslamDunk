@@ -1,6 +1,6 @@
-// v9.6.2 hub-layout: the career hub at the five review sizes (tests/hub-setup.js: HUB_SIZES x HUB_CASES). For each, one
+// v9.6.2 hub-layout (v9.22: the story hub): the career hub at the five review sizes (tests/hub-setup.js: HUB_SIZES x HUB_CASES). For each, one
 // frame is recorded in device pixels: every text drawn on the game canvas (its box from measureText and the transform)
-// and every panel, chip, badge pill, the calendar strip and the corner button. Fails on:
+// and every panel and the corner button. Fails on:
 //   text-on-text     two texts whose boxes overlap (1 px allowed)
 //   panel-on-panel   two containers that overlap (a badge pill may only sit on the card it belongs to)
 //   outside          a text that is not inside any container (or the title bar), or runs off the canvas
@@ -8,7 +8,6 @@
 //   gutter           two panels or chips closer than 12 px (in the 960x540 layout)
 //   small            on the phone sizes, text under 11 CSS px (the phone text audit's rule)
 // Kept as fixtures for the glitch sweep.
-import { CAL_HELPERS } from './calendar-setup.js';
 import { HUB_HELPERS, HUB_SIZES, HUB_CASES } from './hub-setup.js';
 
 export const HUB_RECORD_INIT = `(() => {
@@ -38,15 +37,14 @@ const RECORD = () => {
   panel = function (g2, x, y, w, h) { if (g2 === g) add('panel', g2, x, y, w, h); return _pn.apply(this, arguments); };
   const _bb = drawBackButton; drawBackButton = function (g2) { const r = _bb.apply(this, arguments); if (g2 === g && backVisible()) add('back', g2, BackBtn.x, BackBtn.y, BackBtn.w, BackBtn.h); return r; };
   const _dc = drawHubCorner; drawHubCorner = function (g2) { if (g2 === g) add('corner', g2, W - 50, 8, 42, 34); return _dc.apply(this, arguments); };
-  const _bd = drawHubBadges; drawHubBadges = function (g2) { const r = _bd.apply(this, arguments); if (g2 === g && HubL.badgePills) for (const p of HubL.badgePills) add('pill', g2, p.x, p.y, p.w, p.h); return r; };
   const _cs = typeof drawCalStrip === 'function' ? drawCalStrip : null;
   if (_cs) drawCalStrip = function (g2) { if (g2 === g) { const S = calStripGeom(g2); for (let i = 0; i < 4; i++) add('cal', g2, S.x + i * (S.w + S.gap), S.y, S.w, S.h); } return _cs.apply(this, arguments); };
   const _dh = drawHub; let tb = null, hubT = null;
   drawHub = function (g2) { if (g2 === g) { hubT = g2.getTransform(); tb = window.__hubBox(g2, 30, 0, (typeof calShown === 'function' && calShown() ? calStripGeom(g2).x : 932) - 30, 80); } return _dh.apply(this, arguments); };
-  try { render(g); } finally { panel = _pn; drawBackButton = _bb; drawHubCorner = _dc; drawHubBadges = _bd; if (_cs) drawCalStrip = _cs; drawHub = _dh; R.on = false; }
+  try { render(g); } finally { panel = _pn; drawBackButton = _bb; drawHubCorner = _dc; if (_cs) drawCalStrip = _cs; drawHub = _dh; R.on = false; }
   // the balance chips and the week goal are drawn with roundRect inside drawHub: their boxes come from the layout
   const lay = (kind, x, y, w, h) => { const a = hubT.transformPoint(new DOMPoint(x, y)), b = hubT.transformPoint(new DOMPoint(x + w, y + h)); R.boxes.push({ kind, l: Math.min(a.x, b.x), t: Math.min(a.y, b.y), r: Math.max(a.x, b.x), b: Math.max(a.y, b.y) }); };
-  if (hubT) { lay('chip', 642, 84, 139, 34); lay('chip', 793, 84, 139, 34); if (HubL.goal) lay('goal', HubL.goal.x, HubL.goal.y, HubL.goal.w, HubL.goal.h); }
+  void lay;
   return { texts: R.texts, boxes: R.boxes, title: tb, cw: g.canvas.width, ch: g.canvas.height, k: hubT ? Math.hypot(hubT.a, hubT.b) : 1 };
 };
 
@@ -82,7 +80,7 @@ export function hubTests({ newContext, open }) {
       const ctx = await newContext(browser, { device: dev });
       await ctx.addInitScript(HUB_RECORD_INIT);
       const p = await open(ctx, base + '/', errs, 'hub-layout ' + sz);
-      await p.evaluate(([a, b, touch]) => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} (0, eval)(a); (0, eval)(b); Input.touchMode = touch; window.requestAnimationFrame(() => {}); }, [CAL_HELPERS, HUB_HELPERS, !!dev.hasTouch]);
+      await p.evaluate(([a, touch]) => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} (0, eval)(a); Input.touchMode = touch; window.requestAnimationFrame(() => {}); }, [HUB_HELPERS, !!dev.hasTouch]);
       for (const [name, o] of HUB_CASES) {
         await p.evaluate(o => window.__hubCase(o), o); await p.waitForTimeout(700);
         const rec = await p.evaluate(`(${RECORD.toString()})()`).catch(e => ({ err: String(e.message || e) }));

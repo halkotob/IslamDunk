@@ -88,7 +88,7 @@ function drawGymHUD(g) {
     else if (d.kind === 'three') txt = 'Three-point challenge   ' + Math.ceil(d.left) + 's   Score ' + d.score;
     else if (d.kind === 'cones') txt = 'Cone dribble   ' + d.time.toFixed(1) + 's   Cone ' + Math.min(d.idx + 1, CONES.length) + '/' + CONES.length;
     else if (typeof DRILL_HUD !== 'undefined' && DRILL_HUD[d.kind]) txt = DRILL_HUD[d.kind](d);
-    else txt = 'You ' + M.teams[0].score + '  \u2013  ' + M.teams[1].score + ' Nasser   (first to 11)';
+    else txt = 'You ' + M.teams[0].score + '  \u2013  ' + M.teams[1].score + ' Ilyas   (first to 11)';
     textPill(g, W / 2, 70, 34, txt, `15px ${FONT}`, 'rgba(8,16,24,0.82)', '#fff', 400, W - 40);   // v9.6.2: sized to the text
     if (d.kind === 'three') for (let r = 0; r < 5; r++) for (let b = 0; b < 3; b++) {
       const i = r * 3 + b, x = W / 2 - 110 + r * 46 + b * 12;

@@ -75,7 +75,7 @@ const RESULTS_ANIM = 0.85;
 }
 
 // ---- UI1: a quick rise from dark between menus
-const SCREEN_FADE = 0.15, NO_FADE = new Set(['play', 'netplay', 'gym', 'world', 'halftime', 'splash']);
+const SCREEN_FADE = 0.15, NO_FADE = new Set(['play', 'netplay', 'gym', 'halftime', 'splash']);
 {
   let last = null, at = -1;
   const _r = render;

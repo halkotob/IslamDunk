@@ -1,7 +1,7 @@
 // ================================================= v8.5: IN-GAME REVIEW MODE (?review=1)
 // For the human review pass. Open the game with ?review=1 and the title gets a Review entry:
-//   * Scenes: every story scene, the sheikh's talks and lessons, the niyyah question, partner and
-//     rival scenes, and the new lines in the musalla. Play any of them as the player sees them.
+//   * Scenes: every career story scene (by chapter and ID), the walks' talks, the sheikh's talks and the
+//     musalla talks. Play any of them as the player sees them.
 //   * While a scene plays, a panel marks the current line: 1 Keep, 2 Change, 3 Cut, N for a note.
 //   * Feel checklist: short questions about how the game plays, each rated 1 to 5 with a note.
 //   * Export: downloads your marks and answers as a CSV to send back. Marks are kept in this
@@ -15,7 +15,7 @@ function rvSave() { try { localStorage.setItem(RV_KEY, JSON.stringify(rvLoad()))
 const FEEL_Q = [
   'Moving and dribbling feel responsive', 'Shooting: the release timing feels fair', 'Dunks and layups feel good to pull off', 'Holding Defend does what you expect',
   'Steals and blocks feel fair (both ways)', 'Difficulty: Medium is a good challenge', 'Half-court check-ups and restarts feel natural', 'The CPU teammate makes good decisions',
-  'Games are a good length', 'Career: goals feel reachable, not grindy', 'The niyyah question before games is welcome, not in the way', 'Cutscenes are the right length',
+  'Games are a good length', 'Career: the story moves at a good pace', 'Cutscenes are the right length',
   'Menus: easy to find what you want', 'Mini games are fun to come back to', 'Online play feels smooth'
 ];
 // ---- every scene, as lines the cinematic player can show
@@ -24,14 +24,11 @@ function rvScenes() {
   rvEnsureCareer();
   const S = RV.cache = [], isLines = a => Array.isArray(a) && a.length && Array.isArray(a[0]) && typeof a[0][0] === 'string' && (typeof a[0][1] === 'string' || a[0][0] === 'choice');
   const add = (group, title, lines) => { if (isLines(lines)) S.push({ group, title, lines }); };
-  const NAMES = { intro: 'Welcome to Al-Amanah', stageIntro: 'Start of the', win: 'After a win', loss: 'After a loss', lossRival: 'After losing to Al-Burhan', stageWin: 'Champions:', tips: 'Tip' };
-  const nm = (k, i) => (k === 'stageIntro' || k === 'stageWin') && STAGES[i] ? NAMES[k] + ' ' + STAGES[i].name + (k === 'stageIntro' ? ' stage' : '') : (NAMES[k] || k) + (i == null ? '' : ' ' + (i + 1));
-  for (const k of Object.keys(STORY)) { const v = STORY[k]; if (isLines(v)) add('Story', nm(k), v); else if (Array.isArray(v)) v.forEach((x, i) => add('Story', nm(k, i), x)); }
+  // v9.22: the career story, chapter by chapter, every scene with lines (story-data.js), and the walks' talks
+  for (const S of Object.values(SC)) for (const k of ['lines', 'winLines', 'lossLines']) { let L = null; try { L = typeof S[k] === 'function' ? S[k]() : S[k]; } catch (e) {} if (L) add(S.ch <= 5 ? 'Chapter ' + S.ch : 'After the story', S.id + ' ' + S.name + (k === 'lines' ? '' : k === 'winLines' ? ' (win)' : ' (loss)'), L); }
+  for (const [id, D] of Object.entries(STORY_WALKS)) for (const n of D.npcs) for (const k of ['lines', 'early']) { const L = n[k]; if (Array.isArray(L)) add('Walks', id + ' ' + castDef(n.id).name + (k === 'early' ? ' (too early)' : ''), L); }
   const talk = t => [...t.open().map(l => ['saleem', l]), ['choice', t.choices.map(([q, a]) => [q, a.map(l => ['saleem', l])])]];
-  for (const t of SHEIKH_TALKS) { try { add(t.key.startsWith('lesson') ? 'Sheikh lessons' : 'Sheikh talks', t.key, talk(t)); } catch (e) {} }
-  add('Niyyah', 'Before a game', [['saleem', 'Before you walk out there. Every game, I ask the brothers one thing: what is your intention today?'], ['choice', [['Just let me play today.', [['saleem', 'Alright. Play well, and play with adab.']]], ...NIYYAH.map(n => [n.label, [['saleem', 'You said you would ' + n.say + '. And you did. That’s the win nobody writes on the scoreboard.']]])]]]);
-  for (const id of Object.keys(PARTNER_STORY)) PARTNER_STORY[id].forEach((sc, i) => add('Partners', castDef(id).name + ' ' + (i + 1), sc));
-  for (const id of Object.keys(NEWS)) NEWS[id].forEach(n => { try { add('Musalla: new lines', castDef(id).name + ': ' + n.topic, n.lines().map(l => [id, l])); } catch (e) {} });
+  for (const t of SHEIKH_TALKS) { try { add('Sheikh talks', t.key, talk(t)); } catch (e) {} }
   for (const id of MUS_CAST) { const T = TALK[id]; if (!T) continue; const base = Object.getOwnPropertyDescriptor(T, 'options').get ? T.options.filter(o => !/^! /.test(o[0])) : T.options;
     try { add('Musalla talks', castDef(id).name, [[id, T.greet()], ['choice', base.map(([q, f]) => { let r = []; try { r = f(); } catch (e) {} return [q, r.map(l => [id, l])]; })]]); } catch (e) {} }
   return S;

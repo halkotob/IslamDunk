@@ -1,5 +1,302 @@
 # Changelog
 
+## 9.29.2: The career overhaul, on top of 9.21.2's sounds
+This merges main's 9.21.2 (the sounds picked in the first phone review) into the career overhaul, so both are
+together for release. The calendar chime is cut on both sides, and the green-make sound is cut in 9.21.2, so the game
+has 38 sound IDs. 9.21.2's calendar sound check is dropped because the calendar left the career in 9.22.0. Nothing
+else changes.
+- `sfx-quiet` now expects the reviewers' default picks from 9.21.2 (six sounds keep their picked variant under
+  the Soft style). It had failed on main since 9.21.2.
+
+## 9.29.1: Career overhaul, finished
+The last checks of the career overhaul (docs/career-overhaul/PROMPT.md, step 5):
+- **Fix:** a story scene with a choice line (the old story's choices, still used outside the career) failed to draw
+  after 9.26's text-box change. Choice lines go back to the old drawer and its buttons.
+- `story-post` now names the after-the-story IDs it covers (P.1 replays, P.2 the milestones screen, P.3 every moment,
+  P.4 the last scene). Every scene ID in `docs/career-overhaul/SCENES.md` is named in a test's path.
+- `docs/audio/sound-list.csv` refreshed (the new prizes' sounds).
+
+How it was checked: `npm test`: 82/82. The bots play a new career from C0.1 to The End (`story-ch5` and
+`story-post`). Every chapter with a checkpoint restarts from it at least once (C2.4, C3.2, C4.1 and C5.1). C0.5 and
+C1.8 replay until they're won. Screenshots of each chapter's key scenes, the hub and the new screens were checked at
+phone and desktop sizes as each release went out.
+Known: `league-determinism` and `league-calibration` (the slow tier, not in `npm test`) failed before 9.25 too.
+
+## 9.29.0: After the story: replays, milestones, moments and prizes
+The career goes on after The End:
+- **P.1** A week after the Cup, a talk in the gym. Sh. Saleem explains that the story is over but the masjid
+  isn't. The brothers have news (the youth league, full classrooms).
+- **Replays (P.R).** From then on, Continue opens **Replay a tournament**: any of the four tournaments as a new season
+  with a new draw (the Ummah Cup uses your last draw), the dunks-only all-star game, or CHAI. A title won again pays
+  a fifth of the title's fundraiser money and is counted on the list.
+- **21 milestones (P.2)** under My Player > Milestones:
+  - the four titles and the first league win
+  - maxed chemistry with each of the seven brothers
+  - a stat at 10, and every stat at 7 or more
+  - 50 games, and five wins over Al-Furqan
+  - five dunks in one all-star game, and a CHAI win
+  - every special event played
+  - $150,000 raised
+  - a tournament won again after The End
+
+  Each shows its progress, and a toast announces it when earned.
+- **Moments (P.3).** Each milestone unlocks a short walk-up talk with the brother it concerns. Rayyan has one too.
+  New ones play on the next Continue after The End, and any earned one can be watched again from the Milestones
+  screen.
+- **100% (P.4).** Every milestone: the brothers stay late after Isha with a gift, the golden ball.
+- **Prizes, all cosmetic and usable in the world** like the water cooler (walk up, F or tap):
+  - 5 milestones: Imam Dawud's **chai urn** in the gym. Pour a cup: steam, a line, and half your turbo back (gym
+    only).
+  - 10: the **team photos** on the gym wall, with a caption from the journey each time.
+  - 15: the kids' **mural** on the school wing, outside. Tap it and the painted team bounces.
+  - All 21: the **golden ball** on its stand in the gym. Lift it: sparkles and a cheer.
+
+  Nothing carries into a match, and `econSelfCheck()` stays empty.
+
+How it was checked: **new test** `story-post`. A new career is played to The End, then P.1, a league won again, a
+Nationals run lost, the all-star game and CHAI. Then every milestone is met, each moment plays, P.4 plays, each
+prize is used in the world, `econSelfCheck()` is empty, and a moment is watched again from Milestones. Also
+`story-*`, `studio-coverage` (two new Studio screens: the replay chooser and Milestones), `studio-phone` and the phone
+audit.
+
+## 9.28.0: Chapter 5, the Ummah Cup, and The End
+The career's last chapter is in. After the National title, Continue plays:
+- **C5.1** Istanbul: the Ummah Cup. This is the checkpoint. Sh. Saleem explains the rules and the draw.
+- **C5.2 King of the Court for the draw**, against the captains of three other teams. Get crowned and you meet the
+  weakest side in the quarterfinal. Each game you win makes the draw easier. Losing it doesn't knock you out.
+- **C5.3** The draw is set and you meet your quarterfinal opponent, then pick your teammate.
+- **C5.4, C5.6, C5.8** Quarterfinal, semifinal and final, against masjid teams from around the world, played in
+  their cities' skylines and the grand arena. **C5.5 and C5.7** React and get ready. The night before the final, the
+  brothers walk to the masjid by the water for Isha.
+- **C5.9** Champions of the ummah. A sujood of thanks (in the narration, not shown), you lift the Cup first, a word
+  from every brother, and the dome and minaret go up at home.
+- **C5.10** Home: the weekend-school kids in the front row, and Musa's youth league (matching headbands, finally).
+- **C5.11 The End:** the credits roll on black: the cast, the school wing, and a closing du'a. Enter or a tap skips.
+- Any loss after the draw: next season, back to C5.1.
+- After The End, the hub reads "After the story". Life after the story (replays, milestones, prizes) arrives in the
+  next update.
+- **Fix:** winning the National final (round 4 of the 16-team knockout) set Halal Bucks to NaN, because the reward
+  table knew only three rounds. Knockout rounds now map onto the last three. This affected 9.27.0.
+
+How it was checked:
+- **New test** `story-ch5`. A bot plays C5.1 to C5.11. It loses King of the Court once (one win, a fair draw) and
+  then is crowned (the easiest draw), and loses the semifinal once (back to C5.1). It checks the captains, that the
+  draw changes the quarterfinal opponent, the credits, the Cup, the dome, and the hub after The End.
+- `story-ch4` and `story-ch5` now check that Halal Bucks and Barakah Points stay numbers. Also `story-*`,
+  `studio-coverage` (the credits are a new Studio screen) and `studio-phone`.
+
+## 9.27.0: Chapter 4, National tournament
+The career's Chapter 4 is in. After the State title, Continue plays:
+- **C4.1** The National Masjid Invitational. This is the checkpoint. Renew the intention, represent the whole state,
+  then pick your teammate.
+- **The knockout:** sixteen teams (the eight masjid teams and seven from across the country), single elimination:
+  round of 16, quarterfinal, semifinal, final. Al-Furqan is drawn on the other half, so the earliest you can meet is
+  the final. Any loss: next season, back to C4.1. The bracket screen shows all four rounds.
+- **C4.3, C4.5 and C4.7** React to each win and meet the next opponent, all as walk-up talks. Each one says whether
+  Al-Furqan is still alive. Before the final, Ilyas thanks his dad for driving them to every game.
+- **C4.9 National champions.** Ammo Jamil and Ilyas make peace ("Good game, son"). The community fills whatever the
+  fundraiser still needed, so the school wing is paid for: four classrooms, and the eleven families turned away all
+  have a place. The title also builds the musalla extension and the garden. From now on, **the school wing stands
+  beside the masjid** on Masjid > Outside, with the kids' drawings in its windows.
+- **C4.10** The invitation to the Ummah Cup, in Sh. Saleem's office. Chapter 5 arrives in the next update.
+- A league win adds $1,500 to the fundraiser at Nationals.
+
+How it was checked: **new test** `story-ch4`. A bot plays C4.1 to C4.10 and loses a quarterfinal once (next
+season, back to C4.1). It checks the bracket (eight first-round games, sixteen teams, Al-Furqan on the other half,
+the round names), the fundraiser reaching $100,000, the wing on the Outside view, and the father-and-son lines. Also
+`story-*`, `studio-coverage`, `studio-phone` and the phone audit.
+
+## 9.26.0: Every scene is a walk-up talk; Hajj instead of an injury
+- **Walk-up talks everywhere.** Every dialogue scene is now played where it happens, as it already was in the
+  musalla and the office. You're on the gym floor with the people in the scene standing around, a gold marker over
+  the one who starts it, and you walk up and talk. Narration shows when you arrive. Anyone else answers your salaam
+  and points you to him. This covers C0.6, C1.1, C1.9, C2.4, C2.11, C2.13, C2.16, the next-season scenes, and C3.2,
+  C3.11, C3.16, C3.18 and C3.22. C3.23 (the invitation) is in Sh. Saleem's office.
+- **No portraits anywhere.** Every story line is a plain text box with the speaker's name: in the walks (which used
+  speech bubbles), and in the short lines before and after a game or a teammate pick, now shown over the room.
+- **Hajj, not an injury (C3.14 and C3.18).** After league game 6, your teammate has news: his name came up for Hajj.
+  Each of the seven has his own scene (Ammo Jamil after twenty years of saving, Ilyas going with his grandmother,
+  Musa given a place by a brother at work). Pick someone else while he's away. On the pick screen he shows as "Away
+  for Hajj". He comes back a hajji for the playoffs. Hajj itself is never shown. `docs/career-overhaul/SCENES.md` is
+  updated to match.
+
+How it was checked: `story-ch0` to `story-ch3` and `story-reload` (the scenes above now reopen as walks on the gym
+floor), `studio-coverage`, `studio-phone` and the phone audit.
+
+## 9.25.0: Chapter 3, State league
+The career's Chapter 3 is in. After the masjid league title, Continue plays:
+- **C3.1** Back at the gym: a walk. The new lights and trophy case, forty people at practice, six new weekend-school
+  students.
+- **C3.2** The State Masjid Championship. This is the chapter's checkpoint. Sh. Saleem explains the table, then you
+  pick your teammate.
+- **The table:** nine masjids, everyone plays everyone once. That's eight games for Al-Amanah, and our bye is the last
+  round. The top four go to the semifinals (1st plays 4th, 2nd plays 3rd), then the final. The bracket screen shows
+  the table of nine and the playoff boxes. The scouting report gives both teams' places in the table.
+- **C3.4** Practice: a free walk with a drill to finish.
+- **C3.6** Team bonding: HORSE with the word **CHAI** against your teammate (Ammo Jamil if your teammate is Sh.
+  Saleem). The loser makes the chai, and Imam Dawud's recipe is in the scene.
+- **C3.9 to C3.11** In Sh. Saleem's office (a talk, with a marker over him): an **all-star game, dunks only**,
+  against Al-Furqan's best two. Only a dunk scores. A jumper or a layup counts nothing, and the ball goes the other
+  way. A crowd meter fills with every dunk, more for yours and for the big ones. The ticket money for the school wing
+  is $1,500, plus $750 a dunk, plus up to $4,000 for the crowd.
+- **C3.14** Your teammate is hurt (each of the seven has his own injury scene). Pick a replacement: he can't be
+  picked until he's healed.
+- **C3.16 to C3.18** The last league game (must-win while the top four is on the line), then the table. Top four: the
+  semifinal draw, and the injured teammate comes back as your partner. Outside the top four: next season, back to
+  C3.2.
+- **C3.19 to C3.23** The semifinal, the night before the final in Sh. Saleem's office, the final, the state title
+  (bleachers, scoreboard and carpet, and $12,000 for the school wing), and the invitation to Nationals. Chapter 4
+  arrives in the next update.
+- A league win adds $900 to the fundraiser at State.
+
+How it was checked:
+- **New test** `story-ch3`: a bot plays C3.1 to C3.23. On the way it loses CHAI, loses the semifinal once (next
+  season, back to C3.2) and then wins. It checks the table (36 games, our eight on rounds 1 to 8, nine teams), the word
+  CHAI, that a jumper scores 0 and a dunk 2 in the all-star game, the ticket money, the injury and the return. A
+  second run loses every league game: C3.18, next season, back to C3.2.
+- `story-reload` covers the Chapter 3 scenes. `story-*`, `studio-coverage`, `studio-phone`, the phone audit and the
+  league tests pass, except `league-determinism` and `league-calibration`, which already fail on 9.24.1 (see below).
+- Known: `league-determinism` and `league-calibration` (the slow tier, not in `npm test`) fail. They failed before
+  this release too, and a fix is to follow.
+
+## 9.24.1: Talks happen where they happen
+A story scene that takes place somewhere is now a talk in that place, not a cutaway with portraits over it:
+- **C0.2** You are on the musalla floor after Isha. A gold marker floats over Imam Dawud: walk up to him and talk.
+  The others there answer your salaam.
+- **C1.7 and C2.3** You are in Sh. Saleem's office with a marker over him. Select him to talk (the bookshelf still works).
+- The lines are a plain text box with the speaker's name. Click or press Enter to go through it. Narration shows when
+  you arrive.
+
+How it was checked: `story-ch0`, `story-ch1`, `story-ch2`, `story-reload` (C0.2 reopens in the musalla, C1.7 in the
+office), `studio-coverage`, `studio-phone` and the phone audit.
+
+## 9.24.0: Chapter 2, Masjid league
+The career's Chapter 2 (docs/career-overhaul/SCENES.md) is in. After Chapter 1, Continue plays:
+- **C2.1** First practice: the real gym, three drills, then Sh. Saleem.
+- **C2.2** Father and son: Ammo Jamil and Ilyas, a gym apart. Talk to both: each says the same thing about the other.
+- **C2.3** Why we play: the brothers squeeze into Sh. Saleem's office after salah (the rows lining up, then the closing
+  salams on black). Ustath Karim's weekend school has no room, and the board has approved a $100,000 school wing. The
+  **school wing fundraiser** starts, and its meter is on the hub.
+- **C2.4** The Metro Masjid League: eight masjids in two groups of four, Al-Furqan and their captain Rayyan among them.
+  This is the chapter's checkpoint.
+- **C2.5 and C2.7** Pick your partner from the seven brothers. The pick screen shows each one's portrait, his two
+  standout stats and his chemistry with you, and each has a line of his own. Game 2 keeps the same partner unless you
+  change him.
+- **C2.6, C2.8 and C2.12** The three group games. Each has a pregame scene about what is at stake (the opener, an
+  ordinary game, must-win or already through), then the pregame card, then the game. Each result has its own lines.
+- **C2.9** Practice day, a free walk. **C2.10** Lights out: the breaker trips mid-practice and you play two on two in
+  the dark, the players and the ball each lit by a small glow, until the lights flicker back at 6 points or 90 seconds.
+- **C2.11 and C2.13** The final push and the group table. Top two go to the semifinal. Third or fourth ends the season.
+- **C2.14 and C2.15** The semifinal and the final, single elimination.
+- **C2.16** Champions: the trophy and the lights project for the masjid, and $5,000 for the fundraiser. Then Chapter 3
+  (next update).
+- **C2.NS** Next season: out in the group or a lost playoff game means the season ends. Sh. Saleem has a few words, the
+  season count goes up and the story goes back to C2.4 with a new league.
+- Every league win adds to the fundraiser ($400 at the masjid level). The hub's next event names the opponent.
+- The league field is the story's own: Al-Amanah, Al-Furqan and the masjid teams, scaled to the stage. A custom team no
+  longer joins the career league.
+
+How it was checked:
+- **New test** `story-ch2`: a bot plays C2.1 to C2.16. It loses a semifinal on the way (next season, back to C2.4, then
+  won), and in a second run it goes out in the group. It checks Al-Furqan and Rayyan are in the field, that lights out
+  ends, the fundraiser total and the title's projects.
+- `story-reload` now covers the Chapter 2 scenes: a save at each, a reload, Continue starts the same scene.
+- The Review Studio and the phone audit gain the teammate pick (`story: teammate pick`).
+- `npm test`: 78/78.
+
+## 9.23.0: Chapter 1, Making the team
+The career's Chapter 1 (docs/career-overhaul/SCENES.md) is in. After Chapter 0, Continue plays:
+- **C1.1** The next night the gym is full. Sh. Saleem sends you to meet everyone, the gym and then the musalla, and
+  then to come to his office.
+- **C1.2 to C1.4** Meet the gym. This is the real gym floor, with its own buttons (Drills, the musalla, the office),
+  and a checklist of five corners that show the career: make a basket, finish a drill, look at your stats on the
+  whiteboard (it opens Upgrade stats, and Back comes back to the walk), chai with Imam Dawud at his table, and water at
+  the cooler. Ammo Jamil (**C1.3**: nineteen years without the masjid league, and one final lost by one point) and Ilyas
+  (**C1.4**: he wants his dad to watch one game without yelling) each have a scene of their own on the floor. An uncle
+  on a folding chair says hello.
+- **C1.5** The musalla. Qari Anas, Mufti Abdullah, Hafiz Zubair, Ustath Karim and Musa each introduce themselves the
+  first time you talk, then have their usual talk. The walk ends when all five are met.
+- **C1.6** Lightning with Sh. Saleem, Ammo Jamil, Ilyas and Musa. Any finish moves the story on, with lines for a win
+  or a loss.
+- **C1.7** Sh. Saleem’s office, now a scene with the office as its backdrop. He introduces himself and the masjid
+  properly, and offers you a starting spot if you earn it.
+- **C1.8** King of the Court with Ammo Jamil, Ilyas and Musa. Get crowned, or go again until you are.
+- **C1.9** The brothers vote you onto the team. The career begins, and the hub moves to Chapter 2 (the masjid league
+  arrives in the next release).
+- A walk left halfway keeps who you met and what you did. Continue picks it up where you were.
+- The Lightning and King of the Court results are the first line of the scene after them.
+- Fixes: the walk checklist sits beside the Back button on a computer and under it on a phone (it was under the button);
+  the Mufti and the Hafiz draw whole in the musalla; a story match's post-game with no lines no longer fails.
+
+How it was checked:
+- **New test** `story-ch1`: a bot plays C1.1 to C1.9 and loses King of the Court once before
+  it is crowned. It does the walk's corners the real way: the whiteboard opens Upgrade stats and Back returns to the
+  walk, the cooler, the cone run finished, chai with Imam Dawud. Ammo Jamil's and Ilyas's scenes are recorded inside the
+  walk, every C1 scene is in the Journal, and the story lands at C2.1 with the hub in Chapter 2.
+- `story-reload` now covers every Chapter 1 scene too: a save, a reload, and Continue starts the same scene.
+- The phone text audit (`mobile`, full tier) passes with the story's screens. The story walks are counted as
+  screens played with the joystick, like the career gym.
+- Screenshots of the gym walk, the musalla walk, a musalla introduction, the office scene and Lightning, at 1280x720 and
+  844x390, checked for text on text.
+- `npm test`: every fast-tier test passes.
+
+## 9.22.0: the career is a story, starting with Chapter 0
+Career is now a chaptered story (docs/career-overhaul/: the brief, the scene list and MAP.md, which maps every scene to
+the code). This release is the foundation and its first chapter. A new career goes from the creator straight into
+**Chapter 0: Introduction**:
+- **C0.1** On black, the closing salams of Isha fade in, “As-salamu alaykum wa rahmatullah” to the right, then to the
+  left, in Arabic and in English. Only the words are shown, never the prayer.
+- **C0.2** The musalla just after Isha: rows of brothers seated on the carpet, and Imam Dawud welcomes you and sends you
+  to the gym.
+- **C0.3** The gym. Ilyas is shooting around, Ammo Jamil is watching, Sh. Saleem is waiting. Walk up and say salaam to
+  each of them (E, Enter, or tap Talk). A checklist in the corner shows who is left, and Sh. Saleem ends the walk.
+- **C0.4** Shoot around, the tutorial on the real gym floor: move, sprint, take a jump shot, make two. Each step's
+  controls are on the hint (keyboard or touch), and each step ticks off as you do it.
+- **C0.5** A pickup game: you and Sh. Saleem against Ammo Jamil and Ilyas, first to 11, against the easiest CPU there
+  is. Lose, and they run it back until you win.
+- **C0.6** They invite you back tomorrow. Father and son bicker about the loss, and Sh. Saleem has a word for both.
+  Then you land on the new hub in **Chapter 1: Making the team**. Chapter 1 arrives in the next release, so Continue
+  says so for now.
+
+**The new hub** has four entries and nothing else: **Continue** (the next scene or game), **Gym** (practice and
+drills), **Masjid** (the musalla, Sh. Saleem’s office, outside, projects) and **My Player** (upgrade stats, look,
+Journal, league and stats). Beside them are the chapter, the next event and, once Chapter 2 starts it, the school
+wing fundraiser. The corner menu (Save and load, Title) is unchanged. Every scene goes into the **Journal** by its ID.
+
+**The new cast** (in `CAST`, with looks, numbers and stats): Sh. Saleem, Ammo Jamil, Ilyas, Ustath Karim, Qari Anas,
+Imam Dawud and Musa are the seven teammates. Each is in the top two of the seven in both of his standout stats, at
+every stage. The Mufti (Mufti Abdullah) and the Hafiz (Hafiz Zubair) are in the musalla. The rival is Masjid
+Al-Furqan, captain Rayyan. The musalla, the HORSE opponents, the 1v1 drill (now against Ilyas), the passing drill
+(Musa) and King of the Court in the gym all use the new cast.
+
+**Removed from career** (MAP.md lists every file, save field, screen and test each one touched): the calendar and
+the neighbourhood that ran its free days (with its Settings row), Jumu’ah, the hub-first rows, the pregame intention
+picker, the office lessons, partner side-scenes, the rival feud, the end-of-season ceremony and the Season N+1
+screen, weekly goals, the rookie checklist, badges, the old intro, and Jalal and the old regulars as named characters
+in career. Khalil, Nasser, Tariq and the uncles are still in the mini games outside career, which play as before.
+The Barakah Run had no link from career to remove and is untouched.
+
+**Old career saves are not migrated.** The game is still in testing, so a career saved before this version
+(`sv` < 10) isn't offered: the Career menu starts a new career. The profile, custom teams and everything else are
+kept.
+
+How it was checked:
+- **New tests** (`tests/story.mjs`, fast tier): `story-ch0` (a bot plays C0.1 to C0.6, loses the pickup game once,
+  then wins and lands at the hub in Chapter 1, with every scene in the Journal and every screen drawn); `story-reload`
+  (a save at each Chapter 0 scene, a page reload, Continue: the same scene); `story-hub` (exactly the four entries;
+  every entry and sub-entry opens its screen, at desktop and phone sizes); `story-cast` (the standout stats);
+  `story-oldsave` (old saves start a new career, the profile is kept).
+- `hub-layout` checks the new hub at 5 sizes and 10 cases (chapters, long names, 5-digit balances, the fundraiser,
+  maxed stats, open submenus): no text on text, no panel on panel, nothing outside its panel, no text under 11 px on
+  phones. The phone text audit has the story screens (the salams, the musalla, a walk, a bubble, the tutorial, the hub).
+- Retired with their systems: `calendar`, `career-run`, `world-*`, `jumuah`, `jumuah-visual`, `hub-presses`,
+  `hub-arrive`, `career-intro` and the old `career` test, plus the review scripts `review:calendar`, `review:world`,
+  `review:jumuah` and `review:hub`. Updated to the new career: the save tests (they use a story save, and `save-old`
+  now checks that old careers aren’t loaded while the profile and teams are), the league fixtures (no calendar), the
+  Review Studio (the story's scenes by chapter and ID instead of the old threads), `v98` (no niyyah), and the sound
+  tests (the calendar's chime is gone: 39 sounds).
+- `npm test`: every fast-tier test passes.
+
 ## 9.21.2: the sounds you picked on your phone
 The first review done on a phone through the published Studio: 36 sounds marked.
 - **New defaults** (`SFX_DEFAULT_PICKS`):

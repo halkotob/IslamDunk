@@ -35,7 +35,7 @@ function devClock(s) { if (!M.teams || M.mini) return devNote('Not in a full gam
 const DEV_MODES = [
   ['Quick match', () => startSelect('1p')], ['Lightning', () => { MiniMenu.kind = 'lightning'; startQuickMini(); }], ['HORSE', () => { MiniMenu.kind = 'horse'; startQuickMini(); }],
   ['Daily hot spot', () => startDaily()], ['Daily scenario', () => openScenBrief()], ['Barakah Run', () => openBarakah()],
-  ['Career intro walk', () => { devCareer(); startIntroWorld(); }], ['Career hub', () => { devCareer(); careerHub(); }], ['Online lobby', () => onlineEntry()]
+  ['Career story start', () => { devCareer(); C.story = storyFresh(); storyRun(); }], ['Career hub', () => { devCareer(); careerHub(); }], ['Online lobby', () => onlineEntry()]
 ];
 function devBuild() {
   const d = document.createElement('div'); DEV.el = d;

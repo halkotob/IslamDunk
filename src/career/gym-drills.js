@@ -193,7 +193,7 @@ const DRILLS = {
   ft: { name: 'Free throws', desc: '10 shots from the line' },
   three: { name: 'Three-point challenge', desc: '5 racks in 60 seconds, the last ball of each rack counts double' },
   cones: { name: 'Cone dribble', desc: 'Dribble to each cone in order, fastest time wins' },
-  v1: { name: '1v1 vs Nasser', desc: 'Half court to 11. After a change of possession, take it past the arc' }
+  v1: { name: '1v1 vs Ilyas', desc: 'Half court to 11. After a change of possession, take it past the arc' }
 };
 const CONES = [{ x: 920, z: 180 }, { x: 1040, z: 290 }, { x: 920, z: 400 }, { x: 1040, z: 510 }, { x: 1160, z: 600 }, { x: 1180, z: 420 }, { x: 1090, z: 300 }];
 const THREE_SPOTS = [-1.12, -0.56, 0, 0.56, 1.12].map(a => ({ x: hoops[1].x - Math.cos(a) * 338, z: clamp(350 + Math.sin(a) * 338, 45, 655) }));
@@ -205,7 +205,7 @@ function zeroCmd(c) { c.mx = 0; c.mz = 0; c.turbo = false; c.a = false; c.b = fa
 function setupPractice(kind) {
   const team = amanahTeam();
   const tA = Object.assign({}, team, { players: [playerDef()] });
-  const tB = kind === 'v1' ? { name: 'Nasser', short: 'NASSER', c1: '#5f7a5a', c2: '#f3e6c4', crest: 'star', players: [Object.assign({}, CAST.nasser)] } : Object.assign({}, team, { players: [] });
+  const tB = kind === 'v1' ? { name: 'Ilyas', short: 'ILYAS', c1: '#2b3a55', c2: '#f3e6c4', crest: 'star', players: [storyMateDef('ilyas', stageOf())] } : Object.assign({}, team, { players: [] });
   newMatch(tA, tB, { humans: [{ team: 0, slot: 0, pad: 0 }], practice: kind === 'v1' ? '1v1' : kind, aiCfg: [DIFF.medium, DIFF.medium] });
   M.cmdHook = gymCmd; M.drawExtras = gymExtras; M.phase = 'live';
   const me = M.players[0];
@@ -279,7 +279,7 @@ function finishDrill() {
   else if (d.kind === 'cones') { bp = clamp(Math.round(80 - d.time * 3.5), 10, 55); line = d.time.toFixed(1) + ' seconds'; if (!C.best.cones || d.time < C.best.cones) { C.best.cones = +d.time.toFixed(1); best = true; } }
   else {
     const you = M.teams[0].score, him = M.teams[1].score, won = d.winner === 0;
-    bp = won ? 40 + you : 12 + Math.round(you / 2); line = (won ? 'You beat Nasser ' : 'Nasser won ') + Math.max(you, him) + ' to ' + Math.min(you, him);
+    bp = won ? 40 + you : 12 + Math.round(you / 2); line = (won ? 'You beat Ilyas ' : 'Ilyas won ') + Math.max(you, him) + ' to ' + Math.min(you, him);
     if (won) { C.best.v1++; best = true; }
   }
   // v5.0: stage-scaled BP, a bonus for a new personal best, a little HB (more for a best or a win)

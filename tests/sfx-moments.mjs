@@ -69,13 +69,6 @@ export function sfxMomentsTests({ newContext, open }) {
       // Yes / No; a toast
       askConfirm({ text: 'Sure?', yes: ['Yes', () => {}], no: ['No', () => {}] }); confirmPick(1); out.confirm = take().filter(x => x[0] === 'uiConfirm').length;
       toast('Saved.'); out.toast = take().filter(x => x[0] === 'toast').length;
-      // the calendar: a new day, a new month and Eid al-Adha's day make no sound (v9.21.2: the chime was cut in the Studio)
-      C = freshCareer(); calInit(); take();
-      const d0 = C.cal.d, t = calDate(d0), nextMonth = calDayOf(t.y, t.m + 1, 1), adha = calDayOf(t.y, 11, 10);
-      calSetDay(d0 + 1); const a = take().length;
-      calSetDay(nextMonth); const b = take().length;
-      calSetDay(adha - 1); take(); calSetDay(adha); const c = take().length;
-      out.cal = [a, b, c];
       C = null; return out;
     });
     // Back: Esc out of a menu, and the corner button
@@ -89,7 +82,7 @@ export function sfxMomentsTests({ newContext, open }) {
     const ok = JSON.stringify(r.shot) === '[3,2,1]' && r.hot === 1 && r.ft.step === 1 && r.ft.attempt === 2
       && r.crowd0.sort().join() === 'crowdBadMiss,crowdBlock,crowdTurnover' && r.crowd6.length === 0 && r.catchN >= 1
       && r.half === 1 && r.win.join() === 'winStinger' && r.loss.join() === 'lossStinger' && r.earn === 5 && r.trivia === 5
-      && r.confirm === 1 && r.toast === 1 && r.cal.join() === '0,0,0' && esc.screen === 'title' && esc.n === 1 && btn.screen !== 'profile' && btn.n === 1 && !errs.length;
+      && r.confirm === 1 && r.toast === 1 && esc.screen === 'title' && esc.n === 1 && btn.screen !== 'profile' && btn.n === 1 && !errs.length;
     return { ok, detail: [JSON.stringify(r), `Esc from the Career menu: ${JSON.stringify(esc)}; the corner Back on Profile: ${JSON.stringify(btn)}`, ...errs] };
   };
   T['sfx-calls'] = async ({ browser, base }) => {
@@ -141,7 +134,7 @@ export function sfxMomentsTests({ newContext, open }) {
         const errs = [], peaks = {};
         for (const id of ids) { try { SFX[id](); } catch (e) { errs.push(id + ': ' + e.message); } }
         const buf = await c.startRendering(), x = buf.getChannelData(0); let pk = 0; for (let i = 0; i < x.length; i++) pk = Math.max(pk, Math.abs(x[i]));
-        return { peak: pk, errs, picked: ids.filter(id => SFX.variantOf(id) !== style) };
+        return { peak: pk, errs, picked: ids.filter(id => SFX.variantOf(id) !== (SFX_DEFAULT_PICKS[id] || style)) };   // (v9.29.2: the reviewers' default picks of 9.21.2 win over the style)
       };
       try { return { on: await run(true, 'A'), off: await run(false, 'A'), soft: await run(true, 'D') }; } finally { Object.assign(SFX, keep); SETTINGS.sound = true; }
     }, NEW);

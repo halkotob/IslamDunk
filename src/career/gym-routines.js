@@ -2,7 +2,7 @@
 // Four new routines in the gym, each built on the real controls:
 //   * Mikan drill: layups at the rim, alternating sides, 40 seconds. Only finishes at the rim count.
 //   * Defensive slides: stay in front of a sliding marker for 30 seconds. Holding Defend counts full.
-//   * Passing: Khalil cuts to a spot and lights up. Hit him while he's open, 40 seconds.
+//   * Passing: Musa cuts to a spot and lights up. Hit him while he's open, 40 seconds.
 //   * Conditioning: line sprints. Touch each line and come back, against the clock.
 // Around the World and King of the Court can be played in the gym too, against the brothers.
 // Today's plan: three routines picked for the day. Finish all three for a bonus.
@@ -10,12 +10,14 @@
 const ROUTINES = {
   mikan: { name: 'Mikan drill', desc: 'Layups at the rim, left side then right side, 40 seconds' },
   slides: { name: 'Defensive slides', desc: 'Stay in front of the marker for 30 seconds. Hold Defend' },
-  passing: { name: 'Passing', desc: 'Hit Khalil when he lights up. 40 seconds' },
+  passing: { name: 'Passing', desc: 'Hit Musa when he lights up. 40 seconds' },
   cond: { name: 'Conditioning', desc: 'Line sprints: touch each line and come back' }
 };
 Object.assign(DRILLS, ROUTINES);
 const COND_LINES = [1054, 1300, 860, 1300, 660, 1300];               // free-throw line, half court... and back each time
 const PLAN_POOL = ['ft', 'three', 'cones', 'mikan', 'slides', 'passing', 'cond', 'v1'];
+// the plan's bonus, paid when all three are done
+function planPay(bp, hb, why) { bp = Math.round(bp * ECON.bpK); C.bp += bp; C.hb += hb; toast('✓ ' + why + '   +' + bp + ' BP' + (hb ? '  +' + hb + ' HB' : ''), 3.2); SFX.good && SFX.good(); saveCareer(); }
 function gymHoop() { return hoops[1]; }
 function parkBall() { Object.assign(ball, { owner: null, state: 'loose', x: 1236, z: 22, y: BALL_R, vx: 0, vy: 0, vz: 0, shot: null, pass: null, grabLock: 9 }); }
 // ---- today's plan
@@ -33,14 +35,14 @@ function practicePlan() {
 function planDone(kind) {
   const P_ = practicePlan(); if (!P_ || !P_.ids.includes(kind) || P_.done.includes(kind)) return;
   P_.done.push(kind);
-  if (P_.done.length >= P_.ids.length && !P_.paid) { P_.paid = true; setTimeout(() => goalPay(Math.round(60 * ECON.bpDrillK[stageOf()]), 15, 'Today’s practice plan'), 900); }
+  if (P_.done.length >= P_.ids.length && !P_.paid) { P_.paid = true; setTimeout(() => planPay(Math.round(60 * ECON.bpDrillK[stageOf()]), 15, 'Today’s practice plan'), 900); }
   else gymToast('Today’s plan: ' + P_.done.length + ' of 3 done', 2.5);
   saveCareer();
 }
 // ---- starting a routine
 function setupPassing() {
   const team = amanahTeam();
-  const tA = Object.assign({}, team, { players: [playerDef(), Object.assign({}, CAST.khalil)] }), tB = Object.assign({}, team, { players: [] });
+  const tA = Object.assign({}, team, { players: [playerDef(), storyMateDef('musa', stageOf())] }), tB = Object.assign({}, team, { players: [] });
   newMatch(tA, tB, { humans: [{ team: 0, slot: 0, pad: 0 }], practice: 'passing', aiCfg: [DIFF.medium, DIFF.medium] });
   M.cmdHook = gymCmd; M.drawExtras = gymExtras; M.phase = 'live';
   const [me, kh] = M.players;
@@ -58,7 +60,7 @@ function passSpots() { const h = gymHoop(), o = -h.dir; return [{ x: h.x - o * 6
     const me = M.players[0], h = gymHoop();
     if (kind === 'mikan') { d.left = 40; d.side = 0; place(me, h.x + h.dir * 80, h.z - 70); giveBall(me, 'inbound'); gymToast('Move toward the rim for a layup (Sprint + Shoot dunks), then go up on the other side.', 4); }
     if (kind === 'slides') { d.left = 30; d.in = 0; d.seg = 0; d.segIn = 0; d.mk = { x: 1000, z: 350, tz: 350, sp: 150, t: 0 }; place(me, 1000, 400); me.face = -1; parkBall(); gymToast('Stay in front of the marker. Hold Defend to slide: it counts full.', 4); }
-    if (kind === 'passing') { d.left = 40; d.spot = -1; d.open = 0; d.back = 0; d.miss = 0; gymToast('Pass when Khalil lights up. The quicker, the better.', 4); }
+    if (kind === 'passing') { d.left = 40; d.spot = -1; d.open = 0; d.back = 0; d.miss = 0; gymToast('Pass when Musa lights up. The quicker, the better.', 4); }
     if (kind === 'cond') { d.idx = 0; place(me, 1290, 350); me.face = -1; parkBall(); gymToast('Touch each line and come back. Use turbo, but watch your legs.', 4); }
     SFX.blip();
   };
@@ -151,19 +153,19 @@ function passSpots() { const h = gymHoop(), o = -h.dir; return [{ x: h.x - o * 6
   finishDrill = function () {
     const d = Gym.drill; if (!d) return _fd.apply(this, arguments);
     const kind = d.kind;
-    if (!ROUTINES[kind]) { const r = _fd.apply(this, arguments); planDone(kind); if (kind === 'ft') badgeAdd('line', Math.min(5, d.made || 0)); return r; }
+    if (!ROUTINES[kind]) { const r = _fd.apply(this, arguments); planDone(kind); return r; }
     C.best = C.best || {};
     let bp = 0, line = '', best = false;
-    if (kind === 'mikan') { bp = d.made * 4; line = d.made + ' finishes at the rim'; if (d.made > (C.best.mikan || 0)) { C.best.mikan = d.made; best = true; } badgeAdd('mikan', Math.min(5, d.made)); }
-    else if (kind === 'slides') { bp = Math.round(d.score * 0.6); line = d.score + '% in front  •  ' + d.reps + ' locked-in stretches'; if (d.score > (C.best.slides || 0)) { C.best.slides = d.score; best = true; } badgeAdd('lockdown', Math.min(4, d.reps)); }
-    else if (kind === 'passing') { bp = d.score * 4; line = d.made + ' good passes, ' + d.score + ' points'; if (d.score > (C.best.passing || 0)) { C.best.passing = d.score; best = true; } badgeAdd('general', Math.min(4, Math.floor(d.made / 3))); }
-    else { bp = clamp(Math.round(90 - d.time * 3), 12, 60); line = d.time.toFixed(1) + ' seconds'; if (!C.best.cond || d.time < C.best.cond) { C.best.cond = +d.time.toFixed(1); best = true; } badgeAdd('lungs'); }
+    if (kind === 'mikan') { bp = d.made * 4; line = d.made + ' finishes at the rim'; if (d.made > (C.best.mikan || 0)) { C.best.mikan = d.made; best = true; } }
+    else if (kind === 'slides') { bp = Math.round(d.score * 0.6); line = d.score + '% in front  •  ' + d.reps + ' locked-in stretches'; if (d.score > (C.best.slides || 0)) { C.best.slides = d.score; best = true; } }
+    else if (kind === 'passing') { bp = d.score * 4; line = d.made + ' good passes, ' + d.score + ' points'; if (d.score > (C.best.passing || 0)) { C.best.passing = d.score; best = true; } }
+    else { bp = clamp(Math.round(90 - d.time * 3), 12, 60); line = d.time.toFixed(1) + ' seconds'; if (!C.best.cond || d.time < C.best.cond) { C.best.cond = +d.time.toFixed(1); best = true; } }
     bp = drillBP(bp); const pb = best ? drillBP(ECON.bpPB) : 0, hb = practiceHB(best);
     bankPractice(bp + pb, hb);
     Gym.result = { title: ROUTINES[kind].name, line, bp: bp + pb, pb, hb, best, kind };
     if (best) { FX.callout('NEW BEST!', '#9dffb0', line.toUpperCase().split('  •  ')[0]); SFX.best(); }
     Gym.drill = null;
-    rookieDo('drill'); weekAdd('gym'); planDone(kind);
+    planDone(kind);
   };
   // markers drawn on the floor
   const _gx = gymExtras;
@@ -203,7 +205,7 @@ const DRILL_HUD = {
 // King of the Court is played on the gym floor with the brothers, then you're back in the gym.
 function startGymKotc() {
   Gym.overlay = null;
-  startKotc({ roster: ['you', ...shuffle(['khalil', 'nasser', 'saleem', 'hamid']).slice(0, 3)], humans: { you: 0 } });
+  startKotc({ roster: ['you', ...shuffle(['jamil', 'ilyas', 'saleem', 'anas', 'musa']).slice(0, 3)], humans: { you: 0 } });
   KOTC.gym = true;
 }
 {
@@ -225,7 +227,7 @@ function startGymKotc() {
     bankPractice(bp, hb);
     Gym.result = { title: 'Around the World vs ' + M.players[1].def.name, line: won ? 'You went around first' : 'You reached spot ' + (r.mine + 1) + ' of ' + ATW_N, bp, pb: 0, hb, best: false, kind: 'atw' };
     Gym.drill = null;
-    rookieDo('drill'); weekAdd('gym');
+
   };
   const _kl = kotcLeave;
   kotcLeave = function () {
@@ -236,7 +238,7 @@ function startGymKotc() {
     const bp = drillBP(king ? 70 : 15 + w * 10), hb = practiceHB(king);
     bankPractice(bp, hb);
     Gym.result = { title: 'King of the Court', line: king ? 'You were crowned King' : 'You won ' + w + ' game' + (w === 1 ? '' : 's'), bp, pb: 0, hb, best: king, kind: 'kotc' };
-    rookieDo('drill'); weekAdd('gym');
+
   };
   const _gt = goTitle;
   goTitle = function () {
@@ -254,7 +256,7 @@ function gymDrillMenu() {
     { label: 'Today’s plan' + (P_ ? '  (' + P_.done.length + '/3)' : ''), sub: (P_ ? P_.ids : []).map(k => ({ label: label(k), act: go(k) })) },
     { label: 'Shooting', sub: ['ft', 'three', 'mikan'].map(k => ({ label: label(k), act: go(k) })) },
     { label: 'Skills', sub: ['cones', 'passing', 'slides', 'cond'].map(k => ({ label: label(k), act: go(k) })) },
-    { label: tick('v1') + '1v1 vs Nasser', act: go('v1') },
+    { label: tick('v1') + '1v1 vs Ilyas', act: go('v1') },
     { label: 'Pickup games', sub: [
       { label: 'Lightning', act: () => startMini('lightning') },
       { label: 'HORSE', sub: opps.map(([id, name]) => ({ label: 'vs ' + name, act: () => startMini('horse', id) })) },

@@ -135,7 +135,7 @@ function useMusProp(m, p) {
   if (p.id === 'carpet') { m.sit = true; m.fx.card = upOf(U, 'carpet') >= 2 ? 'The new carpet is soft, with a prayer arch for every place in the row.' : upOf(U, 'carpet') ? 'Fresh green carpet, straight saff lines. No more guessing where the row is.' : 'The old carpet is a little thin here. It has seen a lot of sajdahs.'; }
   else if (p.id === 'shelf') { const a = MUS_AYAT[(C.ayahI = ((C.ayahI || 0) + 1) % MUS_AYAT.length)]; m.fx.card = '“' + a[0] + '”'; m.fx.sub = a[1]; }
   else if (p.id === 'callig') { m.fx.card = 'بسم الله: In the name of Allah.   الحمد لله: All praise is for Allah.'; if (upOf(U, 'callig') >= 2) m.fx.sub = 'The frieze: “Indeed, prayer has been decreed upon the believers at fixed times.” (An-Nisa’ 4:103)'; }
-  else if (p.id === 'chand') m.fx.card = upOf(U, 'chandelier') >= 2 ? 'The crystals catch the light and throw it across the whole room.' : 'Polished brass. Uncle Rafiq wipes it down every Thursday.';
+  else if (p.id === 'chand') m.fx.card = upOf(U, 'chandelier') >= 2 ? 'The crystals catch the light and throw it across the whole room.' : 'Polished brass. Imam Dawud wipes it down every Thursday.';
   else if (p.id === 'mihrab') m.fx.card = null;
   SFX.blip();
 }
@@ -204,7 +204,7 @@ function extSpots() {
   const U = C.up, ms = upOf(U, 'musalla'), bw = [240, 330, 420][ms], bh = [130, 150, 175][ms], pk = upOf(U, 'parking'), x0 = pk === 2 ? 320 : 300, top = 392 - bh, L = [];
   if (upOf(U, 'minaret')) L.push({ id: 'minaret', x: x0 + bw + 41, y: 392 - 236, cap: 'Allahu akbar, Allahu akbar... the adhan carries all the way down the main road.' });
   if (upOf(U, 'dome')) L.push({ id: 'dome', x: x0 + bw / 2, y: top - 26 - bw * 0.24 * 0.8, cap: 'The afternoon sun catches the dome.' });
-  if (upOf(U, 'garden')) L.push({ id: 'garden', x: x0 - 18, y: 392 - 52, cap: 'Sparrows take off from the trees Uncle Rafiq planted.' });
+  if (upOf(U, 'garden')) L.push({ id: 'garden', x: x0 - 18, y: 392 - 52, cap: 'Sparrows take off from the trees Imam Dawud planted.' });
   if (upOf(U, 'garden') >= 2) L.push({ id: 'fount', x: pk === 2 ? 640 : 820, y: 404, cap: 'Kids splash at the fountain after Asr. Nobody has the heart to stop them.' });
   if (pk) L.push({ id: 'park', x: 120, y: 410, cap: 'An uncle pulls in and parks. Properly. Inside the lines.' });
   return L;

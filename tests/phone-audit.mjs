@@ -6,9 +6,8 @@
 //     left < -2 or right > canvas.width + 2 (device pixels) is an OVERFLOW
 //   - the font size (parsed from ctx.font) is converted to CSS pixels on screen; below MIN_CSS_PX is SMALL
 // Each screen is set up, rendered for a few frames, and the findings are recorded under its name.
-import { CAL_HELPERS, CAL_STATES } from './calendar-setup.js';
-import { WORLD_HELPERS } from './world-setup.js';
-import { JUMUAH_HELPERS } from './jumuah-setup.js';
+import { CAREER_HELPERS } from './career-setup.js';
+import { STORY_HELPERS } from './story-setup.js';
 import { LEAGUE_HELPERS } from './league-setup.js';
 export const MIN_CSS_PX = 11;
 export const PHONES = [
@@ -45,7 +44,7 @@ export const AUDIT_INIT = `(() => {
 const CAREER = `if (!window.__careerReady) { window.__careerReady = 1; C = freshCareer(); C.name = 'Abdullah'; if (!C.bracket) C.bracket = makeBracket(C.stage);
   startCareerMatch(); for (let n = 0; n < 60 * 60 * 20 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; } careerAfterMatch(); saveCareer(); }`;
 // v9.7.0: a career with five game days (league games in the fallback mode: the layout is what's audited)
-const LEAGUE_FIX = CAL_HELPERS + LEAGUE_HELPERS + ` if (!window.__lgReady) { window.__lgReady = 1; window.__lgBuild(5, 'fallback'); }`;
+const LEAGUE_FIX = CAREER_HELPERS + LEAGUE_HELPERS + ` if (!window.__lgReady) { window.__lgReady = 1; window.__lgBuild(5, 'fallback'); }`;
 const SHARE = `if (!window.__shareReady) { window.__shareReady = 1;                       // a CPU game with at least one highlight
   for (let k = 0; k < 4 && !(window.__hl && window.__hl.length); k++) { newMatch(TEAMS[k], TEAMS[k + 1], { humans: [], fmt: { format: 'quarters', len: 30 } });
     for (let n = 0; n < 60 * 60 * 10 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; } window.__hl = M.highlights; } }
@@ -104,24 +103,18 @@ export const SCREENS = [
   ['story', CAREER + ` playStory([['saleem', 'Assalamu alaikum. Ready for your first game at the Metro Masjid League? Keep your intention pure and play hard.']], () => careerHub());`],
   ['hub', CAREER + ` careerHub();`],
   ['cbracket', CAREER + ` careerHub(); Game.screen = 'cbracket';`],
-  // v9.0: the calendar strip on the hub and the month view, in the five review states (a season-2 hub too: the season moves into the subtitle)
-  ...CAL_STATES.flatMap(st => [['hub calendar: ' + st, CAL_HELPERS + ` window.__calState('${st}');`], ['month view: ' + st, CAL_HELPERS + ` window.__calState('${st}'); openCalendar();`]]),
-  // v9.2: the neighbourhood: each scene (HUD, buttons, hint), a speech bubble, a prompt, the shop, the menu, a banner, night
-  ...[['home', 'home'], ['street', 'street-west'], ['masjid front', 'masjid-front'], ['store', 'store']].map(([n, v]) => ['world: ' + n, WORLD_HELPERS + ` window.__worldPhoto('${v}', 1);`]),
-  ['world: speech bubble', WORLD_HELPERS + ` window.__worldPhoto('street-west', 1); worldTalkTo(World.npcs.find(q => q.id === 'daniel'));`],
-  ['world: long bubble', WORLD_HELPERS + ` window.__worldPhoto('street-west', 1); worldSay([['yusuf', 'I walk to the corner and back every day. The doctor says it’s good. The bench agrees.']], World.npcs.find(q => q.id === 'yusuf'));`],
-  ['world: prompt', WORLD_HELPERS + ` window.__worldPhoto('street-west', 1); worldEnter('street', { x: 386, d: 0.05, face: 1 }, { noFade: true }); World.near = worldNearest();`],
-  ['world: closed prompt', WORLD_HELPERS + ` window.__worldPhoto('street-west', 3); worldEnter('street', { x: 1680, d: 0.05, face: 1 }, { noFade: true }); World.near = worldNearest();`],
-  ['world: shop', WORLD_HELPERS + ` window.__worldPhoto('store', 1); C.store = { band_white: 1, shoe_gold: 1 }; worldOpenShop(true);`],
-  ['world: menu', WORLD_HELPERS + ` window.__worldPhoto('home', 1); World.menu = { idx: 0 };`],
-  ['world: jumuah banner', WORLD_HELPERS + ` window.__worldPhoto('home', 0); let d = C.cal.d; while (calWd(d) !== 5) d++; calSetDay(d); worldBanner('Jumu’ah today. The masjid is at the end of the street.');`],
-  ['world: night street', WORLD_HELPERS + ` window.__worldPhoto('street-east', 3);`],
-  // v9.4: Jumu'ah: the question at the door, the room, a reminder, the longest reminder, the "touched on" card
-  ...[['at the door', 'ask'], ['the room', 'open'], ['a reminder', 'talk'], ['the longest reminder', 'long'], ['touched on', 'card']].map(([n, st]) => ['jumuah: ' + n, JUMUAH_HELPERS + ` window.__jumPhoto('${st}');`]),
-  ['hub calendar: season 2', CAL_HELPERS + ` window.__calState('game'); C.season = 2; careerHub();`],
-  ['hub calendar: schedule menu', CAL_HELPERS + ` window.__calState('game'); const it = HUB_MENU(); menuActivate('hub', it, it.findIndex(e => e.label === 'Schedule'));`],
+  // v9.22: the story: the salams, the musalla scene, a walk with its checklist and a bubble, the tutorial, the hub
+  ['story: salams', STORY_HELPERS + ` window.__sNew('Abdullah'); Game.salams.t = 1.5;`],
+  ['story: musalla', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.2'); stalkAdvance();`],
+  ['story: walk', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.3'); SW.talk = null; SW.fade = 0;`],
+  ['story: walk bubble', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.3'); SW.fade = 0; SW.talk.t = 1;`],
+  ['story: tutorial', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.4'); SW.talk = null; SW.fade = 0; swGoal('walk');`],
+  ['story: teammate pick', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C2.5');`],
+  ['story: credits', STORY_HELPERS + ` window.__sNew('Abdullah'); storyCredits(SC['C5.11']); Game.credits.t = 9;`],
+  ['story: replay', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('P.R', { max: 1500 }); careerHub(); openReplay();`],
+  ['story: milestones', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('P.R', { max: 1500 }); careerHub(); C.chem.jamil = 100; storyMsCheck(); openMilestones();`],
+  ['story: hub', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C1.1'); careerHub();`],
   ['cstats', CAREER + ` careerHub(); openStats();`],
-  ['cgoals', CAREER + ` careerHub(); openGoals();`],
   ['crecords', CAREER + ` careerHub(); openRecords();`],
   ['career league leaders', LEAGUE_FIX + ` window.__lgOpen('leaders');`],
   ['career league player', LEAGUE_FIX + ` window.__lgOpen('player', { pid: 'me' });`],
@@ -140,7 +133,6 @@ export const SCREENS = [
   ['train', CAREER + ` careerHub(); Game.screen = 'train'; Game.idx = 0;`],
   ['gym', CAREER + ` careerHub(); enterGym();`],
   ['saves', CAREER + ` careerHub(); Game.screen = 'saves'; Game.idx = 0; Game.saveMsg = '';`],
-  ['newseason', CAREER + ` careerHub(); Game.screen = 'newseason'; Game.idx = 0;`],
   ['share clip', SHARE + ` openClipShare(M.highlights);`],
   ['clip video: no video support', SHARE + ` openClipShare(M.highlights); ClipVid.state = 'fallback'; ClipVid.msg = 'Video isn\u2019t supported in this browser, so here is the still image.'; Game.screen = 'clipvideo';`],
   ['clip video: done', SHARE + ` openClipShare(M.highlights); ClipVid.state = 'done'; ClipVid.blob = new Blob(['x'], { type: 'video/webm' }); ClipVid.name = 'islam-dunk-noor-big-dunk.webm'; ClipVid.poster = ShareCard.card; Game.screen = 'clipvideo';`],
@@ -185,7 +177,7 @@ export const TARGETS_JS = `(() => {
 // a neighbour (the row or key spacing: the gap is split down the middle), when it's on a screen played with the
 // joystick (the in-match controls stay as they are), or when it's drawn twice in the same place (the copy drawn last
 // takes the taps). Anything else (a control no tap reaches, or one under MIN_TAP with room around it) is a problem.
-export const PLAY_SCREENS = new Set(['match HUD', 'dunk lab', 'gym', 'lobby: shoot-around']);   // (v9.20.0: the lobby gym is played with the joystick, as the career gym)
+export const PLAY_SCREENS = new Set(['match HUD', 'dunk lab', 'gym', 'lobby: shoot-around', 'story: walk', 'story: walk bubble', 'story: tutorial']);   // (v9.22: the story's walks are the career gym)   // (v9.20.0: the lobby gym is played with the joystick, as the career gym)
 export function tapReport(out) {
   const problems = [], exceptions = { spacing: [], play: [], twice: [] };
   for (const s of out) {

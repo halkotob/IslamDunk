@@ -15,12 +15,12 @@
 //                       200 league games against 200 CPU-vs-CPU games played the normal way
 //   league-layout       the leaders, a player, around the league and a box score at the five review sizes: no text on
 //                       text, nothing off the canvas, no small text and 44 px tap targets on phones
-import { CAL_HELPERS } from './calendar-setup.js';
+import { CAREER_HELPERS } from './career-setup.js';
 import { LEAGUE_HELPERS, LEAGUE_CASES } from './league-setup.js';
 import { HUB_SIZES } from './hub-setup.js';
 import { HUB_RECORD_INIT } from './hub-layout.mjs';
 
-const prep = async (p, mode) => p.evaluate(([a, b, m]) => { (0, eval)(a); (0, eval)(b); LEAGUE.mode = m; window.requestAnimationFrame = () => 0; }, [CAL_HELPERS, LEAGUE_HELPERS, mode || 'real']);
+const prep = async (p, mode) => p.evaluate(([a, b, m]) => { (0, eval)(a); (0, eval)(b); LEAGUE.mode = m; window.requestAnimationFrame = () => 0; }, [CAREER_HELPERS, LEAGUE_HELPERS, mode || 'real']);
 const stat = v => { const m = v.reduce((a, b) => a + b, 0) / Math.max(1, v.length); return { m, sd: Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / Math.max(1, v.length)) }; };
 
 export function leagueTests({ newContext, open }) {
@@ -30,7 +30,7 @@ export function leagueTests({ newContext, open }) {
     const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'league-round');
     await prep(p);
     const r = await p.evaluate(() => {
-      window.__seed(11); window.__calFresh();
+      window.__seed(11); window.__cFresh();
       const before = JSON.stringify(C.lg); window.__lgPlayDay(); const run = C.lg.runs[0], G = C.lg.box.games;
       const teams = new Set(); for (const pl of Object.values(run.p)) teams.add(pl.t);
       const nan = /null|NaN/.test(JSON.stringify(C.lg.runs));
@@ -49,7 +49,7 @@ export function leagueTests({ newContext, open }) {
     const errs = [], ctx = await newContext(browser, { seed: true });
     const one = async mode => { const p = await open(ctx, base + '/', errs, 'league-det ' + mode); await prep(p, mode);
       const v = await p.evaluate(() => {
-        window.__seed(23); window.__calFresh(); window.__lgPlayDay(); window.__lgPlayDay();   // (v9.21.0: 22 -> 23, the same reason with the new CPU defense. v9.19.2: seed 21 -> 22; with the new Local rosters, at 21 the real league and the fallback give the other games different results and your day-2 game came out different; at 22 to 25 the next game is the same)
+        window.__seed(23); window.__cFresh(); window.__lgPlayDay(); window.__lgPlayDay();   // (v9.21.0: 22 -> 23, the same reason with the new CPU defense. v9.19.2: seed 21 -> 22; with the new Local rosters, at 21 the real league and the fallback give the other games different results and your day-2 game came out different; at 22 to 25 the next game is the same)
         const lg = JSON.stringify(C.lg), bracket = JSON.stringify(C.bracket);
         // the next game we play: from here on, the same inputs must give the same game
         startCareerMatch(); for (let i = 0; i < 8 && Game.screen === 'story'; i++) Game.story.then();
@@ -62,9 +62,9 @@ export function leagueTests({ newContext, open }) {
     // background slices on the hub: the hub's own state is untouched
     const p = await open(ctx, base + '/', errs, 'league-det idle'); await prep(p);
     const idle = await p.evaluate(() => {
-      window.__seed(31); window.__calFresh(); careerHub(); Game.screen = 'hub';
+      window.__seed(31); window.__cFresh(); careerHub(); Game.screen = 'hub';
       const snap = () => JSON.stringify({ g: [Game.screen, Game.paused, Game.idx], m: [M.phase, M.gym, M.time, M.players.map(q => [q.x, q.z, q.state]), M.teams.map(t => t.score)], b: [ball.x, ball.y, ball.z, ball.state], c: [cam.x, cam.zoom], fx: FX.parts.length });
-      const s0 = snap(), r0 = Math.random(); window.__seed(31); window.__calFresh(); careerHub(); Game.screen = 'hub'; const s1 = snap();
+      const s0 = snap(), r0 = Math.random(); window.__seed(31); window.__cFresh(); careerHub(); Game.screen = 'hub'; const s1 = snap();
       let slices = 0; for (let i = 0; i < 20000 && lgRoundJobs().some(j => !LEAGUE.cache[j.key]); i++) { lgIdle(); slices++; }
       const s2 = snap(), r1 = Math.random();
       return { same: s1 === s2, rng: r0 === r1, slices, cached: Object.keys(LEAGUE.cache).length };
@@ -78,7 +78,7 @@ export function leagueTests({ newContext, open }) {
     const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'league-headless');
     await prep(p);
     const r = await p.evaluate(() => {
-      window.__seed(41); window.__calFresh(); careerHub();
+      window.__seed(41); window.__cFresh(); careerHub();
       const spy = { sfx: 0, ach: 0, store: 0, replay: 0, toast: 0 }, undo = [];
       const wrap = (o, k, key) => { const f = o[k]; undo.push([o, k, f]); o[k] = function () { spy[key]++; return f.apply(this, arguments); }; };
       for (const k of Object.keys(SFX)) if (typeof SFX[k] === 'function') wrap(SFX, k, 'sfx');
@@ -101,31 +101,31 @@ export function leagueTests({ newContext, open }) {
     await prep(p);
     const r = await p.evaluate(() => {
       const out = {};
-      const day = won => { const gd = calGameDay(); if (gd > C.cal.d) calSetDay(gd); startCareerMatch(); M.teams[0].score = won ? 30 : 20; M.teams[1].score = won ? 20 : 30; M.winner = won ? 0 : 1; M.phase = 'over'; careerAfterMatch(); Game.screen = 'title'; };
+      const day = won => { startCareerMatch(); M.teams[0].score = won ? 30 : 20; M.teams[1].score = won ? 20 : 30; M.winner = won ? 0 : 1; M.phase = 'over'; careerAfterMatch(); Game.screen = 'title'; };
       const check = () => { const run = C.lg.runs.find(x => x.s === (C.season || 1) && x.st === C.lg.box.st), G = C.lg.box.games;
         return { games: G.length, box: G.every(g => g.ra.reduce((a, x) => a + x[1], 0) === g.sa && g.rb.reduce((a, x) => a + x[1], 0) === g.sb), maxG: Math.max(...Object.values(run.p).map(e => e.g)), fb: LEAGUE.fallbacks }; };
       // pool: three group wins, the semifinal and the final (11 league games)
-      window.__seed(51); window.__calFresh(); for (let i = 0; i < 5; i++) day(true); out.pool = Object.assign(check(), { stage: C.stage, champ: C.trophies.includes(0) });
+      window.__seed(51); window.__cFresh(); for (let i = 0; i < 5; i++) day(true); out.pool = Object.assign(check(), { stage: C.stage, champ: C.trophies.includes(0) });
       // pool, out in the group: the semis and the final are still played (3 group days: 9 league games, then 3)
-      window.__seed(52); window.__calFresh(); for (let i = 0; i < 3; i++) day(false); out.groupOut = Object.assign(check(), { out: C.bracket.out, rounds: C.bracket.rounds.length, finalPlayed: C.bracket.rounds[1] && C.bracket.rounds[1][0].w != null });
+      window.__seed(52); window.__cFresh(); for (let i = 0; i < 3; i++) day(false); out.groupOut = Object.assign(check(), { out: C.bracket.out, rounds: C.bracket.rounds.length, finalPlayed: C.bracket.rounds[1] && C.bracket.rounds[1][0].w != null });
       // a retry: the stage again replaces the attempt's stats (no double counting)
-      const att0 = C.lg.runs[0].att; hubSelect(0); if (Game.screen === 'scout' || Game.screen === 'story') Game.screen = 'title'; day(true);
+      const att0 = C.lg.runs[0].att; C.retries = (C.retries || 0) + 1; C.bracket = makeBracket(C.stage); slog(C.stage).entries++; day(true);   // (v9.22: a new attempt, as the story's next season makes it)
       out.retry = { att0, att1: C.lg.runs[0].att, runs: C.lg.runs.length, maxG: Math.max(...Object.values(C.lg.runs[0].p).map(e => e.g)), boxGames: C.lg.box.games.length };
       // single elimination (the pre-6.0 bracket): quarterfinal, semifinal, final
-      window.__seed(53); window.__calFresh(); const mid = [2, 3, 4, 5, 6, 7]; C.bracket = { round: 0, out: false, rounds: [pairs([0, ...mid, 1])] };
+      window.__seed(53); window.__cFresh(); const mid = [2, 3, 4, 5, 6, 7]; C.bracket = { round: 0, out: false, rounds: [pairs([0, ...mid, 1])] };
       for (let i = 0; i < 3; i++) day(true); out.ko = Object.assign(check(), { champ: C.trophies.includes(0) });
       // every stage: one game day at each
-      window.__seed(54); window.__calFresh(); out.stages = [];
-      for (let st = 0; st < 4; st++) { C.stage = st; C.bracket = makeBracket(st); calEnsure(); day(true); const run = C.lg.runs.find(x => x.st === st); out.stages.push(run ? Object.keys(run.p).length : 0); }
-      // an old save: sv 4 and no league record
-      const old = Object.assign(freshCareer(), { name: 'Old', sv: 4, bracket: makeBracket(0) }); delete old.lg; localStorage.setItem('islamdunk.career.slot9', JSON.stringify(old));
-      loadCareer('islamdunk.career.slot9'); out.migrated = { sv: C.sv, lg: JSON.stringify(C.lg) }; calEnsure(); day(true); out.migrated.after = C.lg.runs.length && Object.keys(C.lg.runs[0].p).length;
+      window.__seed(54); window.__cFresh(); out.stages = [];
+      for (let st = 0; st < 4; st++) { C.stage = st; C.bracket = makeBracket(st); day(true); const run = C.lg.runs.find(x => x.st === st); out.stages.push(run ? Object.keys(run.p).length : 0); }
+      // a save with no league record (v9.22: older careers aren't loaded; a story save without one gets an empty record)
+      const old = Object.assign(freshCareer(), { name: 'Old', bracket: makeBracket(0) }); delete old.lg; localStorage.setItem('islamdunk.career.slot9', JSON.stringify(old));
+      loadCareer('islamdunk.career.slot9'); out.migrated = { sv: C.sv, lg: JSON.stringify(C.lg) }; day(true); out.migrated.after = C.lg.runs.length && Object.keys(C.lg.runs[0].p).length;
       return out;
     });
     await ctx.close();
     const ok = r.pool.games === 10 && r.pool.box && r.pool.maxG === 5 && r.pool.champ && r.groupOut.out && r.groupOut.finalPlayed && r.groupOut.games === 12
       && r.retry.att1 === r.retry.att0 + 1 && r.retry.runs === 1 && r.retry.maxG === 1 && r.retry.boxGames === 3
-      && r.ko.games === 4 && r.ko.box && r.ko.champ && r.stages.every(n => n === 16) && r.migrated.sv === 5 && r.migrated.lg === '{"v":1,"runs":[],"box":null}' && r.migrated.after === 16 && !errs.length;
+      && r.ko.games === 4 && r.ko.box && r.ko.champ && r.stages.every(n => n === 16) && r.migrated.sv >= 10 && r.migrated.lg === '{"v":1,"runs":[],"box":null}' && r.migrated.after === 16 && !errs.length;
     return { ok, detail: [JSON.stringify(r), ...errs] };
   };
 
@@ -133,7 +133,7 @@ export function leagueTests({ newContext, open }) {
     const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'league-board');
     await prep(p, 'fallback');
     const r = await p.evaluate(() => {
-      window.__seed(61); window.__calFresh(); let bad = [], checks = 0;
+      window.__seed(61); window.__cFresh(); let bad = [], checks = 0;
       const R = lgRng(99), ri = n => Math.floor(R() * n);
       for (let trial = 0; trial < 30; trial++) {
         // random records: 3 seasons x 2 stages, 20 players, some ties
@@ -170,18 +170,18 @@ export function leagueTests({ newContext, open }) {
       const ctx = await newContext(browser, { seed: true, device: throttle > 1 ? { viewport: { width: 844, height: 390 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true } : undefined });
       const p = await open(ctx, base + '/', errs, 'league-time ' + label); await prep(p);
       if (throttle > 1) { const cdp = await ctx.newCDPSession(p); await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle }); }
-      out[label] = await p.evaluate(() => { window.__seed(71); window.__calFresh(); const jobs = lgRoundJobs(), t0 = performance.now(); for (const j of jobs) lgPlayNow(j); return { games: jobs.length, msPerGame: Math.round((performance.now() - t0) / jobs.length), fallbacks: LEAGUE.fallbacks }; });
+      out[label] = await p.evaluate(() => { window.__seed(71); window.__cFresh(); const jobs = lgRoundJobs(), t0 = performance.now(); for (const j of jobs) lgPlayNow(j); return { games: jobs.length, msPerGame: Math.round((performance.now() - t0) / jobs.length), fallbacks: LEAGUE.fallbacks }; });
       await ctx.close();
     }
     // the wait cap: a tiny cap makes the rest fall back, logged, and the flow goes on to the post-game screen
     const ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'league-time cap'); await prep(p);
     const cap = await p.evaluate(() => {
-      window.__seed(72); window.__calFresh(); LEAGUE.waitCapMs = 1; LEAGUE.waitMs = 1;
+      window.__seed(72); window.__cFresh(); LEAGUE.waitCapMs = 1; LEAGUE.waitMs = 1;
       startCareerMatch(); M.teams[0].score = 30; M.teams[1].score = 20; M.winner = 0; M.phase = 'over'; Game.screen = 'final';
       finalContinue(); const s1 = Game.screen; let n = 0; while (Game.screen === 'cleague' && n++ < 2000) careerUpdate(STEP);
       const o = { waitScreen: s1, then: Game.screen, fallbacks: LEAGUE.fallbacks, logged: LEAGUE.log.length, recorded: C.lg.box.games.length, fb: C.lg.box.games.filter(g => g.fb).length };
       // a game that throws: the fallback, logged, and the round still completes
-      LEAGUE.waitCapMs = 15000; LEAGUE.waitMs = 28; window.__seed(73); window.__calFresh(); const _u = updateMatch; let k = 0;
+      LEAGUE.waitCapMs = 15000; LEAGUE.waitMs = 28; window.__seed(73); window.__cFresh(); const _u = updateMatch; let k = 0;
       updateMatch = function () { if (M.league && ++k === 50) throw new Error('boom'); return _u.apply(this, arguments); };
       const j = lgRoundJobs()[0], res = lgPlayNow(j); updateMatch = _u; o.threw = res.fb; return o; });
     await ctx.close();
@@ -194,7 +194,7 @@ export function leagueTests({ newContext, open }) {
     const errs = [], ctx = await newContext(browser, { seed: true });
     const K = ['pts', 'reb', 'ast', 'stl', 'blk', 'tov', 'fgm', 'fga', 'tpm', 'tpa', 'ftm', 'fta', 'dnk', 'chg'];
     const part = async (off, n, cpu) => { const p = await open(ctx, base + '/', errs, 'league-cal ' + off); await prep(p);
-      const v = await p.evaluate(([off, n, cpu]) => { window.__calFresh(); const real = [], fb = [], cpuScores = [];
+      const v = await p.evaluate(([off, n, cpu]) => { window.__cFresh(); const real = [], fb = [], cpuScores = [];
         for (let i = 0; i < n; i++) { const st = (i + off) % 4, a = 1 + ((i * 5 + off) % 7); let b = 1 + ((i * 3 + 2 + off) % 7); if (b === a) b = a === 7 ? 1 : a + 1;
           const job = { key: 'calib|' + (i + off), a, b, stage: st, cseed: C.seed, round: '' };
           const r = lgPlayNow(job); delete LEAGUE.cache[job.key]; real.push({ sa: r.sa, sb: r.sb, rows: [...r.ra, ...r.rb], fb: r.fb || null });
@@ -228,7 +228,7 @@ export function leagueTests({ newContext, open }) {
     for (const [sz, dev] of HUB_SIZES) {
       const ctx = await newContext(browser, { device: dev }); await ctx.addInitScript(HUB_RECORD_INIT);
       const p = await open(ctx, base + '/', errs, 'league-layout ' + sz);
-      await p.evaluate(([a, b, j, touch]) => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} (0, eval)(a); (0, eval)(b); LEAGUE.mode = 'fallback'; Input.touchMode = touch; window.requestAnimationFrame(() => {}); window.__lgLoad(j); }, [CAL_HELPERS, LEAGUE_HELPERS, json, !!dev.hasTouch]);
+      await p.evaluate(([a, b, j, touch]) => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} (0, eval)(a); (0, eval)(b); LEAGUE.mode = 'fallback'; Input.touchMode = touch; window.requestAnimationFrame(() => {}); window.__lgLoad(j); }, [CAREER_HELPERS, LEAGUE_HELPERS, json, !!dev.hasTouch]);
       for (const [name, o] of LEAGUE_CASES) {
         await p.evaluate(o => { const other = (lgBoard('stage', 'ppg').find(x => !lgMinesFor().includes(x.p.pid)) || { p: {} }).p.pid; return window.__lgOpen(o.view, Object.assign({}, o, { pid: o.pid === null ? other : o.pid })); }, o);
         await p.waitForTimeout(300);
