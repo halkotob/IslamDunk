@@ -128,7 +128,6 @@ class Hoop {
           const k = this.sfx.k != null ? this.sfx.k : 0.7;
           if (this.sfx.tick) SFX.rimTick(k);                              // rim-in: soft metallic tick, then the net
           SFX.netSwish(k, this.sfx.tick ? 0.035 : 0, this.sfxPitch || 1);
-          if (this.sfx.green) SFX.greenMake(0.08);
         }
         this.sfx = null;
       }

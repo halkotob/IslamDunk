@@ -1,5 +1,13 @@
 # Changelog
 
+## 9.29.2: The career overhaul, on top of 9.21.2's sounds
+This merges main's 9.21.2 (the sounds picked in the first phone review) into the career overhaul, so both are
+together for release. The calendar chime is cut on both sides, and the green-make sound is cut in 9.21.2, so the game
+has 38 sound IDs. 9.21.2's calendar sound check is dropped because the calendar left the career in 9.22.0. Nothing
+else changes.
+- `sfx-quiet` now expects the reviewers' default picks from 9.21.2 (six sounds keep their picked variant under
+  the Soft style). It had failed on main since 9.21.2.
+
 ## 9.29.1: Career overhaul, finished
 The last checks of the career overhaul (docs/career-overhaul/PROMPT.md, step 5):
 - **Fix:** a story scene with a choice line (the old story's choices, still used outside the career) failed to draw
@@ -288,6 +296,22 @@ How it was checked:
   Review Studio (the story's scenes by chapter and ID instead of the old threads), `v98` (no niyyah), and the sound
   tests (the calendar's chime is gone: 39 sounds).
 - `npm test`: every fast-tier test passes.
+
+## 9.21.2: the sounds you picked on your phone
+The first review done on a phone through the published Studio: 36 sounds marked.
+- **New defaults** (`SFX_DEFAULT_PICKS`):
+  - Soft: the swish through the net and the steal.
+  - Real: the crowd after a turnover.
+  - Arcade: the halftime, win and loss stingers, and Back and Yes / No in menus.
+  - A player who picks one of these sounds in Settings still gets their own pick.
+- **Cut:**
+  - The extra chime on a perfect-timing make (`greenMake`); the swish still plays.
+  - The career calendar's chime at a new month, Ramadan, Eid or a holiday (`calChime`).
+  - Their Studio IDs are listed as removed.
+- **Unchanged:** the 18 sounds you picked A (as shipped) aren't listed as defaults, so a player's own sound style
+  still applies to them. The 9 you marked Keep are unchanged too.
+- **Tests run** (not the full suite): `sfx-variants` (now 38 sounds, was 40), `sfx-moments` (the calendar is silent
+  now), `sfx-calls`, `sound-list`, `crowd-tiers`, `studio-coverage`, `studio-csv` and `studio-phone`.
 
 ## 9.21.1: the Review Studio opens on a phone from a link
 **How to use it:** open **https://halkotob.github.io/IslamDunk/studio/** on your phone. Type your name under ⋯ (the

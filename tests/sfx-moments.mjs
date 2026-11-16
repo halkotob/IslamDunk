@@ -3,7 +3,7 @@
 //                 last 3 s (3 ticks, rising), a hot spot appearing, free throws (a step, then a tap per attempt), the
 //                 crowd on a block / turnover / bad miss when nobody is drawn (and not when people are: never both),
 //                 Lightning's catch, the halftime, win and loss stingers, the summary's lines, the trivia timer's
-//                 last 5 s, Back (Esc and the corner button), Yes / No, a toast, the calendar's new month and holiday
+//                 last 5 s, Back (Esc and the corner button), Yes / No, a toast, the calendar (silent since v9.21.2)
 //   sfx-calls     every SFX.<name> the game's source uses exists (the guard that would have caught SFX.catch)
 //   sfx-crowd     the crowd reaction by venue: the practice gym silent, the home gym quiet, an arena loud, in that order
 //   sfx-quiet     Settings > Sound off: nothing is heard; Sound style D (Soft) plays every new sound
@@ -16,7 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const NEW = ['shotTick', 'ftStep', 'ftAttempt', 'hotSpot', 'crowdTurnover', 'crowdBlock', 'crowdBadMiss', 'catch', 'halftimeStinger', 'winStinger', 'lossStinger', 'earnTick', 'triviaLow', 'uiBack', 'uiConfirm', 'toast'];
+const NEW = ['shotTick', 'ftStep', 'ftAttempt', 'hotSpot', 'crowdTurnover', 'crowdBlock', 'crowdBadMiss', 'catch', 'halftimeStinger', 'winStinger', 'lossStinger', 'earnTick', 'triviaLow', 'uiBack', 'uiConfirm', 'toast'];   // (v9.21.2: calChime cut)
 // count every play of the new sounds (the dispatcher's own calls), with its argument
 const COUNT = ids => { window.__snd = []; for (const id of ids) { const f = SFX[id]; SFX[id] = function () { window.__snd.push([id, arguments[0]]); return f.apply(this, arguments); }; } };
 export function sfxMomentsTests({ newContext, open }) {
@@ -134,7 +134,7 @@ export function sfxMomentsTests({ newContext, open }) {
         const errs = [], peaks = {};
         for (const id of ids) { try { SFX[id](); } catch (e) { errs.push(id + ': ' + e.message); } }
         const buf = await c.startRendering(), x = buf.getChannelData(0); let pk = 0; for (let i = 0; i < x.length; i++) pk = Math.max(pk, Math.abs(x[i]));
-        return { peak: pk, errs, picked: ids.filter(id => SFX.variantOf(id) !== style) };
+        return { peak: pk, errs, picked: ids.filter(id => SFX.variantOf(id) !== (SFX_DEFAULT_PICKS[id] || style)) };   // (v9.29.2: the reviewers' default picks of 9.21.2 win over the style)
       };
       try { return { on: await run(true, 'A'), off: await run(false, 'A'), soft: await run(true, 'D') }; } finally { Object.assign(SFX, keep); SETTINGS.sound = true; }
     }, NEW);

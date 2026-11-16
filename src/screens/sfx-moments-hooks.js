@@ -83,6 +83,7 @@
   confirmPick = function (i) { if (Game.confirm) SFX.uiConfirm(i); return _cp.apply(this, arguments); };
   const _to = toast;
   toast = function () { if (!resim()) SFX.toast(); return _to.apply(this, arguments); };
+  // (v9.21.2: the career calendar's chime was cut in the first phone review of the Studio)
 }
 // ---- the career summary: the Barakah Points and Halal Bucks lines come in one at a time, a soft tick each
 const EARN = { post: null, t0: 0, shown: 0 };

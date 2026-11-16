@@ -6,7 +6,7 @@
 //                  crowdTurnover / crowdBlock / crowdBadMiss (a few voices, when nobody is drawn; scaled by the
 //                  venue's crowd level, so the practice gym is silent), catch (Lightning's fed ball)
 //   between plays  halftimeStinger, winStinger, lossStinger (calm, never mocking), earnTick, triviaLow
-//   menus, career  uiBack, uiConfirm, toast (quieter than blip)
+//   menus, career  uiBack, uiConfirm, toast (quieter than blip) (v9.21.2: calChime cut in the Studio review)
 // No music anywhere: a stinger is two or three notes, under a second.
 const SFX_MOMENTS = ['shotTick', 'ftStep', 'ftAttempt', 'hotSpot', 'crowdTurnover', 'crowdBlock', 'crowdBadMiss', 'catch',
   'halftimeStinger', 'winStinger', 'lossStinger', 'earnTick', 'triviaLow', 'uiBack', 'uiConfirm', 'toast'];
