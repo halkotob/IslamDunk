@@ -11,9 +11,11 @@
 // map (SFX_DEFAULT_PICKS, set from the reviewers' sound picks; a browser's own overrides in localStorage win).
 // Recorded samples can be added later as more variants of the same ID: sfxAddSamples('bounce', 'E', 'Recorded', [urls]).
 // Nothing else in the game changes: other files' wrappers (rumble on slam, the impact ring) wrap the dispatcher.
-const SFX_IDS = ['bad', 'best', 'blip', 'block', 'board', 'bounce', 'buzzer', 'cheer', 'clank', 'dunkNet', 'good', 'green', 'greenMake', 'heart', 'netSwish', 'rimTick', 'slam', 'snatch', 'squeak', 'swipe', 'swish', 'thud', 'whistle'];
+const SFX_IDS = ['bad', 'best', 'blip', 'block', 'board', 'bounce', 'buzzer', 'cheer', 'clank', 'dunkNet', 'good', 'green', 'heart', 'netSwish', 'rimTick', 'slam', 'snatch', 'squeak', 'swipe', 'swish', 'thud', 'whistle'];
 const SFX_STYLES = { A: 'Current', B: 'Real', C: 'Arcade', D: 'Soft' };
-const SFX_DEFAULT_PICKS = {};        // id -> 'A'..'D': the defaults chosen in the Studio (none yet)
+// id -> 'A'..'D': the defaults chosen in the Studio. v9.21.2, the first phone review: where the pick was A (as shipped)
+// nothing is listed, so a player's own sound style still applies to those
+const SFX_DEFAULT_PICKS = { netSwish: 'D', snatch: 'D', crowdTurnover: 'B', halftimeStinger: 'C', winStinger: 'C', lossStinger: 'C', uiBack: 'C', uiConfirm: 'C' };
 // sounds that happen in the room (ball, shoes, contact, rim and net, whistle, buzzer): they also feed the room's reverb
 const SFX_ROOM = new Set(['block', 'board', 'bounce', 'buzzer', 'clank', 'dunkNet', 'netSwish', 'rimTick', 'slam', 'snatch', 'squeak', 'swipe', 'swish', 'thud', 'whistle']);
 // where each one is heard (the Studio shows this; docs/audio/sound-list.csv has every call)
@@ -22,7 +24,7 @@ const SFX_WHERE = {
   blip: 'Menu moves and taps', block: 'A blocked shot', board: 'The ball off the backboard', bounce: 'Every dribble and loose-ball bounce',
   buzzer: 'End of a period or the game, shot clock violation', cheer: 'The crowd after makes, steals, blocks and big plays (scaled by the venue)',
   clank: 'A shot off the rim', dunkNet: 'The net after a dunk', good: 'A right answer or a confirmed choice', green: 'A perfectly timed release (GREEN)',
-  greenMake: 'A green release that goes in', heart: 'Clutch moments (heartbeat)', netSwish: 'A make through the net (speed sets the sound)',
+  heart: 'Clutch moments (heartbeat)', netSwish: 'A make through the net (speed sets the sound)',
   rimTick: 'A make that touches the rim', slam: 'A dunk', snatch: 'A steal or a picked-off pass', squeak: 'Sneakers on a cut or a stop',
   swipe: 'A steal attempt (the reach)', swish: 'Older callers of the swish (mini games, drills)', thud: 'A player knocked down or a hard foul', whistle: 'A foul or a violation'
 };
@@ -85,7 +87,6 @@ const SFX_VARIANTS = {};             // id -> { A: { label, fn }, B..D, and any 
     dunkNet() { nz(0.22, 'bandpass', 2600, 1.3, 0.22, { f2: 1500, lp: 6000 }); metal([700, 1520], 0.09, 0.05); for (let i = 0; i < 3; i++) ring(rand(900, 1400), 0.03, 0.05, 10, 0.05 + i * 0.04); },
     good() { tn(660, 0.22, 'sine', 0.16); tn(1320, 0.05, 'sine', 0.04); tn(990, 0.3, 'sine', 0.16, { d: 0.09 }); tn(1980, 0.06, 'sine', 0.04, { d: 0.09 }); },
     green() { tn(1318, 0.5, 'sine', 0.11); tn(1318 * 2.76, 0.18, 'sine', 0.03); tn(1760, 0.45, 'sine', 0.08, { d: 0.05 }); tn(2349, 0.4, 'sine', 0.05, { d: 0.1 }); nz(0.15, 'highpass', 7000, 0.7, 0.02, { d: 0.08, att: 0.03 }); },
-    greenMake(d = 0) { tn(1568, 0.45, 'sine', 0.07, { d: 0.02 + d }); tn(1568 * 2.76, 0.12, 'sine', 0.015, { d: 0.02 + d }); tn(2093, 0.4, 'sine', 0.05, { d: 0.08 + d }); },
     heart() { thump(62, 42, 0.12, 0.5, 0, 180); nz(0.08, 'lowpass', 140, 0.8, 0.2); thump(54, 38, 0.13, 0.4, 0.17, 160); nz(0.08, 'lowpass', 120, 0.8, 0.15, { d: 0.17 }); },
     netSwish(k = 0.7, delay = 0, pitch = 1) {
       const i = sub('netB', 3), f = [3400, 3000, 3700][i] * pitch * (0.85 + 0.2 * clamp(k, 0.15, 1.35)), dur = clamp(0.14 + 0.08 * k, 0.12, 0.24);
@@ -127,7 +128,6 @@ const SFX_VARIANTS = {};             // id -> { A: { label, fn }, B..D, and any 
     dunkNet() { nz(0.3, 'bandpass', 1500, 0.8, 0.16, { f2: 5500 }); tn(140, 0.12, 'square', 0.04, { f2: 70 }); },
     good() { tn(988, 0.08, 'square', 0.07); tn(1319, 0.2, 'square', 0.07, { d: 0.08 }); },
     green() { [659, 988, 1319, 1760].forEach((f, i) => tn(f, 0.1, 'square', 0.05, { d: i * 0.04 })); tn(2637, 0.35, 'triangle', 0.06, { d: 0.16 }); nz(0.3, 'highpass', 6500, 0.7, 0.05, { d: 0.12 }); },
-    greenMake(d = 0) { tn(1568, 0.12, 'square', 0.05, { d: 0.02 + d }); tn(2093, 0.25, 'square', 0.05, { d: 0.1 + d }); },
     heart() { thump(70, 35, 0.16, 0.32); nz(0.02, 'highpass', 2000, 0.7, 0.025); thump(60, 30, 0.18, 0.28, 0.18); },
     netSwish(k = 0.7, delay = 0, pitch = 1) { const i = sub('netC', 3), f = [1500, 1700, 1300][i] * pitch; nz(0.4, 'bandpass', f, 0.8, 0.16 + 0.12 * clamp(k, 0.15, 1.35), { f2: f * 4.6, d: delay, att: 0.01 }); tn(800 * pitch, 0.3, 'sine', 0.02, { f2: 1600 * pitch, d: delay }); },
     rimTick(k = 0.6) { tn(2400, 0.08, 'square', 0.03 + 0.02 * clamp(k, 0, 1)); },
@@ -158,7 +158,6 @@ const SFX_VARIANTS = {};             // id -> { A: { label, fn }, B..D, and any 
     dunkNet() { nz(0.2, 'bandpass', 1800, 1.1, 0.22, { f2: 1100, lp: 3500, att: 0.01 }); },
     good() { tn(523, 0.3, 'sine', 0.1, { att: 0.015 }); tn(659, 0.35, 'sine', 0.1, { d: 0.1, att: 0.015 }); },
     green() { tn(880, 0.45, 'sine', 0.08, { att: 0.02 }); tn(1318, 0.5, 'sine', 0.06, { d: 0.06, att: 0.02 }); },
-    greenMake(d = 0) { tn(1318, 0.4, 'sine', 0.09, { d: 0.02 + d, att: 0.02 }); },
     heart() { thump(55, 40, 0.13, 0.35, 0, 140); thump(50, 36, 0.14, 0.25, 0.18, 130); },
     netSwish(k = 0.7, delay = 0, pitch = 1) { const i = sub('netD', 3), f = [2600, 2300, 2900][i] * pitch; S.netNoise(clamp(0.15 + 0.07 * k, 0.12, 0.24), f, 1.4, 0.13 + 0.2 * clamp(k, 0.15, 1.35), f * 0.75, delay, 4000); },
     rimTick(k = 0.6) { tn(1800, 0.05, 'sine', 0.045 + 0.035 * clamp(k, 0, 1), { att: 0.003 }); },

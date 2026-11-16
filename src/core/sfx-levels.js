@@ -14,7 +14,6 @@ const SFX_LEVELS = {
   dunkNet: { B: -2.7, C: -0.6, D: -0.1 },
   good: { B: -5.1, C: 1.6, D: -1.8 },
   green: { B: -2, C: 3.2, D: 2.5 },
-  greenMake: { B: -0.7, C: 2.8, D: 0.6 },
   heart: { B: -2.7, C: -0.6, D: 0.6 },
   netSwish: { B: 2, C: -0.2, D: 0.9 },
   rimTick: { B: -2, C: -1.2, D: -0.6 },
@@ -40,6 +39,5 @@ const SFX_LEVELS = {
   triviaLow: { B: 0, C: -0.1, D: 0 },
   uiBack: { B: 0.1, C: 0, D: 0 },
   uiConfirm: { B: 0, C: 0, D: 0 },
-  toast: { B: 0, C: 0, D: 0 },
-  calChime: { B: 0, C: 0, D: 0 }
+  toast: { B: 0, C: 0, D: 0 }
 };

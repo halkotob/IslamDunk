@@ -108,7 +108,6 @@ Object.assign(SFX, {
     this.tone(1318, 0.14, 'sine', 0.1); this.tone(1760, 0.16, 'sine', 0.09, null, 0.045); this.tone(2349, 0.3, 'sine', 0.08, null, 0.09);
     this.tone(659, 0.34, 'triangle', 0.05); this.hiss(0.28, 'highpass', 6500, 0.7, 0.05, null, 0.08);
   },
-  greenMake(d = 0) { this.tone(1568, 0.3, 'sine', 0.07, null, 0.02 + d); this.tone(2093, 0.4, 'sine', 0.05, null, 0.07 + d); this.tone(3136, 0.25, 'sine', 0.025, null, 0.12 + d); },
   snatch(v = 1) { this.hiss(0.08, 'bandpass', 3400, 2, 0.22 * v, 1200); this.tone(520, 0.07, 'square', 0.07 * v, 250); this.tone(880, 0.05, 'sine', 0.06 * v, null, 0.03); },
   block() { this.tone(92, 0.18, 'sine', 0.38, 50); this.hiss(0.08, 'bandpass', 1900, 1.4, 0.32, 600); this.tone(1400, 0.05, 'triangle', 0.07, 700, 0.012); },
   best() { this.tone(784, 0.12, 'sine', 0.09); this.tone(988, 0.12, 'sine', 0.09, null, 0.08); this.tone(1175, 0.24, 'sine', 0.09, null, 0.16); }

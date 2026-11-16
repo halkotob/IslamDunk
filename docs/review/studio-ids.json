@@ -1099,7 +1099,6 @@
   "sound/board": "9.2.3",
   "sound/bounce": "9.2.3",
   "sound/buzzer": "9.2.3",
-  "sound/calChime": "9.17.9",
   "sound/catch": "9.17.9",
   "sound/cheer": "9.2.3",
   "sound/clank": "9.2.3",
@@ -1126,7 +1125,6 @@
   "sound/ftStep": "9.17.9",
   "sound/good": "9.2.3",
   "sound/green": "9.2.3",
-  "sound/greenMake": "9.2.3",
   "sound/halftimeStinger": "9.17.9",
   "sound/heart": "9.2.3",
   "sound/hotSpot": "9.17.9",
@@ -2702,7 +2700,6 @@
   "text/core/mobile-fit/you-re-already-playing-fullscree-3yrn6p": "phase1",
   "text/core/sfx-moments/a-hot-spot-appearing-on-ek8tpq": "9.17.9",
   "text/core/sfx-moments/a-message-at-the-bottom-dbt1sa": "9.17.9",
-  "text/core/sfx-moments/a-new-month-ramadan-eid-9jpwwi": "9.17.9",
   "text/core/sfx-moments/a-player-stepping-to-the-aqjrex": "9.17.9",
   "text/core/sfx-moments/back-or-esc-out-of-qxccn4": "9.17.9",
   "text/core/sfx-moments/barakah-points-and-halal-bucks-qvzhve": "9.17.9",
@@ -2720,7 +2717,6 @@
   "text/core/sfx-variants/a-blocked-shot-bgs2jw": "9.13.0",
   "text/core/sfx-variants/a-dunk-sl0saw": "9.13.0",
   "text/core/sfx-variants/a-foul-or-a-violation-opju9f": "9.13.0",
-  "text/core/sfx-variants/a-green-release-that-goes-1w32ae": "9.13.0",
   "text/core/sfx-variants/a-make-that-touches-the-ngm6wf": "9.13.0",
   "text/core/sfx-variants/a-make-through-the-net-hrz23m": "9.13.0",
   "text/core/sfx-variants/a-perfectly-timed-release-green-gpmxv2": "9.13.0",
@@ -4406,10 +4402,20 @@
    "version": "9.8.0",
    "was": "9.2.2"
   },
+  "sound/calChime": {
+   "reason": "v9.21.2: cut in the first phone review of the Studio (Delete)",
+   "version": "9.21.1",
+   "was": "9.17.9"
+  },
   "sound/crowd/gymL-140": {
    "reason": "v9.16.1: the Community Center Gym is retired from menus and random picks (its id still loads).",
    "version": "9.16.1",
    "was": "9.13.0"
+  },
+  "sound/greenMake": {
+   "reason": "v9.21.2: cut in the first phone review of the Studio (Delete)",
+   "version": "9.21.1",
+   "was": "9.2.3"
   },
   "text/career/barakah-run/cpu-shot-clock-is-2-oiav4c": {
    "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
@@ -4610,6 +4616,16 @@
    "reason": "v9.6.3: the shot clock is 14 s in every game, so the period labels and Barakah Run texts changed (\"30 seconds\" is now first found in the Settings period labels)",
    "version": "9.6.3",
    "was": "8.6.0"
+  },
+  "text/core/sfx-moments/a-new-month-ramadan-eid-9jpwwi": {
+   "reason": "v9.21.2: cut in the first phone review of the Studio (Delete)",
+   "version": "9.21.1",
+   "was": "9.17.9"
+  },
+  "text/core/sfx-variants/a-green-release-that-goes-1w32ae": {
+   "reason": "v9.21.2: cut in the first phone review of the Studio (Delete)",
+   "version": "9.21.1",
+   "was": "9.13.0"
   },
   "text/online/lobby/back-to-lobby-l8sqpj": {
    "reason": "v9.17.9 (U2): one way back per screen and one word for leaving: duplicate Back / Leave / Close / Cancel buttons removed (the ‹ Back pill does it), and Quit to title, Leave game (no result), Leave online game, Back to title and Back to lobby renamed to Quit, Leave, Title and Back; Settings is Game settings; Leave this game? is Quit this game?; profile's Title is now listed under the hub's Title (same word)",

@@ -1,5 +1,21 @@
 # Changelog
 
+## 9.21.2: the sounds you picked on your phone
+The first review done on a phone through the published Studio: 36 sounds marked.
+- **New defaults** (`SFX_DEFAULT_PICKS`):
+  - Soft: the swish through the net and the steal.
+  - Real: the crowd after a turnover.
+  - Arcade: the halftime, win and loss stingers, and Back and Yes / No in menus.
+  - A player who picks one of these sounds in Settings still gets their own pick.
+- **Cut:**
+  - The extra chime on a perfect-timing make (`greenMake`); the swish still plays.
+  - The career calendar's chime at a new month, Ramadan, Eid or a holiday (`calChime`).
+  - Their Studio IDs are listed as removed.
+- **Unchanged:** the 18 sounds you picked A (as shipped) aren't listed as defaults, so a player's own sound style
+  still applies to them. The 9 you marked Keep are unchanged too.
+- **Tests run** (not the full suite): `sfx-variants` (now 38 sounds, was 40), `sfx-moments` (the calendar is silent
+  now), `sfx-calls`, `sound-list`, `crowd-tiers`, `studio-coverage`, `studio-csv` and `studio-phone`.
+
 ## 9.21.1: the Review Studio opens on a phone from a link
 **How to use it:** open **https://halkotob.github.io/IslamDunk/studio/** on your phone. Type your name under ⋯ (the
 same name you use on the computer), then review: the bar at the bottom has Keep / Fix / Delete (and Merge on

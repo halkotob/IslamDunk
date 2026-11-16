@@ -3,7 +3,7 @@
 //                 last 3 s (3 ticks, rising), a hot spot appearing, free throws (a step, then a tap per attempt), the
 //                 crowd on a block / turnover / bad miss when nobody is drawn (and not when people are: never both),
 //                 Lightning's catch, the halftime, win and loss stingers, the summary's lines, the trivia timer's
-//                 last 5 s, Back (Esc and the corner button), Yes / No, a toast, the calendar's new month and holiday
+//                 last 5 s, Back (Esc and the corner button), Yes / No, a toast, the calendar (silent since v9.21.2)
 //   sfx-calls     every SFX.<name> the game's source uses exists (the guard that would have caught SFX.catch)
 //   sfx-crowd     the crowd reaction by venue: the practice gym silent, the home gym quiet, an arena loud, in that order
 //   sfx-quiet     Settings > Sound off: nothing is heard; Sound style D (Soft) plays every new sound
@@ -16,7 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const NEW = ['shotTick', 'ftStep', 'ftAttempt', 'hotSpot', 'crowdTurnover', 'crowdBlock', 'crowdBadMiss', 'catch', 'halftimeStinger', 'winStinger', 'lossStinger', 'earnTick', 'triviaLow', 'uiBack', 'uiConfirm', 'toast', 'calChime'];
+const NEW = ['shotTick', 'ftStep', 'ftAttempt', 'hotSpot', 'crowdTurnover', 'crowdBlock', 'crowdBadMiss', 'catch', 'halftimeStinger', 'winStinger', 'lossStinger', 'earnTick', 'triviaLow', 'uiBack', 'uiConfirm', 'toast'];   // (v9.21.2: calChime cut)
 // count every play of the new sounds (the dispatcher's own calls), with its argument
 const COUNT = ids => { window.__snd = []; for (const id of ids) { const f = SFX[id]; SFX[id] = function () { window.__snd.push([id, arguments[0]]); return f.apply(this, arguments); }; } };
 export function sfxMomentsTests({ newContext, open }) {
@@ -69,12 +69,12 @@ export function sfxMomentsTests({ newContext, open }) {
       // Yes / No; a toast
       askConfirm({ text: 'Sure?', yes: ['Yes', () => {}], no: ['No', () => {}] }); confirmPick(1); out.confirm = take().filter(x => x[0] === 'uiConfirm').length;
       toast('Saved.'); out.toast = take().filter(x => x[0] === 'toast').length;
-      // the calendar: a new day (nothing), a new month (a chime), Eid al-Adha's day (a chime)
+      // the calendar: a new day, a new month and Eid al-Adha's day make no sound (v9.21.2: the chime was cut in the Studio)
       C = freshCareer(); calInit(); take();
       const d0 = C.cal.d, t = calDate(d0), nextMonth = calDayOf(t.y, t.m + 1, 1), adha = calDayOf(t.y, 11, 10);
       calSetDay(d0 + 1); const a = take().length;
-      calSetDay(nextMonth); const b = take().filter(x => x[0] === 'calChime').length;
-      calSetDay(adha - 1); take(); calSetDay(adha); const c = take().filter(x => x[0] === 'calChime').length;
+      calSetDay(nextMonth); const b = take().length;
+      calSetDay(adha - 1); take(); calSetDay(adha); const c = take().length;
       out.cal = [a, b, c];
       C = null; return out;
     });
@@ -89,7 +89,7 @@ export function sfxMomentsTests({ newContext, open }) {
     const ok = JSON.stringify(r.shot) === '[3,2,1]' && r.hot === 1 && r.ft.step === 1 && r.ft.attempt === 2
       && r.crowd0.sort().join() === 'crowdBadMiss,crowdBlock,crowdTurnover' && r.crowd6.length === 0 && r.catchN >= 1
       && r.half === 1 && r.win.join() === 'winStinger' && r.loss.join() === 'lossStinger' && r.earn === 5 && r.trivia === 5
-      && r.confirm === 1 && r.toast === 1 && r.cal.join() === '0,1,1' && esc.screen === 'title' && esc.n === 1 && btn.screen !== 'profile' && btn.n === 1 && !errs.length;
+      && r.confirm === 1 && r.toast === 1 && r.cal.join() === '0,0,0' && esc.screen === 'title' && esc.n === 1 && btn.screen !== 'profile' && btn.n === 1 && !errs.length;
     return { ok, detail: [JSON.stringify(r), `Esc from the Career menu: ${JSON.stringify(esc)}; the corner Back on Profile: ${JSON.stringify(btn)}`, ...errs] };
   };
   T['sfx-calls'] = async ({ browser, base }) => {
