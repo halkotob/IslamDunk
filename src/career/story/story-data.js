@@ -74,7 +74,7 @@ const STORY_FIRST = 'C0.1';
 // ---------------------------------------------------------------- Chapter 0: Introduction
 scn('C0.1', { kind: 'scene', custom: 'salams', name: 'After Isha', next: 'C0.2',
   lines: [['narr', 'As-salamu alaykum wa rahmatullah.'], ['narr', 'As-salamu alaykum wa rahmatullah.']] });
-scn('C0.2', { kind: 'scene', bg: 'musalla', name: 'The musalla', next: 'C0.3', lines: [
+scn('C0.2', { kind: 'scene', talk: { at: 'musalla', who: 'dawud' }, name: 'The musalla', next: 'C0.3', lines: [
   ['narr', 'Masjid Al-Amanah, Eastside. Your first week in town, your first Isha here.'],
   ['dawud', 'Astaghfirullah, astaghfirullah, astaghfirullah.'],
   ['dawud', 'Brother, I don’t know your face yet. Welcome. You’re new in Eastside?'],
@@ -125,7 +125,7 @@ scn('C1.6', { kind: 'play', name: 'Lightning', mode: 'lightning', win: 'C1.7', l
   pre: [['musa', 'EVERYBODY UP! Lightning, five of us, loser stacks the chairs!'], ['saleem', 'Five of us, two balls. You know the rules?'], ['you', 'Make it before the man behind you does.'], ['saleem', 'Then you know everything. Bismillah.']],
   winLines: [['musa', 'Bro. You knocked out Ilyas AND his dad in one game.'], ['jamil', 'I let him. Respect for the guest.'], ['ilyas', 'You did not let him, Dad.']],
   lossLines: [['ilyas', 'Got you! Welcome to Al-Amanah, we play for keeps.'], ['saleem', 'Good effort. Now, chairs. Then my office.']] });
-scn('C1.7', { kind: 'scene', name: 'The office', bg: 'office', next: 'C1.8', lines: [
+scn('C1.7', { kind: 'scene', name: 'The office', talk: { at: 'office', who: 'saleem' }, next: 'C1.8', lines: [
   ['saleem', 'Come in, close the door. The chai is from Imam Dawud, so it’s strong.'],
   ['saleem', 'I never introduced myself properly. Saleem. I studied in Madinah, came back, and the masjid asked me to stay a year. That was eleven years ago.'],
   ['saleem', 'Al-Amanah is small. Two hundred families, a gym that is also the overflow musalla, a weekend school in two rooms.'],
@@ -216,7 +216,7 @@ const STORY_GYM_TALK = {
 // A group stage of 3 games (two pools of four; the top two go through), then a semifinal and a final. Al-Furqan is in.
 scn('C2.1', { kind: 'drill', name: 'First practice', walk: 'C2.1', next: 'C2.2' });
 scn('C2.2', { kind: 'walk', name: 'Father and son', walk: 'C2.2', next: 'C2.3' });
-scn('C2.3', { kind: 'scene', name: 'Why we play', salah: true, bg: 'office', next: 'C2.4', effect: 'fundOn', lines: [
+scn('C2.3', { kind: 'scene', name: 'Why we play', salah: true, talk: { at: 'office', who: 'saleem' }, next: 'C2.4', effect: 'fundOn', lines: [
   ['saleem', 'Come in, all of you. Squeeze in. Musa, sit on the bookshelf if you have to.'],
   ['saleem', 'Before the league starts, I want you to know why we play. It isn’t for a trophy.'],
   ['saleem', 'Ustath Karim, tell them.'],

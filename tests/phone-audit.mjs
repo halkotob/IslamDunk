@@ -105,7 +105,7 @@ export const SCREENS = [
   ['cbracket', CAREER + ` careerHub(); Game.screen = 'cbracket';`],
   // v9.22: the story: the salams, the musalla scene, a walk with its checklist and a bubble, the tutorial, the hub
   ['story: salams', STORY_HELPERS + ` window.__sNew('Abdullah'); Game.salams.t = 1.5;`],
-  ['story: musalla', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.2'); Game.story.t = 9;`],
+  ['story: musalla', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.2'); stalkAdvance();`],
   ['story: walk', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.3'); SW.talk = null; SW.fade = 0;`],
   ['story: walk bubble', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.3'); SW.fade = 0; SW.talk.t = 1;`],
   ['story: tutorial', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.4'); SW.talk = null; SW.fade = 0; swGoal('walk');`],

@@ -381,3 +381,103 @@ function smusLeft() { const st = Game.mus && Game.mus.story; return st ? STORY_M
     STORY_MUS_NEED.forEach((id, i) => { const ok = !!st.met[id]; g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + castDef(id).name, x0 + 16, y0 + 20 + (i + 1) * rh); });
   };
 }
+
+// ---------------------------------------------------------------- v9.24: a scene in a place is a talk in that place
+// No cutaway and no portraits: you are on the musalla's floor (walk up to him) or in Sh. Saleem's office (select him),
+// a gold marker floats over the one you need to talk to, and the scene's lines are a plain text box you click through.
+// A scene declares it with talk: { at: 'musalla' | 'office', who }. Narration before the first spoken line is shown on
+// arrival. Others in the musalla answer with a salaam.
+function stalkLines(S) {
+  const L = storyLinesOf(S); let k = 0; while (k < L.length && L[k][0] === 'narr') k++;
+  return { pre: L.slice(0, k), main: L.slice(k), all: L };
+}
+function storyTalkStart(S) {
+  const t = S.talk, L = stalkLines(S);
+  enterGym(); M.lobbyGym = false;
+  const st = { S, who: t.who, at: t.at, main: L.main, all: L.all };
+  if (t.at === 'office') { openOffice(); Game.office.stalk = st; Game.office.sel = 1; }
+  else { openMusalla(); Game.mus.stalk = st; }
+  if (L.pre.length) stalkShow(st, L.pre, true);
+}
+function stalkHost() { return Game.screen === 'office' ? Game.office : Game.screen === 'musalla' ? Game.mus : null; }
+function stalkShow(st, lines, pre) { st.box = { lines: lines.slice(), li: 0, pre: !!pre }; SFX.blip(); }
+function stalkTalk() { const h = stalkHost(), st = h && h.stalk; if (st && !st.box) stalkShow(st, st.main); }
+function stalkAdvance() {
+  const h = stalkHost(), st = h && h.stalk, b = st && st.box; if (!b) return;
+  if (b.li < b.lines.length - 1) { b.li++; SFX.blip(); return; }
+  st.box = null;
+  if (b.pre || b.aside) return;                                   // arrival narration or a salaam: now go and talk to him
+  if (st.at === 'office') Game.office = null; else Game.mus = null;
+  Game.screen = 'gym';
+  storyJournal(st.S, st.all); storyDone(st.S, 'next');
+}
+function stalkSpeaker(id) { return id === 'narr' ? '' : id === 'you' ? (C.name || 'You') : castDef(id).name; }
+function drawStalkBox(g, b) {
+  const [id, text] = b.lines[b.li], who = stalkSpeaker(id);
+  panel(g, 40, 396, 880, 136, true);
+  g.textAlign = 'left';
+  if (who) { g.fillStyle = GOLD; g.font = `15px ${FONT}`; g.fillText(who, 60, 420); }
+  g.fillStyle = id === 'narr' ? IVORY : '#fff'; g.font = `${id === 'narr' ? 'italic ' : ''}15px ${BODY}`; wrapTextLeft(g, text, 60, who ? 446 : 430, 840, 21);
+  g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.textAlign = 'right'; g.fillText(Input.touchMode ? 'Tap to continue' : 'Enter to continue', 900, 520);
+  addRect(0, 60, W, H - 60, stalkAdvance);
+}
+function drawStalkMarker(g, x, y) {
+  const my = y + Math.sin(Game.t * 3) * 4;
+  g.fillStyle = GOLD; g.beginPath(); g.arc(x, my, 13, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.moveTo(x - 6, my + 10); g.lineTo(x + 6, my + 10); g.lineTo(x, my + 19); g.closePath(); g.fill();
+  g.fillStyle = NIGHT; g.font = `17px ${FONT}`; g.textAlign = 'center'; g.fillText('!', x, my + 6);
+}
+{
+  // the musalla
+  const _tt = talkTo;
+  talkTo = function (i) {
+    const m = Game.mus, st = m && m.stalk;
+    if (!st) return _tt.apply(this, arguments);
+    const id = MUS_CAST[i];
+    if (id === st.who) stalkTalk(); else { stalkShow(st, [[id, 'Wa alaykum as-salam, akhi. Welcome.']]); st.box.aside = true; }
+  };
+  const _mu = musallaUpdate;
+  musallaUpdate = function (rdt) {
+    const m = Game.mus, st = m && m.stalk;
+    if (st && st.box) {
+      if (m.fadeIn > 0) m.fadeIn -= rdt;
+      for (const id of MUS_CAST) { const p = m.npcs[id]; p.fakeIdle = true; p.vx = p.vz = 0; animate(p, Math.min(rdt, 0.05)); }
+      m.me.vx = m.me.vz = 0; animate(m.me, Math.min(rdt, 0.05));
+      if (menuHit('ok')) stalkAdvance();
+      return;
+    }
+    return _mu.apply(this, arguments);
+  };
+  const _dm = drawMusallaScreen;
+  drawMusallaScreen = function (g) {
+    const m = Game.mus, st = m && m.stalk;
+    if (!st) return _dm.apply(this, arguments);
+    const near = m.near; if (st.box) m.near = null;
+    _dm.apply(this, arguments); m.near = near;
+    const S = MUS_SPOTS[st.who], at = musToScreen(S.u, S.d);
+    if (!st.box && m.near !== st.who) drawStalkMarker(g, at.x, at.y - (S.pose === 'cross' ? 95 : S.pose === 'chair' ? 120 : 150) * at.s - 22);
+    if (st.box) drawStalkBox(g, st.box);
+  };
+  // the office
+  const _ou = officeUpdate;
+  officeUpdate = function (rdt) {
+    const of = Game.office, st = of && of.stalk;
+    if (!st || of.panel) return _ou.apply(this, arguments);
+    if (of.fadeIn > 0) of.fadeIn -= rdt;
+    if (st.box) { if (menuHit('ok')) stalkAdvance(); return; }
+    if (menuHit('left') || menuHit('right')) { of.sel ^= 1; SFX.blip(); }
+    if (menuHit('ok')) { if (of.sel === 1) stalkTalk(); else officeAct(0); }
+    else if (menuHit('back')) leaveOffice();
+  };
+  const _oa = officeAct;
+  officeAct = function (i) { const of = Game.office, st = of && of.stalk; if (st && i === 1) { of.sel = 1; return stalkTalk(); } return _oa.apply(this, arguments); };
+  const _do = drawOffice;
+  drawOffice = function (g) {
+    const of = Game.office, st = of && of.stalk;
+    if (!st) return _do.apply(this, arguments);
+    if (st.box) { drawOfficeRoom(g, true); drawStalkBox(g, st.box); if (of.fadeIn > 0) { g.fillStyle = `rgba(4,10,14,${of.fadeIn / 0.5})`; g.fillRect(0, 0, W, H); } return; }
+    const _sit = sheikhSituation; sheikhSituation = () => null;     // our own marker, not the "…" one
+    try { _do.apply(this, arguments); } finally { sheikhSituation = _sit; }
+    drawStalkMarker(g, W / 2 + 40, 168);
+  };
+}

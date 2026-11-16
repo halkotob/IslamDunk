@@ -7,6 +7,7 @@
 //                       the Court (won, or lost with o.lose), the teammate pick (o.pick, or the one now), a bracket game's
 //                       pregame card. o.lose and o.pick can be functions of the scene ID. Returns what it did.
 //   __sRun(until, o)    steps until the story is at scene `until` (or a step limit); returns the IDs passed through
+//                       A scene in a place (the musalla, the office): talk to the one with the marker, click through.
 //   __sState()          { screen, at, cp, walk, seen }
 // The league runs in its fallback mode here (no engine time for the other games).
 export const STORY_HELPERS = `(() => {
@@ -28,6 +29,11 @@ export const STORY_HELPERS = `(() => {
       const cl = swCloser(); if (cl && !SW.done) window.__sTalk(cl);
       if (SW && SW.done) swEnd();
       return 'walk';
+    }
+    const sh = typeof stalkHost === 'function' ? stalkHost() : null;
+    if (sh && sh.stalk) {                                                 // a scene in a place: walk up / select him, click through
+      for (let k = 0; k < 120 && stalkHost() && stalkHost().stalk; k++) { if (!stalkHost().stalk.box) stalkTalk(); stalkAdvance(); }
+      return 'talk';
     }
     const lose = typeof o.lose === 'function' ? o.lose(C.story.at) : !!o.lose;
     if (s === 'musalla' && Game.mus && Game.mus.story) {

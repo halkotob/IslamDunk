@@ -123,8 +123,8 @@ export function storyTests({ newContext, open }) {
 
   T['story-reload'] = async ({ browser, base }) => {
     const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-reload');
-    const want = { 'C0.1': 'ssalams', 'C0.2': 'story', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'play', 'C0.6': 'story',
-      'C1.1': 'story', 'C1.2': 'gym', 'C1.5': 'musalla', 'C1.6': 'story', 'C1.7': 'story', 'C1.8': 'story', 'C1.9': 'story',
+    const want = { 'C0.1': 'ssalams', 'C0.2': 'musalla', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'play', 'C0.6': 'story',
+      'C1.1': 'story', 'C1.2': 'gym', 'C1.5': 'musalla', 'C1.6': 'story', 'C1.7': 'office', 'C1.8': 'story', 'C1.9': 'story',
       'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'story', 'C2.5': 'spick', 'C2.6': 'story', 'C2.9': 'gym', 'C2.10': 'story' }, ids = Object.keys(want), res = [];
     for (const id of ids) {
       await prep(p);

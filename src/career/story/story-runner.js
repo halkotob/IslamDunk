@@ -70,6 +70,7 @@ function storyPlayScene(S) {
   if (S.custom === 'salams') return storySalams(S);
   if (S.salah && Game.salahFor !== S.id) { Game.salahFor = S.id; return storySalah(S, () => storyPlayScene(S)); }   // the prayer first (C2.3)
   Game.salahFor = null;
+  if (S.talk) return storyTalkStart(S);                         // a scene in a place: walk up and talk (story-walk.js)
   const lines = storyLinesOf(S);
   playStory(lines, () => storyDone(S, 'next'), storyTitleOf(S));
   if (Game.story) { Game.story.bg = S.bg || null; Game.story.sid = S.id; }

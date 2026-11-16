@@ -1,5 +1,16 @@
 # Changelog
 
+## 9.24.1: Talks happen where they happen
+A story scene that takes place somewhere is now a talk in that place, not a cutaway with portraits over it:
+- **C0.2** You are on the musalla floor after Isha. A gold marker floats over Imam Dawud: walk up to him and talk.
+  The others there answer your salaam.
+- **C1.7 and C2.3** You are in Sh. Saleem's office with a marker over him. Select him to talk (the bookshelf still works).
+- The lines are a plain text box with the speaker's name. Click or press Enter to go through it. Narration shows when
+  you arrive.
+
+How it was checked: `story-ch0`, `story-ch1`, `story-ch2`, `story-reload` (C0.2 reopens in the musalla, C1.7 in the
+office), `studio-coverage`, `studio-phone` and the phone audit.
+
 ## 9.24.0: Chapter 2, Masjid league
 The career's Chapter 2 (docs/career-overhaul/SCENES.md) is in. After Chapter 1, Continue plays:
 - **C2.1** First practice: the real gym, three drills, then Sh. Saleem.

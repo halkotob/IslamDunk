@@ -131,7 +131,7 @@ export const SCREEN_OF = {
   "hub: corner menu": "hub",
   "hub: My Player menu": "hub",
   "story: salams": "ssalams",
-  "story: musalla": "story",
+  "story: musalla": "musalla",
   "story: walk": "gym",
   "story: walk bubble": "gym",
   "story: tutorial": "gym",
