@@ -66,7 +66,7 @@ const CHAPTERS = [
   { n: 4, name: 'National tournament', stage: 2, cp: 'C4.1' },
   { n: 5, name: 'Ummah Cup', stage: 3, cp: 'C5.1' }
 ];
-const STORY_BUILT = 2;              // the last chapter that can be played in this build (later chapters arrive one release at a time)
+const STORY_BUILT = 3;              // the last chapter that can be played in this build (later chapters arrive one release at a time)
 const SC = {};
 function scn(id, o) { SC[id] = Object.assign({ id, ch: id[0] === 'C' ? +id[1] : 6 }, o); return SC[id]; }
 const STORY_FIRST = 'C0.1';
@@ -364,3 +364,130 @@ const STORY_NEXT_SEASON = {
   4: [['narr', 'Out of the National tournament.'], ['saleem', 'One loss and we’re out. That’s the knockout. We come back next year.'], ['jamil', 'Next year. I say this a lot, no?'], ['narr', 'A new season. The National tournament comes around again.']],
   5: [['narr', 'The Ummah Cup goes on without Al-Amanah this year.'], ['saleem', 'We met brothers from every corner of the world. That is already a gift.'], ['narr', 'A new season. The Ummah Cup comes around again.']]
 };
+
+// ---------------------------------------------------------------- Chapter 3: State league (v9.25)
+// Nine teams, eight games each, the top four to the semifinals. Something different every two games: CHAI after
+// game 2, the all-star game after game 4, an injury after game 6.
+const C3G = (id, n, next, o = {}) => scn(id, Object.assign({ kind: 'play', name: 'League game ' + n, bracket: true, stakes: 'regular', win: next, loss: next, out: next,
+  winLines: o.win || [['saleem', 'Alhamdulillah. One more on the table.']], lossLines: o.loss || [['saleem', 'Sabr. The table is long. We go again.']] }, o.x || {}));
+scn('C3.1', { kind: 'walk', name: 'Back at the gym', walk: 'C3.1', next: 'C3.2' });
+scn('C3.2', { kind: 'scene', name: 'The State league', checkpoint: true, effect: 'bracket', stage: 1, pickAfter: true, next: 'C3.3', lines: () => storyStateIntro() });
+C3G('C3.3', 1, 'C3.4', { x: { stakes: 'opener' },
+  win: [['saleem', 'Our first State win. Bismillah, and many more.'], ['musa', 'The State! We’re in the STATE!'], ['ilyas', 'Musa, we’ve been in the state the whole time.']],
+  loss: [['saleem', 'One game of eight. Nobody wins the table in the first game.'], ['jamil', 'Or loses it. Remember that.']] });
+scn('C3.4', { kind: 'drill', name: 'Practice', walk: 'C3.4', next: 'C3.5' });
+C3G('C3.5', 2, 'C3.6', { win: [['karim', 'Two games. The kids are keeping a chart on the classroom wall.'], ['saleem', 'Then let’s give them something to draw.']] });
+scn('C3.6', { kind: 'play', name: 'Team bonding: CHAI', mode: 'chai', win: 'C3.7', loss: 'C3.7',
+  pre: [['dawud', 'The chai urn is empty. Somebody has to make the next one.'], ['saleem', 'Then we settle it the masjid way. HORSE. Only the word is CHAI.'], ['musa', 'Four letters? That’s barely a game.'], ['jamil', 'Four letters, a long night of chai-making for the loser.']],
+  winLines: () => storyChaiLines(true), lossLines: () => storyChaiLines(false) });
+C3G('C3.7', 3, 'C3.8');
+C3G('C3.8', 4, 'C3.9', { win: [['saleem', 'Halfway. Good. Come to my office tomorrow, all of you. I have an idea.']], loss: [['saleem', 'Halfway, and still in it. Come to my office tomorrow. I have an idea.']] });
+scn('C3.9', { kind: 'scene', name: 'Tickets', talk: { at: 'office', who: 'saleem' }, next: 'C3.10', lines: [
+  ['narr', 'Sh. Saleem’s office, the next day. A box of printed tickets sits on the desk.'],
+  ['saleem', 'The school wing needs money, and people want to see this team. So we give them a show.'],
+  ['saleem', 'An all-star game. Saturday night, in our gym. Tickets ten dollars, kids free.'],
+  ['you', 'Who do we play?'],
+  ['saleem', 'Al-Furqan agreed to send their best two. Rayyan said, and I quote, “we’re going to embarrass you.”'],
+  ['saleem', 'One rule: dunks only. A jumper counts nothing. Musa suggested it.'],
+  ['musa', 'I suggested it!'],
+  ['saleem', 'Every dunk brings the crowd up. The louder the crowd, the more the uncles give. Go and practise your dunks.']] });
+scn('C3.10', { kind: 'play', name: 'All-star game', mode: 'allstar', win: 'C3.11', loss: 'C3.11',
+  pre: [['narr', 'Saturday night. The bleachers are full. Someone’s auntie has made a banner: DUNK FOR THE KIDS.'], ['rayyan', 'Dunks only. You sure you want this?'], ['musa', 'We were born for this.'], ['jamil', 'Nobody in this gym was born for this. Bend your knees.']],
+  winLines: [['narr', 'The final dunk, and the gym explodes.'], ['rayyan', 'Okay. That was a good show. Tell no one I said that.']],
+  lossLines: [['narr', 'Al-Furqan take the all-star game, but nobody in the bleachers is complaining.'], ['rayyan', 'Good game. The kids got their money’s worth.']] });
+scn('C3.11', { kind: 'scene', name: 'The ticket money', effect: 'allstarFund', next: 'C3.12', lines: () => storyAllstarLines() });
+C3G('C3.12', 5, 'C3.13');
+C3G('C3.13', 6, 'C3.14', { win: [['saleem', 'Six games. Two to go.'], ['narr', 'In the last minute, your teammate goes down holding his ankle.']], loss: [['saleem', 'A tough one. And worse: in the last minute, your teammate went down holding his ankle.']] });
+scn('C3.14', { kind: 'choice', name: 'Your teammate is injured', pick: true, injure: true, next: 'C3.15', lines: () => storyInjuryLines() });
+C3G('C3.15', 7, 'C3.16');
+scn('C3.16', { kind: 'scene', name: 'The last league game', next: 'C3.17', lines: () => storyTableHype() });
+C3G('C3.17', 8, 'C3.18', { x: { stakes: () => storyTableStakes() }, win: [['saleem', 'Alhamdulillah. Now we wait for the table.']], loss: [['saleem', 'Sabr. Let’s see what the table says.']] });
+scn('C3.18', { kind: 'scene', name: 'The table', effect: 'heal', next: () => C.bracket && C.bracket.out ? 'C3.NS' : 'C3.19', lines: () => storyTableResultLines() });
+scn('C3.19', { kind: 'play', name: 'State semifinal', bracket: true, stakes: 'must-win', win: 'C3.20', out: 'C3.NS', loss: 'C3.NS',
+  winLines: [['saleem', 'The State final! Alhamdulillah!'], ['jamil', 'A final. I have been in one final in my life before this year, and now it is three.']],
+  lossLines: [['saleem', 'One step from the final. It hurts, and it should.'], ['anas', 'We gave everything. That is what was asked of us.']] });
+scn('C3.20', { kind: 'scene', name: 'Before the final', talk: { at: 'office', who: 'saleem' }, next: 'C3.21', lines: () => storyStateFinalPrep() });
+scn('C3.21', { kind: 'play', name: 'State final', bracket: true, stakes: 'final', win: 'C3.22', out: 'C3.NS', loss: 'C3.NS',
+  winLines: [['narr', 'The buzzer. State champions.']], lossLines: [['narr', 'The buzzer. So close, again.'], ['saleem', 'Heads up. We were the second-best team in the whole state. Next year, first.']] });
+scn('C3.22', { kind: 'scene', name: 'State champions', effect: 'title', stage: 1, next: 'C3.23', lines: () => storyTitleLines(1) });
+scn('C3.23', { kind: 'scene', name: 'The invitation', next: 'C4.1', hub: true, lines: [
+  ['narr', 'A week later. An envelope on Sh. Saleem’s desk, with a gold seal.'],
+  ['saleem', '“Masjid Al-Amanah is invited to the National Masjid Tournament. Sixteen teams. Single elimination.”'],
+  ['jamil', 'Single elimination. One bad night and we go home.'],
+  ['ilyas', 'Then we don’t have a bad night.'],
+  ['jamil', '…When did you get so confident?'],
+  ['ilyas', 'I learned it from somebody. He yells a lot.'],
+  ['karim', 'The fundraiser is closer than ever. If we do well at Nationals, the school wing could open this year.'],
+  ['dawud', 'Pack the big thermos. We’re going on a trip.']] });
+scn('C3.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: () => C.story.cp || 'C3.2', hub: true, lines: () => storyNextSeasonLines(3) });
+
+STORY_WALKS['C3.1'] = { title: 'Back at the gym', npcs: [
+    { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, need: true, lines: [['jamil', 'You see the new lights? I can see the rim now. Nineteen years I was shooting at a shadow.'], ['jamil', 'And the trophy case. I polish it every morning. Don’t tell anyone.']] },
+    { id: 'musa', x: 1120, z: 430, act: 'shoot', face: 1, need: true, lines: [['musa', 'Bro, there are like forty people here. Forty! For practice!'], ['musa', 'Three kids asked for my autograph. I signed “Musa, State league.” Is that too early?']] },
+    { id: 'karim', x: 1180, z: 200, act: 'host', face: -1, need: true, lines: [['karim', 'Six new students at the weekend school since the title. Their fathers saw us in the newsletter.'], ['karim', 'Six more children in a coat closet. We need that wing.']] },
+    { id: 'dawud', x: 600, z: 230, act: 'chai', face: 1, lines: [['dawud', 'New lights, same chai. Some things a masjid should not upgrade.']] },
+    { id: 'saleem', x: 860, z: 300, act: 'host', face: -1, closer: true, early: [['saleem', 'Say salaam to everyone first. A lot of new faces tonight.']],
+      lines: [['saleem', 'More people, more responsibility. Gather everyone, akhi. I have news about the State league.']] }],
+  start: [['narr', 'A new season. The gym is brighter, and fuller.']] };
+STORY_WALKS['C3.4'] = { title: 'Practice', free: true, npcs: [
+    { id: 'saleem', x: 860, z: 300, act: 'host', face: -1, closer: true, early: [['saleem', 'One drill at least. Q for the drill menu.']],
+      lines: [['saleem', 'Good. The State teams are faster than the city’s. We match them with habits.']] }],
+  goals: [{ id: 'drill', label: 'Finish a drill', touch: 'Tap Drills, pick one', key: 'Q opens the drills' }] };
+
+function storyStateIntro() {
+  const b = C.bracket, att = C.story.att || 0, o = storyOpp();
+  const L = att ? [['saleem', 'A new State season. Same table, same intention.'], ['jamil', 'This year, the top four. Then the trophy.']] : [
+    ['saleem', 'Brothers. As masjid league champions, we’re in the State Masjid Championship.'],
+    ['saleem', 'Nine masjids from across the state. We play each of them once. Eight games.'],
+    ['saleem', 'The top four go to the semifinals: first plays fourth, second plays third. Then the final.'],
+    ['anas', 'Eight games is a long season. We look after our bodies.'],
+    ['musa', 'And our hamstrings. Qari Anas told me hamstrings are an amanah.'],
+    ['jamil', 'Al-Furqan is in it too. Rayyan’s uncle called me. To “wish me luck.”'],
+    ['dawud', 'Then we wish them luck back. And beat them.']];
+  if (b && b.pools && !att) L.push(['saleem', 'Every masjid in the table is here: ' + b.pools[0].filter(i => i > 1).map(i => teamOf(1, i).name.replace('Masjid ', '')).join(', ') + ', and Al-Furqan.']);
+  if (o) L.push(['saleem', 'First up: ' + o.team.name + '. Pick who plays beside you.']);
+  return L;
+}
+function storyTableHype() {
+  const p = storyTablePos(), b = C.bracket, me = b && b.pg ? standings(b, 0).find(r => r.id === 0) : { w: 0, l: 0 };
+  const L = [['narr', 'The last league game. Al-Amanah are ' + ordinal(p) + ' in the table, ' + me.w + ' won and ' + me.l + ' lost.']];
+  if (p <= 2) L.push(['saleem', 'We’re in a good place. Win tonight and we get the easier semifinal.']);
+  else if (p <= 4) L.push(['saleem', 'Top four, but only just. Win tonight and nobody can catch us.']);
+  else L.push(['saleem', 'We’re outside the top four. We need this win, and we need the other games to go our way.']);
+  L.push(['jamil', 'Every possession. EVERY possession.'], ['ilyas', 'He’s going to say “bend your knees” now.'], ['jamil', '…Bend your knees.']);
+  return L;
+}
+function storyTableResultLines() {
+  const b = C.bracket, p = storyTablePos();
+  if (b && b.out) return [['narr', 'The table is final. Al-Amanah finish ' + ordinal(p) + '. The top four go on without us.'], ['saleem', 'We were close. Close is a lesson.'], ['jamil', 'Next year we go again.']];
+  const sf = b.rounds[0].find(m => m.a === 0 || m.b === 0), oid = sf.a === 0 ? sf.b : sf.a, opp = teamOf(1, oid), L = [['narr', 'The table is final. Al-Amanah finish ' + ordinal(p) + ', and into the semifinals.']];
+  L.push(['saleem', 'Our semifinal: ' + opp.name + '.']);
+  if (oid === 1) L.push(['rayyan', 'Al-Amanah. Of course it’s you.'], ['jamil', 'Of course it is.']);
+  else L.push(['jamil', 'And Al-Furqan is on the other side. If we meet them, it’s the final.']);
+  const back = C.story.injured;
+  if (back) L.push(['narr', castDef(back).name + ' walks in without the ankle brace.'], ...storyReturnLine(), ['saleem', 'Welcome back. Just in time for the playoffs.']);
+  return L;
+}
+function storyStateFinalPrep() {
+  const b = C.bracket, f = b && b.rounds[1] && b.rounds[1][0], oid = f ? (f.a === 0 ? f.b : f.a) : 1, opp = teamOf(1, oid);
+  const L = [['narr', 'The night before the State final. Sh. Saleem’s office, the door open, the gym dark behind it.'],
+    ['saleem', 'Tomorrow it’s ' + opp.name + '. Sit for a minute.'],
+    ['saleem', 'When I came back from Madinah, this gym had one working light and a rim bent like a banana.'],
+    ['saleem', 'Now look. Lights. Bleachers full every night. Kids who want to be you.'],
+    ['you', 'And a school wing on the way.'],
+    ['saleem', 'In sha Allah. Whatever happens tomorrow, the masjid already won. But I would still like that trophy.']];
+  if (oid === 1) L.push(['saleem', 'And it’s Rayyan. Play him straight. He hates that.']);
+  return L;
+}
+// C3.14: the teammate who gets hurt, and his line when he's back for the playoffs
+const STORY_INJURY = {
+  saleem: [['narr', 'Sh. Saleem is in a chair by the bench with his ankle on a bag of ice.'], ['saleem', 'A sprain. Two weeks, the doctor says. The Prophet ﷺ was patient with much worse.'], ['saleem', 'Pick someone else for now. I will coach from this chair. Loudly.']],
+  jamil: [['narr', 'Ammo Jamil sits on the bench, his knee wrapped in ice.'], ['jamil', 'It’s nothing! It’s a scratch!'], ['ilyas', 'Dad, the doctor said three weeks.'], ['jamil', '…Pick someone else. But I will be watching your defense.']],
+  ilyas: [['narr', 'Ilyas is on the bench with his ankle up, and Ammo Jamil is fussing over him.'], ['jamil', 'Ice. More ice. Who has ice?'], ['ilyas', 'Dad. It’s fine. Two weeks.'], ['jamil', 'Two weeks is long. Sit. Rest. Don’t move.'], ['ilyas', '…Pick someone else, akhi. And win for me.']],
+  karim: [['narr', 'Ustath Karim holds up a wrist in a splint.'], ['karim', 'A sprained wrist. Of course, my shooting hand.'], ['karim', 'The kids signed the splint. One of them wrote “get well soon” in Arabic, with only two mistakes. Pick someone else, akhi.']],
+  anas: [['narr', 'Qari Anas is flat on his back on the gym floor, very calm.'], ['anas', 'My back. Not serious. But I cannot jump for two weeks.'], ['anas', 'I will recite for you from the bench. Pick someone else.']],
+  dawud: [['narr', 'Imam Dawud limps to the chai table and sits down heavily.'], ['dawud', 'My knee has retired. Temporarily, in sha Allah.'], ['dawud', 'I will make the chai and give advice. Both are free. Pick someone else, akhi.']],
+  musa: [['narr', 'Musa is on the bench with ice on his ankle, looking betrayed by gravity.'], ['musa', 'I tried a 360. In a real game. I know. I KNOW.'], ['saleem', 'Two weeks out. Pick someone else, and Musa: fundamentals.'], ['musa', 'Fundamentals. Yes, Sheikh.']]
+};
+const STORY_RETURN = { saleem: 'The chair was comfortable, but the court is better.', jamil: 'The knee is back. The yelling never left.', ilyas: 'Two weeks of my dad bringing me ice. I’m ready.',
+  karim: 'The splint is off. Elbow in, follow through.', anas: 'My back is well, alhamdulillah. I will set screens like walls.', dawud: 'The knee has come out of retirement.', musa: 'No more 360s. Probably.' };

@@ -40,6 +40,9 @@ export const STORY_HELPERS = `(() => {
       for (const id of STORY_MUS_NEED) if (!Game.mus.story.met[id]) { talkTo(MUS_CAST.indexOf(id)); Game.mus.talk = null; }
       musallaUpdate(1 / 60); return 'musalla';
     }
+    if (s === 'gym' && Gym.drill && Gym.drill.story && M.mini && M.mini.kind === 'horse') {   // a story HORSE (CHAI): won, or lost with o.lose
+      M.mini.result = () => ({ won: !lose, mine: lose ? M.mini.word.length : 1, theirs: lose ? 1 : M.mini.word.length }); finishMini(); return lose ? 'lost' : 'won';
+    }
     if (s === 'gym' && Gym.drill && Gym.drill.story && M.mini) {        // a story mini game (Lightning): 1st, or 3rd with o.lose
       M.mini.places[M.players.findIndex(q => q.human >= 0)] = lose ? 3 : 1; M.mini.done = true; finishMini(); return lose ? 'lost' : 'won';
     }

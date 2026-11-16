@@ -141,6 +141,7 @@
     "career/story/story-play.js",
     "career/story/story-hub.js",
     "career/story/story-league.js",
+    "career/story/story-state.js",
     "boot.js"
   ]
 }

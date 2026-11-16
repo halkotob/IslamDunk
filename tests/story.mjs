@@ -7,6 +7,9 @@
 //   story-ch2      Chapter 2 by bot: the masjid league won, a lost semifinal on the way (next season, back to C2.4), the
 //                  field (Al-Furqan and Rayyan, the masjid teams), lights out, the fundraiser and the title's project; and a
 //                  run out in the group
+//   story-ch3      Chapter 3 by bot: the nine-team table (eight games, our bye last), CHAI, the dunks-only all-star game
+//                  (a jumper counts nothing), the fund, the injury and the return; a lost semifinal (back to C3.2), and a
+//                  season outside the top four
 //   story-reload   a save at every Chapter 0 and Chapter 1 scene, a reload, Continue: the same scene starts again
 //   story-hub      the hub has exactly its four entries (Continue, Gym, Masjid, My Player), the chapter's name and the
 //                  next event; every entry opens its screen; desktop and phone draw without errors
@@ -121,11 +124,54 @@ export function storyTests({ newContext, open }) {
     return { ok, detail: ['field: ' + JSON.stringify(F), 'lights out: ' + JSON.stringify(darkSeen), steps.join(' '), 'end: ' + JSON.stringify(E), 'out in the group: ' + JSON.stringify(out.group), ...out.draws, ...errs] };
   };
 
+  T['story-ch3'] = async ({ browser, base }) => {
+    const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-ch3');
+    await prep(p);
+    const out = { draws: [] };
+    out.toC3 = await p.evaluate(() => { window.__sNew('Yusuf'); window.__sRun('C3.1', { max: 600 }); return C.story.at; });
+    const steps = [];
+    let lostSemi = false;
+    for (let n = 0; n < 260; n++) {
+      const st = await p.evaluate(() => window.__sState());
+      if (st.at === 'C4.1' && st.screen === 'hub') break;
+      if (st.at === 'C3.3' && st.screen === 'story' && !out.table) out.table = await p.evaluate(() => { const b = C.bracket; return { table: b.table, n: b.pg[0].length, ours: b.pg[0].filter(g => g.a === 0 || g.b === 0).map(g => g.md), teams: stageTeams(1).length, cp: C.story.cp, label: roundLabel(b) }; });
+      if (st.at === 'C3.6' && st.screen === 'gym' && !out.chai) out.chai = await p.evaluate(() => M.mini && M.mini.word);
+      if (st.at === 'C3.10' && st.screen === 'play' && !out.dunks) out.dunks = await p.evaluate(() => {
+        const me = M.players.find(q => q.human === 0), h = hoops[1], s0 = M.teams[0].score;
+        ball.shot = { hoop: h, pts: 2, dunk: false, shooter: me, team: 0 }; onScore(h); const jumper = M.teams[0].score - s0;
+        ball.shot = { hoop: h, pts: 2, dunk: true, shooter: me, team: 0 }; onScore(h); const dunk = M.teams[0].score - s0;
+        return { jumper, dunk, n: M.story.dunks.n, crowd: M.story.dunks.crowd };
+      });
+      if (st.at === 'C3.11' && st.screen === 'story' && !out.fund) out.fund = await p.evaluate(() => ({ A: C.story.allstar, log: (C.story.fundLog || []).slice(-1)[0] }));
+      if (st.at === 'C3.15' && !out.hurt) out.hurt = await p.evaluate(() => ({ injured: C.story.injured, partner: C.partner }));
+      if (st.at === 'C3.19' && !out.back) out.back = await p.evaluate(() => ({ injured: C.story.injured, partner: C.partner }));
+      if (st.screen !== 'play' || n % 3 === 0) { const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d); }
+      const r = await p.evaluate(lose => window.__sStep({ lose: at => (at === 'C3.19' && lose) || at === 'C3.6', pick: at => at === 'C3.2' ? 'musa' : null }), !lostSemi);
+      if (st.at === 'C3.19' && r === 'lost') lostSemi = true;
+      steps.push(st.at + ':' + r);
+    }
+    out.afterLoss = steps.some(x => x.startsWith('C3.NS'));
+    out.end = await p.evaluate(() => ({ s: window.__sState(), journal: (C.journal || []).map(e => e.id).filter(Boolean), fund: C.story.fund, bleachers: C.up.bleachers, trophy: C.trophies.includes(1), att: C.story.att, ch: storyChapter() }));
+    // out of the top four: lose every league game, C3.18 says so, the next season goes back to C3.2
+    out.miss = await p.evaluate(() => { window.__sNew('Miss'); window.__sRun('C3.1', { max: 600 }); const L = { lose: at => /^C3\.(3|5|7|8|12|13|15|17)$/.test(at) }; window.__sRun('C3.17', L); const r = window.__sRun('C3.2', L); return { path: r, at: C.story.at, att: C.story.att, injured: C.story.injured }; });
+    await ctx.close();
+    const ids = ['C3.1', 'C3.2', 'C3.3', 'C3.4', 'C3.5', 'C3.6', 'C3.7', 'C3.8', 'C3.9', 'C3.10', 'C3.11', 'C3.12', 'C3.13', 'C3.14', 'C3.15', 'C3.16', 'C3.17', 'C3.18', 'C3.19', 'C3.20', 'C3.21', 'C3.22', 'C3.23', 'C3.NS'];
+    const E = out.end, T0 = out.table || {}, D = out.dunks || {}, F = out.fund || {}, H = out.hurt || {}, B = out.back || {};
+    const ok = out.toC3 === 'C3.1' && T0.table && T0.n === 36 && T0.ours.join() === '0,1,2,3,4,5,6,7' && T0.teams === 9 && T0.cp === 'C3.2' && T0.label === 'League game 1'
+      && out.chai === 'CHAI' && D.jumper === 0 && D.dunk === 2 && D.n === 1 && F.A && F.A.paid && F.log && F.log[0] === 'All-star game'
+      && H.injured && H.partner !== H.injured && B.injured === null && B.partner === H.injured
+      && lostSemi && out.afterLoss && ids.every(id => E.s.seen.includes(id) && E.journal.includes(id))
+      && E.s.at === 'C4.1' && E.s.screen === 'hub' && E.bleachers >= 1 && E.trophy && E.att >= 1 && E.ch === 4
+      && out.miss.path.includes('C3.18') && out.miss.path.includes('C3.NS') && out.miss.at === 'C3.2' && out.miss.injured === null && !out.draws.length && !errs.length;
+    return { ok, detail: ['table: ' + JSON.stringify(T0), 'chai: ' + out.chai, 'dunks: ' + JSON.stringify(D), 'fund: ' + JSON.stringify(F), 'hurt: ' + JSON.stringify(H) + ' back: ' + JSON.stringify(B), steps.join(' '), 'end: ' + JSON.stringify(E), 'missed the top four: ' + JSON.stringify(out.miss), ...out.draws, ...errs] };
+  };
+
   T['story-reload'] = async ({ browser, base }) => {
     const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-reload');
     const want = { 'C0.1': 'ssalams', 'C0.2': 'musalla', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'play', 'C0.6': 'story',
       'C1.1': 'story', 'C1.2': 'gym', 'C1.5': 'musalla', 'C1.6': 'story', 'C1.7': 'office', 'C1.8': 'story', 'C1.9': 'story',
-      'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'story', 'C2.5': 'spick', 'C2.6': 'story', 'C2.9': 'gym', 'C2.10': 'story' }, ids = Object.keys(want), res = [];
+      'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'story', 'C2.5': 'spick', 'C2.6': 'story', 'C2.9': 'gym', 'C2.10': 'story',
+      'C3.1': 'gym', 'C3.2': 'story', 'C3.4': 'gym', 'C3.6': 'story', 'C3.9': 'office', 'C3.10': 'story', 'C3.14': 'story', 'C3.20': 'office' }, ids = Object.keys(want), res = [];
     for (const id of ids) {
       await prep(p);
       await p.evaluate(id => { window.__sNew('Reload'); window.__sRun(id); saveCareer(); }, id);

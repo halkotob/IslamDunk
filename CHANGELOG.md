@@ -1,5 +1,41 @@
 # Changelog
 
+## 9.25.0: Chapter 3, State league
+The career's Chapter 3 is in. After the masjid league title, Continue plays:
+- **C3.1** Back at the gym: a walk. The new lights and trophy case, forty people at practice, six new weekend-school
+  students.
+- **C3.2** The State Masjid Championship. This is the chapter's checkpoint. Sh. Saleem explains the table, then you
+  pick your teammate.
+- **The table:** nine masjids, everyone plays everyone once. That's eight games for Al-Amanah, and our bye is the last
+  round. The top four go to the semifinals (1st plays 4th, 2nd plays 3rd), then the final. The bracket screen shows
+  the table of nine and the playoff boxes. The scouting report gives both teams' places in the table.
+- **C3.4** Practice: a free walk with a drill to finish.
+- **C3.6** Team bonding: HORSE with the word **CHAI** against your teammate (Ammo Jamil if your teammate is Sh.
+  Saleem). The loser makes the chai, and Imam Dawud's recipe is in the scene.
+- **C3.9 to C3.11** In Sh. Saleem's office (a talk, with a marker over him): an **all-star game, dunks only**,
+  against Al-Furqan's best two. Only a dunk scores. A jumper or a layup counts nothing, and the ball goes the other
+  way. A crowd meter fills with every dunk, more for yours and for the big ones. The ticket money for the school wing
+  is $1,500, plus $750 a dunk, plus up to $4,000 for the crowd.
+- **C3.14** Your teammate is hurt (each of the seven has his own injury scene). Pick a replacement: he can't be
+  picked until he's healed.
+- **C3.16 to C3.18** The last league game (must-win while the top four is on the line), then the table. Top four: the
+  semifinal draw, and the injured teammate comes back as your partner. Outside the top four: next season, back to
+  C3.2.
+- **C3.19 to C3.23** The semifinal, the night before the final in Sh. Saleem's office, the final, the state title
+  (bleachers, scoreboard and carpet, and $12,000 for the school wing), and the invitation to Nationals. Chapter 4
+  arrives in the next update.
+- A league win adds $900 to the fundraiser at State.
+
+How it was checked:
+- **New test** `story-ch3`: a bot plays C3.1 to C3.23. On the way it loses CHAI, loses the semifinal once (next
+  season, back to C3.2) and then wins. It checks the table (36 games, our eight on rounds 1 to 8, nine teams), the word
+  CHAI, that a jumper scores 0 and a dunk 2 in the all-star game, the ticket money, the injury and the return. A
+  second run loses every league game: C3.18, next season, back to C3.2.
+- `story-reload` covers the Chapter 3 scenes. `story-*`, `studio-coverage`, `studio-phone`, the phone audit and the
+  league tests pass, except `league-determinism` and `league-calibration`, which already fail on 9.24.1 (see below).
+- Known: `league-determinism` and `league-calibration` (the slow tier, not in `npm test`) fail. They failed before
+  this release too, and a fix is to follow.
+
 ## 9.24.1: Talks happen where they happen
 A story scene that takes place somewhere is now a talk in that place, not a cutaway with portraits over it:
 - **C0.2** You are on the musalla floor after Isha. A gold marker floats over Imam Dawud: walk up to him and talk.
