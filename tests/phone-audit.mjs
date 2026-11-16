@@ -109,6 +109,7 @@ export const SCREENS = [
   ['story: walk', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.3'); SW.talk = null; SW.fade = 0;`],
   ['story: walk bubble', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.3'); SW.fade = 0; SW.talk.t = 1;`],
   ['story: tutorial', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.4'); SW.talk = null; SW.fade = 0; swGoal('walk');`],
+  ['story: teammate pick', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C2.5');`],
   ['story: hub', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C1.1'); careerHub();`],
   ['cstats', CAREER + ` careerHub(); openStats();`],
   ['crecords', CAREER + ` careerHub(); openRecords();`],

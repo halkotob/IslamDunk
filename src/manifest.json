@@ -140,6 +140,7 @@
     "career/story/story-walk.js",
     "career/story/story-play.js",
     "career/story/story-hub.js",
+    "career/story/story-league.js",
     "boot.js"
   ]
 }

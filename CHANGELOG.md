@@ -1,5 +1,39 @@
 # Changelog
 
+## 9.24.0: Chapter 2, Masjid league
+The career's Chapter 2 (docs/career-overhaul/SCENES.md) is in. After Chapter 1, Continue plays:
+- **C2.1** First practice: the real gym, three drills, then Sh. Saleem.
+- **C2.2** Father and son: Ammo Jamil and Ilyas, a gym apart. Talk to both: each says the same thing about the other.
+- **C2.3** Why we play: the brothers squeeze into Sh. Saleem's office after salah (the rows lining up, then the closing
+  salams on black). Ustath Karim's weekend school has no room, and the board has approved a $100,000 school wing. The
+  **school wing fundraiser** starts, and its meter is on the hub.
+- **C2.4** The Metro Masjid League: eight masjids in two groups of four, Al-Furqan and their captain Rayyan among them.
+  This is the chapter's checkpoint.
+- **C2.5 and C2.7** Pick your partner from the seven brothers. The pick screen shows each one's portrait, his two
+  standout stats and his chemistry with you, and each has a line of his own. Game 2 keeps the same partner unless you
+  change him.
+- **C2.6, C2.8 and C2.12** The three group games. Each has a pregame scene about what is at stake (the opener, an
+  ordinary game, must-win or already through), then the pregame card, then the game. Each result has its own lines.
+- **C2.9** Practice day, a free walk. **C2.10** Lights out: the breaker trips mid-practice and you play two on two in
+  the dark, the players and the ball each lit by a small glow, until the lights flicker back at 6 points or 90 seconds.
+- **C2.11 and C2.13** The final push and the group table. Top two go to the semifinal. Third or fourth ends the season.
+- **C2.14 and C2.15** The semifinal and the final, single elimination.
+- **C2.16** Champions: the trophy and the lights project for the masjid, and $5,000 for the fundraiser. Then Chapter 3
+  (next update).
+- **C2.NS** Next season: out in the group or a lost playoff game means the season ends. Sh. Saleem has a few words, the
+  season count goes up and the story goes back to C2.4 with a new league.
+- Every league win adds to the fundraiser ($400 at the masjid level). The hub's next event names the opponent.
+- The league field is the story's own: Al-Amanah, Al-Furqan and the masjid teams, scaled to the stage. A custom team no
+  longer joins the career league.
+
+How it was checked:
+- **New test** `story-ch2`: a bot plays C2.1 to C2.16. It loses a semifinal on the way (next season, back to C2.4, then
+  won), and in a second run it goes out in the group. It checks Al-Furqan and Rayyan are in the field, that lights out
+  ends, the fundraiser total and the title's projects.
+- `story-reload` now covers the Chapter 2 scenes: a save at each, a reload, Continue starts the same scene.
+- The Review Studio and the phone audit gain the teammate pick (`story: teammate pick`).
+- `npm test`: 78/78.
+
 ## 9.23.0: Chapter 1, Making the team
 The career's Chapter 1 (docs/career-overhaul/SCENES.md) is in. After Chapter 0, Continue plays:
 - **C1.1** The next night the gym is full. Sh. Saleem sends you to meet everyone, the gym and then the musalla, and

@@ -4,7 +4,8 @@
 //   __sStep(o)          one step of the story bot, whatever is on screen: the salams, a scene (skipped), a walk (everyone
 //                       met, every goal done, the closer talked to), a match or mini game (won, or lost with o.lose),
 //                       the post-game screen, the hub (Continue), the musalla walk (everyone met), Lightning and King of
-//                       the Court (won, or lost with o.lose). o.lose can be a function of the scene ID. Returns what it did.
+//                       the Court (won, or lost with o.lose), the teammate pick (o.pick, or the one now), a bracket game's
+//                       pregame card. o.lose and o.pick can be functions of the scene ID. Returns what it did.
 //   __sRun(until, o)    steps until the story is at scene `until` (or a step limit); returns the IDs passed through
 //   __sState()          { screen, at, cp, walk, seen }
 // The league runs in its fallback mode here (no engine time for the other games).
@@ -22,7 +23,7 @@ export const STORY_HELPERS = `(() => {
     if (s === 'story' && Game.story) { const st = Game.story; if (o.choice != null && st.lines[st.i] && st.lines[st.i][0] === 'choice') storyChoose(st, o.choice); storySkip(st); return 'scene'; }
     if (s === 'gym' && Gym.story && SW) {
       flush();
-      for (const g of (SW.D.goals || [])) swGoal(g.id);
+      for (const g of (SW.D.goals || [])) for (let k = 0; k < (g.n || 1) && !SW.goals[g.id]; k++) swGoal(g.id);
       for (const d of SW.D.npcs) if (d.need && !SW.met[d.id]) window.__sTalk(d.id);
       const cl = swCloser(); if (cl && !SW.done) window.__sTalk(cl);
       if (SW && SW.done) swEnd();
@@ -45,6 +46,9 @@ export const STORY_HELPERS = `(() => {
       finalContinue(); return lose ? 'lost' : 'won';
     }
     if (s === 'postgame') { postgameContinue(); return 'post'; }
+    if (s === 'pregame') { startCareerMatch(); return 'tipoff'; }
+    if (s === 'spick' && Game.spick) { const i = o.pick ? STORY_MATES.indexOf(typeof o.pick === 'function' ? o.pick(C.story.at) : o.pick) : Game.spick.sel; storyPick(i >= 0 ? i : Game.spick.sel); return 'picked'; }
+    if (s === 'ssalams') { salamsNext(); return 'salams'; }
     if (s === 'hub') { storyRun(); return 'continue'; }
     return 'stuck:' + s;
   };

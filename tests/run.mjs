@@ -611,9 +611,9 @@ T['phase6'] = async ({ browser, base }) => {
     out.custom = M.teamDefs[0].name === 'Masjid Al-Fajr' && M.players.some(q => q.def.name === 'Bilal');
     for (let n = 0; n < 60 * 60 * 30 && M.phase !== 'over'; n++) { if (Game.screen === 'halftime') Game.screen = 'play'; updateMatch(STEP); }
     out.over = M.phase === 'over';
-    // career league: your team is an opponent, never your side; your player keeps his earned stats
+    // career league (v9.24: the story's own masjids, so a custom team sits it out): never your side; your player keeps his earned stats
     goTitle(); loadCareer(SAVE_AUTO);
-    const T = stageTeams(0); out.league = T.some(t => t && t.name === 'Masjid Al-Fajr') && amanahTeam().players.every(q => q.name !== 'Bilal') && playerDef().stats.spd < 10;
+    const T = stageTeams(0); out.league = T.length >= 8 && T.every(t => !t || t.name !== 'Masjid Al-Fajr') && amanahTeam().players.every(q => q.name !== 'Bilal') && playerDef().stats.spd < 10;
     // review mode: scenes, a mark, export
     C = null; out.scenes = rvScenes().length > 20;
     rvMark('That was a... strategic loss.', 'cut'); rvLoad().feel[0] = { r: 4 }; rvExport();

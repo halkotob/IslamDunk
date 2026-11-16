@@ -136,6 +136,7 @@ export const SCREEN_OF = {
   "story: walk bubble": "gym",
   "story: tutorial": "gym",
   "story: hub": "hub",
+  "story: teammate pick": "spick",
 };
 export const NOT_RENDERABLE = {
   lobbyquit: 'A blank 0.3 s while Quit to Title tells the other player and leaves the room (v9.20.0).',

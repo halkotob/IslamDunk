@@ -17,7 +17,7 @@ function storyWalkStart(S) {
   const npcs = {}, defs = {};
   for (const d of D.npcs) { const p = swPlayer(d.id); p.x = d.x; p.z = d.z; p.face = d.face || 1; p.swAct = d.act || 'host'; p.actPh = (d.x * 7) % 6; npcs[d.id] = p; defs[d.id] = d; }
   const wp = C.story.wp && C.story.wp.id === S.id ? C.story.wp : null;         // a walk left half done picks up where it was
-  SW = { S, D, npcs, defs, met: Object.assign({}, wp && wp.met), near: null, talk: null, with: null, lb: 0, fade: 1, fadeDir: 0, t: 0, goals: Object.assign({}, wp && wp.goals), gp: { dist: 0, sprintT: 0, made: 0 }, shoot: { ph: 'drib', t: 0, x: 0, y: 0, z: 0, rot: 0 } };
+  SW = { S, D, npcs, defs, met: Object.assign({}, wp && wp.met), near: null, talk: null, with: null, lb: 0, fade: 1, fadeDir: 0, t: 0, goals: Object.assign({}, wp && wp.goals), gc: Object.assign({}, wp && wp.gc), gp: { dist: 0, sprintT: 0, made: 0 }, shoot: { ph: 'drib', t: 0, x: 0, y: 0, z: 0, rot: 0 } };
   Gym.story = SW; Gym.toastT = 0;
   if (D.start && !wp) swSay(D.start, null);
 }
@@ -33,7 +33,7 @@ function swGoalsLeft() { return (SW.D.goals || []).filter(g => !SW.goals[g.id]).
 function swReady() { return !swNeedLeft().length && !swGoalsLeft().length; }
 function swCloser() { const d = SW.D.npcs.find(x => x.closer); return d ? d.id : null; }
 function swFinish() { SW.done = true; SW.fadeDir = 1; }
-function swSave() { if (SW && C && C.story) { C.story.wp = { id: SW.S.id, met: Object.assign({}, SW.met), goals: Object.assign({}, SW.goals) }; saveCareer(); } }
+function swSave() { if (SW && C && C.story) { C.story.wp = { id: SW.S.id, met: Object.assign({}, SW.met), goals: Object.assign({}, SW.goals), gc: Object.assign({}, SW.gc) }; saveCareer(); } }
 // everyone needed met, every goal done, no closer: the walk's last line, then on
 function swCheckEnd() { if (!SW || SW.done || SW.talk || !swReady() || swCloser()) return; SW.done = true; if (SW.D.end) swSay(SW.D.end, swFinish); else swFinish(); }
 // the walk is over: into the Journal, and on to the next scene
@@ -60,6 +60,8 @@ function swTalkTo(id) {
 function swGoal(id) {
   if (!SW || SW.goals[id]) return;
   const g = (SW.D.goals || []).find(x => x.id === id); if (!g) return;
+  const n = g.n && id !== 'score' ? g.n : 1, c = SW.gc[id] = (SW.gc[id] || 0) + 1;     // a goal done n times (three drills)
+  if (c < n) { gymToast(g.label + ': ' + c + ' of ' + n, 2); swSave(); return; }
   SW.goals[id] = true; SFX.good && SFX.good();
   gymToast('✓ ' + g.label, 2);
   swSave(); swCheckEnd();
@@ -139,7 +141,7 @@ function swTrackGoals(dt) {
     if (I.D.free) { if (Gym.drill || Gym.overlay || Gym.result || Gym.walk || Gym.fade) return _hud.apply(this, arguments); if (!I.talk) _hud.apply(this, arguments); }
     if (I.lb > 0.01) { const b = 40 * I.lb; g.fillStyle = 'rgba(4,8,12,0.92)'; g.fillRect(-400, 0, W + 800, b); g.fillRect(-400, H - b, W + 800, b); }
     // the checklist: who to meet, or the tutorial's goals
-    const rows = I.D.goals ? I.D.goals.map(q => [I.goals[q.id], q.label + (q.n && !I.goals[q.id] ? '  ' + Math.min(I.gp.made, q.n) + '/' + q.n : '')])
+    const rows = I.D.goals ? I.D.goals.map(q => [I.goals[q.id], q.label + (q.n && !I.goals[q.id] ? '  ' + Math.min(q.id === 'score' ? I.gp.made : I.gc[q.id] || 0, q.n) + '/' + q.n : '')])
       : I.D.npcs.filter(d => d.need).map(d => [I.met[d.id], castDef(d.id).name]);
     if (rows.length) {
       g.save(); g.globalAlpha = 1 - I.lb; g.font = `12px ${BODY}`;

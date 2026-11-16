@@ -68,6 +68,8 @@ function storyRun() {
 function storyLinesOf(S, key = 'lines') { const L = S[key]; return (typeof L === 'function' ? L() : L || []).slice(); }
 function storyPlayScene(S) {
   if (S.custom === 'salams') return storySalams(S);
+  if (S.salah && Game.salahFor !== S.id) { Game.salahFor = S.id; return storySalah(S, () => storyPlayScene(S)); }   // the prayer first (C2.3)
+  Game.salahFor = null;
   const lines = storyLinesOf(S);
   playStory(lines, () => storyDone(S, 'next'), storyTitleOf(S));
   if (Game.story) { Game.story.bg = S.bg || null; Game.story.sid = S.id; }
@@ -105,8 +107,13 @@ function storyTagJournal(S) { const J = C.journal || []; const e = J[J.length - 
 // ---------------------------------------------------------------- C0.1: the closing salams on black
 // Text only: "As-salamu alaykum wa rahmatullah" to the right, then to the left. The prayer itself is never shown.
 const SALAMS_T = { a0: 0.6, a1: 3.0, b0: 3.5, b1: 5.9, end: 6.8 };
-function storySalams(S) { Game.salams = { t: 0, S }; Game.screen = 'ssalams'; storyJournal(S, storyLinesOf(S)); }
-function salamsNext() { const s = Game.salams; if (!s) return; Game.salams = null; storyDone(s.S, 'next'); }
+function storySalams(S, then) { Game.salams = { t: 0, S, then }; Game.screen = 'ssalams'; if (!then) storyJournal(S, storyLinesOf(S)); }
+function salamsNext() { const s = Game.salams; if (!s) return; Game.salams = null; if (s.then) s.then(); else storyDone(s.S, 'next'); }
+// a prayer in the story: the rows lining up in the musalla, then the closing salams as text. The prayer itself is not shown.
+function storySalah(S, then) {
+  playStory([['narr', 'Maghrib. The iqamah is called, and the brothers line up, shoulder to shoulder, feet to feet.']], () => storySalams(S, then), storyTitleOf(S));
+  if (Game.story) { Game.story.bg = 'rows'; Game.story.sid = S.id; }
+}
 function drawSalams(g) {
   const s = Game.salams; if (!s) return;
   g.fillStyle = '#000'; g.fillRect(-400, -400, W + 800, H + 800);
@@ -141,6 +148,7 @@ function drawStoryMusalla(g) {
   drawStory = function (g) {
     const s = Game.story;
     if (s && s.bg === 'musalla') drawStoryMusalla(g);
+    else if (s && s.bg === 'rows') drawMusalla(g, C.up, 'salah', Game.t);
     else if (s && s.bg === 'office') drawOfficeRoom(g, false);
     return _ds.apply(this, arguments);
   };

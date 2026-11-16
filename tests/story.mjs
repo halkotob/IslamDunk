@@ -4,6 +4,9 @@
 //   story-ch1      Chapter 1 by bot (C1.1 to C1.9, King of the Court lost once, then won), lands at C2.1; the gym walk's corners
 //                  done the real way: the whiteboard opens Upgrade stats and Back returns to the walk, the cooler, the cone
 //                  run, chai with Imam Dawud; Ammo Jamil's and Ilyas's scenes (C1.3, C1.4) inside the walk
+//   story-ch2      Chapter 2 by bot: the masjid league won, a lost semifinal on the way (next season, back to C2.4), the
+//                  field (Al-Furqan and Rayyan, the masjid teams), lights out, the fundraiser and the title's project; and a
+//                  run out in the group
 //   story-reload   a save at every Chapter 0 and Chapter 1 scene, a reload, Continue: the same scene starts again
 //   story-hub      the hub has exactly its four entries (Continue, Gym, Masjid, My Player), the chapter's name and the
 //                  next event; every entry opens its screen; desktop and phone draw without errors
@@ -82,10 +85,47 @@ export function storyTests({ newContext, open }) {
     return { ok, detail: ['walk: ' + JSON.stringify(W), (out.steps || []).join(' '), 'King of the Court: ' + kotc.join(','), 'end: ' + JSON.stringify(out.end), ...out.draws, ...errs] };
   };
 
+  // Chapter 2 by bot: the masjid league on the winning path (Al-Furqan in the field, the teams from teams.js, a real pool
+  // bracket, the fundraiser, the lights-out game drawn dark until 6), and through a lost semifinal: next season, back
+  // to the checkpoint C2.4 with a new draw, then won. Also a run that goes out in the group (C2.13 to next season).
+  T['story-ch2'] = async ({ browser, base }) => {
+    const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-ch2');
+    await prep(p);
+    const out = { draws: [] };
+    out.toC2 = await p.evaluate(() => { window.__sNew('Hamza'); window.__sRun('C2.1'); return C.story.at; });
+    const steps = [];
+    let lostSemi = false, darkSeen = null;
+    for (let n = 0; n < 160; n++) {
+      const st = await p.evaluate(() => window.__sState());
+      if (st.at === 'C3.1' && st.screen === 'hub') break;
+      if (st.at === 'C2.10' && st.screen === 'play' && !darkSeen) {
+        darkSeen = await p.evaluate(() => { const D = M.story.dark, on0 = D.on; M.teams[0].score = 6; updateMatch(STEP); return { on0, off: !D.on, k: D.k }; });
+      }
+      if (st.at === 'C2.4' && st.screen === 'story' && !out.field) out.field = await p.evaluate(() => ({ teams: stageTeams(0).slice(1).map(t => t.name), rival: teamOf(0, 1).name, rayyan: teamOf(0, 1).players.some(q => q.name === 'Rayyan'), fmt: C.bracket && C.bracket.fmt, att: C.story.att, cp: C.story.cp }));
+      const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d);
+      const r = await p.evaluate(lose => window.__sStep({ lose: at => at === 'C2.14' && lose, pick: at => at === 'C2.5' ? 'ilyas' : null }), !lostSemi);
+      if (st.at === 'C2.14' && r === 'lost') lostSemi = true;
+      steps.push(st.at + ':' + r);
+    }
+    out.afterLoss = steps.filter(x => x.startsWith('C2.NS')).length > 0;
+    out.end = await p.evaluate(() => ({ s: window.__sState(), journal: (C.journal || []).map(e => e.id).filter(Boolean), fund: C.story.fund, fundOn: C.story.fundOn, lights: C.up.lights, trophy: C.trophies.includes(0), titles: (C.titles || []).length,
+      att: C.story.att, season: C.season, partner: C.partner, chem: chemOf('ilyas'), ch: storyChapter(), games: (C.games || []).length }));
+    // out in the group: lose all three group games, C2.13 says so and the next season goes back to C2.4
+    out.group = await p.evaluate(() => { window.__sNew('Group'); const L = { lose: at => /^C2\.(6|8|12)$/.test(at) }; window.__sRun('C2.12', L); const r = window.__sRun('C2.4', L); return { path: r, out: C.bracket === null || (C.bracket && C.bracket.out), at: C.story.at, att: C.story.att }; });
+    await ctx.close();
+    const ids = ['C2.1', 'C2.2', 'C2.3', 'C2.4', 'C2.5', 'C2.6', 'C2.7', 'C2.8', 'C2.9', 'C2.10', 'C2.11', 'C2.12', 'C2.13', 'C2.14', 'C2.15', 'C2.16'], E = out.end, F = out.field || {};
+    const ok = F.rival === 'Masjid Al-Furqan' && F.rayyan && F.fmt === 'pool' && F.teams.length === 7 && F.teams.every(n => /^Masjid /.test(n)) && F.cp === 'C2.4'
+      && darkSeen && darkSeen.on0 && darkSeen.off && lostSemi && out.afterLoss && ids.every(id => E.s.seen.includes(id) && E.journal.includes(id))
+      && E.s.at === 'C3.1' && E.s.screen === 'hub' && E.fundOn && E.fund >= 5000 && E.lights === 1 && E.trophy && E.titles >= 1 && E.att === 1 && E.season === 2 && E.chem > 0 && E.ch === 3
+      && out.group.path.includes('C2.13') && out.group.path.includes('C2.NS') && out.group.at === 'C2.4' && out.group.att === 1 && !out.draws.length && !errs.length;
+    return { ok, detail: ['field: ' + JSON.stringify(F), 'lights out: ' + JSON.stringify(darkSeen), steps.join(' '), 'end: ' + JSON.stringify(E), 'out in the group: ' + JSON.stringify(out.group), ...out.draws, ...errs] };
+  };
+
   T['story-reload'] = async ({ browser, base }) => {
     const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-reload');
     const want = { 'C0.1': 'ssalams', 'C0.2': 'story', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'play', 'C0.6': 'story',
-      'C1.1': 'story', 'C1.2': 'gym', 'C1.5': 'musalla', 'C1.6': 'story', 'C1.7': 'story', 'C1.8': 'story', 'C1.9': 'story' }, ids = Object.keys(want), res = [];
+      'C1.1': 'story', 'C1.2': 'gym', 'C1.5': 'musalla', 'C1.6': 'story', 'C1.7': 'story', 'C1.8': 'story', 'C1.9': 'story',
+      'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'story', 'C2.5': 'spick', 'C2.6': 'story', 'C2.9': 'gym', 'C2.10': 'story' }, ids = Object.keys(want), res = [];
     for (const id of ids) {
       await prep(p);
       await p.evaluate(id => { window.__sNew('Reload'); window.__sRun(id); saveCareer(); }, id);
