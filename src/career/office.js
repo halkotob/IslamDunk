@@ -447,8 +447,8 @@ function officeUpdate(rdt) {
   else if (menuHit('back')) leaveOffice();
 }
 function officeAct(i) { const of = Game.office; of.sel = i; if (i === 0) shelfOpen(); else { const t = sheikhSituation(); if (t) startSheikhTalk(t); else { of.panel = 'talk'; sheikhNext(); } } SFX.blip(); }
-function drawOffice(g) {
-  const of = Game.office;
+// v9.22: the room on its own (the story's office scene, C1.7, plays in front of it, with nobody at the desk)
+function drawOfficeRoom(g, seated = true) {
   // room: warm walls, wood floor, rug, window, framed plaque
   g.fillStyle = '#e9dcc0'; g.fillRect(0, 0, W, H);
   g.fillStyle = '#d8c7a4'; g.fillRect(0, 300, W, 8);
@@ -463,7 +463,7 @@ function drawOffice(g) {
   g.strokeStyle = '#f2cf6b'; g.lineWidth = 2; g.beginPath(); g.moveTo(W / 2 - 230, 462); g.lineTo(W / 2 + 230, 462); g.lineTo(W / 2 + 178, 388); g.lineTo(W / 2 - 178, 388); g.closePath(); g.stroke();
   g.fillStyle = 'rgba(242,207,107,0.4)'; star8(g, W / 2, 425, 22, 1, 0.45); g.fill();
   // bookshelf
-  const bx = 60, by = 110, on0 = of.sel === 0 && !of.panel;
+  const bx = 60, by = 110;
   g.fillStyle = '#5e3c1f'; g.fillRect(bx, by, 200, 250); g.fillStyle = '#4a2e16'; g.fillRect(bx + 8, by + 8, 184, 234);
   const cols = ['#7a1f2b', '#1e5a4a', '#2b3a55', '#c9a24a', '#5a2d6b', '#8a5a2b', '#2e7d5b', '#9c3b2b'];
   for (let s = 0; s < 4; s++) {
@@ -471,18 +471,23 @@ function drawOffice(g) {
     let x = bx + 14; const R = seededRng(5 + s);
     while (x < bx + 182) { const w = 10 + R() * 8, h = 30 + R() * 14; g.fillStyle = cols[Math.floor(R() * cols.length)]; g.fillRect(x, sy + 46 - h, w, h); g.fillStyle = 'rgba(242,207,107,0.6)'; g.fillRect(x + 2, sy + 46 - h + 6, w - 4, 2); x += w + 2; if (R() < 0.12) x += 10; }
   }
-  if (on0) { g.strokeStyle = GOLD; g.lineWidth = 3; g.strokeRect(bx - 4, by - 4, 208, 258); }
   // desk with Sh. Saleem sitting behind it
   const T = amanahTeam(), dx = W / 2 + 40;
   g.fillStyle = '#4a2e16'; roundRect(g, dx - 42, 196, 84, 110, 10); g.fill();            // chair back
   g.fillStyle = '#5e3c1f'; roundRect(g, dx - 34, 204, 68, 94, 8); g.fill();
-  drawPortrait(g, dx, 394, castDef('saleem'), T, 2.0, 'thobe', 'idle');                 // seated: lower body hidden by the desk
+  if (seated) drawPortrait(g, dx, 394, castDef('saleem'), T, 2.0, 'thobe', 'idle');      // seated: lower body hidden by the desk
   g.fillStyle = '#6b4526'; g.fillRect(dx - 150, 300, 300, 100); g.fillStyle = '#7d5230'; g.fillRect(dx - 160, 290, 320, 14);
   g.fillStyle = '#5e3c1f'; g.fillRect(dx - 140, 312, 120, 56); g.fillRect(dx + 20, 312, 120, 56);
   g.fillStyle = '#c9a24a'; g.beginPath(); g.arc(dx - 80, 340, 3, 0, Math.PI * 2); g.arc(dx + 80, 340, 3, 0, Math.PI * 2); g.fill();
   g.fillStyle = '#fbf8f2'; g.save(); g.translate(dx - 100, 284); g.rotate(-0.08); g.fillRect(0, 0, 44, 8); g.restore(); g.fillStyle = '#f0ead8'; g.fillRect(dx - 40, 282, 40, 8);
   g.fillStyle = '#1e5a4a'; g.fillRect(dx + 30, 278, 36, 12); g.fillStyle = '#7a1f2b'; g.fillRect(dx + 34, 270, 30, 8);
   g.fillStyle = '#c9a24a'; g.fillRect(dx + 110, 250, 4, 40); g.beginPath(); g.moveTo(dx + 96, 252); g.lineTo(dx + 128, 252); g.lineTo(dx + 120, 236); g.lineTo(dx + 104, 236); g.fill();
+}
+function drawOffice(g) {
+  const of = Game.office;
+  drawOfficeRoom(g, true);
+  const bx = 60, by = 110, on0 = of.sel === 0 && !of.panel, dx = W / 2 + 40;
+  if (on0) { g.strokeStyle = GOLD; g.lineWidth = 3; g.strokeRect(bx - 4, by - 4, 208, 258); }
   const on1 = of.sel === 1 && !of.panel;
   if (on1) { g.strokeStyle = GOLD; g.lineWidth = 3; g.beginPath(); g.ellipse(dx, 386, 70, 14, 0, 0, Math.PI * 2); g.stroke(); }
   // labels (tap targets)

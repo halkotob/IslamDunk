@@ -173,7 +173,7 @@ export const TARGETS_JS = `(() => {
 // a neighbour (the row or key spacing: the gap is split down the middle), when it's on a screen played with the
 // joystick (the in-match controls stay as they are), or when it's drawn twice in the same place (the copy drawn last
 // takes the taps). Anything else (a control no tap reaches, or one under MIN_TAP with room around it) is a problem.
-export const PLAY_SCREENS = new Set(['match HUD', 'dunk lab', 'gym', 'lobby: shoot-around']);   // (v9.20.0: the lobby gym is played with the joystick, as the career gym)
+export const PLAY_SCREENS = new Set(['match HUD', 'dunk lab', 'gym', 'lobby: shoot-around', 'story: walk', 'story: walk bubble', 'story: tutorial']);   // (v9.22: the story's walks are the career gym)   // (v9.20.0: the lobby gym is played with the joystick, as the career gym)
 export function tapReport(out) {
   const problems = [], exceptions = { spacing: [], play: [], twice: [] };
   for (const s of out) {

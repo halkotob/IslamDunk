@@ -3,7 +3,8 @@
 //   __sNew(name)        a new career through the creator's Done: Chapter 0 starts (C0.1)
 //   __sStep(o)          one step of the story bot, whatever is on screen: the salams, a scene (skipped), a walk (everyone
 //                       met, every goal done, the closer talked to), a match or mini game (won, or lost with o.lose),
-//                       the post-game screen, the hub (Continue). Returns what it did.
+//                       the post-game screen, the hub (Continue), the musalla walk (everyone met), Lightning and King of
+//                       the Court (won, or lost with o.lose). o.lose can be a function of the scene ID. Returns what it did.
 //   __sRun(until, o)    steps until the story is at scene `until` (or a step limit); returns the IDs passed through
 //   __sState()          { screen, at, cp, walk, seen }
 // The league runs in its fallback mode here (no engine time for the other games).
@@ -27,9 +28,19 @@ export const STORY_HELPERS = `(() => {
       if (SW && SW.done) swEnd();
       return 'walk';
     }
+    const lose = typeof o.lose === 'function' ? o.lose(C.story.at) : !!o.lose;
+    if (s === 'musalla' && Game.mus && Game.mus.story) {
+      for (const id of STORY_MUS_NEED) if (!Game.mus.story.met[id]) { talkTo(MUS_CAST.indexOf(id)); Game.mus.talk = null; }
+      musallaUpdate(1 / 60); return 'musalla';
+    }
+    if (s === 'gym' && Gym.drill && Gym.drill.story && M.mini) {        // a story mini game (Lightning): 1st, or 3rd with o.lose
+      M.mini.places[M.players.findIndex(q => q.human >= 0)] = lose ? 3 : 1; M.mini.done = true; finishMini(); return lose ? 'lost' : 'won';
+    }
+    if (s === 'play' && typeof KOTC !== 'undefined' && KOTC.on && KOTC.story) {   // King of the Court: crowned, or not with o.lose
+      KOTC.done = true; KOTC.champ = lose ? 'jamil' : 'you'; KOTC.wins.you = lose ? 1 : 3; kotcLeave(); return lose ? 'lost' : 'won';
+    }
     if (typeof window.__sExtra === 'function') { const r = window.__sExtra(o); if (r) return r; }
     if (s === 'play' && M.story) {
-      const lose = typeof o.lose === 'function' ? o.lose(C.story.at) : !!o.lose;
       M.teams[0].score = lose ? 5 : 11; M.teams[1].score = lose ? 11 : 5; M.winner = lose ? 1 : 0; M.phase = 'over';
       finalContinue(); return lose ? 'lost' : 'won';
     }

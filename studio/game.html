@@ -107,7 +107,7 @@ addEventListener('unhandledrejection', e => { window.__studioErrors.push('unhand
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.22.0';
+const VERSION = '9.23.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -7241,8 +7241,8 @@ function officeUpdate(rdt) {
   else if (menuHit('back')) leaveOffice();
 }
 function officeAct(i) { const of = Game.office; of.sel = i; if (i === 0) shelfOpen(); else { const t = sheikhSituation(); if (t) startSheikhTalk(t); else { of.panel = 'talk'; sheikhNext(); } } SFX.blip(); }
-function drawOffice(g) {
-  const of = Game.office;
+// v9.22: the room on its own (the story's office scene, C1.7, plays in front of it, with nobody at the desk)
+function drawOfficeRoom(g, seated = true) {
   // room: warm walls, wood floor, rug, window, framed plaque
   g.fillStyle = '#e9dcc0'; g.fillRect(0, 0, W, H);
   g.fillStyle = '#d8c7a4'; g.fillRect(0, 300, W, 8);
@@ -7257,7 +7257,7 @@ function drawOffice(g) {
   g.strokeStyle = '#f2cf6b'; g.lineWidth = 2; g.beginPath(); g.moveTo(W / 2 - 230, 462); g.lineTo(W / 2 + 230, 462); g.lineTo(W / 2 + 178, 388); g.lineTo(W / 2 - 178, 388); g.closePath(); g.stroke();
   g.fillStyle = 'rgba(242,207,107,0.4)'; star8(g, W / 2, 425, 22, 1, 0.45); g.fill();
   // bookshelf
-  const bx = 60, by = 110, on0 = of.sel === 0 && !of.panel;
+  const bx = 60, by = 110;
   g.fillStyle = '#5e3c1f'; g.fillRect(bx, by, 200, 250); g.fillStyle = '#4a2e16'; g.fillRect(bx + 8, by + 8, 184, 234);
   const cols = ['#7a1f2b', '#1e5a4a', '#2b3a55', '#c9a24a', '#5a2d6b', '#8a5a2b', '#2e7d5b', '#9c3b2b'];
   for (let s = 0; s < 4; s++) {
@@ -7265,18 +7265,23 @@ function drawOffice(g) {
     let x = bx + 14; const R = seededRng(5 + s);
     while (x < bx + 182) { const w = 10 + R() * 8, h = 30 + R() * 14; g.fillStyle = cols[Math.floor(R() * cols.length)]; g.fillRect(x, sy + 46 - h, w, h); g.fillStyle = 'rgba(242,207,107,0.6)'; g.fillRect(x + 2, sy + 46 - h + 6, w - 4, 2); x += w + 2; if (R() < 0.12) x += 10; }
   }
-  if (on0) { g.strokeStyle = GOLD; g.lineWidth = 3; g.strokeRect(bx - 4, by - 4, 208, 258); }
   // desk with Sh. Saleem sitting behind it
   const T = amanahTeam(), dx = W / 2 + 40;
   g.fillStyle = '#4a2e16'; roundRect(g, dx - 42, 196, 84, 110, 10); g.fill();            // chair back
   g.fillStyle = '#5e3c1f'; roundRect(g, dx - 34, 204, 68, 94, 8); g.fill();
-  drawPortrait(g, dx, 394, castDef('saleem'), T, 2.0, 'thobe', 'idle');                 // seated: lower body hidden by the desk
+  if (seated) drawPortrait(g, dx, 394, castDef('saleem'), T, 2.0, 'thobe', 'idle');      // seated: lower body hidden by the desk
   g.fillStyle = '#6b4526'; g.fillRect(dx - 150, 300, 300, 100); g.fillStyle = '#7d5230'; g.fillRect(dx - 160, 290, 320, 14);
   g.fillStyle = '#5e3c1f'; g.fillRect(dx - 140, 312, 120, 56); g.fillRect(dx + 20, 312, 120, 56);
   g.fillStyle = '#c9a24a'; g.beginPath(); g.arc(dx - 80, 340, 3, 0, Math.PI * 2); g.arc(dx + 80, 340, 3, 0, Math.PI * 2); g.fill();
   g.fillStyle = '#fbf8f2'; g.save(); g.translate(dx - 100, 284); g.rotate(-0.08); g.fillRect(0, 0, 44, 8); g.restore(); g.fillStyle = '#f0ead8'; g.fillRect(dx - 40, 282, 40, 8);
   g.fillStyle = '#1e5a4a'; g.fillRect(dx + 30, 278, 36, 12); g.fillStyle = '#7a1f2b'; g.fillRect(dx + 34, 270, 30, 8);
   g.fillStyle = '#c9a24a'; g.fillRect(dx + 110, 250, 4, 40); g.beginPath(); g.moveTo(dx + 96, 252); g.lineTo(dx + 128, 252); g.lineTo(dx + 120, 236); g.lineTo(dx + 104, 236); g.fill();
+}
+function drawOffice(g) {
+  const of = Game.office;
+  drawOfficeRoom(g, true);
+  const bx = 60, by = 110, on0 = of.sel === 0 && !of.panel, dx = W / 2 + 40;
+  if (on0) { g.strokeStyle = GOLD; g.lineWidth = 3; g.strokeRect(bx - 4, by - 4, 208, 258); }
   const on1 = of.sel === 1 && !of.panel;
   if (on1) { g.strokeStyle = GOLD; g.lineWidth = 3; g.beginPath(); g.ellipse(dx, 386, 70, 14, 0, 0, Math.PI * 2); g.stroke(); }
   // labels (tap targets)
@@ -9713,7 +9718,7 @@ const MUS_SPOTS = {
   anas: { u: 0.14, d: 0.34, pose: 'cross', face: 1 },             // by the shelf with a mushaf
   mufti: { u: 0.62, d: 0.24, pose: 'cross', face: -1 },           // near the front, a book open
   hafiz: { u: 0.84, d: 0.42, pose: 'stand', face: -1 },           // by the right wall
-  karim: { u: 0.06, d: 0.52, pose: 'chair', face: 1 },            // on a chair against the left wall, marking homework
+  karim: { u: 0.04, d: 0.3, pose: 'chair', face: 1 },             // on a chair against the left wall, marking homework
   musa: { u: 0.72, d: 0.6, pose: 'stand', face: -1 }              // front right
 };
 function musRoom() {
@@ -26566,9 +26571,10 @@ Object.assign(CAST, {
   anas: { name: 'Qari Anas', num: 34, huffath: true, skin: '#6f4630', hat: 'crochet', capColor: '#f7f7f2', hair: '#161616', thobe: '#f7f7f2', beardStyle: 3, vh: 2, vw: 2 },
   dawud: { name: 'Imam Dawud', num: 50, sheikh: true, huffath: true, skin: '#9a6440', hat: 'imama', capColor: '#f7f7f2', hair: '#d8d8d8', elder: true, thobe: '#f4f4ef', beardStyle: 3, beardLen: 2 },
   musa: { name: 'Musa', num: 3, skin: '#f3d2b3', hat: 'hair', hair: '#6b4423', thobe: '#5f7a5a', beardStyle: 1 },
-  mufti: { name: 'Mufti Abdullah', skin: '#c68a5a', hat: 'imama', capColor: '#1c1c1c', hair: '#8a8a8a', elder: true, thobe: '#232323', beardStyle: 3, beardLen: 2, glasses: true },
-  hafiz: { name: 'Hafiz Zubair', skin: '#8d5a3b', hat: 'kufi', capColor: '#f7f7f2', hair: '#161616', thobe: '#f7f7f2', beardStyle: 2, huffath: true },
+  mufti: { name: 'Mufti Abdullah', num: 60, skin: '#c68a5a', hat: 'imama', capColor: '#1c1c1c', hair: '#8a8a8a', elder: true, thobe: '#232323', beardStyle: 3, beardLen: 2, glasses: true },
+  hafiz: { name: 'Hafiz Zubair', num: 30, skin: '#8d5a3b', hat: 'kufi', capColor: '#f7f7f2', hair: '#161616', thobe: '#f7f7f2', beardStyle: 2, huffath: true },
   rayyan: { name: 'Rayyan', num: 12, skin: '#e2b894', hat: 'hair', hair: '#4a2c16', thobe: '#2a2a2a', beardStyle: 1, band: 1 },
+  uncle: { name: 'An uncle', num: 70, skin: '#9a6440', hat: 'topi', capColor: '#f7f7f2', hair: '#d8d8d8', elder: true, thobe: '#ddd4c2', beardStyle: 3, beardLen: 2 },   // one of the gym's background faces
   narr: { name: '', skin: '#c68a5a', hat: 'hair', hair: '#161616' }
 });
 // stage 0 Local, 1 State, 2 National, 3 World: the brothers get better as the story goes on, and keep their order
@@ -26597,7 +26603,7 @@ const CHAPTERS = [
   { n: 4, name: 'National tournament', stage: 2, cp: 'C4.1' },
   { n: 5, name: 'Ummah Cup', stage: 3, cp: 'C5.1' }
 ];
-const STORY_BUILT = 0;              // the last chapter that can be played in this build (later chapters arrive one release at a time)
+const STORY_BUILT = 1;              // the last chapter that can be played in this build (later chapters arrive one release at a time)
 const SC = {};
 function scn(id, o) { SC[id] = Object.assign({ id, ch: id[0] === 'C' ? +id[1] : 6 }, o); return SC[id]; }
 const STORY_FIRST = 'C0.1';
@@ -26632,8 +26638,54 @@ scn('C0.6', { kind: 'scene', name: 'Come back tomorrow', next: 'C1.1', hub: true
   ['you', 'In sha Allah, I’ll be here tomorrow.'],
   ['saleem', 'In sha Allah. Welcome to Al-Amanah, akhi.']] });
 
-// ---------------------------------------------------------------- Chapter 1 (arrives in the next release)
-scn('C1.1', { kind: 'scene', name: 'A full gym', next: 'C1.2', lines: [['saleem', 'Assalamu alaykum! Chapter 1 opens in the next update, in sha Allah.']] });
+// ---------------------------------------------------------------- Chapter 1: Making the team
+scn('C1.1', { kind: 'scene', name: 'A full gym', next: 'C1.2', lines: [
+  ['narr', 'The next night. After Isha the gym is full: uncles on folding chairs, kids at the far hoop, a dozen brothers you haven’t met.'],
+  ['saleem', 'You came back! Alhamdulillah. Ammo Jamil owes me five dollars.'],
+  ['jamil', 'I said he’d come back. I bet he’d be late.'],
+  ['saleem', 'Tonight, meet everyone. The gym first, then the musalla through the partition.'],
+  ['saleem', 'When you’ve said salaam to all of them, come and find me in my office. We have something to talk about.']] });
+scn('C1.2', { kind: 'walk', name: 'Meet the gym', walk: 'C1.2', next: 'C1.3' });
+scn('C1.3', { kind: 'walk', name: 'Ammo Jamil', part: 'C1.2', next: 'C1.4', lines: [
+  ['jamil', 'Sit, sit. Let me tell you something about this gym.'],
+  ['jamil', 'Nineteen years I play here. Nineteen years we never win the masjid league. Not once.'],
+  ['you', 'Never?'],
+  ['jamil', 'Once we reached the final. Al-Furqan beat us by one. ONE point. I still see that shot when I close my eyes.'],
+  ['jamil', 'This year we win it. I am not getting any younger, and my knees are getting much older.']] });
+scn('C1.4', { kind: 'walk', name: 'Ilyas', part: 'C1.2', next: 'C1.5', lines: [
+  ['ilyas', 'Don’t let my dad scare you. He’s been talking about that final since before I was born.'],
+  ['ilyas', 'He wants the trophy. I just want him to watch me play one game without yelling “BEND YOUR KNEES.”'],
+  ['you', 'And if we win?'],
+  ['ilyas', 'If we win, maybe he finally says “good game, son.” Two words. Three. You get it.']] });
+scn('C1.5', { kind: 'walk', name: 'The musalla', musalla: true, next: 'C1.6' });
+scn('C1.6', { kind: 'play', name: 'Lightning', mode: 'lightning', win: 'C1.7', loss: 'C1.7',
+  pre: [['musa', 'EVERYBODY UP! Lightning, five of us, loser stacks the chairs!'], ['saleem', 'Five of us, two balls. You know the rules?'], ['you', 'Make it before the man behind you does.'], ['saleem', 'Then you know everything. Bismillah.']],
+  winLines: [['musa', 'Bro. You knocked out Ilyas AND his dad in one game.'], ['jamil', 'I let him. Respect for the guest.'], ['ilyas', 'You did not let him, Dad.']],
+  lossLines: [['ilyas', 'Got you! Welcome to Al-Amanah, we play for keeps.'], ['saleem', 'Good effort. Now, chairs. Then my office.']] });
+scn('C1.7', { kind: 'scene', name: 'The office', bg: 'office', next: 'C1.8', lines: [
+  ['saleem', 'Come in, close the door. The chai is from Imam Dawud, so it’s strong.'],
+  ['saleem', 'I never introduced myself properly. Saleem. I studied in Madinah, came back, and the masjid asked me to stay a year. That was eleven years ago.'],
+  ['saleem', 'Al-Amanah is small. Two hundred families, a gym that is also the overflow musalla, a weekend school in two rooms.'],
+  ['saleem', 'But the people here look after each other. Ammo Jamil drives the uncles to the doctor. Ustath Karim teaches for free. Musa found us at a park.'],
+  ['you', 'Everyone has been kind to me. In two days it already feels like home.'],
+  ['saleem', 'Alhamdulillah. That’s what a masjid is for.'],
+  ['saleem', 'Now. The league starts soon, and we play two on two. We have seven brothers for two spots on the floor at a time.'],
+  ['saleem', 'I saw your game. I want you on the team. But a starting spot is earned here, not given.'],
+  ['saleem', 'Tomorrow, outside, King of the Court. Hold the court and the spot is yours.']] });
+scn('C1.8', { kind: 'play', name: 'King of the Court', mode: 'kotc', win: 'C1.9', loss: 'C1.8',
+  pre: [['saleem', 'One on one, first to three. Hold the court three straight and you’re king.'], ['jamil', 'Nobody holds the court on me. Nobody.'], ['musa', 'Can I dunk on him? Is that allowed?']],
+  winLines: [['saleem', 'Crowned! Masha’Allah.'], ['jamil', 'Hmph. My knee. Next time.'], ['ilyas', 'Dad, you said that last time.']],
+  lossLines: [['saleem', 'Not this time. Catch your breath, drink some water, and go again.'], ['jamil', 'The court doesn’t give, it takes. Again!']] });
+scn('C1.9', { kind: 'scene', name: 'The team', next: 'C2.1', hub: true, lines: [
+  ['saleem', 'Brothers, gather round. I think you all saw what I saw.'],
+  ['jamil', 'He boxes out. He passes. He doesn’t complain. I vote yes.'],
+  ['karim', 'He shoots with his elbow in. I vote yes.'],
+  ['anas', 'He said salaam to the uncles before the ball. Yes.'],
+  ['musa', 'Two new guys on the team? We should get matching headbands.'],
+  ['ilyas', 'We are not getting matching headbands.'],
+  ['saleem', 'Then it’s settled. Welcome to the Al-Amanah team, akhi. You’re here to help us win the masjid league.'],
+  ['dawud', 'May Allah put barakah in it. And may the chai never run out.'],
+  ['narr', 'The career begins.']] });
 
 // ---------------------------------------------------------------- walks
 // npcs: id, where (gym world x, z), what he's doing (act), which way he faces, what he says; need: must be met.
@@ -26661,7 +26713,33 @@ const STORY_WALKS = {
       { id: 'shoot', label: 'Take a jump shot', touch: 'Shoot: hold SHOOT, let go at the top', key: 'Shoot: hold J, let go at the top of the jump' },
       { id: 'score', label: 'Make two baskets', n: 2, touch: 'Green on the meter is money', key: 'Green on the meter is money' }],
     start: [['saleem', 'Shoot around. Move, sprint, get some shots up. Make a couple, then come find me.']]
+  },
+  // Chapter 1: the full gym. Ammo Jamil and Ilyas have scenes of their own (C1.3, C1.4); around them, the gym's corners
+  // show what the career has: a shot, a drill, the stats on the whiteboard, chai with Imam Dawud, the water cooler
+  'C1.2': {
+    title: 'Meet the gym', free: true, npcs: [
+      { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, need: true, scene: 'C1.3', again: [['jamil', 'Go on, meet everybody. Then we talk trophies.']] },
+      { id: 'ilyas', x: 1120, z: 430, act: 'shoot', face: 1, need: true, scene: 'C1.4', again: [['ilyas', 'The cones are by the far hoop. Try the cone run, Q opens the drills.']] },
+      { id: 'dawud', x: 600, z: 230, act: 'chai', face: 1, goal: 'chai', lines: [['dawud', 'Ah, the brother from Isha. Come, have some chai.'], ['you', 'JazakAllahu khayran. This is strong.'], ['dawud', 'Cardamom and patience. I make it after every Isha. Players drink first, then the uncles complain.']], again: [['dawud', 'Another glass? Sip, beta. Sip.']] },
+      { id: 'uncle', x: 760, z: 540, act: 'sit', face: 1, lines: [['uncle', 'Salaam, beta! Don’t mind me. I’m just here for the chai and the shouting.']] }],
+    goals: [
+      { id: 'score', label: 'Shoot around: make a basket', n: 1, touch: 'Make a basket at the hoop', key: 'Make a basket at the hoop' },
+      { id: 'drill', label: 'Finish a drill', touch: 'Tap Drills, pick one', key: 'Q opens the drills: finish one' },
+      { id: 'upgrade', label: 'Your stats, on the whiteboard', touch: 'Walk to the whiteboard and tap it', key: 'Walk to the whiteboard, press F' },
+      { id: 'chai', label: 'Chai with Imam Dawud', touch: 'Imam Dawud is at the chai table', key: 'Imam Dawud is at the chai table' },
+      { id: 'cooler', label: 'Water at the cooler', touch: 'Walk to the water cooler and tap it', key: 'Walk to the water cooler, press F' }],
+    start: [['saleem', 'Meet everyone, try the gym out. When you’re done here, the musalla is through the partition.']],
+    end: [['narr', 'Everyone in the gym met. Through the partition to the musalla.']]
   }
+};
+// C1.5: the musalla walk. Each of them introduces himself the first time you talk (then his usual talk)
+const STORY_MUS_NEED = ['anas', 'mufti', 'hafiz', 'karim', 'musa'];
+const STORY_MUS_INTRO = {
+  anas: ['As-salamu alaykum! You’re the new brother. I’m Anas. They call me Qari because I lead Taraweeh.', 'I also play center. Tall people don’t get a choice here.'],
+  mufti: ['Wa alaykum as-salam. I am Abdullah, the masjid’s mufti. People bring me their questions.', 'Mostly about inheritance. Sometimes whether the shot clock is halal. It is.'],
+  hafiz: ['Zubair. I memorised the Quran when I was twelve, and I’ve kept score for the brothers ever since.', 'If there’s an argument about the score, they ask me. Nobody argues with a hafiz.'],
+  karim: ['Ustath Karim. I teach the weekend school: forty-three kids in two rooms. And I shoot.', 'Sometimes it goes in. Mostly it goes in.'],
+  musa: ['Yo! The other new guy! I’m Musa. I took my shahadah in the spring.', 'Everybody here taught me how to pray. Now I teach them how to dunk.']
 };
 
 // ---------------------------------------------------------------- what the people around the gym say on a normal visit
@@ -26726,9 +26804,13 @@ function storyRun() {
   if (S.unbuilt || (S.ch > STORY_BUILT && S.ch <= 5)) { careerHub(); toast('Chapter ' + S.ch + ' arrives in the next update, in sha Allah.', 3.5); return; }
   if (Game.menus) Game.menus.hub = null;
   saveCareer();
+  if (S.part) {                                                                  // a scene played inside another walk (C1.3 in C1.2)
+    if (C.story.seen[S.id]) { storyGo(S.next); return storyRun(); }
+    storyGo(S.part); return storyRun();
+  }
   switch (S.kind) {
     case 'scene': return storyPlayScene(S);
-    case 'walk': case 'drill': return storyWalkStart(S);
+    case 'walk': case 'drill': return S.musalla ? storyMusallaStart(S) : storyWalkStart(S);
     case 'play': return storyPlayStart(S);
     case 'choice': return storyChoiceStart(S);
   }
@@ -26809,6 +26891,7 @@ function drawStoryMusalla(g) {
   drawStory = function (g) {
     const s = Game.story;
     if (s && s.bg === 'musalla') drawStoryMusalla(g);
+    else if (s && s.bg === 'office') drawOfficeRoom(g, false);
     return _ds.apply(this, arguments);
   };
   // narration: nobody stands for 'narr', and its line has no name over it
@@ -26846,13 +26929,14 @@ function swPlayer(id) {
 }
 function storyWalkStart(S) {
   const D = STORY_WALKS[S.walk || S.id];
-  enterGym();
+  enterGym(); M.lobbyGym = false;                                              // (the career's gym, never the online lobby's)
   const me = M.players[0]; place(me, 820, 640); me.face = 1; giveBall(me, 'inbound');
   const npcs = {}, defs = {};
   for (const d of D.npcs) { const p = swPlayer(d.id); p.x = d.x; p.z = d.z; p.face = d.face || 1; p.swAct = d.act || 'host'; p.actPh = (d.x * 7) % 6; npcs[d.id] = p; defs[d.id] = d; }
-  SW = { S, D, npcs, defs, met: {}, near: null, talk: null, with: null, lb: 0, fade: 1, fadeDir: 0, t: 0, goals: {}, gp: { dist: 0, sprintT: 0, made: 0 }, shoot: { ph: 'drib', t: 0, x: 0, y: 0, z: 0, rot: 0 } };
-  Gym.story = SW;
-  if (D.start) swSay(D.start, null);
+  const wp = C.story.wp && C.story.wp.id === S.id ? C.story.wp : null;         // a walk left half done picks up where it was
+  SW = { S, D, npcs, defs, met: Object.assign({}, wp && wp.met), near: null, talk: null, with: null, lb: 0, fade: 1, fadeDir: 0, t: 0, goals: Object.assign({}, wp && wp.goals), gp: { dist: 0, sprintT: 0, made: 0 }, shoot: { ph: 'drib', t: 0, x: 0, y: 0, z: 0, rot: 0 } };
+  Gym.story = SW; Gym.toastT = 0;
+  if (D.start && !wp) swSay(D.start, null);
 }
 function swSay(lines, done) { SW.talk = { lines: lines.slice(), i: 0, t: 0, done }; }
 function swAdvance() {
@@ -26866,8 +26950,11 @@ function swGoalsLeft() { return (SW.D.goals || []).filter(g => !SW.goals[g.id]).
 function swReady() { return !swNeedLeft().length && !swGoalsLeft().length; }
 function swCloser() { const d = SW.D.npcs.find(x => x.closer); return d ? d.id : null; }
 function swFinish() { SW.done = true; SW.fadeDir = 1; }
+function swSave() { if (SW && C && C.story) { C.story.wp = { id: SW.S.id, met: Object.assign({}, SW.met), goals: Object.assign({}, SW.goals) }; saveCareer(); } }
+// everyone needed met, every goal done, no closer: the walk's last line, then on
+function swCheckEnd() { if (!SW || SW.done || SW.talk || !swReady() || swCloser()) return; SW.done = true; if (SW.D.end) swSay(SW.D.end, swFinish); else swFinish(); }
 // the walk is over: into the Journal, and on to the next scene
-function swEnd() { const I = SW; if (!I) return; const S = I.S; storyJournal(S, swJournalLines(I)); Gym.story = null; SW = null; storyDone(S, 'next'); }
+function swEnd() { const I = SW; if (!I) return; const S = I.S; storyJournal(S, swJournalLines(I)); Gym.story = null; SW = null; if (C.story.wp && C.story.wp.id === S.id) C.story.wp = null; storyDone(S, 'next'); }
 function swTalkTo(id) {
   const I = SW; if (!I || I.talk || I.fadeDir) return;
   const d = I.defs[id], p = I.npcs[id], me = M.players[0];
@@ -26877,11 +26964,14 @@ function swTalkTo(id) {
     if (!swReady()) { swSay(lines(d.early) || [[id, 'Come back when you’re done.']], null); return; }
     swSay(lines(d.lines), swFinish); return;
   }
-  const L = !I.met[id] && d.lines ? lines(d.lines) : lines(d.again) || STORY_GYM_TALK[id] || lines(d.lines);
+  const own = d.scene ? storyLinesOf(SC[d.scene]) : d.lines;                   // a part scene (C1.3) speaks its own lines
+  const L = !I.met[id] && own ? lines(own) : lines(d.again) || STORY_GYM_TALK[id] || lines(own);
   swSay(L, () => {
     const first = !I.met[id]; I.met[id] = true;
-    if (first && d.after) d.after();
-    if (swReady() && !swCloser()) swFinish();
+    if (first && d.scene) { const P = SC[d.scene]; C.story.seen[P.id] = (C.story.seen[P.id] || 0) + 1; storyJournal(P, L); }
+    if (d.goal) swGoal(d.goal);
+    if (first) swSave();
+    swCheckEnd();
   });
 }
 function swGoal(id) {
@@ -26889,6 +26979,7 @@ function swGoal(id) {
   const g = (SW.D.goals || []).find(x => x.id === id); if (!g) return;
   SW.goals[id] = true; SFX.good && SFX.good();
   gymToast('✓ ' + g.label, 2);
+  swSave(); swCheckEnd();
 }
 function swTrackGoals(dt) {
   const I = SW, me = M.players[0]; if (!I.D.goals || !me) return;
@@ -26906,6 +26997,7 @@ function swTrackGoals(dt) {
   gymUpdate = function (rdt) {
     const I = Gym.story;
     if (!I || I !== SW || Game.screen !== 'gym') return _gu.apply(this, arguments);
+    if (I.D.free && (Gym.drill || Gym.overlay || Gym.result || Gym.prop || Gym.walk || Gym.fade)) return _gu.apply(this, arguments);
     const dt = Math.min(rdt, 0.05); I.t += dt;
     if (I.talk) I.talk.t += dt;
     if (I.fade > 0 && !I.fadeDir) I.fade = Math.max(0, I.fade - dt * 1.5);
@@ -26931,6 +27023,13 @@ function swTrackGoals(dt) {
       for (const id in I.npcs) { const d = dxz(I.npcs[id], me); if (d < bd) { bd = d; best = id; } }
       I.near = best;
       if (best && (Input.pressed.KeyE || Input.pressed.Enter)) swTalkTo(best);
+      else if (I.D.free) {                                                       // the gym's own keys: drills, props, the doors
+        const pr = gymPropNear();
+        if (Input.pressed.Digit1 || Input.pressed.KeyQ) openDrills();
+        else if (Input.pressed.KeyF && pr) useGymProp(pr);
+        else if (Input.pressed.Digit2 || Input.pressed.KeyE) enterMusalla();
+        else if (Input.pressed.Digit3 || Input.pressed.KeyO) enterOffice();
+      }
     }
     sim(rdt, true);
     for (const id in I.npcs) { const p = I.npcs[id], d = dxz(p, me), min = 34; if (d < min && d > 1e-3) { me.x = p.x + (me.x - p.x) / d * min; me.z = p.z + (me.z - p.z) / d * min; } }
@@ -26954,6 +27053,7 @@ function swTrackGoals(dt) {
   drawGymHUD = function (g) {
     if (!Gym.story || Gym.story !== SW) return _hud.apply(this, arguments);
     const I = SW, me = M.players[0], head = p => P(p.x, 112, p.z), TT = Input.touchMode && g === ctx;
+    if (I.D.free) { if (Gym.drill || Gym.overlay || Gym.result || Gym.walk || Gym.fade) return _hud.apply(this, arguments); if (!I.talk) _hud.apply(this, arguments); }
     if (I.lb > 0.01) { const b = 40 * I.lb; g.fillStyle = 'rgba(4,8,12,0.92)'; g.fillRect(-400, 0, W + 800, b); g.fillRect(-400, H - b, W + 800, b); }
     // the checklist: who to meet, or the tutorial's goals
     const rows = I.D.goals ? I.D.goals.map(q => [I.goals[q.id], q.label + (q.n && !I.goals[q.id] ? '  ' + Math.min(I.gp.made, q.n) + '/' + q.n : '')])
@@ -26961,10 +27061,10 @@ function swTrackGoals(dt) {
     if (rows.length) {
       g.save(); g.globalAlpha = 1 - I.lb; g.font = `12px ${BODY}`;
       const rh = Math.max(20, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 12) + 8), w = Math.max(196, ...rows.map(r => g.measureText('✓ ' + r[1]).width + 44));
-      const x0 = TT ? 12 : 104;
-      g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x0, 12, w, 30 + rows.length * rh, 12); g.fill();
-      g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(I.D.title || 'Walk around', x0 + 14, 32);
-      rows.forEach(([ok, label], i) => { g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + label, x0 + 16, 32 + (i + 1) * rh); });
+      const x0 = TT ? 12 : 132, y0 = TT ? 72 : 12;                       // (clear of the Back button: beside it on a computer, under it on a phone)
+      g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x0, y0, w, 30 + rows.length * rh, 12); g.fill();
+      g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(I.D.title || 'Walk around', x0 + 14, y0 + 20);
+      rows.forEach(([ok, label], i) => { g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + label, x0 + 16, y0 + 20 + (i + 1) * rh); });
       g.restore();
     }
     for (const id in I.npcs) {
@@ -26981,9 +27081,9 @@ function swTrackGoals(dt) {
       addRect(0, 60, W, H - 60, swAdvance);
     } else if (!I.fadeDir) {
       const gl = I.D.goals && I.D.goals.find(q => !I.goals[q.id]);
-      swHint(g, gl ? (Input.touchMode ? gl.touch : gl.key) : swReady() && swCloser() ? 'Go and talk to ' + castDef(swCloser()).name : (Input.touchMode ? 'Walk up to someone and tap Talk' : 'W A S D to walk  •  E to talk'));
+      swHint(g, gl ? (Input.touchMode ? gl.touch : gl.key) : swReady() && swCloser() ? 'Go and talk to ' + castDef(swCloser()).name : (Input.touchMode ? 'Walk up to someone and tap Talk' : 'W A S D to walk  •  E to talk'), I.D.free);
     }
-    if (Gym.toastT > 0 && Gym.toast && !I.talk) { g.font = `13px ${FONT}`; textPill(g, W / 2, 64, 30, Gym.toast, `13px ${FONT}`, 'rgba(30,90,74,0.92)', '#f2cf6b'); }
+    if (Gym.toastT > 0 && Gym.toast && !I.talk && !I.D.free) { g.font = `13px ${FONT}`; textPill(g, W / 2, 64, 30, Gym.toast, `13px ${FONT}`, 'rgba(30,90,74,0.92)', '#f2cf6b'); }
     if (I.fade > 0) { g.fillStyle = `rgba(4,8,12,${I.fade})`; g.fillRect(-400, 0, W + 800, H); }
   };
 }
@@ -27017,8 +27117,8 @@ function swPrompt(g, x, y, label, fn) {
   g.fillStyle = '#f2cf6b'; g.textAlign = 'center'; g.fillText(label, x, y - h / 2 + 4);
   addRect(x - w / 2, y - h, w, h, fn);
 }
-function swHint(g, text) {
-  g.font = `12px ${BODY}`; const w = Math.min(W - 40, g.measureText(text).width + 30), y = Input.touchMode ? 12 : H - 40;
+function swHint(g, text, free) {
+  g.font = `12px ${BODY}`; const w = Math.min(W - 40, g.measureText(text).width + 30), y = Input.touchMode ? 12 : free ? H - 128 : H - 40;   // (free walks: above the gym's own bar)
   if (Input.touchMode) return;                                   // phones: the touch controls own the bottom; the checklist says it
   g.fillStyle = 'rgba(8,16,24,0.72)'; roundRect(g, W / 2 - w / 2, y, w, 28, 14); g.fill();
   g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText(fitText(g, text, w - 20), W / 2, y + 19);
@@ -27129,6 +27229,73 @@ function swPropFront(g, p) {
   else { g.fillStyle = 'rgba(255,255,255,0.8)'; g.fillRect(-3, -6, 6, 8); g.fillStyle = '#b5652b'; g.fillRect(-2.2, -3, 4.4, 4.5); }
   g.restore();
 }
+
+// the gym's corners in a story walk: the whiteboard shows your stats (and Back comes back here), the cooler and a drill count
+{
+  // the whiteboard's prompt says what it does in this walk
+  const _gpn = gymPropNear;
+  gymPropNear = function () { const p = _gpn.apply(this, arguments); return p && p.id === 'wb' && Gym.story && Gym.story === SW && SW.D.goals && SW.D.goals.some(q => q.id === 'upgrade') ? Object.assign({}, p, { label: 'Your stats on the whiteboard' }) : p; };
+  const _ugp = useGymProp;
+  useGymProp = function (p) {
+    if (Gym.story && Gym.story === SW && SW.D.goals) {
+      if (p.id === 'wb' && SW.D.goals.some(q => q.id === 'upgrade')) { swGoal('upgrade'); Game.trainBack = 'gym'; Game.screen = 'train'; Game.idx = 0; SFX.blip(); return; }
+      if (p.id === 'cooler') swGoal('cooler');
+    }
+    return _ugp.apply(this, arguments);
+  };
+  const _fd = finishDrill; finishDrill = function () { const r = _fd.apply(this, arguments); if (Gym.story && Gym.story === SW) swGoal('drill'); return r; };
+  const _fm = finishMini; finishMini = function () { const story = Gym.drill && Gym.drill.story; const r = _fm.apply(this, arguments); if (!story && Gym.story && Gym.story === SW) swGoal('drill'); return r; };
+  // Upgrade stats opened from the whiteboard: Back returns to the gym (the walk goes on)
+  const _cu = careerUpdate;
+  careerUpdate = function (rdt) {
+    if (Game.screen === 'train' && Game.trainBack && menuHit('back')) { Game.trainBack = null; Game.screen = 'gym'; return; }
+    return _cu.apply(this, arguments);
+  };
+  const _bt = BACK.train;
+  BACK.train = function () { if (Game.trainBack) { Game.trainBack = null; Game.screen = 'gym'; return; } return _bt ? _bt.apply(this, arguments) : careerHub(); };
+}
+
+// ---------------------------------------------------------------- C1.5: the musalla walk
+// The musalla's own screen (walk, talk, use things); the five people to meet each introduce themselves first. When
+// everyone is met (and the talk is closed), the story moves on. Esc or the doorway leaves; Continue comes back.
+function storyMusallaStart(S) {
+  enterGym(); M.lobbyGym = false; openMusalla();
+  const wp = C.story.wp && C.story.wp.id === S.id ? C.story.wp : null;
+  Game.mus.story = { S, met: Object.assign({}, wp && wp.met) };
+}
+function smusLeft() { const st = Game.mus && Game.mus.story; return st ? STORY_MUS_NEED.filter(id => !st.met[id]) : []; }
+{
+  const _tt = talkTo;
+  talkTo = function (i) {
+    const r = _tt.apply(this, arguments), m = Game.mus, st = m && m.story, id = MUS_CAST[i];
+    if (st && STORY_MUS_INTRO[id] && !st.met[id]) {
+      const t = m.talk; t.mode = 'answer'; t.lines = STORY_MUS_INTRO[id].slice(); t.li = 0;
+      st.met[id] = true; C.story.wp = { id: st.S.id, met: Object.assign({}, st.met), goals: {} }; saveCareer();
+    }
+    return r;
+  };
+  const _mu = musallaUpdate;
+  musallaUpdate = function (rdt) {
+    const m = Game.mus, st = m && m.story;
+    const r = _mu.apply(this, arguments);
+    if (st && Game.mus === m && !m.talk && !smusLeft().length) {
+      const S = st.S, lines = STORY_MUS_NEED.map(id => [id, STORY_MUS_INTRO[id][0]]);
+      Game.mus = null; Game.screen = 'gym'; C.story.wp = null;
+      storyJournal(S, lines); storyDone(S, 'next');
+    }
+    return r;
+  };
+  const _dm = drawMusallaScreen;
+  drawMusallaScreen = function (g) {
+    _dm.apply(this, arguments);
+    const m = Game.mus, st = m && m.story; if (!st || m.talk) return;
+    g.font = `12px ${BODY}`; const rh = Math.max(20, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 12) + 8);
+    const w = Math.max(196, ...STORY_MUS_NEED.map(id => g.measureText('✓ ' + castDef(id).name).width + 44)), x0 = W - w - 12, y0 = 8;
+    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x0, y0, w, 30 + STORY_MUS_NEED.length * rh, 12); g.fill();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('Meet the musalla', x0 + 14, y0 + 20);
+    STORY_MUS_NEED.forEach((id, i) => { const ok = !!st.met[id]; g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + castDef(id).name, x0 + 16, y0 + 20 + (i + 1) * rh); });
+  };
+}
 // ================================================= v9.22: THE CAREER STORY — play scenes
 // A play scene is a real match or mini game with a result. Its outcome (win, loss; out for a run-ending loss) picks the
 // next scene. Story exhibitions (the pickup game, lights out, the all-star game) are career matches with no bracket:
@@ -27137,7 +27304,15 @@ const STORY_HOME = { name: 'Masjid Al-Amanah', short: 'AMANAH', place: 'Eastside
 function storyPlayStart(S) {
   const mode = STORY_MODES[S.mode];
   if (!mode) { toast('This game arrives in the next update.', 3); return careerHub(); }
+  if (S.pre && !C.story.seen[S.id]) { playStory(storyLinesOf(S, 'pre'), () => mode(S), storyTitleOf(S)); if (Game.story) Game.story.sid = S.id; storyTagJournal(S); return; }   // its lead-in, the first time
   mode(S);
+}
+// after a mini game: its win or loss lines, then on along the outcome
+function storyPost(S, won, note, head) {
+  const lines = storyLinesOf(S, won ? 'winLines' : 'lossLines'), outcome = won ? 'win' : 'loss';
+  if (head && lines.length) lines.unshift(['narr', head]);                       // the result, said first (a toast would sit on the subtitles)
+  if (!lines.length) { storyJournal(S, [['narr', S.name + ': ' + (note || (won ? 'won' : 'lost'))]]); return storyDone(S, outcome); }
+  playStory(lines, () => storyDone(S, outcome), storyTitleOf(S)); storyTagJournal(S);
 }
 const STORY_MODES = {
   // C0.5: you and Sh. Saleem against Ammo Jamil and Ilyas, first to 11, the easiest CPU there is
@@ -27145,8 +27320,40 @@ const STORY_MODES = {
     const us = Object.assign({}, STORY_HOME, { players: [storyMateDef('saleem', 0), playerDef()] });
     const them = { name: 'Ammo Jamil & Ilyas', short: 'JAMIL', place: 'Eastside', c1: '#7a1f2b', c2: '#e8c35a', crest: 'dome', players: [storyMateDef('jamil', 0), storyMateDef('ilyas', 0)] };
     storyExhibition(S, us, them, { L: -1, fmt: { format: 'first21', target: 11 } });
+  },
+  // C1.6: Lightning with Sh. Saleem, Ammo Jamil, Ilyas and Musa; any finish moves the story on
+  lightning(S) {
+    enterGym();
+    setupMini('lightning', { roster: ['you', 'saleem', 'jamil', 'ilyas', 'musa'], humans: [{ team: 0, slot: 0, pad: 0 }] });
+    Gym.drill = { kind: 'lightning', mini: true, story: S.id };
+    gymToast('Lightning: wait your turn on the spot behind the arc. Miss and chase your rebound. If the player behind you scores first, you’re out.', 4.5);
+  },
+  // C1.8: King of the Court for a starting spot; crowned, or go again
+  kotc(S) {
+    startKotc({ roster: ['you', 'jamil', 'ilyas', 'musa'], humans: { you: 0 } });
+    KOTC.gym = true; KOTC.story = S.id;
   }
 };
+{
+  // the story's mini games end in the story, not on the gym's result card
+  const _fm = finishMini;
+  finishMini = function () {
+    const d = Gym.drill; if (!d || !d.story || !storyOn()) return _fm.apply(this, arguments);
+    const S = SC[d.story], r = M.mini.result(), won = r.place === 1, bp = drillBP([0, 60, 35, 20, 12, 6][r.place] || 6);
+    bankPractice(bp, practiceHB(won));
+    Gym.drill = null; Gym.result = null; setupPractice('free');
+    storyPost(S, won, 'finished ' + ordinal(r.place) + ' of 5', 'Lightning: you finished ' + ordinal(r.place) + ' of 5.   +' + bp + ' BP');
+  };
+  const _kl = kotcLeave;
+  kotcLeave = function () {
+    if (!KOTC.story || !storyOn()) return _kl.apply(this, arguments);
+    const S = SC[KOTC.story], won = KOTC.champ === 'you', w = KOTC.wins.you || 0;
+    KOTC.on = false; KOTC.gym = false; KOTC.story = null; M.kotc = false;
+    enterGym();
+    const bp = drillBP(won ? 70 : 15 + w * 10); bankPractice(bp, practiceHB(won));
+    storyPost(S, won, won ? 'crowned' : 'won ' + w, (won ? 'King of the Court: you were crowned.' : 'King of the Court: you won ' + w + ' game' + (w === 1 ? '' : 's') + '.') + '   +' + bp + ' BP');
+  };
+}
 // a story match with no bracket. o: L (the CPU level of the other team), fmt, venue
 function storyExhibition(S, us, them, o = {}) {
   const lv = careerLevels(0), L = o.L != null ? o.L : lv.opp;

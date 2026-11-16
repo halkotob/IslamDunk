@@ -6,7 +6,15 @@ const STORY_HOME = { name: 'Masjid Al-Amanah', short: 'AMANAH', place: 'Eastside
 function storyPlayStart(S) {
   const mode = STORY_MODES[S.mode];
   if (!mode) { toast('This game arrives in the next update.', 3); return careerHub(); }
+  if (S.pre && !C.story.seen[S.id]) { playStory(storyLinesOf(S, 'pre'), () => mode(S), storyTitleOf(S)); if (Game.story) Game.story.sid = S.id; storyTagJournal(S); return; }   // its lead-in, the first time
   mode(S);
+}
+// after a mini game: its win or loss lines, then on along the outcome
+function storyPost(S, won, note, head) {
+  const lines = storyLinesOf(S, won ? 'winLines' : 'lossLines'), outcome = won ? 'win' : 'loss';
+  if (head && lines.length) lines.unshift(['narr', head]);                       // the result, said first (a toast would sit on the subtitles)
+  if (!lines.length) { storyJournal(S, [['narr', S.name + ': ' + (note || (won ? 'won' : 'lost'))]]); return storyDone(S, outcome); }
+  playStory(lines, () => storyDone(S, outcome), storyTitleOf(S)); storyTagJournal(S);
 }
 const STORY_MODES = {
   // C0.5: you and Sh. Saleem against Ammo Jamil and Ilyas, first to 11, the easiest CPU there is
@@ -14,8 +22,40 @@ const STORY_MODES = {
     const us = Object.assign({}, STORY_HOME, { players: [storyMateDef('saleem', 0), playerDef()] });
     const them = { name: 'Ammo Jamil & Ilyas', short: 'JAMIL', place: 'Eastside', c1: '#7a1f2b', c2: '#e8c35a', crest: 'dome', players: [storyMateDef('jamil', 0), storyMateDef('ilyas', 0)] };
     storyExhibition(S, us, them, { L: -1, fmt: { format: 'first21', target: 11 } });
+  },
+  // C1.6: Lightning with Sh. Saleem, Ammo Jamil, Ilyas and Musa; any finish moves the story on
+  lightning(S) {
+    enterGym();
+    setupMini('lightning', { roster: ['you', 'saleem', 'jamil', 'ilyas', 'musa'], humans: [{ team: 0, slot: 0, pad: 0 }] });
+    Gym.drill = { kind: 'lightning', mini: true, story: S.id };
+    gymToast('Lightning: wait your turn on the spot behind the arc. Miss and chase your rebound. If the player behind you scores first, you’re out.', 4.5);
+  },
+  // C1.8: King of the Court for a starting spot; crowned, or go again
+  kotc(S) {
+    startKotc({ roster: ['you', 'jamil', 'ilyas', 'musa'], humans: { you: 0 } });
+    KOTC.gym = true; KOTC.story = S.id;
   }
 };
+{
+  // the story's mini games end in the story, not on the gym's result card
+  const _fm = finishMini;
+  finishMini = function () {
+    const d = Gym.drill; if (!d || !d.story || !storyOn()) return _fm.apply(this, arguments);
+    const S = SC[d.story], r = M.mini.result(), won = r.place === 1, bp = drillBP([0, 60, 35, 20, 12, 6][r.place] || 6);
+    bankPractice(bp, practiceHB(won));
+    Gym.drill = null; Gym.result = null; setupPractice('free');
+    storyPost(S, won, 'finished ' + ordinal(r.place) + ' of 5', 'Lightning: you finished ' + ordinal(r.place) + ' of 5.   +' + bp + ' BP');
+  };
+  const _kl = kotcLeave;
+  kotcLeave = function () {
+    if (!KOTC.story || !storyOn()) return _kl.apply(this, arguments);
+    const S = SC[KOTC.story], won = KOTC.champ === 'you', w = KOTC.wins.you || 0;
+    KOTC.on = false; KOTC.gym = false; KOTC.story = null; M.kotc = false;
+    enterGym();
+    const bp = drillBP(won ? 70 : 15 + w * 10); bankPractice(bp, practiceHB(won));
+    storyPost(S, won, won ? 'crowned' : 'won ' + w, (won ? 'King of the Court: you were crowned.' : 'King of the Court: you won ' + w + ' game' + (w === 1 ? '' : 's') + '.') + '   +' + bp + ' BP');
+  };
+}
 // a story match with no bracket. o: L (the CPU level of the other team), fmt, venue
 function storyExhibition(S, us, them, o = {}) {
   const lv = careerLevels(0), L = o.L != null ? o.L : lv.opp;

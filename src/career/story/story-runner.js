@@ -54,9 +54,13 @@ function storyRun() {
   if (S.unbuilt || (S.ch > STORY_BUILT && S.ch <= 5)) { careerHub(); toast('Chapter ' + S.ch + ' arrives in the next update, in sha Allah.', 3.5); return; }
   if (Game.menus) Game.menus.hub = null;
   saveCareer();
+  if (S.part) {                                                                  // a scene played inside another walk (C1.3 in C1.2)
+    if (C.story.seen[S.id]) { storyGo(S.next); return storyRun(); }
+    storyGo(S.part); return storyRun();
+  }
   switch (S.kind) {
     case 'scene': return storyPlayScene(S);
-    case 'walk': case 'drill': return storyWalkStart(S);
+    case 'walk': case 'drill': return S.musalla ? storyMusallaStart(S) : storyWalkStart(S);
     case 'play': return storyPlayStart(S);
     case 'choice': return storyChoiceStart(S);
   }
@@ -137,6 +141,7 @@ function drawStoryMusalla(g) {
   drawStory = function (g) {
     const s = Game.story;
     if (s && s.bg === 'musalla') drawStoryMusalla(g);
+    else if (s && s.bg === 'office') drawOfficeRoom(g, false);
     return _ds.apply(this, arguments);
   };
   // narration: nobody stands for 'narr', and its line has no name over it

@@ -1,7 +1,10 @@
 // v9.22: the career story (src/career/story/, docs/career-overhaul/). Page-side helpers: tests/story-setup.js.
 //   story-ch0      a new career by bot: the creator, C0.1 to C0.6 (the pickup game lost once, then won), lands in
 //                  Chapter 1 at the hub; every scene in the Journal by ID; each screen drawn on the way; no page errors
-//   story-reload   a save at every Chapter 0 scene, a reload, Continue: the same scene starts again
+//   story-ch1      Chapter 1 by bot (C1.1 to C1.9, King of the Court lost once, then won), lands at C2.1; the gym walk's corners
+//                  done the real way: the whiteboard opens Upgrade stats and Back returns to the walk, the cooler, the cone
+//                  run, chai with Imam Dawud; Ammo Jamil's and Ilyas's scenes (C1.3, C1.4) inside the walk
+//   story-reload   a save at every Chapter 0 and Chapter 1 scene, a reload, Continue: the same scene starts again
 //   story-hub      the hub has exactly its four entries (Continue, Gym, Masjid, My Player), the chapter's name and the
 //                  next event; every entry opens its screen; desktop and phone draw without errors
 //   story-cast     the seven teammates: each in the top two of the seven in both of his standout stats, at every stage
@@ -40,10 +43,49 @@ export function storyTests({ newContext, open }) {
     return { ok, detail: [out.steps.join(' '), 'pickup: ' + pickups.join(','), 'end: ' + JSON.stringify(out.end), ...out.draws, ...errs] };
   };
 
+  // Chapter 1 by bot, and the walk's corners done the real way: the whiteboard opens Upgrade stats (Back returns to the
+  // walk), the cooler, a drill (the cone run, finished), chai with Imam Dawud
+  T['story-ch1'] = async ({ browser, base }) => {
+    const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-ch1');
+    await prep(p);
+    const out = { draws: [] };
+    out.toC1 = await p.evaluate(() => { window.__sNew('Bilal'); return window.__sRun('C1.1'); });
+    await p.evaluate(() => { window.__sStep(); window.__sStep(); });          // C1.1 (the scene), then the C1.2 walk starts
+    out.walk = await p.evaluate(() => {
+      const r = { at: C.story.at, walk: !!Gym.story, free: !!(SW && SW.D.free) };
+      let k = 0; while (SW.talk && k++ < 20) { SW.talk.t = 1; swAdvance(); }
+      const me = M.players[0];
+      place(me, 1064, 60); const wb = gymPropNear(); r.wb = wb && wb.id; useGymProp(wb); r.train = Game.screen; BACK.train(); r.back = Game.screen; r.upgrade = !!SW.goals.upgrade;
+      place(me, 1150, 60); const co = gymPropNear(); r.co = co && co.id; useGymProp(co); r.cooler = !!SW.goals.cooler;
+      for (let n = 0; n < 60 * 3; n++) gymUpdate(1 / 60);
+      startDrill('cones'); for (const c of CONES) { place(M.players[0], c.x, c.z); drillUpdate(1 / 60); } r.drill = !!SW.goals.drill; r.result = !!Gym.result;
+      Gym.result = null; setupPractice('free');
+      window.__sTalk('dawud'); r.chai = !!SW.goals.chai;
+      window.__sTalk('jamil'); window.__sTalk('ilyas'); r.parts = [!!C.story.seen['C1.3'], !!C.story.seen['C1.4']];
+      r.wp = JSON.stringify(C.story.wp && C.story.wp.goals);
+      return r;
+    });
+    for (let n = 0; n < 60; n++) {
+      const st = await p.evaluate(() => window.__sState());
+      if (st.at === 'C2.1' && st.screen === 'hub') break;
+      const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d);
+      out.steps = (out.steps || []).concat(st.at + ':' + await p.evaluate(() => window.__sStep({ lose: at => at === 'C1.8' && !(C.story.seen['C1.8'] > 0) })));
+      await sleep(30);
+    }
+    out.end = await p.evaluate(() => ({ s: window.__sState(), journal: (C.journal || []).map(e => e.id).filter(Boolean), ch: storyChapter(), hub: HUB_MENU()[0].label }));
+    await ctx.close();
+    const ids = ['C1.1', 'C1.2', 'C1.3', 'C1.4', 'C1.5', 'C1.6', 'C1.7', 'C1.8', 'C1.9'], W = out.walk;
+    const kotc = out.steps.filter(x => x.startsWith('C1.8:') && /won|lost/.test(x)).map(x => x.split(':')[1]);
+    const ok = W.free && W.wb === 'wb' && W.train === 'train' && W.back === 'gym' && W.upgrade && W.co === 'cooler' && W.cooler && W.drill && W.chai && W.parts.every(Boolean)
+      && ids.every(id => out.end.s.seen.includes(id) && out.end.journal.includes(id)) && kotc.join(',') === 'lost,won'
+      && out.end.s.at === 'C2.1' && out.end.s.screen === 'hub' && out.end.ch === 2 && !out.draws.length && !errs.length;
+    return { ok, detail: ['walk: ' + JSON.stringify(W), (out.steps || []).join(' '), 'King of the Court: ' + kotc.join(','), 'end: ' + JSON.stringify(out.end), ...out.draws, ...errs] };
+  };
+
   T['story-reload'] = async ({ browser, base }) => {
     const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-reload');
-    const ids = ['C0.1', 'C0.2', 'C0.3', 'C0.4', 'C0.5', 'C0.6'], res = [];
-    const want = { 'C0.1': 'ssalams', 'C0.2': 'story', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'play', 'C0.6': 'story' };
+    const want = { 'C0.1': 'ssalams', 'C0.2': 'story', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'play', 'C0.6': 'story',
+      'C1.1': 'story', 'C1.2': 'gym', 'C1.5': 'musalla', 'C1.6': 'story', 'C1.7': 'story', 'C1.8': 'story', 'C1.9': 'story' }, ids = Object.keys(want), res = [];
     for (const id of ids) {
       await prep(p);
       await p.evaluate(id => { window.__sNew('Reload'); window.__sRun(id); saveCareer(); }, id);
@@ -59,7 +101,7 @@ export function storyTests({ newContext, open }) {
       res.push(Object.assign({ id }, r));
     }
     await ctx.close();
-    const ok = res.every(r => r.hub === 'hub' && r.at === r.id && r.screen === want[r.id] && (r.screen !== 'gym' || r.walk) && (r.screen !== 'story' || r.sid === r.id)) && !errs.length;
+    const ok = res.every(r => r.hub === 'hub' && r.at === r.id && r.screen === want[r.id] && (r.screen !== 'gym' || r.walk) && (r.screen !== 'story' || r.sid === r.id)) && !errs.length;   // (C1.6 and C1.8 open on their lead-in scene)
     return { ok, detail: [...res.map(r => JSON.stringify(r)), ...errs] };
   };
 
@@ -84,7 +126,7 @@ export function storyTests({ newContext, open }) {
         return { labels, subs, opened, chapter: seen.some(t => /Chapter 1: Making the team/.test(t)), next: seen.some(t => /^NEXT/.test(t)) };
       }, touch);
       await sleep(300);
-      const good = r.labels.join('|') === 'Continue (next update)|Gym|Masjid|My Player' && r.chapter && r.next
+      const good = r.labels.join('|') === 'Continue|Gym|Masjid|My Player' && r.chapter && r.next
         && r.opened.Gym === 'gym' && r.opened.Musalla === 'musalla' && r.opened.Office === 'office' && r.opened.Outside === 'masjid' && r.opened.Projects === 'shop'
         && r.opened.Upgrade === 'train' && r.opened.Look === 'creator' && r.opened.Journal === 'journal' && r.opened.Stats === 'cstats';
       if (!good) ok = false;

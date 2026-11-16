@@ -83,7 +83,7 @@ const MUS_SPOTS = {
   anas: { u: 0.14, d: 0.34, pose: 'cross', face: 1 },             // by the shelf with a mushaf
   mufti: { u: 0.62, d: 0.24, pose: 'cross', face: -1 },           // near the front, a book open
   hafiz: { u: 0.84, d: 0.42, pose: 'stand', face: -1 },           // by the right wall
-  karim: { u: 0.06, d: 0.52, pose: 'chair', face: 1 },            // on a chair against the left wall, marking homework
+  karim: { u: 0.04, d: 0.3, pose: 'chair', face: 1 },             // on a chair against the left wall, marking homework
   musa: { u: 0.72, d: 0.6, pose: 'stand', face: -1 }              // front right
 };
 function musRoom() {

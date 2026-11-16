@@ -1,5 +1,41 @@
 # Changelog
 
+## 9.23.0: Chapter 1, Making the team
+The career's Chapter 1 (docs/career-overhaul/SCENES.md) is in. After Chapter 0, Continue plays:
+- **C1.1** The next night the gym is full. Sh. Saleem sends you to meet everyone, the gym and then the musalla, and
+  then to come to his office.
+- **C1.2 to C1.4** Meet the gym. This is the real gym floor, with its own buttons (Drills, the musalla, the office),
+  and a checklist of five corners that show the career: make a basket, finish a drill, look at your stats on the
+  whiteboard (it opens Upgrade stats, and Back comes back to the walk), chai with Imam Dawud at his table, and water at
+  the cooler. Ammo Jamil (**C1.3**: nineteen years without the masjid league, and one final lost by one point) and Ilyas
+  (**C1.4**: he wants his dad to watch one game without yelling) each have a scene of their own on the floor. An uncle
+  on a folding chair says hello.
+- **C1.5** The musalla. Qari Anas, Mufti Abdullah, Hafiz Zubair, Ustath Karim and Musa each introduce themselves the
+  first time you talk, then have their usual talk. The walk ends when all five are met.
+- **C1.6** Lightning with Sh. Saleem, Ammo Jamil, Ilyas and Musa. Any finish moves the story on, with lines for a win
+  or a loss.
+- **C1.7** Sh. Saleem’s office, now a scene with the office as its backdrop. He introduces himself and the masjid
+  properly, and offers you a starting spot if you earn it.
+- **C1.8** King of the Court with Ammo Jamil, Ilyas and Musa. Get crowned, or go again until you are.
+- **C1.9** The brothers vote you onto the team. The career begins, and the hub moves to Chapter 2 (the masjid league
+  arrives in the next release).
+- A walk left halfway keeps who you met and what you did. Continue picks it up where you were.
+- The Lightning and King of the Court results are the first line of the scene after them.
+- Fixes: the walk checklist sits beside the Back button on a computer and under it on a phone (it was under the button);
+  the Mufti and the Hafiz draw whole in the musalla; a story match's post-game with no lines no longer fails.
+
+How it was checked:
+- **New test** `story-ch1`: a bot plays C1.1 to C1.9 and loses King of the Court once before
+  it is crowned. It does the walk's corners the real way: the whiteboard opens Upgrade stats and Back returns to the
+  walk, the cooler, the cone run finished, chai with Imam Dawud. Ammo Jamil's and Ilyas's scenes are recorded inside the
+  walk, every C1 scene is in the Journal, and the story lands at C2.1 with the hub in Chapter 2.
+- `story-reload` now covers every Chapter 1 scene too: a save, a reload, and Continue starts the same scene.
+- The phone text audit (`mobile`, full tier) passes with the story's screens. The story walks are counted as
+  screens played with the joystick, like the career gym.
+- Screenshots of the gym walk, the musalla walk, a musalla introduction, the office scene and Lightning, at 1280x720 and
+  844x390, checked for text on text.
+- `npm test`: every fast-tier test passes.
+
 ## 9.22.0: the career is a story, starting with Chapter 0
 Career is now a chaptered story (docs/career-overhaul/: the brief, the scene list and MAP.md, which maps every scene to
 the code). This release is the foundation and its first chapter. A new career goes from the creator straight into
