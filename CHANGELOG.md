@@ -1,5 +1,22 @@
 # Changelog
 
+## 9.26.0: Every scene is a walk-up talk; Hajj instead of an injury
+- **Walk-up talks everywhere.** Every dialogue scene is now played where it happens, as it already was in the
+  musalla and the office. You're on the gym floor with the people in the scene standing around, a gold marker over
+  the one who starts it, and you walk up and talk. Narration shows when you arrive. Anyone else answers your salaam
+  and points you to him. This covers C0.6, C1.1, C1.9, C2.4, C2.11, C2.13, C2.16, the next-season scenes, and C3.2,
+  C3.11, C3.16, C3.18 and C3.22. C3.23 (the invitation) is in Sh. Saleem's office.
+- **No portraits anywhere.** Every story line is a plain text box with the speaker's name: in the walks (which used
+  speech bubbles), and in the short lines before and after a game or a teammate pick, now shown over the room.
+- **Hajj, not an injury (C3.14 and C3.18).** After league game 6, your teammate has news: his name came up for Hajj.
+  Each of the seven has his own scene (Ammo Jamil after twenty years of saving, Ilyas going with his grandmother,
+  Musa given a place by a brother at work). Pick someone else while he's away. On the pick screen he shows as "Away
+  for Hajj". He comes back a hajji for the playoffs. Hajj itself is never shown. `docs/career-overhaul/SCENES.md` is
+  updated to match.
+
+How it was checked: `story-ch0` to `story-ch3` and `story-reload` (the scenes above now reopen as walks on the gym
+floor), `studio-coverage`, `studio-phone` and the phone audit.
+
 ## 9.25.0: Chapter 3, State league
 The career's Chapter 3 is in. After the masjid league title, Continue plays:
 - **C3.1** Back at the gym: a walk. The new lights and trophy case, forty people at practice, six new weekend-school

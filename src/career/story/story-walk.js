@@ -10,8 +10,8 @@ function swPlayer(id) {
   for (let i = 0; i < 20; i++) animate(p, 1 / 60);
   return p;
 }
-function storyWalkStart(S) {
-  const D = STORY_WALKS[S.walk || S.id];
+function storyWalkStart(S, D0) {
+  const D = D0 || STORY_WALKS[S.walk || S.id];
   enterGym(); M.lobbyGym = false;                                              // (the career's gym, never the online lobby's)
   const me = M.players[0]; place(me, 820, 640); me.face = 1; giveBall(me, 'inbound');
   const npcs = {}, defs = {};
@@ -37,7 +37,7 @@ function swSave() { if (SW && C && C.story) { C.story.wp = { id: SW.S.id, met: O
 // everyone needed met, every goal done, no closer: the walk's last line, then on
 function swCheckEnd() { if (!SW || SW.done || SW.talk || !swReady() || swCloser()) return; SW.done = true; if (SW.D.end) swSay(SW.D.end, swFinish); else swFinish(); }
 // the walk is over: into the Journal, and on to the next scene
-function swEnd() { const I = SW; if (!I) return; const S = I.S; storyJournal(S, swJournalLines(I)); Gym.story = null; SW = null; if (C.story.wp && C.story.wp.id === S.id) C.story.wp = null; storyDone(S, 'next'); }
+function swEnd() { const I = SW; if (!I) return; const S = I.S; storyJournal(S, swJournalLines(I)); Gym.story = null; SW = null; if (C.story.wp && C.story.wp.id === S.id) C.story.wp = null; if (I.D.after) I.D.after(); else storyDone(S, 'next'); }
 function swTalkTo(id) {
   const I = SW; if (!I || I.talk || I.fadeDir) return;
   const d = I.defs[id], p = I.npcs[id], me = M.players[0];
@@ -157,13 +157,11 @@ function swTrackGoals(dt) {
       if (I.talk || I.fadeDir) continue;
       const nm = castDef(id).name;
       if (id === I.near) swPrompt(g, x, y - 6, 'Talk to ' + nm + (Input.touchMode ? '' : '  (E)'), () => swTalkTo(id));
-      else if (d.closer && swReady()) { const b = 0.5 + 0.5 * Math.sin(Game.t * 6); g.fillStyle = `rgba(242,207,107,${0.6 + 0.4 * b})`; g.textAlign = 'center'; g.font = `16px ${FONT}`; g.fillText('!', x, y - 12); }
+      else if (d.closer && swReady()) drawStalkMarker(g, x, y - 34);
       else if ((d.need && !I.met[id]) || dxz(p, me) < 300) { g.fillStyle = 'rgba(242,207,107,0.9)'; g.textAlign = 'center'; g.font = `11px ${FONT}`; g.fillText(nm, x, y - 10); }
     }
     if (I.talk) {
-      const [who, text] = I.talk.lines[I.talk.i], p = who === 'you' ? me : I.npcs[who] || I.npcs[I.with] || me, [x, y] = head(p);
-      swBubble(g, x, y, who === 'you' ? (C.name || 'You') : castDef(who).name, text, true);
-      addRect(0, 60, W, H - 60, swAdvance);
+      drawStalkBox(g, { lines: I.talk.lines, li: I.talk.i }, swAdvance);             // v9.26: a plain text box, not a bubble
     } else if (!I.fadeDir) {
       const gl = I.D.goals && I.D.goals.find(q => !I.goals[q.id]);
       swHint(g, gl ? (Input.touchMode ? gl.touch : gl.key) : swReady() && swCloser() ? 'Go and talk to ' + castDef(swCloser()).name : (Input.touchMode ? 'Walk up to someone and tap Talk' : 'W A S D to walk  •  E to talk'), I.D.free);
@@ -173,6 +171,7 @@ function swTrackGoals(dt) {
   };
 }
 function swJournalLines(I) {
+  if (I.D.journal) return I.D.journal;
   const out = [];
   for (const d of I.D.npcs) if (I.met[d.id] || d.closer) { const L = typeof d.lines === 'function' ? d.lines() : d.lines; if (L) out.push(...L.slice(0, 2)); }
   return out.length ? out : [['narr', I.D.title || I.S.name]];
@@ -392,9 +391,10 @@ function stalkLines(S) {
   return { pre: L.slice(0, k), main: L.slice(k), all: L };
 }
 function storyTalkStart(S) {
-  const t = S.talk, L = stalkLines(S);
+  const t = S.talk || { at: 'gym' }, L = stalkLines(S);
   enterGym(); M.lobbyGym = false;
   const st = { S, who: t.who, at: t.at, main: L.main, all: L.all };
+  if (t.at === 'gym') return storyGymTalkStart(S);
   if (t.at === 'office') { openOffice(); Game.office.stalk = st; Game.office.sel = 1; }
   else { openMusalla(); Game.mus.stalk = st; }
   if (L.pre.length) stalkShow(st, L.pre, true);
@@ -412,14 +412,14 @@ function stalkAdvance() {
   storyJournal(st.S, st.all); storyDone(st.S, 'next');
 }
 function stalkSpeaker(id) { return id === 'narr' ? '' : id === 'you' ? (C.name || 'You') : castDef(id).name; }
-function drawStalkBox(g, b) {
+function drawStalkBox(g, b, adv = stalkAdvance) {
   const [id, text] = b.lines[b.li], who = stalkSpeaker(id);
   panel(g, 40, 396, 880, 136, true);
   g.textAlign = 'left';
   if (who) { g.fillStyle = GOLD; g.font = `15px ${FONT}`; g.fillText(who, 60, 420); }
   g.fillStyle = id === 'narr' ? IVORY : '#fff'; g.font = `${id === 'narr' ? 'italic ' : ''}15px ${BODY}`; wrapTextLeft(g, text, 60, who ? 446 : 430, 840, 21);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.textAlign = 'right'; g.fillText(Input.touchMode ? 'Tap to continue' : 'Enter to continue', 900, 520);
-  addRect(0, 60, W, H - 60, stalkAdvance);
+  addRect(0, 60, W, H - 60, adv);
 }
 function drawStalkMarker(g, x, y) {
   const my = y + Math.sin(Game.t * 3) * 4;
@@ -480,4 +480,20 @@ function drawStalkMarker(g, x, y) {
     try { _do.apply(this, arguments); } finally { sheikhSituation = _sit; }
     drawStalkMarker(g, W / 2 + 40, 168);
   };
+}
+
+// ---------------------------------------------------------------- v9.26: every other dialogue scene is a talk in the gym
+// The people in the scene stand around the gym floor; the one who starts it has the marker. Walk up, talk, and the
+// scene's lines are the text box. Narration before the first spoken line shows on arrival. after: what comes next
+// instead of the next scene (C3.2's teammate pick).
+const GYM_TALK_SPOTS = [[900, 320, -1], [980, 600, -1], [1120, 430, -1], [1180, 220, -1], [720, 600, 1], [600, 250, 1], [760, 170, 1], [1060, 300, -1]];
+function storyTalkWho(S, L) { if (S.talk && S.talk.who) return S.talk.who; const f = L.find(l => l[0] !== 'narr' && l[0] !== 'you'); return f ? f[0] : 'saleem'; }
+function storyGymTalkStart(S, after) {
+  const L = stalkLines(S), who = storyTalkWho(S, L.all), ids = [who];
+  for (const [id] of L.all) if (id !== 'narr' && id !== 'you' && !ids.includes(id) && ids.length < GYM_TALK_SPOTS.length && CAST[id]) ids.push(id);
+  const name = castDef(who).name;
+  const npcs = ids.map((id, i) => { const [x, z, face] = GYM_TALK_SPOTS[i];
+    return i === 0 ? { id, x, z, face, act: 'host', closer: true, lines: L.main.length ? L.main : L.all }
+      : { id, x, z, face, act: 'host', lines: [[id, 'As-salamu alaykum. Go on, ' + name + ' wants a word.']] }; });
+  storyWalkStart(S, { title: S.name, talk: true, npcs, start: L.main.length && L.pre.length ? L.pre : null, journal: L.all, after });
 }

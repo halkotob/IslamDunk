@@ -104,7 +104,7 @@ export function storyTests({ newContext, open }) {
       if (st.at === 'C2.10' && st.screen === 'play' && !darkSeen) {
         darkSeen = await p.evaluate(() => { const D = M.story.dark, on0 = D.on; M.teams[0].score = 6; updateMatch(STEP); return { on0, off: !D.on, k: D.k }; });
       }
-      if (st.at === 'C2.4' && st.screen === 'story' && !out.field) out.field = await p.evaluate(() => ({ teams: stageTeams(0).slice(1).map(t => t.name), rival: teamOf(0, 1).name, rayyan: teamOf(0, 1).players.some(q => q.name === 'Rayyan'), fmt: C.bracket && C.bracket.fmt, att: C.story.att, cp: C.story.cp }));
+      if (st.at === 'C2.4' && st.screen === 'gym' && !out.field) out.field = await p.evaluate(() => ({ teams: stageTeams(0).slice(1).map(t => t.name), rival: teamOf(0, 1).name, rayyan: teamOf(0, 1).players.some(q => q.name === 'Rayyan'), fmt: C.bracket && C.bracket.fmt, att: C.story.att, cp: C.story.cp }));
       const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d);
       const r = await p.evaluate(lose => window.__sStep({ lose: at => at === 'C2.14' && lose, pick: at => at === 'C2.5' ? 'ilyas' : null }), !lostSemi);
       if (st.at === 'C2.14' && r === 'lost') lostSemi = true;
@@ -142,7 +142,7 @@ export function storyTests({ newContext, open }) {
         ball.shot = { hoop: h, pts: 2, dunk: true, shooter: me, team: 0 }; onScore(h); const dunk = M.teams[0].score - s0;
         return { jumper, dunk, n: M.story.dunks.n, crowd: M.story.dunks.crowd };
       });
-      if (st.at === 'C3.11' && st.screen === 'story' && !out.fund) out.fund = await p.evaluate(() => ({ A: C.story.allstar, log: (C.story.fundLog || []).slice(-1)[0] }));
+      if (st.at === 'C3.11' && st.screen === 'gym' && !out.fund) out.fund = await p.evaluate(() => ({ A: C.story.allstar, log: (C.story.fundLog || []).slice(-1)[0] }));
       if (st.at === 'C3.15' && !out.hurt) out.hurt = await p.evaluate(() => ({ injured: C.story.injured, partner: C.partner }));
       if (st.at === 'C3.19' && !out.back) out.back = await p.evaluate(() => ({ injured: C.story.injured, partner: C.partner }));
       if (st.screen !== 'play' || n % 3 === 0) { const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d); }
@@ -168,10 +168,10 @@ export function storyTests({ newContext, open }) {
 
   T['story-reload'] = async ({ browser, base }) => {
     const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-reload');
-    const want = { 'C0.1': 'ssalams', 'C0.2': 'musalla', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'play', 'C0.6': 'story',
-      'C1.1': 'story', 'C1.2': 'gym', 'C1.5': 'musalla', 'C1.6': 'story', 'C1.7': 'office', 'C1.8': 'story', 'C1.9': 'story',
-      'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'story', 'C2.5': 'spick', 'C2.6': 'story', 'C2.9': 'gym', 'C2.10': 'story',
-      'C3.1': 'gym', 'C3.2': 'story', 'C3.4': 'gym', 'C3.6': 'story', 'C3.9': 'office', 'C3.10': 'story', 'C3.14': 'story', 'C3.20': 'office' }, ids = Object.keys(want), res = [];
+    const want = { 'C0.1': 'ssalams', 'C0.2': 'musalla', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'play', 'C0.6': 'gym',
+      'C1.1': 'gym', 'C1.2': 'gym', 'C1.5': 'musalla', 'C1.6': 'story', 'C1.7': 'office', 'C1.8': 'story', 'C1.9': 'gym',
+      'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'gym', 'C2.5': 'spick', 'C2.6': 'story', 'C2.9': 'gym', 'C2.10': 'story',
+      'C3.1': 'gym', 'C3.2': 'gym', 'C3.4': 'gym', 'C3.6': 'story', 'C3.9': 'office', 'C3.10': 'story', 'C3.14': 'story', 'C3.20': 'office' }, ids = Object.keys(want), res = [];
     for (const id of ids) {
       await prep(p);
       await p.evaluate(id => { window.__sNew('Reload'); window.__sRun(id); saveCareer(); }, id);

@@ -2,8 +2,8 @@
 // The table: nine teams, each plays the other eight once (eight games for us; our bye is the last round). The top four
 // go to the semifinals (1 vs 4, 2 vs 3), then the final. It is the group stage's bracket with one pool of nine
 // (fmt 'pool', table: true), so the semifinal and final logic, standings and the league's box scores carry over.
-// Also here: HORSE with the word CHAI (C3.6), the dunks-only all-star game with its crowd meter (C3.10), the injured
-// teammate (C3.14, back for the playoffs at C3.18), and a teammate pick after a scene (C3.2).
+// Also here: HORSE with the word CHAI (C3.6), the dunks-only all-star game with its crowd meter (C3.10), the teammate
+// away for Hajj (C3.14, back for the playoffs at C3.18), and a teammate pick after a scene (C3.2).
 const TABLE_GAMES = 8;
 function makeTableBracket(stage) {
   const R = seededRng(C.seed + stage * 131 + (C.retries || 0) * 17 + (C.season || 1) * 7919);
@@ -128,11 +128,9 @@ function storyPickThen(S, then) {
     if (!S.pickAfter) return _ps.apply(this, arguments);
     if (S.effect && STORY_EFFECTS[S.effect]) STORY_EFFECTS[S.effect](S);
     saveCareer();
-    playStory(storyLinesOf(S), () => storyPickThen(S, () => storyDone(S, 'next')), storyTitleOf(S));
-    if (Game.story) Game.story.sid = S.id;
-    storyTagJournal(S);
+    storyGymTalkStart(S, () => storyPickThen(S, () => storyDone(S, 'next')));      // the talk, then the pick
   };
-  // C3.14: your teammate is hurt; his scene, then the pick without him
+  // C3.14: your teammate leaves for Hajj; his news, then the pick without him
   const _cs = storyChoiceStart;
   storyChoiceStart = function (S) {
     if (!S.injure) return _cs.apply(this, arguments);
@@ -150,7 +148,7 @@ Object.assign(STORY_EFFECTS, {
   const _ns = STORY_EFFECTS.nextSeason;
   STORY_EFFECTS.nextSeason = function () { _ns.apply(this, arguments); C.story.injured = null; C.story.allstar = null; };
 }
-function storyInjuryLines() { const id = C.story.injured || 'saleem'; return (STORY_INJURY[id] || STORY_INJURY.saleem).map(l => [l[0], l[1]]); }
+function storyInjuryLines() { const id = C.story.injured || 'saleem'; return (STORY_HAJJ[id] || STORY_HAJJ.saleem).map(l => [l[0], l[1]]); }   // (C.story.injured: who is away, for Hajj)
 function storyReturnLine() { const id = C.story.injured; return id ? [[id, (STORY_RETURN[id] || 'I’m back. Put me in.')]] : []; }
 
 // ---------------------------------------------------------------- C3.6: HORSE with the word CHAI

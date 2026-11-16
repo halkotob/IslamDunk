@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.25.0';
+const VERSION = '9.26.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -26869,7 +26869,7 @@ const STORY_NEXT_SEASON = {
 
 // ---------------------------------------------------------------- Chapter 3: State league (v9.25)
 // Nine teams, eight games each, the top four to the semifinals. Something different every two games: CHAI after
-// game 2, the all-star game after game 4, an injury after game 6.
+// game 2, the all-star game after game 4, a teammate leaving for Hajj after game 6.
 const C3G = (id, n, next, o = {}) => scn(id, Object.assign({ kind: 'play', name: 'League game ' + n, bracket: true, stakes: 'regular', win: next, loss: next, out: next,
   winLines: o.win || [['saleem', 'Alhamdulillah. One more on the table.']], lossLines: o.loss || [['saleem', 'Sabr. The table is long. We go again.']] }, o.x || {}));
 scn('C3.1', { kind: 'walk', name: 'Back at the gym', walk: 'C3.1', next: 'C3.2' });
@@ -26899,8 +26899,8 @@ scn('C3.10', { kind: 'play', name: 'All-star game', mode: 'allstar', win: 'C3.11
   lossLines: [['narr', 'Al-Furqan take the all-star game, but nobody in the bleachers is complaining.'], ['rayyan', 'Good game. The kids got their money’s worth.']] });
 scn('C3.11', { kind: 'scene', name: 'The ticket money', effect: 'allstarFund', next: 'C3.12', lines: () => storyAllstarLines() });
 C3G('C3.12', 5, 'C3.13');
-C3G('C3.13', 6, 'C3.14', { win: [['saleem', 'Six games. Two to go.'], ['narr', 'In the last minute, your teammate goes down holding his ankle.']], loss: [['saleem', 'A tough one. And worse: in the last minute, your teammate went down holding his ankle.']] });
-scn('C3.14', { kind: 'choice', name: 'Your teammate is injured', pick: true, injure: true, next: 'C3.15', lines: () => storyInjuryLines() });
+C3G('C3.13', 6, 'C3.14', { win: [['saleem', 'Six games. Two to go.'], ['narr', 'After the game, your teammate asks everyone to stay a minute. He has news.']], loss: [['saleem', 'A tough one.'], ['narr', 'After the game, your teammate asks everyone to stay a minute. He has news.']] });
+scn('C3.14', { kind: 'choice', name: 'Off to Hajj', pick: true, injure: true, next: 'C3.15', lines: () => storyInjuryLines() });
 C3G('C3.15', 7, 'C3.16');
 scn('C3.16', { kind: 'scene', name: 'The last league game', next: 'C3.17', lines: () => storyTableHype() });
 C3G('C3.17', 8, 'C3.18', { x: { stakes: () => storyTableStakes() }, win: [['saleem', 'Alhamdulillah. Now we wait for the table.']], loss: [['saleem', 'Sabr. Let’s see what the table says.']] });
@@ -26912,7 +26912,7 @@ scn('C3.20', { kind: 'scene', name: 'Before the final', talk: { at: 'office', wh
 scn('C3.21', { kind: 'play', name: 'State final', bracket: true, stakes: 'final', win: 'C3.22', out: 'C3.NS', loss: 'C3.NS',
   winLines: [['narr', 'The buzzer. State champions.']], lossLines: [['narr', 'The buzzer. So close, again.'], ['saleem', 'Heads up. We were the second-best team in the whole state. Next year, first.']] });
 scn('C3.22', { kind: 'scene', name: 'State champions', effect: 'title', stage: 1, next: 'C3.23', lines: () => storyTitleLines(1) });
-scn('C3.23', { kind: 'scene', name: 'The invitation', next: 'C4.1', hub: true, lines: [
+scn('C3.23', { kind: 'scene', name: 'The invitation', talk: { at: 'office', who: 'saleem' }, next: 'C4.1', hub: true, lines: [
   ['narr', 'A week later. An envelope on Sh. Saleem’s desk, with a gold seal.'],
   ['saleem', '“Masjid Al-Amanah is invited to the National Masjid Tournament. Sixteen teams. Single elimination.”'],
   ['jamil', 'Single elimination. One bad night and we go home.'],
@@ -26967,7 +26967,7 @@ function storyTableResultLines() {
   if (oid === 1) L.push(['rayyan', 'Al-Amanah. Of course it’s you.'], ['jamil', 'Of course it is.']);
   else L.push(['jamil', 'And Al-Furqan is on the other side. If we meet them, it’s the final.']);
   const back = C.story.injured;
-  if (back) L.push(['narr', castDef(back).name + ' walks in without the ankle brace.'], ...storyReturnLine(), ['saleem', 'Welcome back. Just in time for the playoffs.']);
+  if (back) L.push(['narr', castDef(back).name + ' walks in, back from Hajj.'], ...storyReturnLine(), ['saleem', 'Hajj mabroor! And just in time for the playoffs.']);
   return L;
 }
 function storyStateFinalPrep() {
@@ -26981,18 +26981,19 @@ function storyStateFinalPrep() {
   if (oid === 1) L.push(['saleem', 'And it’s Rayyan. Play him straight. He hates that.']);
   return L;
 }
-// C3.14: the teammate who gets hurt, and his line when he's back for the playoffs
-const STORY_INJURY = {
-  saleem: [['narr', 'Sh. Saleem is in a chair by the bench with his ankle on a bag of ice.'], ['saleem', 'A sprain. Two weeks, the doctor says. The Prophet ﷺ was patient with much worse.'], ['saleem', 'Pick someone else for now. I will coach from this chair. Loudly.']],
-  jamil: [['narr', 'Ammo Jamil sits on the bench, his knee wrapped in ice.'], ['jamil', 'It’s nothing! It’s a scratch!'], ['ilyas', 'Dad, the doctor said three weeks.'], ['jamil', '…Pick someone else. But I will be watching your defense.']],
-  ilyas: [['narr', 'Ilyas is on the bench with his ankle up, and Ammo Jamil is fussing over him.'], ['jamil', 'Ice. More ice. Who has ice?'], ['ilyas', 'Dad. It’s fine. Two weeks.'], ['jamil', 'Two weeks is long. Sit. Rest. Don’t move.'], ['ilyas', '…Pick someone else, akhi. And win for me.']],
-  karim: [['narr', 'Ustath Karim holds up a wrist in a splint.'], ['karim', 'A sprained wrist. Of course, my shooting hand.'], ['karim', 'The kids signed the splint. One of them wrote “get well soon” in Arabic, with only two mistakes. Pick someone else, akhi.']],
-  anas: [['narr', 'Qari Anas is flat on his back on the gym floor, very calm.'], ['anas', 'My back. Not serious. But I cannot jump for two weeks.'], ['anas', 'I will recite for you from the bench. Pick someone else.']],
-  dawud: [['narr', 'Imam Dawud limps to the chai table and sits down heavily.'], ['dawud', 'My knee has retired. Temporarily, in sha Allah.'], ['dawud', 'I will make the chai and give advice. Both are free. Pick someone else, akhi.']],
-  musa: [['narr', 'Musa is on the bench with ice on his ankle, looking betrayed by gravity.'], ['musa', 'I tried a 360. In a real game. I know. I KNOW.'], ['saleem', 'Two weeks out. Pick someone else, and Musa: fundamentals.'], ['musa', 'Fundamentals. Yes, Sheikh.']]
+// C3.14: the teammate who leaves for Hajj (his name came up this year), and his line when he's back for the playoffs.
+// Hajj itself is never shown: he talks about it before he goes, and comes back a hajji.
+const STORY_HAJJ = {
+  saleem: [['saleem', 'Brothers, sit for a minute. Alhamdulillah, my name came up for Hajj this year. I fly out on Thursday.'], ['jamil', 'Masha’Allah! Make du’a for us at Arafah.'], ['saleem', 'For every one of you, by name. I’ll be back for the playoffs, in sha Allah.'], ['saleem', 'Until then, pick someone else to play beside you. I’ll be thinking of this gym from Mina.']],
+  jamil: [['jamil', 'I have news. My Hajj visa came through. Twenty years of saving, and I go next week.'], ['ilyas', 'Dad… that’s amazing. Mum is going to cry.'], ['jamil', 'Your mum is already crying. I am also maybe crying.'], ['jamil', 'Pick someone else for now. And Ilyas: box out while I’m gone.']],
+  ilyas: [['ilyas', 'So… my grandmother is going for Hajj, and she needs someone to go with her. She picked me.'], ['jamil', 'My son, going for Hajj before his father. Masha’Allah. I’m proud. Very proud. Slightly jealous.'], ['ilyas', 'I’ll make du’a for you at Arafah, Dad.'], ['ilyas', 'Pick someone else, akhi. I’ll be back for the playoffs, in sha Allah.']],
+  karim: [['karim', 'I have to tell you all something. My name came up for Hajj this season.'], ['karim', 'The kids made me a card. It has a drawing of the Ka’bah, and also a basketball. I said that’s fine.'], ['saleem', 'Hajj mabroor in advance, ustath.'], ['karim', 'Pick someone else, akhi. Elbow in while I’m away.']],
+  anas: [['anas', 'Brothers. Alhamdulillah, I am going for Hajj. My mother and I, together.'], ['dawud', 'May Allah accept it from you both.'], ['anas', 'I will recite the talbiyah for this whole team. Pick someone else until I am back.']],
+  dawud: [['dawud', 'Sit, sit. At my age, when the call to Hajj comes, you answer. I fly on Thursday.'], ['musa', 'Who’s going to make the chai?'], ['dawud', 'I have written the recipe on the urn. Do not improvise.'], ['dawud', 'Pick someone else, akhi. I will make du’a for the team.']],
+  musa: [['musa', 'Guys. GUYS. A brother at work had a Hajj place free, and he gave it to me. To ME.'], ['saleem', 'Musa… not long ago you took your shahadah. And now Hajj. Allahu akbar.'], ['musa', 'I don’t know what to pack. Do I need sneakers?'], ['anas', 'Comfortable sandals, and a lot of patience. Pick someone else, akhi. He’ll be back.']]
 };
-const STORY_RETURN = { saleem: 'The chair was comfortable, but the court is better.', jamil: 'The knee is back. The yelling never left.', ilyas: 'Two weeks of my dad bringing me ice. I’m ready.',
-  karim: 'The splint is off. Elbow in, follow through.', anas: 'My back is well, alhamdulillah. I will set screens like walls.', dawud: 'The knee has come out of retirement.', musa: 'No more 360s. Probably.' };
+const STORY_RETURN = { saleem: 'Hajj mabroor to me, and now: the playoffs.', jamil: 'I’m back, a hajji now. The yelling is the same.', ilyas: 'Back from Hajj. My grandmother says hello, and also “bend your knees.”',
+  karim: 'Back from Hajj. My students drew me a welcome banner. Elbow in, follow through.', anas: 'Back from Hajj, alhamdulillah. I made du’a for every one of you.', dawud: 'Back from Hajj. Who touched the chai urn?', musa: 'I’m back. I wore the sandals. Anas was right.' };
 // ================================================= v9.22: THE CAREER STORY — the runner and the save
 // C.story = { at, cp, seen, fund, fundOn, att, done }:
 //   at      the scene the hub's Continue plays next (saved before a scene starts, so a reload resumes there)
@@ -27065,7 +27066,7 @@ function storyPlayScene(S) {
   if (S.custom === 'salams') return storySalams(S);
   if (S.salah && Game.salahFor !== S.id) { Game.salahFor = S.id; return storySalah(S, () => storyPlayScene(S)); }   // the prayer first (C2.3)
   Game.salahFor = null;
-  if (S.talk) return storyTalkStart(S);                         // a scene in a place: walk up and talk (story-walk.js)
+  if (S.talk || S.lines) return storyTalkStart(S);              // a scene is a talk: in its place, or on the gym floor (story-walk.js)
   const lines = storyLinesOf(S);
   playStory(lines, () => storyDone(S, 'next'), storyTitleOf(S));
   if (Game.story) { Game.story.bg = S.bg || null; Game.story.sid = S.id; }
@@ -27146,7 +27147,15 @@ function drawStoryMusalla(g) {
     if (s && s.bg === 'musalla') drawStoryMusalla(g);
     else if (s && s.bg === 'rows') drawMusalla(g, C.up, 'salah', Game.t);
     else if (s && s.bg === 'office') drawOfficeRoom(g, false);
-    return _ds.apply(this, arguments);
+    if (!storyOn() || !s) return _ds.apply(this, arguments);
+    // v9.26: the lines between scenes (before and after a game, a pick) are a plain text box: no portraits
+    const line = s.lines[Math.min(s.i, s.lines.length - 1)], [sp, text] = line, who = stalkSpeaker(sp);
+    panel(g, 40, 392, 880, 132, true);
+    g.textAlign = 'left'; if (who) { g.fillStyle = GOLD; g.font = `16px ${FONT}`; g.fillText(who, 62, 420); }
+    g.fillStyle = sp === 'narr' ? IVORY : '#fff'; g.font = `${sp === 'narr' ? 'italic ' : ''}17px ${BODY}`;
+    wrapTextLeft(g, text.slice(0, Math.floor(s.t * 55)), 62, who ? 450 : 432, 830, 24);
+    g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'right'; g.fillText(Input.touchMode ? 'Tap to continue' : 'Enter or tap to continue, Esc to skip', 900, 512);
+    addRect(0, 0, W, H, () => { if (s.t * 55 < text.length) s.t = text.length / 55; else { s.i++; s.t = 0; if (s.i >= s.lines.length) s.then(); } });
   };
   // narration: nobody stands for 'narr', and its line has no name over it
   const _sc = storyCast;
@@ -27181,8 +27190,8 @@ function swPlayer(id) {
   for (let i = 0; i < 20; i++) animate(p, 1 / 60);
   return p;
 }
-function storyWalkStart(S) {
-  const D = STORY_WALKS[S.walk || S.id];
+function storyWalkStart(S, D0) {
+  const D = D0 || STORY_WALKS[S.walk || S.id];
   enterGym(); M.lobbyGym = false;                                              // (the career's gym, never the online lobby's)
   const me = M.players[0]; place(me, 820, 640); me.face = 1; giveBall(me, 'inbound');
   const npcs = {}, defs = {};
@@ -27208,7 +27217,7 @@ function swSave() { if (SW && C && C.story) { C.story.wp = { id: SW.S.id, met: O
 // everyone needed met, every goal done, no closer: the walk's last line, then on
 function swCheckEnd() { if (!SW || SW.done || SW.talk || !swReady() || swCloser()) return; SW.done = true; if (SW.D.end) swSay(SW.D.end, swFinish); else swFinish(); }
 // the walk is over: into the Journal, and on to the next scene
-function swEnd() { const I = SW; if (!I) return; const S = I.S; storyJournal(S, swJournalLines(I)); Gym.story = null; SW = null; if (C.story.wp && C.story.wp.id === S.id) C.story.wp = null; storyDone(S, 'next'); }
+function swEnd() { const I = SW; if (!I) return; const S = I.S; storyJournal(S, swJournalLines(I)); Gym.story = null; SW = null; if (C.story.wp && C.story.wp.id === S.id) C.story.wp = null; if (I.D.after) I.D.after(); else storyDone(S, 'next'); }
 function swTalkTo(id) {
   const I = SW; if (!I || I.talk || I.fadeDir) return;
   const d = I.defs[id], p = I.npcs[id], me = M.players[0];
@@ -27328,13 +27337,11 @@ function swTrackGoals(dt) {
       if (I.talk || I.fadeDir) continue;
       const nm = castDef(id).name;
       if (id === I.near) swPrompt(g, x, y - 6, 'Talk to ' + nm + (Input.touchMode ? '' : '  (E)'), () => swTalkTo(id));
-      else if (d.closer && swReady()) { const b = 0.5 + 0.5 * Math.sin(Game.t * 6); g.fillStyle = `rgba(242,207,107,${0.6 + 0.4 * b})`; g.textAlign = 'center'; g.font = `16px ${FONT}`; g.fillText('!', x, y - 12); }
+      else if (d.closer && swReady()) drawStalkMarker(g, x, y - 34);
       else if ((d.need && !I.met[id]) || dxz(p, me) < 300) { g.fillStyle = 'rgba(242,207,107,0.9)'; g.textAlign = 'center'; g.font = `11px ${FONT}`; g.fillText(nm, x, y - 10); }
     }
     if (I.talk) {
-      const [who, text] = I.talk.lines[I.talk.i], p = who === 'you' ? me : I.npcs[who] || I.npcs[I.with] || me, [x, y] = head(p);
-      swBubble(g, x, y, who === 'you' ? (C.name || 'You') : castDef(who).name, text, true);
-      addRect(0, 60, W, H - 60, swAdvance);
+      drawStalkBox(g, { lines: I.talk.lines, li: I.talk.i }, swAdvance);             // v9.26: a plain text box, not a bubble
     } else if (!I.fadeDir) {
       const gl = I.D.goals && I.D.goals.find(q => !I.goals[q.id]);
       swHint(g, gl ? (Input.touchMode ? gl.touch : gl.key) : swReady() && swCloser() ? 'Go and talk to ' + castDef(swCloser()).name : (Input.touchMode ? 'Walk up to someone and tap Talk' : 'W A S D to walk  •  E to talk'), I.D.free);
@@ -27344,6 +27351,7 @@ function swTrackGoals(dt) {
   };
 }
 function swJournalLines(I) {
+  if (I.D.journal) return I.D.journal;
   const out = [];
   for (const d of I.D.npcs) if (I.met[d.id] || d.closer) { const L = typeof d.lines === 'function' ? d.lines() : d.lines; if (L) out.push(...L.slice(0, 2)); }
   return out.length ? out : [['narr', I.D.title || I.S.name]];
@@ -27563,9 +27571,10 @@ function stalkLines(S) {
   return { pre: L.slice(0, k), main: L.slice(k), all: L };
 }
 function storyTalkStart(S) {
-  const t = S.talk, L = stalkLines(S);
+  const t = S.talk || { at: 'gym' }, L = stalkLines(S);
   enterGym(); M.lobbyGym = false;
   const st = { S, who: t.who, at: t.at, main: L.main, all: L.all };
+  if (t.at === 'gym') return storyGymTalkStart(S);
   if (t.at === 'office') { openOffice(); Game.office.stalk = st; Game.office.sel = 1; }
   else { openMusalla(); Game.mus.stalk = st; }
   if (L.pre.length) stalkShow(st, L.pre, true);
@@ -27583,14 +27592,14 @@ function stalkAdvance() {
   storyJournal(st.S, st.all); storyDone(st.S, 'next');
 }
 function stalkSpeaker(id) { return id === 'narr' ? '' : id === 'you' ? (C.name || 'You') : castDef(id).name; }
-function drawStalkBox(g, b) {
+function drawStalkBox(g, b, adv = stalkAdvance) {
   const [id, text] = b.lines[b.li], who = stalkSpeaker(id);
   panel(g, 40, 396, 880, 136, true);
   g.textAlign = 'left';
   if (who) { g.fillStyle = GOLD; g.font = `15px ${FONT}`; g.fillText(who, 60, 420); }
   g.fillStyle = id === 'narr' ? IVORY : '#fff'; g.font = `${id === 'narr' ? 'italic ' : ''}15px ${BODY}`; wrapTextLeft(g, text, 60, who ? 446 : 430, 840, 21);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.textAlign = 'right'; g.fillText(Input.touchMode ? 'Tap to continue' : 'Enter to continue', 900, 520);
-  addRect(0, 60, W, H - 60, stalkAdvance);
+  addRect(0, 60, W, H - 60, adv);
 }
 function drawStalkMarker(g, x, y) {
   const my = y + Math.sin(Game.t * 3) * 4;
@@ -27651,6 +27660,22 @@ function drawStalkMarker(g, x, y) {
     try { _do.apply(this, arguments); } finally { sheikhSituation = _sit; }
     drawStalkMarker(g, W / 2 + 40, 168);
   };
+}
+
+// ---------------------------------------------------------------- v9.26: every other dialogue scene is a talk in the gym
+// The people in the scene stand around the gym floor; the one who starts it has the marker. Walk up, talk, and the
+// scene's lines are the text box. Narration before the first spoken line shows on arrival. after: what comes next
+// instead of the next scene (C3.2's teammate pick).
+const GYM_TALK_SPOTS = [[900, 320, -1], [980, 600, -1], [1120, 430, -1], [1180, 220, -1], [720, 600, 1], [600, 250, 1], [760, 170, 1], [1060, 300, -1]];
+function storyTalkWho(S, L) { if (S.talk && S.talk.who) return S.talk.who; const f = L.find(l => l[0] !== 'narr' && l[0] !== 'you'); return f ? f[0] : 'saleem'; }
+function storyGymTalkStart(S, after) {
+  const L = stalkLines(S), who = storyTalkWho(S, L.all), ids = [who];
+  for (const [id] of L.all) if (id !== 'narr' && id !== 'you' && !ids.includes(id) && ids.length < GYM_TALK_SPOTS.length && CAST[id]) ids.push(id);
+  const name = castDef(who).name;
+  const npcs = ids.map((id, i) => { const [x, z, face] = GYM_TALK_SPOTS[i];
+    return i === 0 ? { id, x, z, face, act: 'host', closer: true, lines: L.main.length ? L.main : L.all }
+      : { id, x, z, face, act: 'host', lines: [[id, 'As-salamu alaykum. Go on, ' + name + ' wants a word.']] }; });
+  storyWalkStart(S, { title: S.name, talk: true, npcs, start: L.main.length && L.pre.length ? L.pre : null, journal: L.all, after });
 }
 // ================================================= v9.22: THE CAREER STORY — play scenes
 // A play scene is a real match or mini game with a result. Its outcome (win, loss; out for a run-ending loss) picks the
@@ -28004,7 +28029,7 @@ function drawStoryPick(g) {
     g.strokeStyle = on ? GOLD : 'rgba(255,255,255,0.14)'; g.lineWidth = on ? 2 : 1; g.stroke();
     g.save(); roundRect(g, r.x + 2, r.y + 2, r.w - 4, r.h - 4, 10); g.clip(); drawPortrait(g, r.x + 44, r.y + r.h - 16, castDef(id), T, 0.9, 'thobe'); g.restore();
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText(fitText(g, castDef(id).name, r.w - 92), r.x + 84, r.y + 26);
-    g.fillStyle = HUB_GOLD_DIM; g.font = `12px ${BODY}`; g.fillText(fitText(g, ok ? MATE_ROLE[id] : 'Injured', r.w - 92), r.x + 84, r.y + 46);
+    g.fillStyle = HUB_GOLD_DIM; g.font = `12px ${BODY}`; g.fillText(fitText(g, ok ? MATE_ROLE[id] : 'Away for Hajj', r.w - 92), r.x + 84, r.y + 46);
     const lab = k => (STAT_ROWS.find(x => x[0] === k) || [k, k === 'stl' ? 'Stealing' : k])[1];
     [k1, k2].forEach((k, j) => { const y = r.y + 76 + j * 26; g.fillStyle = IVORY; g.font = `12px ${BODY}`; g.fillText(fitText(g, lab(k), 70), r.x + 84, y); g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.textAlign = 'right'; g.fillText(String(st[k]), r.x + r.w - 12, y); g.textAlign = 'left'; });
     const v = chemOf(id); g.fillStyle = HUB_GOLD_DIM; g.font = `11px ${FONT}`; g.fillText('CHEM', r.x + 84, r.y + r.h - 24);
@@ -28115,8 +28140,8 @@ function storyNextSeasonLines(ch) {
 // The table: nine teams, each plays the other eight once (eight games for us; our bye is the last round). The top four
 // go to the semifinals (1 vs 4, 2 vs 3), then the final. It is the group stage's bracket with one pool of nine
 // (fmt 'pool', table: true), so the semifinal and final logic, standings and the league's box scores carry over.
-// Also here: HORSE with the word CHAI (C3.6), the dunks-only all-star game with its crowd meter (C3.10), the injured
-// teammate (C3.14, back for the playoffs at C3.18), and a teammate pick after a scene (C3.2).
+// Also here: HORSE with the word CHAI (C3.6), the dunks-only all-star game with its crowd meter (C3.10), the teammate
+// away for Hajj (C3.14, back for the playoffs at C3.18), and a teammate pick after a scene (C3.2).
 const TABLE_GAMES = 8;
 function makeTableBracket(stage) {
   const R = seededRng(C.seed + stage * 131 + (C.retries || 0) * 17 + (C.season || 1) * 7919);
@@ -28241,11 +28266,9 @@ function storyPickThen(S, then) {
     if (!S.pickAfter) return _ps.apply(this, arguments);
     if (S.effect && STORY_EFFECTS[S.effect]) STORY_EFFECTS[S.effect](S);
     saveCareer();
-    playStory(storyLinesOf(S), () => storyPickThen(S, () => storyDone(S, 'next')), storyTitleOf(S));
-    if (Game.story) Game.story.sid = S.id;
-    storyTagJournal(S);
+    storyGymTalkStart(S, () => storyPickThen(S, () => storyDone(S, 'next')));      // the talk, then the pick
   };
-  // C3.14: your teammate is hurt; his scene, then the pick without him
+  // C3.14: your teammate leaves for Hajj; his news, then the pick without him
   const _cs = storyChoiceStart;
   storyChoiceStart = function (S) {
     if (!S.injure) return _cs.apply(this, arguments);
@@ -28263,7 +28286,7 @@ Object.assign(STORY_EFFECTS, {
   const _ns = STORY_EFFECTS.nextSeason;
   STORY_EFFECTS.nextSeason = function () { _ns.apply(this, arguments); C.story.injured = null; C.story.allstar = null; };
 }
-function storyInjuryLines() { const id = C.story.injured || 'saleem'; return (STORY_INJURY[id] || STORY_INJURY.saleem).map(l => [l[0], l[1]]); }
+function storyInjuryLines() { const id = C.story.injured || 'saleem'; return (STORY_HAJJ[id] || STORY_HAJJ.saleem).map(l => [l[0], l[1]]); }   // (C.story.injured: who is away, for Hajj)
 function storyReturnLine() { const id = C.story.injured; return id ? [[id, (STORY_RETURN[id] || 'I’m back. Put me in.')]] : []; }
 
 // ---------------------------------------------------------------- C3.6: HORSE with the word CHAI

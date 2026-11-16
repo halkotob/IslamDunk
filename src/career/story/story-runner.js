@@ -70,7 +70,7 @@ function storyPlayScene(S) {
   if (S.custom === 'salams') return storySalams(S);
   if (S.salah && Game.salahFor !== S.id) { Game.salahFor = S.id; return storySalah(S, () => storyPlayScene(S)); }   // the prayer first (C2.3)
   Game.salahFor = null;
-  if (S.talk) return storyTalkStart(S);                         // a scene in a place: walk up and talk (story-walk.js)
+  if (S.talk || S.lines) return storyTalkStart(S);              // a scene is a talk: in its place, or on the gym floor (story-walk.js)
   const lines = storyLinesOf(S);
   playStory(lines, () => storyDone(S, 'next'), storyTitleOf(S));
   if (Game.story) { Game.story.bg = S.bg || null; Game.story.sid = S.id; }
@@ -151,7 +151,15 @@ function drawStoryMusalla(g) {
     if (s && s.bg === 'musalla') drawStoryMusalla(g);
     else if (s && s.bg === 'rows') drawMusalla(g, C.up, 'salah', Game.t);
     else if (s && s.bg === 'office') drawOfficeRoom(g, false);
-    return _ds.apply(this, arguments);
+    if (!storyOn() || !s) return _ds.apply(this, arguments);
+    // v9.26: the lines between scenes (before and after a game, a pick) are a plain text box: no portraits
+    const line = s.lines[Math.min(s.i, s.lines.length - 1)], [sp, text] = line, who = stalkSpeaker(sp);
+    panel(g, 40, 392, 880, 132, true);
+    g.textAlign = 'left'; if (who) { g.fillStyle = GOLD; g.font = `16px ${FONT}`; g.fillText(who, 62, 420); }
+    g.fillStyle = sp === 'narr' ? IVORY : '#fff'; g.font = `${sp === 'narr' ? 'italic ' : ''}17px ${BODY}`;
+    wrapTextLeft(g, text.slice(0, Math.floor(s.t * 55)), 62, who ? 450 : 432, 830, 24);
+    g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'right'; g.fillText(Input.touchMode ? 'Tap to continue' : 'Enter or tap to continue, Esc to skip', 900, 512);
+    addRect(0, 0, W, H, () => { if (s.t * 55 < text.length) s.t = text.length / 55; else { s.i++; s.t = 0; if (s.i >= s.lines.length) s.then(); } });
   };
   // narration: nobody stands for 'narr', and its line has no name over it
   const _sc = storyCast;

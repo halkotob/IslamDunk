@@ -162,7 +162,7 @@ function drawStoryPick(g) {
     g.strokeStyle = on ? GOLD : 'rgba(255,255,255,0.14)'; g.lineWidth = on ? 2 : 1; g.stroke();
     g.save(); roundRect(g, r.x + 2, r.y + 2, r.w - 4, r.h - 4, 10); g.clip(); drawPortrait(g, r.x + 44, r.y + r.h - 16, castDef(id), T, 0.9, 'thobe'); g.restore();
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText(fitText(g, castDef(id).name, r.w - 92), r.x + 84, r.y + 26);
-    g.fillStyle = HUB_GOLD_DIM; g.font = `12px ${BODY}`; g.fillText(fitText(g, ok ? MATE_ROLE[id] : 'Injured', r.w - 92), r.x + 84, r.y + 46);
+    g.fillStyle = HUB_GOLD_DIM; g.font = `12px ${BODY}`; g.fillText(fitText(g, ok ? MATE_ROLE[id] : 'Away for Hajj', r.w - 92), r.x + 84, r.y + 46);
     const lab = k => (STAT_ROWS.find(x => x[0] === k) || [k, k === 'stl' ? 'Stealing' : k])[1];
     [k1, k2].forEach((k, j) => { const y = r.y + 76 + j * 26; g.fillStyle = IVORY; g.font = `12px ${BODY}`; g.fillText(fitText(g, lab(k), 70), r.x + 84, y); g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.textAlign = 'right'; g.fillText(String(st[k]), r.x + r.w - 12, y); g.textAlign = 'left'; });
     const v = chemOf(id); g.fillStyle = HUB_GOLD_DIM; g.font = `11px ${FONT}`; g.fillText('CHEM', r.x + 84, r.y + r.h - 24);

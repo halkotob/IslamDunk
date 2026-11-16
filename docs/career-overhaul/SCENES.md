@@ -124,11 +124,11 @@ Structure: 9 teams, each plays the other eight once (8 games). The top four go t
 | C3.11 | scene | The fundraiser's outcome (scaled by the dunks landed); halfway through the season. |
 | C3.12 | play | Game 5. |
 | C3.13 | play | Game 6. |
-| C3.14 | choice | **Your teammate is injured:** pick a replacement. |
+| C3.14 | choice | **Your teammate leaves for Hajj:** pick a replacement. |
 | C3.15 | play | Game 7. |
 | C3.16 | scene | Hype before the last regular-season game. |
 | C3.17 | play | Game 8 (stakes: must-win if the top four is on the line). |
-| C3.18 | scene | Season result. Top four: the semifinal draw (Al-Furqan and Rayyan as the rivals), and **the injured teammate returns** for the playoffs. Out: next season, back to C3.2. |
+| C3.18 | scene | Season result. Top four: the semifinal draw (Al-Furqan and Rayyan as the rivals), and **the teammate returns from Hajj** for the playoffs. Out: next season, back to C3.2. |
 | C3.19 | play | Semifinal (must-win). Loss: next season, back to C3.2. |
 | C3.20 | scene | Prep for the final. |
 | C3.21 | play | Final (final). Loss: next season, back to C3.2. |

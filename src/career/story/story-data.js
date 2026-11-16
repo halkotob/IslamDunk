@@ -367,7 +367,7 @@ const STORY_NEXT_SEASON = {
 
 // ---------------------------------------------------------------- Chapter 3: State league (v9.25)
 // Nine teams, eight games each, the top four to the semifinals. Something different every two games: CHAI after
-// game 2, the all-star game after game 4, an injury after game 6.
+// game 2, the all-star game after game 4, a teammate leaving for Hajj after game 6.
 const C3G = (id, n, next, o = {}) => scn(id, Object.assign({ kind: 'play', name: 'League game ' + n, bracket: true, stakes: 'regular', win: next, loss: next, out: next,
   winLines: o.win || [['saleem', 'Alhamdulillah. One more on the table.']], lossLines: o.loss || [['saleem', 'Sabr. The table is long. We go again.']] }, o.x || {}));
 scn('C3.1', { kind: 'walk', name: 'Back at the gym', walk: 'C3.1', next: 'C3.2' });
@@ -397,8 +397,8 @@ scn('C3.10', { kind: 'play', name: 'All-star game', mode: 'allstar', win: 'C3.11
   lossLines: [['narr', 'Al-Furqan take the all-star game, but nobody in the bleachers is complaining.'], ['rayyan', 'Good game. The kids got their money’s worth.']] });
 scn('C3.11', { kind: 'scene', name: 'The ticket money', effect: 'allstarFund', next: 'C3.12', lines: () => storyAllstarLines() });
 C3G('C3.12', 5, 'C3.13');
-C3G('C3.13', 6, 'C3.14', { win: [['saleem', 'Six games. Two to go.'], ['narr', 'In the last minute, your teammate goes down holding his ankle.']], loss: [['saleem', 'A tough one. And worse: in the last minute, your teammate went down holding his ankle.']] });
-scn('C3.14', { kind: 'choice', name: 'Your teammate is injured', pick: true, injure: true, next: 'C3.15', lines: () => storyInjuryLines() });
+C3G('C3.13', 6, 'C3.14', { win: [['saleem', 'Six games. Two to go.'], ['narr', 'After the game, your teammate asks everyone to stay a minute. He has news.']], loss: [['saleem', 'A tough one.'], ['narr', 'After the game, your teammate asks everyone to stay a minute. He has news.']] });
+scn('C3.14', { kind: 'choice', name: 'Off to Hajj', pick: true, injure: true, next: 'C3.15', lines: () => storyInjuryLines() });
 C3G('C3.15', 7, 'C3.16');
 scn('C3.16', { kind: 'scene', name: 'The last league game', next: 'C3.17', lines: () => storyTableHype() });
 C3G('C3.17', 8, 'C3.18', { x: { stakes: () => storyTableStakes() }, win: [['saleem', 'Alhamdulillah. Now we wait for the table.']], loss: [['saleem', 'Sabr. Let’s see what the table says.']] });
@@ -410,7 +410,7 @@ scn('C3.20', { kind: 'scene', name: 'Before the final', talk: { at: 'office', wh
 scn('C3.21', { kind: 'play', name: 'State final', bracket: true, stakes: 'final', win: 'C3.22', out: 'C3.NS', loss: 'C3.NS',
   winLines: [['narr', 'The buzzer. State champions.']], lossLines: [['narr', 'The buzzer. So close, again.'], ['saleem', 'Heads up. We were the second-best team in the whole state. Next year, first.']] });
 scn('C3.22', { kind: 'scene', name: 'State champions', effect: 'title', stage: 1, next: 'C3.23', lines: () => storyTitleLines(1) });
-scn('C3.23', { kind: 'scene', name: 'The invitation', next: 'C4.1', hub: true, lines: [
+scn('C3.23', { kind: 'scene', name: 'The invitation', talk: { at: 'office', who: 'saleem' }, next: 'C4.1', hub: true, lines: [
   ['narr', 'A week later. An envelope on Sh. Saleem’s desk, with a gold seal.'],
   ['saleem', '“Masjid Al-Amanah is invited to the National Masjid Tournament. Sixteen teams. Single elimination.”'],
   ['jamil', 'Single elimination. One bad night and we go home.'],
@@ -465,7 +465,7 @@ function storyTableResultLines() {
   if (oid === 1) L.push(['rayyan', 'Al-Amanah. Of course it’s you.'], ['jamil', 'Of course it is.']);
   else L.push(['jamil', 'And Al-Furqan is on the other side. If we meet them, it’s the final.']);
   const back = C.story.injured;
-  if (back) L.push(['narr', castDef(back).name + ' walks in without the ankle brace.'], ...storyReturnLine(), ['saleem', 'Welcome back. Just in time for the playoffs.']);
+  if (back) L.push(['narr', castDef(back).name + ' walks in, back from Hajj.'], ...storyReturnLine(), ['saleem', 'Hajj mabroor! And just in time for the playoffs.']);
   return L;
 }
 function storyStateFinalPrep() {
@@ -479,15 +479,16 @@ function storyStateFinalPrep() {
   if (oid === 1) L.push(['saleem', 'And it’s Rayyan. Play him straight. He hates that.']);
   return L;
 }
-// C3.14: the teammate who gets hurt, and his line when he's back for the playoffs
-const STORY_INJURY = {
-  saleem: [['narr', 'Sh. Saleem is in a chair by the bench with his ankle on a bag of ice.'], ['saleem', 'A sprain. Two weeks, the doctor says. The Prophet ﷺ was patient with much worse.'], ['saleem', 'Pick someone else for now. I will coach from this chair. Loudly.']],
-  jamil: [['narr', 'Ammo Jamil sits on the bench, his knee wrapped in ice.'], ['jamil', 'It’s nothing! It’s a scratch!'], ['ilyas', 'Dad, the doctor said three weeks.'], ['jamil', '…Pick someone else. But I will be watching your defense.']],
-  ilyas: [['narr', 'Ilyas is on the bench with his ankle up, and Ammo Jamil is fussing over him.'], ['jamil', 'Ice. More ice. Who has ice?'], ['ilyas', 'Dad. It’s fine. Two weeks.'], ['jamil', 'Two weeks is long. Sit. Rest. Don’t move.'], ['ilyas', '…Pick someone else, akhi. And win for me.']],
-  karim: [['narr', 'Ustath Karim holds up a wrist in a splint.'], ['karim', 'A sprained wrist. Of course, my shooting hand.'], ['karim', 'The kids signed the splint. One of them wrote “get well soon” in Arabic, with only two mistakes. Pick someone else, akhi.']],
-  anas: [['narr', 'Qari Anas is flat on his back on the gym floor, very calm.'], ['anas', 'My back. Not serious. But I cannot jump for two weeks.'], ['anas', 'I will recite for you from the bench. Pick someone else.']],
-  dawud: [['narr', 'Imam Dawud limps to the chai table and sits down heavily.'], ['dawud', 'My knee has retired. Temporarily, in sha Allah.'], ['dawud', 'I will make the chai and give advice. Both are free. Pick someone else, akhi.']],
-  musa: [['narr', 'Musa is on the bench with ice on his ankle, looking betrayed by gravity.'], ['musa', 'I tried a 360. In a real game. I know. I KNOW.'], ['saleem', 'Two weeks out. Pick someone else, and Musa: fundamentals.'], ['musa', 'Fundamentals. Yes, Sheikh.']]
+// C3.14: the teammate who leaves for Hajj (his name came up this year), and his line when he's back for the playoffs.
+// Hajj itself is never shown: he talks about it before he goes, and comes back a hajji.
+const STORY_HAJJ = {
+  saleem: [['saleem', 'Brothers, sit for a minute. Alhamdulillah, my name came up for Hajj this year. I fly out on Thursday.'], ['jamil', 'Masha’Allah! Make du’a for us at Arafah.'], ['saleem', 'For every one of you, by name. I’ll be back for the playoffs, in sha Allah.'], ['saleem', 'Until then, pick someone else to play beside you. I’ll be thinking of this gym from Mina.']],
+  jamil: [['jamil', 'I have news. My Hajj visa came through. Twenty years of saving, and I go next week.'], ['ilyas', 'Dad… that’s amazing. Mum is going to cry.'], ['jamil', 'Your mum is already crying. I am also maybe crying.'], ['jamil', 'Pick someone else for now. And Ilyas: box out while I’m gone.']],
+  ilyas: [['ilyas', 'So… my grandmother is going for Hajj, and she needs someone to go with her. She picked me.'], ['jamil', 'My son, going for Hajj before his father. Masha’Allah. I’m proud. Very proud. Slightly jealous.'], ['ilyas', 'I’ll make du’a for you at Arafah, Dad.'], ['ilyas', 'Pick someone else, akhi. I’ll be back for the playoffs, in sha Allah.']],
+  karim: [['karim', 'I have to tell you all something. My name came up for Hajj this season.'], ['karim', 'The kids made me a card. It has a drawing of the Ka’bah, and also a basketball. I said that’s fine.'], ['saleem', 'Hajj mabroor in advance, ustath.'], ['karim', 'Pick someone else, akhi. Elbow in while I’m away.']],
+  anas: [['anas', 'Brothers. Alhamdulillah, I am going for Hajj. My mother and I, together.'], ['dawud', 'May Allah accept it from you both.'], ['anas', 'I will recite the talbiyah for this whole team. Pick someone else until I am back.']],
+  dawud: [['dawud', 'Sit, sit. At my age, when the call to Hajj comes, you answer. I fly on Thursday.'], ['musa', 'Who’s going to make the chai?'], ['dawud', 'I have written the recipe on the urn. Do not improvise.'], ['dawud', 'Pick someone else, akhi. I will make du’a for the team.']],
+  musa: [['musa', 'Guys. GUYS. A brother at work had a Hajj place free, and he gave it to me. To ME.'], ['saleem', 'Musa… not long ago you took your shahadah. And now Hajj. Allahu akbar.'], ['musa', 'I don’t know what to pack. Do I need sneakers?'], ['anas', 'Comfortable sandals, and a lot of patience. Pick someone else, akhi. He’ll be back.']]
 };
-const STORY_RETURN = { saleem: 'The chair was comfortable, but the court is better.', jamil: 'The knee is back. The yelling never left.', ilyas: 'Two weeks of my dad bringing me ice. I’m ready.',
-  karim: 'The splint is off. Elbow in, follow through.', anas: 'My back is well, alhamdulillah. I will set screens like walls.', dawud: 'The knee has come out of retirement.', musa: 'No more 360s. Probably.' };
+const STORY_RETURN = { saleem: 'Hajj mabroor to me, and now: the playoffs.', jamil: 'I’m back, a hajji now. The yelling is the same.', ilyas: 'Back from Hajj. My grandmother says hello, and also “bend your knees.”',
+  karim: 'Back from Hajj. My students drew me a welcome banner. Elbow in, follow through.', anas: 'Back from Hajj, alhamdulillah. I made du’a for every one of you.', dawud: 'Back from Hajj. Who touched the chai urn?', musa: 'I’m back. I wore the sandals. Anas was right.' };
