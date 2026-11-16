@@ -32,14 +32,14 @@ function storyHubItems() {
 hubExtra = function () { return storyHubItems(); };
 function storyNextText() {
   const S = storyScene(); if (!S) return { head: '', name: '', sub: '' };
-  if (S.unbuilt || (S.ch > STORY_BUILT && S.ch <= 5)) return { head: 'NEXT', name: CHAPTERS[S.ch].name, sub: 'Chapter ' + S.ch + ' arrives in the next update.' };
+  if (S.unbuilt || (S.ch > STORY_BUILT && S.ch <= 5)) return { head: 'NEXT', name: CHAPTERS[Math.min(S.ch, CHAPTERS.length - 1)].name, sub: (S.ch <= 5 ? 'Chapter ' + S.ch : 'It') + ' arrives in the next update.' };
   const n = typeof storyNextExtra === 'function' ? storyNextExtra(S) : '';
   return { head: 'NEXT  •  ' + (STORY_KIND_TXT[S.kind] || '').toUpperCase(), name: S.name, sub: n || 'Continue to play it.' };
 }
 drawHub = function (g) {
   const ch = CHAPTERS[storyChapter()], T = amanahTeam(), TT = Input.touchMode && g === ctx, px = g => hubPx(g);
   g.fillStyle = 'rgba(4,8,14,0.6)'; g.fillRect(-400, 0, W + 800, H);
-  g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `24px ${FONT}`; g.fillText(fitText(g, 'Chapter ' + ch.n + ': ' + ch.name, W - 170), 104, 36);
+  g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `24px ${FONT}`; g.fillText(fitText(g, (ch.n <= 5 ? 'Chapter ' + ch.n + ': ' : '') + ch.name, W - 170), 104, 36);
   g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(fitText(g, 'Masjid Al-Amanah, Eastside', W - 170), 104, 60);
   // ---- your card
   const L = HubL.left, x0 = L.x + 16, x1 = L.x + L.w - 16;

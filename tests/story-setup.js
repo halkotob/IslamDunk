@@ -21,6 +21,7 @@ export const STORY_HELPERS = `(() => {
   window.__sStep = (o = {}) => {
     const s = Game.screen;
     if (s === 'ssalams') { salamsNext(); return 'salams'; }
+    if (s === 'scredits') { creditsDone(); return 'credits'; }
     if (s === 'story' && Game.story) { const st = Game.story; if (o.choice != null && st.lines[st.i] && st.lines[st.i][0] === 'choice') storyChoose(st, o.choice); storySkip(st); return 'scene'; }
     if (s === 'gym' && Gym.story && SW) {
       flush();

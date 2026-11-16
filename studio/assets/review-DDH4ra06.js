@@ -755,6 +755,7 @@ const SCREEN_OF = {
   "story: walk bubble": "gym",
   "story: tutorial": "gym",
   "story: hub": "hub",
+  "story: credits": "scredits",
   "story: teammate pick": "spick"
 };
 const NOT_RENDERABLE = {
@@ -844,6 +845,7 @@ const META = {
   "story: walk bubble": ["first-run", "A speech bubble in a story walk.", "Talking to someone on the gym floor.", null, null, "v9.22", [NEAR("story: walk")]],
   "story: tutorial": ["first-run", "C0.4: shoot around, the controls checklist.", "After meeting the brothers.", null, T("Continue"), "v9.22"],
   "story: teammate pick": ["hub loop", "C2.5: pick your partner for a league game (seven brothers, chemistry, who is hurt).", "Before a Chapter 2 league game.", null, T("Continue"), "v9.24"],
+  "story: credits": ["rare", "C5.11: The End. The credits roll on black: the cast, the school wing, a closing du’a.", "After the Ummah Cup.", null, null, "v9.28"],
   "story: hub": ["hub loop", "The story hub at Chapter 1: Continue, Gym, Masjid, My Player.", "After Chapter 0.", T("Career", "Continue career"), T(), "v9.22", [NEAR("hub")]],
   "hub: My Player menu": ["hub loop", "My Player: stats, look, Journal, league and stats.", "Hub → My Player.", T("Career", "Continue career", "My Player"), T("My Player"), "v9.22"],
   "hub": ["hub loop", "The career hub: Continue, Gym, Masjid, My Player; the chapter, the next event, the fundraiser.", "Career → Continue; after every career game.", T("Career", "Continue career"), T(), "v5.0", [], { v: "keep" }],

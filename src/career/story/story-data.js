@@ -64,9 +64,10 @@ const CHAPTERS = [
   { n: 2, name: 'Masjid league', stage: 0, cp: 'C2.4' },
   { n: 3, name: 'State league', stage: 1, cp: 'C3.2' },
   { n: 4, name: 'National tournament', stage: 2, cp: 'C4.1' },
-  { n: 5, name: 'Ummah Cup', stage: 3, cp: 'C5.1' }
+  { n: 5, name: 'Ummah Cup', stage: 3, cp: 'C5.1' },
+  { n: 6, name: 'After the story' }                                  // (P.1 to P.4: no chapter number)
 ];
-const STORY_BUILT = 4;              // the last chapter that can be played in this build (later chapters arrive one release at a time)
+const STORY_BUILT = 5;              // the last chapter that can be played in this build (later chapters arrive one release at a time)
 const SC = {};
 function scn(id, o) { SC[id] = Object.assign({ id, ch: id[0] === 'C' ? +id[1] : 6 }, o); return SC[id]; }
 const STORY_FIRST = 'C0.1';
@@ -367,7 +368,17 @@ const STORY_TITLE_TEXT = [
     ['dawud', 'Knowledge that benefits, long after us. This is what we played for.'],
     ['saleem', 'And the title builds {built} as well. Go outside when we get home. Look at the masjid. Look at the new wing.'],
     ['rayyan', 'National champions. From our street. Al-Furqan is proud of you. Don’t tell my uncle I said that.']],
-  []
+  [['narr', 'The Ummah Cup final is over. Masjid Al-Amanah, from Eastside, are champions of the world.'],
+    ['saleem', 'Allahu akbar. Allahu akbar. Brothers… sujood of thanks, right here, then we lift it.'],
+    ['narr', 'The team kneels on the court in sujood of thanks. Then Sh. Saleem hands the Cup to you.'],
+    ['saleem', 'You lift it first, akhi. You walked into our gym a stranger. Lift it as our brother.'],
+    ['jamil', 'Twenty years ago I lost a final by one point. Tonight I have a world cup. My knees don’t hurt. Nothing hurts.'],
+    ['ilyas', 'Dad. Proud of you.'], ['jamil', 'That is my line! …Proud of you too, son.'],
+    ['karim', 'I am going to put a picture of this in every classroom of the new wing.'],
+    ['anas', 'Teams from every corner of the ummah, clapping for each other. This is what I will remember.'],
+    ['musa', 'A year ago I said my shahadah. Today I have a thousand brothers, and a trophy. Allah is generous.'],
+    ['dawud', 'The chai tonight is on Istanbul. They make it in little glasses. I approve.'],
+    ['saleem', 'And at home, the title builds {built}. Al-Amanah will look like a real masjid now, with a dome you can see from the highway.']]
 ];
 // after a run-ending loss: a new season, back to the chapter's checkpoint
 const STORY_NEXT_SEASON = {
@@ -533,3 +544,33 @@ scn('C4.10', { kind: 'scene', name: 'The Ummah Cup', talk: { at: 'office', who: 
   ['saleem', 'Teams from Cairo, Kuala Lumpur, Sarajevo, Lagos… Brothers who pray the same prayer in a hundred languages.'],
   ['saleem', 'The school wing is built. Whatever happens at the Cup is a gift. But let’s go and win it anyway.']] });
 scn('C4.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: () => C.story.cp || 'C4.1', hub: true, lines: () => storyNextSeasonLines(4) });
+
+// ---------------------------------------------------------------- Chapter 5: the Ummah Cup (v9.28)
+// King of the Court for the draw, then a quarterfinal, a semifinal and the final. Any loss after the draw: next
+// season, back to C5.1.
+scn('C5.1', { kind: 'scene', name: 'The Ummah Cup', checkpoint: true, effect: 'cupStart', next: 'C5.2', lines: () => storyCupIntro() });
+scn('C5.2', { kind: 'play', name: 'King of the Court: the draw', mode: 'kotcDraw', win: 'C5.3', loss: 'C5.3',
+  winLines: [['saleem', 'Crowned! The easiest quarterfinal in the draw. Alhamdulillah.']], lossLines: [['saleem', 'Not crowned, but every win counts in the draw. No harm done.']] });
+scn('C5.3', { kind: 'scene', name: 'The draw', effect: 'bracket', stage: 3, pickAfter: true, next: 'C5.4', lines: () => storyCupDrawLines() });
+scn('C5.4', { kind: 'play', name: 'Ummah Cup quarterfinal', bracket: true, stakes: 'must-win', win: 'C5.5', out: 'C5.NS', loss: 'C5.NS',
+  winLines: [['saleem', 'Into the semifinals of the Ummah Cup!']], lossLines: [['saleem', 'Out in the quarterfinal. We played the world, brothers. Heads up.']] });
+scn('C5.5', { kind: 'scene', name: 'The last four', next: 'C5.6', lines: () => storyCupReact(0) });
+scn('C5.6', { kind: 'play', name: 'Ummah Cup semifinal', bracket: true, stakes: 'must-win', win: 'C5.7', out: 'C5.NS', loss: 'C5.NS',
+  winLines: [['saleem', 'THE FINAL OF THE UMMAH CUP!'], ['jamil', 'Somebody hold me up.']], lossLines: [['saleem', 'One game from the final of the world. That’s further than we dreamed.']] });
+scn('C5.7', { kind: 'scene', name: 'One of the top two', next: 'C5.8', lines: () => storyCupReact(1).concat([
+  ['narr', 'The night before the final, the brothers walk to the masjid by the water for Isha, then sit on its steps until late.'],
+  ['saleem', 'Whatever happens tomorrow, look around. A year ago this team was six brothers and a bent rim.'],
+  ['dawud', 'And chai. There was always chai.']]) });
+scn('C5.8', { kind: 'play', name: 'Ummah Cup final', bracket: true, stakes: 'final', win: 'C5.9', out: 'C5.NS', loss: 'C5.NS',
+  winLines: [['narr', 'The final buzzer. The hall stands up.']], lossLines: [['narr', 'The final buzzer. Second in the whole world.'], ['saleem', 'Second in the world, brothers. We come back, in sha Allah.']] });
+scn('C5.9', { kind: 'scene', name: 'Champions of the ummah', effect: 'title', stage: 3, next: 'C5.10', lines: () => storyTitleLines(3) });
+scn('C5.10', { kind: 'scene', name: 'Home', next: 'C5.11', lines: [
+  ['narr', 'Home. The gym is packed: uncles on folding chairs, aunties in the bleachers, and the kids of the weekend school in front, in their new classroom T-shirts.'],
+  ['karim', 'Kids! Say salaam to the champions of the world!'],
+  ['narr', 'Forty children shout “AS-SALAMU ALAYKUM!” at once. Ammo Jamil has to sit down.'],
+  ['saleem', 'This Cup goes in the trophy case, next to the others. But the real prize is in the new wing, learning Quran on a Saturday morning.'],
+  ['ilyas', 'One of the kids asked me if he can be on the team one day.'], ['jamil', 'What did you tell him?'], ['ilyas', 'Bend your knees.'],
+  ['musa', 'I’m starting a youth league. Saturdays after school. Matching headbands.'], ['ilyas', '…Fine. For the kids, matching headbands.'],
+  ['saleem', 'Akhi. You found a community here. Now you help us build the next one. That’s how a masjid lasts.']] });
+scn('C5.11', { kind: 'scene', name: 'The End', custom: 'credits', next: 'P.1', hub: true });
+scn('C5.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: () => C.story.cp || 'C5.1', hub: true, lines: () => storyNextSeasonLines(5) });

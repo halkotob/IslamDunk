@@ -1,5 +1,31 @@
 # Changelog
 
+## 9.28.0: Chapter 5, the Ummah Cup, and The End
+The career's last chapter is in. After the National title, Continue plays:
+- **C5.1** Istanbul: the Ummah Cup. This is the checkpoint. Sh. Saleem explains the rules and the draw.
+- **C5.2 King of the Court for the draw**, against the captains of three other teams. Get crowned and you meet the
+  weakest side in the quarterfinal. Each game you win makes the draw easier. Losing it doesn't knock you out.
+- **C5.3** The draw is set and you meet your quarterfinal opponent, then pick your teammate.
+- **C5.4, C5.6, C5.8** Quarterfinal, semifinal and final, against masjid teams from around the world, played in
+  their cities' skylines and the grand arena. **C5.5 and C5.7** React and get ready. The night before the final, the
+  brothers walk to the masjid by the water for Isha.
+- **C5.9** Champions of the ummah. A sujood of thanks (in the narration, not shown), you lift the Cup first, a word
+  from every brother, and the dome and minaret go up at home.
+- **C5.10** Home: the weekend-school kids in the front row, and Musa's youth league (matching headbands, finally).
+- **C5.11 The End:** the credits roll on black: the cast, the school wing, and a closing du'a. Enter or a tap skips.
+- Any loss after the draw: next season, back to C5.1.
+- After The End, the hub reads "After the story". Life after the story (replays, milestones, prizes) arrives in the
+  next update.
+- **Fix:** winning the National final (round 4 of the 16-team knockout) set Halal Bucks to NaN, because the reward
+  table knew only three rounds. Knockout rounds now map onto the last three. This affected 9.27.0.
+
+How it was checked:
+- **New test** `story-ch5`. A bot plays C5.1 to C5.11. It loses King of the Court once (one win, a fair draw) and
+  then is crowned (the easiest draw), and loses the semifinal once (back to C5.1). It checks the captains, that the
+  draw changes the quarterfinal opponent, the credits, the Cup, the dome, and the hub after The End.
+- `story-ch4` and `story-ch5` now check that Halal Bucks and Barakah Points stay numbers. Also `story-*`,
+  `studio-coverage` (the credits are a new Studio screen) and `studio-phone`.
+
 ## 9.27.0: Chapter 4, National tournament
 The career's Chapter 4 is in. After the State title, Continue plays:
 - **C4.1** The National Masjid Invitational. This is the checkpoint. Renew the intention, represent the whole state,

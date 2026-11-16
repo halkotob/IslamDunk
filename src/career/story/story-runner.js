@@ -13,7 +13,8 @@ function storyOn() { return !!(C && C.story); }
 function storyScene() {
   if (!storyOn()) return null;
   const at = C.story.at, S = SC[at]; if (S) return S;
-  const m = /^C(\d)\./.exec(at || ''); return m ? { id: at, ch: +m[1], kind: 'scene', name: CHAPTERS[+m[1]].name, unbuilt: true } : null;
+  const m = /^(?:C(\d)|P)\./.exec(at || ''); if (!m) return null; const ch = m[1] ? +m[1] : 6;
+  return { id: at, ch, kind: 'scene', name: CHAPTERS[Math.min(ch, CHAPTERS.length - 1)].name, unbuilt: true };
 }
 function storyChapter() { const S = storyScene(); return S ? Math.min(S.ch, CHAPTERS.length - 1) : 0; }
 function storyTitleOf(S) { const ch = CHAPTERS[Math.min(S.ch, CHAPTERS.length - 1)]; return (S.ch <= 5 ? 'Chapter ' + ch.n + '  •  ' : '') + S.name; }
@@ -51,7 +52,7 @@ function storyRun() {
   if (!storyOn()) return careerHub();
   const S = storyScene();
   if (!S) { C.story.at = STORY_FIRST; return storyRun(); }
-  if (S.unbuilt || (S.ch > STORY_BUILT && S.ch <= 5)) { careerHub(); toast('Chapter ' + S.ch + ' arrives in the next update, in sha Allah.', 3.5); return; }
+  if (S.unbuilt || (S.ch > STORY_BUILT && S.ch <= 5)) { careerHub(); toast((S.ch <= 5 ? 'Chapter ' + S.ch : 'Life after the story') + ' arrives in the next update, in sha Allah.', 3.5); return; }
   if (Game.menus) Game.menus.hub = null;
   saveCareer();
   if (S.part) {                                                                  // a scene played inside another walk (C1.3 in C1.2)

@@ -12,6 +12,8 @@
 //                  season outside the top four
 //   story-ch4      Chapter 4 by bot: the sixteen-team knockout (Al-Furqan on the other half), a lost quarterfinal (back to
 //                  C4.1), the title: the fundraiser delivered, the school wing on the Outside view, father and son
+//   story-ch5      Chapter 5 by bot: King of the Court for the draw (a better finish, an easier quarterfinal), a lost
+//                  semifinal (back to C5.1), the Cup, the credits, and the hub after The End
 //   story-reload   a save at every Chapter 0 and Chapter 1 scene, a reload, Continue: the same scene starts again
 //   story-hub      the hub has exactly its four entries (Continue, Gym, Masjid, My Player), the chapter's name and the
 //                  next event; every entry opens its screen; desktop and phone draw without errors
@@ -189,15 +191,45 @@ export function storyTests({ newContext, open }) {
     out.end = await p.evaluate(() => {
       Game.screen = 'masjid'; Game.masjidView = 'ext'; let ext = true; try { drawExterior(ctx, C.up, 1); } catch (e) { ext = String(e); }
       careerHub();
-      return { s: window.__sState(), journal: (C.journal || []).map(e => e.id).filter(Boolean), fund: C.story.fund, wing: C.story.wing, trophy: C.trophies.includes(2), ch: storyChapter(), ext,
+      return { s: window.__sState(), journal: (C.journal || []).map(e => e.id).filter(Boolean), hb: C.hb, fund: C.story.fund, wing: C.story.wing, trophy: C.trophies.includes(2), ch: storyChapter(), ext,
         peace: JSON.stringify((C.journal || []).filter(e => e.id === 'C4.9').map(e => e.lines)).includes('Good game, son') };
     });
     await ctx.close();
     const ids = ['C4.1', 'C4.2', 'C4.3', 'C4.4', 'C4.5', 'C4.6', 'C4.7', 'C4.8', 'C4.9', 'C4.10', 'C4.NS'], E = out.end, K = out.ko || {};
     const ok = out.toC4 === 'C4.1' && K.ko && K.first === 8 && K.teams === 16 && K.label === 'Round of 16' && K.cp === 'C4.1' && K.rivalOther && out.qf === 'Quarterfinal'
       && lostQF && out.afterLoss && ids.every(id => E.s.seen.includes(id) && E.journal.includes(id))
-      && E.s.at === 'C5.1' && E.s.screen === 'hub' && E.wing && E.fund >= 100000 && E.trophy && E.ch === 5 && E.ext === true && E.peace && !out.draws.length && !errs.length;
+      && E.s.at === 'C5.1' && E.s.screen === 'hub' && Number.isFinite(E.hb) && E.wing && E.fund >= 100000 && E.trophy && E.ch === 5 && E.ext === true && E.peace && !out.draws.length && !errs.length;
     return { ok, detail: ['ko: ' + JSON.stringify(K) + ' qf: ' + out.qf, steps.join(' '), 'end: ' + JSON.stringify(Object.assign({}, E, { journal: E.journal.slice(-14) })), ...out.draws, ...errs] };
+  };
+
+  T['story-ch5'] = async ({ browser, base }) => {
+    const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-ch5');
+    await prep(p);
+    const out = { draws: [], draw: [] };
+    out.toC5 = await p.evaluate(() => { window.__sNew('Idris'); window.__sRun('C5.1', { max: 1100 }); return C.story.at; });
+    const steps = [];
+    let lostSF = false, kotc = 0;
+    for (let n = 0; n < 200; n++) {
+      const st = await p.evaluate(() => window.__sState());
+      if (st.at === 'P.1' && st.screen === 'hub') break;
+      if (st.at === 'C5.2' && st.screen === 'play' && !out.caps) out.caps = await p.evaluate(() => KOTC.roster.map(id => castPlayer(id).name));
+      if (st.at === 'C5.4' && st.screen === 'story') { const d = await p.evaluate(() => ({ draw: C.story.draw, ko: C.bracket && C.bracket.ko, first: C.bracket.rounds[0].length, opp: storyOpp().id, label: roundLabel(C.bracket) })); if (!out.draw.length || out.draw[out.draw.length - 1].draw !== d.draw) out.draw.push(d); }
+      if (st.screen === 'scredits' && !out.credits) out.credits = await p.evaluate(() => { Game.credits.t = 20; return true; });
+      if (st.screen !== 'play' || n % 3 === 0) { const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d); }
+      const r = await p.evaluate(([lose, k]) => window.__sStep({ lose: at => (at === 'C5.6' && lose) || (at === 'C5.2' && k === 0) }), [!lostSF, kotc]);
+      if (st.at === 'C5.2' && (r === 'won' || r === 'lost')) kotc++;
+      if (st.at === 'C5.6' && r === 'lost') lostSF = true;
+      if (st.screen === 'scredits' && r.startsWith('stuck')) { await p.evaluate(() => creditsDone()); steps.push('credits'); continue; }
+      steps.push(st.at + ':' + r);
+    }
+    out.afterLoss = steps.some(x => x.startsWith('C5.NS'));
+    out.end = await p.evaluate(() => { const r = { s: window.__sState(), journal: (C.journal || []).map(e => e.id).filter(Boolean), done: C.story.done, hb: C.hb, bp: C.bp, trophy: C.trophies.includes(3), dome: C.up.dome, label: storyContinueLabel() }; storyRun(); r.after = { screen: Game.screen, at: C.story.at }; return r; });
+    await ctx.close();
+    const ids = ['C5.1', 'C5.2', 'C5.3', 'C5.4', 'C5.5', 'C5.6', 'C5.7', 'C5.8', 'C5.9', 'C5.10', 'C5.11', 'C5.NS'], E = out.end, D = out.draw;
+    const ok = out.toC5 === 'C5.1' && out.caps && out.caps.length === 4 && D.length >= 2 && D[0].draw === 1 && D[1].draw === 3 && D.every(d => d.ko && d.first === 4 && d.label === 'Quarterfinal') && D[0].opp !== D[1].opp
+      && lostSF && out.afterLoss && out.credits && ids.every(id => E.s.seen.includes(id) && E.journal.includes(id))
+      && E.s.at === 'P.1' && E.s.screen === 'hub' && Number.isFinite(E.hb) && Number.isFinite(E.bp) && E.done && E.trophy && E.dome >= 1 && /next update/.test(E.label) && E.after.at === 'P.1' && E.after.screen === 'hub' && !out.draws.length && !errs.length;
+    return { ok, detail: ['captains: ' + JSON.stringify(out.caps), 'draws: ' + JSON.stringify(D), steps.join(' '), 'end: ' + JSON.stringify(Object.assign({}, E, { journal: E.journal.slice(-14) })), ...out.draws, ...errs] };
   };
 
   T['story-reload'] = async ({ browser, base }) => {

@@ -42,6 +42,8 @@ function storyKOResult(won, us, them) {
   };
   const _rl = roundLabel;
   roundLabel = function (b, r) { if (b && b.ko) { r = r == null ? b.round : r; return KO_NAMES[r + 4 - koTotal(b)] || ''; } return _rl.apply(this, arguments); };
+  const _cr = careerRewards;                                           // the rewards know three rounds too (a 16-team final was round 4: NaN HB)
+  careerRewards = function (won, champ, ctx = {}) { const b = C && C.bracket; if (b && b.ko && ctx.round != null) ctx = Object.assign({}, ctx, { round: clamp(ctx.round - (koTotal(b) - 3), 0, 2) }); return _cr.call(this, won, champ, ctx); };
   const _vr = venueRound;                                              // the venues know three rounds: the last three
   venueRound = function (b) { if (b && b.ko) return Math.max(0, b.round - (koTotal(b) - 3)); return _vr.apply(this, arguments); };
   const _bs = buildScout;
@@ -140,4 +142,111 @@ function storyNatReact(r) {
   if (nx && storyKOOppId(r + 1) === 1) L.push(['rayyan', 'Told you. The final. Two masjids from the same street.'], ['jamil', 'Same street. Different result this time.']);
   else if (r < 2) L.push([storyRivalAlive() ? 'jamil' : 'dawud', storyRivalAlive() ? 'Al-Furqan won again too. Of course they did.' : 'Al-Furqan is out. Rayyan will be in the stands, cheering for us. He told me so.']);
   return L;
+}
+
+// ================================================= v9.28: Chapter 5, the Ummah Cup
+// Eight masjid teams from around the world. King of the Court decides the draw (C5.2): crowned, you meet the weakest
+// side in the quarterfinal; one win, the next weakest; and so on. Losing it doesn't knock you out. Then a knockout:
+// quarterfinal, semifinal, final. Any loss after the draw: next season, back to C5.1. The End (C5.11) rolls credits.
+// The King of the Court is played against the captains of three other teams (CAST entries made from their players).
+const CUP_CAPS = ['cup1', 'cup2', 'cup3'];
+function storyCupCaptains() {
+  const T = stageTeams(3);
+  CUP_CAPS.forEach((id, i) => { const t = T[i + 2], p = t.players[0]; CAST[id] = Object.assign({}, p, { kit: { c1: t.c1, c2: t.c2 }, team: t.name }); });
+}
+function storyDrawBracket() {
+  const T = stageTeams(3), pw = i => T[i].players.reduce((a, p) => a + p.stats.spd + p.stats.sht + p.stats.dnk + p.stats.def + p.stats.stl, 0);
+  const others = [1, 2, 3, 4, 5, 6, 7].sort((a, b) => pw(a) - pw(b) || a - b);   // weakest first
+  const k = clamp(3 - (C.story.draw || 0), 0, 3), opp = others.splice(k, 1)[0];       // crowned: the weakest; no wins: the fourth weakest
+  const R = seededRng(C.seed + 977 + (C.season || 1) * 31);
+  for (let i = others.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [others[i], others[j]] = [others[j], others[i]]; }
+  return { fmt: 'ko', ko: true, round: 0, out: false, rounds: [pairs([0, opp, ...others])] };
+}
+{
+  const _fb = storyFormatBracket;
+  storyFormatBracket = function (stage) { if (stage === 3) return storyDrawBracket(); return _fb.apply(this, arguments); };
+}
+Object.assign(STORY_EFFECTS, {
+  cupStart() { C.stage = 3; C.bracket = null; C.story.draw = null; storyCupCaptains(); }
+});
+STORY_MODES.kotcDraw = function (S) {
+  storyCupCaptains();
+  startKotc({ roster: ['you', ...CUP_CAPS], humans: { you: 0 } });
+  KOTC.gym = true; KOTC.story = S.id;
+};
+{
+  const _kl = kotcLeave;
+  kotcLeave = function () {
+    if (KOTC.story && storyOn() && SC[KOTC.story] && SC[KOTC.story].mode === 'kotcDraw') C.story.draw = KOTC.champ === 'you' ? 3 : Math.min(2, KOTC.wins.you || 0);
+    return _kl.apply(this, arguments);
+  };
+}
+function storyCupIntro() {
+  const att = C.story.att || 0;
+  if (att) return [['saleem', 'The Ummah Cup again. We know the way now, brothers.'], ['jamil', 'And the food. I know where the good food is.'], ['saleem', 'King of the Court first, for the draw. Then three wins.']];
+  return [
+    ['narr', 'Istanbul. A sports hall beside the Bosphorus, the adhan from three masjids at once, and flags from every corner of the world.'],
+    ['saleem', 'Brothers. Renew your intention one more time. We came to meet the ummah, and to play well in front of it.'],
+    ['saleem', 'The rules: eight masjid teams. Tonight, one player from four of the teams plays King of the Court for the draw.'],
+    ['saleem', 'Win it and we play the weakest team in the quarterfinal. Every game you win gets us an easier draw. Losing doesn’t knock us out.'],
+    ['karim', 'Then a quarterfinal, a semifinal and a final. Three wins and the Cup is ours.'],
+    ['musa', 'Bro. The team from Kuala Lumpur has matching headbands.'], ['ilyas', 'We are still not getting matching headbands.'],
+    ['saleem', 'Akhi, you’re our player for the draw. Bismillah.']];
+}
+function storyCupDrawLines() {
+  const d = C.story.draw || 0, o = storyOpp(), L = [];
+  L.push(['narr', d === 3 ? 'You were crowned. The draw gives Al-Amanah the kindest quarterfinal.' : d ? 'You won ' + d + ' game' + (d === 1 ? '' : 's') + ' on the court. A fair draw.' : 'No wins on the court, so the draw is a hard one.']);
+  if (o) L.push(['saleem', 'Quarterfinal: ' + o.team.name + (o.team.place ? ', from ' + o.team.place : '') + '.']);
+  L.push(d >= 2 ? ['jamil', 'Good draw. Don’t waste it.'] : ['jamil', 'Hard draw. Good. Champions beat everyone anyway.'], ['saleem', 'Now, who plays beside you?']);
+  return L;
+}
+function storyCupReact(r) {
+  const nx = storyKOOpp(r + 1), L = [];
+  if (r === 0) L.push(['saleem', 'The semifinals of the Ummah Cup. Alhamdulillah.'], ['dawud', 'A brother from Sarajevo gave me his tea. I gave him our chai. We are now family.']);
+  if (r === 1) L.push(['saleem', 'One of the top two masjid teams in the whole world. Let that sink in.'], ['musa', 'My mum is flying in. She says she’s bringing food. For everyone.'], ['anas', 'May Allah reward her. And her cooking.']);
+  if (nx) L.push(['saleem', (r === 1 ? 'The final' : 'Next') + ': ' + nx.name + (nx.place ? ', from ' + nx.place : '') + '.']);
+  return L;
+}
+
+// ---------------------------------------------------------------- C5.11: The End
+// The credits roll on black: the cast, what became of the masjid, and a du'a. Enter or a tap after a moment skips.
+const CREDITS_LEN = 26;
+function storyCredits(S) { Game.credits = { t: 0, S }; Game.screen = 'scredits'; storyJournal(S, [['narr', 'The End.']]); }
+function creditsDone() { const c = Game.credits; if (!c) return; Game.credits = null; C.story.done = true; storyDone(c.S, 'next'); }
+function creditsLines() {
+  const f = '$' + (C.story.fund || 0).toLocaleString('en-US');
+  return [['h', 'ISLAM DUNK'], ['s', 'The story of Masjid Al-Amanah'], ['', ''], ['h', C.name || 'The Brother'], ['s', 'New in town. Now home.'], ['', ''],
+    ['h', 'Sh. Saleem'], ['s', 'Floor general, mentor, builder of a school'], ['h', 'Ammo Jamil'], ['s', 'Enforcer, and a proud father'], ['h', 'Ilyas'], ['s', 'Quick guard, his own man'],
+    ['h', 'Ustath Karim'], ['s', 'Shooter, teacher, finally in a classroom with a window'], ['h', 'Qari Anas'], ['s', 'Big man, gentle giant'], ['h', 'Imam Dawud'], ['s', 'Old-head playmaker, keeper of the chai'],
+    ['h', 'Musa'], ['s', 'High-flyer, newest of the brothers'], ['h', 'Rayyan'], ['s', 'Captain of Al-Furqan, rival, friend'], ['', ''],
+    ['h', 'The school wing'], ['s', 'Four classrooms, raised by ' + f + ' and a lot of dunks'], ['h', 'The weekend school'], ['s', 'Every family who asked has a place'], ['', ''],
+    ['s', 'Thank you for playing.'], ['ar', 'وَآخِرُ دَعْوَانَا أَنِ الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ'], ['s', 'And the close of our prayer: all praise is for Allah, Lord of the worlds.']];
+}
+function drawCredits(g) {
+  const c = Game.credits; if (!c) return;
+  g.fillStyle = '#000'; g.fillRect(-400, -400, W + 800, H + 800);
+  const L = creditsLines(), lh = 34, total = L.length * lh, y0 = H + 20 - (c.t / CREDITS_LEN) * (total + H);
+  g.textAlign = 'center';
+  L.forEach(([k, t], i) => {
+    const y = y0 + i * lh; if (y < -40 || y > H + 40 || !t) return;
+    g.fillStyle = k === 'h' ? '#f5d98a' : IVORY; g.font = k === 'h' ? `22px ${FONT}` : k === 'ar' ? `26px ${AR_FONT}` : `15px ${BODY}`;
+    g.fillText(t, W / 2, y);
+  });
+  if (c.t > CREDITS_LEN - 3) { const k = clamp((c.t - (CREDITS_LEN - 3)) / 2, 0, 1); g.globalAlpha = k; g.fillStyle = '#f5d98a'; g.font = `40px ${FONT}`; g.fillText('The End', W / 2, H / 2); g.globalAlpha = 1; }
+  g.textAlign = 'right'; g.fillStyle = 'rgba(159,179,200,0.45)'; g.font = `11px ${BODY}`; g.fillText(Input.touchMode ? 'Tap to skip' : 'Enter to skip', W - 24, H - 14);
+  addRect(0, 0, W, H, () => { if (c.t > 1) creditsDone(); });
+}
+{
+  CAREER_SCREENS.add('scredits');
+  const _ps = storyPlayScene;
+  storyPlayScene = function (S) { if (S.custom === 'credits') return storyCredits(S); return _ps.apply(this, arguments); };
+  const _cu = careerUpdate;
+  careerUpdate = function (rdt) {
+    if (Game.screen === 'scredits') { const c = Game.credits; if (!c) return careerHub(); c.t += rdt; if (c.t >= CREDITS_LEN + 1 || (c.t > 1 && (menuHit('ok') || menuHit('back')))) creditsDone(); return; }
+    return _cu.apply(this, arguments);
+  };
+  const _cr = careerRender;
+  careerRender = function (g) { if (Game.screen === 'scredits') return drawCredits(g); return _cr.apply(this, arguments); };
+  const _dsc = drawScene;
+  drawScene = function (g) { if (Game.screen === 'scredits') { g.fillStyle = '#000'; g.fillRect(-400, -400, W + 800, H + 800); return; } return _dsc.apply(this, arguments); };
 }

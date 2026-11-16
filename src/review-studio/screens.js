@@ -136,6 +136,7 @@ export const SCREEN_OF = {
   "story: walk bubble": "gym",
   "story: tutorial": "gym",
   "story: hub": "hub",
+  "story: credits": "scredits",
   "story: teammate pick": "spick",
 };
 export const NOT_RENDERABLE = {
