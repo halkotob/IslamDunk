@@ -70,26 +70,8 @@ function nameUpdate() {
 }
 
 // ----------------------------------------------------------------- HUB
-function hubFirstLabel() {
-  const b = C.bracket, S = STAGES[C.stage];
-  if (C.seasonOver) return 'Start Season ' + ((C.season || 1) + 1);   // a knockout loss ended this season
-  if (b.champ) return 'Play the World Ummah Cup again';
-  if (b.out) return 'Enter the ' + S.name + ' tournament again';
-  return 'Play next game';
-}
-// Hub: five items; My Player and My Masjid open in place and show balances.
-const HUB_MENU = () => hubExtra([
-  { label: hubFirstLabel(), act: () => hubSelect(0) },
-  { label: 'Practice', act: () => enterGym() },
-  { label: 'My Player', sub: [                                         // v9.6.2: the balances are the chips at the top right
-    { label: 'Upgrade stats', act: () => { Game.screen = 'train'; Game.idx = 0; } },
-    { label: 'Customize', act: () => { Game.creator = { idx: 0, isNew: false }; Game.screen = 'creator'; } },
-    { label: 'Season summaries', act: () => openSummary(C.stage, 'menu') }] },
-  { label: 'My Masjid', sub: [
-    { label: 'Visit the masjid', act: () => { Game.screen = 'masjid'; Game.masjidView = Game.masjidView || 'ext'; } },
-    { label: 'Projects', act: () => { Game.screen = 'shop'; Game.idx = 0; Game.shopTab = Game.shopTab || 'masjid'; } }] },
-  { label: 'Bracket', act: () => { Game.screen = 'cbracket'; } }
-]);
+// v9.22: the hub's entries are the story's four (story-hub.js builds them through hubExtra)
+const HUB_MENU = () => hubExtra([]);
 const HUB_CORNER = [['Save and load', () => { Game.hubMenu.open = false; Game.screen = 'saves'; Game.idx = 0; Game.saveMsg = ''; Game.confirmNew = false; }],
   ['Title', () => { saveCareer(); goTitle(); }]];   // (v9.17.9: the pill closes this menu; Title, as it goes to the title)
 function hubUpdate() {
@@ -122,22 +104,6 @@ function drawHubCorner(g) {
     addRect(px + 6, iy, 194, 36, fn);
   });
   g.restore();
-}
-function hubSelect(i) {
-  if (i === 0) {
-    const b = C.bracket;
-    if (C.seasonOver) { Game.screen = 'newseason'; Game.idx = 0; return; }
-    if (b.out || b.champ) { C.retries = (C.retries || 0) + 1; C.bracket = makeBracket(C.stage); slog(C.stage).entries++; saveCareer(); }
-    const go = () => { Game.tip = pick(STORY.tips); Game.tipBy = pick(['mahmoud', 'rafiq', 'siddiq']); prepCareerVenue(); Game.scout = buildScout(); Game.screen = 'scout'; };
-    if (!C.seen['stage' + C.stage]) { C.seen['stage' + C.stage] = true; saveCareer(); playStory(STORY.stageIntro[C.stage], go); } else go();
-  } else if (i === 1) enterGym();
-  else if (i === 2) { Game.screen = 'train'; Game.idx = 0; }
-  else if (i === 3) { Game.screen = 'shop'; Game.idx = 0; Game.shopTab = Game.shopTab || 'masjid'; }
-  else if (i === 4) { Game.screen = 'masjid'; Game.masjidView = Game.masjidView || 'ext'; }
-  else if (i === 5) Game.screen = 'cbracket';
-  else if (i === 6) { Game.creator = { idx: 0, isNew: false }; Game.screen = 'creator'; }
-  else if (i === 7) { Game.screen = 'saves'; Game.idx = 0; Game.saveMsg = ''; Game.confirmNew = false; }
-  else { saveCareer(); goTitle(); }
 }
 function buyStat(i) {
   const k = STAT_ROWS[i][0], l = C.lv[k] || 4;
@@ -491,7 +457,7 @@ function drawPregame(g) {
   lv.opp = Math.max(CAREER_FLOOR, lv.opp + oT * 0.2);
   g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`;
   g.fillText(TT ? 'CPU difficulty: ' + diffLabel(lv.opp) : 'CPU difficulty: ' + diffLabel(lv.opp) + (shift ? ' (' + S.name + ' stage, one step ' + (shift < 0 ? 'easier' : 'harder') + ' because Difficulty is set to ' + diffName(SETTINGS.difficulty) + ')' : ' (' + S.name + ' stage)'), 62, TT ? 408 : 404);
-  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(fitText(g, castDef(Game.tipBy || 'rafiq').name + ': \u201C' + (Game.tip || STORY.tips[0]) + '\u201D', TT ? 620 : 9999), 62, TT ? 438 : 434);
+  g.fillStyle = IVORY; g.font = `14px ${BODY}`; g.fillText(fitText(g, castDef(Game.tipBy || 'dawud').name + ': \u201C' + (Game.tip || STORY.tips[0]) + '\u201D', TT ? 620 : 9999), 62, TT ? 438 : 434);
   g.fillStyle = GOLD; roundRect(g, W / 2 - 90, 470, 180, 40, 20); g.fill();
   g.textAlign = 'center'; g.fillStyle = NIGHT; g.font = `17px ${FONT}`; g.fillText('Tip off', W / 2, 496);
   addRect(W / 2 - 90, 470, 180, 40, startCareerMatch);

@@ -24,17 +24,11 @@ export const OVERLAYS = [
   ['results', 'Final score', /Game\.screen = 'final'/, ['final']],
   ['netreport', 'Network report', /const NetReport = \{/, ['online: network report']],
   ['hubmenu', 'Hub corner menu', /const HUB_CORNER = /, ['hub: corner menu'], ['Game.hubMenu']],
-  ['hubjum', 'Jumu’ah question on the hub', /function hubJumuahOffer\(/, ['hub: Jumu’ah question'], ['Game.hubJum']],
-  ['hubsub', 'Hub submenus (Schedule, My Player, My Masjid)', /function HUB_MENU|HUB_MENU = /, ['hub calendar: schedule menu']],
-  ['worldtalk', 'Neighbourhood speech bubble', /World\.talk = \{/, ['world: speech bubble', 'world: long bubble'], ['World.talk']],
-  ['worldshop', 'Neighbourhood store list', /World\.shop = \{/, ['world: shop'], ['World.shop']],
-  ['worldmenu', 'Neighbourhood menu', /World\.menu = /, ['world: menu'], ['World.menu']],
-  ['worldbanner', 'Neighbourhood banner (Jumu’ah today)', /World\.banner/, ['world: jumuah banner']],
-  ['worldprompt', 'Enter / Talk prompt', /World\.near = /, ['world: prompt', 'world: closed prompt']],
-  ['jumuah', 'Jumu’ah: the door, the room, the reminder, the card', /Game\.screen = 'jumuah'/, ['jumuah: at the door', 'jumuah: the room', 'jumuah: a reminder', 'jumuah: touched on'], ['Game.jum', 'World.jum']],
+  ['hubsub', 'Hub submenus (Masjid, My Player)', /function HUB_MENU|HUB_MENU = /, ['hub: My Player menu']],
+  ['salams', 'The closing salams on black (C0.1)', /function storySalams\(/, ['story: salams'], ['Game.salams']],
+  ['storywalk', 'A story walk: people to talk to, the checklist, speech bubbles (C0.3, C0.4)', /function storyWalkStart\(/, ['story: walk', 'story: walk bubble', 'story: tutorial']],
   ['story', 'Story scene', /function playStory\(/, ['story'], ['Game.story']],
   ['leaguewait', 'Around the league (waiting)', /Game\.lgWait = /, ['career around the league (waiting)'], ['Game.lgWait']],
-  ['calendar', 'Month view', /function openCalendar\(/, ['month view: game'], ['Game.calView']],
   ['creator', 'Player creator', /Game\.creator = \{/, ['creator'], ['Game.creator']],
   ['netlobby', 'Online lobby', /function drawLobby\(/, ['lobby']]
 ];
@@ -44,6 +38,5 @@ export const NOT_VIEWS = {
   'Game.summary': 'the season summary’s data (csummary)', 'Game.stats': 'the career stats screen’s state (cstats)', 'Game.post': 'the postgame screen’s data',
   'Game.office': 'the office screen’s state', 'Game.noorLRU': 'which power-ups were given lately (no view)', 'Game.mus': 'the musalla screen’s state',
   'Game.menus': 'which submenu is open on the title (no view of its own)', 'Game.lastMatch': 'the last match’s setup, for a rematch (no view)',
-  'Game.cv': 'the clip video’s state (clipvideo)', 'Game.anim': 'a screen transition (no view)', 'Game.scout': 'the scouting report’s data (scout)',
-  'World.btns': 'the neighbourhood’s on-screen buttons (part of each world scene)', 'World.next': 'where a door leads (no view)'
+  'Game.cv': 'the clip video’s state (clipvideo)', 'Game.anim': 'a screen transition (no view)', 'Game.scout': 'the scouting report’s data (scout)'
 };

@@ -61,21 +61,7 @@ sprintStep = function (pad, c) {
     Object.assign(this.knob.style, { background: deep ? 'rgba(143,227,255,.85)' : '', boxShadow: deep ? '0 0 16px rgba(143,227,255,.9)' : '' });
   };
 }
-// touch controls on the walk outside the masjid (career intro): stick + TALK
-{
-  const _tu = TouchUI.update;
-  TouchUI.update = function () {
-    if (Game.screen !== 'introout') return _tu.apply(this, arguments);
-    if (!this.el) { _tu.apply(this, arguments); if (!this.el) return; }
-    const want = Input.touchMode && typeof INTRO !== 'undefined' && INTRO && !INTRO.fadeDir;
-    if (want !== this.shown) { this.shown = want; this.el.style.display = want ? 'block' : 'none'; if (want) this.layout(); else { Input.stick.ax = Input.stick.az = 0; this.sid = null; } }
-    if (!want) return;
-    for (const k of ['pass', 'turbo', 'cross', 'skill']) this.btns[k].style.display = 'none';
-    this.btns.shoot.style.display = ''; this.btns.shoot.innerHTML = '<span>TALK</span>';
-    this.btns.shoot.classList.toggle('hint', !!INTRO.talk);
-    this.last = ''; this.v7key = null; this.v6last = null;           // relabel properly once play starts
-  };
-}
+
 
 // ---- walls: players stop at the baselines (no walking into the end walls) and a loose ball
 // bounces off the walls and the near sideline back toward the court instead of leaving the frame

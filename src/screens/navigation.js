@@ -31,7 +31,7 @@ function backVisible() {
 const BackBtn = { x: 8, y: 8, w: 80, h: 32 };
 function drawBackButton(g) {
   if (!backVisible()) return;
-  const label = Game.screen === 'story' || Game.screen === 'jumuah' ? 'Skip' : 'Back';   // (v9.17.9: Back, also for closing the hub menu or a talk; Skip passes a scene)
+  const label = Game.screen === 'story' ? 'Skip' : 'Back';   // (v9.17.9: Back, also for closing the hub menu or a talk; Skip passes a scene)
   g.font = `14px ${FONT}`; const w = Math.max(80, Math.ceil(g.measureText('\u2039 ' + label).width) + 28); BackBtn.w = w;   // v9.6.2: fits its label
   const hov = hovering(8, 8, w, 32), pr = pressing(8, 8, w, 32);
   g.fillStyle = pr ? '#c9a24a' : hov ? GOLD : 'rgba(8,16,24,0.85)'; roundRect(g, 8, 8, w, 32, 16); g.fill();

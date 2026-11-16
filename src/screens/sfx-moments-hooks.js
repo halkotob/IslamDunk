@@ -83,17 +83,6 @@
   confirmPick = function (i) { if (Game.confirm) SFX.uiConfirm(i); return _cp.apply(this, arguments); };
   const _to = toast;
   toast = function () { if (!resim()) SFX.toast(); return _to.apply(this, arguments); };
-  // the career calendar: a new month (Ramadan, Shawwal with Eid al-Fitr...) or a holiday starting
-  const _sd = calSetDay;
-  calSetDay = function (n) {
-    const before = C && C.cal ? C.cal.d : null;
-    const r = _sd.apply(this, arguments);
-    if (before != null && C && C.cal && C.cal.d !== before) {
-      const a = calDate(before), b = calDate(C.cal.d);
-      if (a.m !== b.m || a.y !== b.y || (calHoliday(C.cal.d) && !calHoliday(before))) SFX.calChime();
-    }
-    return r;
-  };
 }
 // ---- the career summary: the Barakah Points and Halal Bucks lines come in one at a time, a soft tick each
 const EARN = { post: null, t0: 0, shown: 0 };

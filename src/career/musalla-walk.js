@@ -79,10 +79,12 @@ function musallaDetails(g, bx0, bx1, by0, by1, t) {
 const MUS_WALK = 150;                                  // walking speed (a calm pace)
 // Where people are: u = across the room (0..1), d = depth (0 back wall .. 1 front)
 const MUS_SPOTS = {
-  saleem: { u: 0.36, d: 0.2, pose: 'cross', face: 1 },            // sitting by the stand near the mihrab
-  mahmoud: { u: 0.06, d: 0.46, pose: 'chair', face: 1 },          // on a chair against the left wall
-  rafiq: { u: 0.7, d: 0.58, pose: 'cross', face: -1 },            // sitting on the carpet, front right
-  khalil: { u: 0.9, d: 0.26, pose: 'stand', face: -1 }            // standing by the right wall
+  dawud: { u: 0.36, d: 0.2, pose: 'cross', face: 1 },             // by the stand near the mihrab
+  anas: { u: 0.14, d: 0.34, pose: 'cross', face: 1 },             // by the shelf with a mushaf
+  mufti: { u: 0.62, d: 0.24, pose: 'cross', face: -1 },           // near the front, a book open
+  hafiz: { u: 0.84, d: 0.42, pose: 'stand', face: -1 },           // by the right wall
+  karim: { u: 0.06, d: 0.52, pose: 'chair', face: 1 },            // on a chair against the left wall, marking homework
+  musa: { u: 0.72, d: 0.6, pose: 'stand', face: -1 }              // front right
 };
 function musRoom() {
   const ms = upOf(C.up, 'musalla');

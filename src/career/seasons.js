@@ -62,27 +62,19 @@ function venueRound(b) { if (!b || b.fmt !== 'pool') return b ? b.round : 0; if 
     return 'champ';
   };
 }
-STORY.poolLoss = [
-  [['saleem', 'A loss in the group stage is not the end. Win the next one and we’re still alive.'], ['tariq', 'I ran the numbers. We control our own path.']],
-  [['siddiq', 'Chalk is forgiving, beta. The group isn’t over.'], ['khalil', 'We just need the next one. Bismillah.']],
-  [['rafiq', 'Lose with adab, then come back with focus. The table can still turn.']]
-];
-STORY.groupOut = [['saleem', 'We didn’t get out of the group this time. Sabr. We learn, we practice, and we enter again.'], ['tariq', 'Third place on point difference. I’m going to be thinking about that for a while.']];
+// v9.22: group-stage loss lines come from the story (story-play.js)
+STORY.poolLoss = [[]]; STORY.groupOut = [];
 
 // ------------------------------------------------------------- partners + chemistry
-const PARTNERS = ['saleem', 'nasser', 'khalil', 'tariq'];
-const PARTNER_ARCH = { nasser: 'sharpshooter', khalil: 'rimrunner', tariq: 'playmaker' };
+const PARTNERS = ['saleem', 'jamil', 'ilyas', 'karim', 'anas', 'dawud', 'musa'];   // v9.22: the story's seven teammates (story-data.js)
 const CHEM_TIERS = [[0, 'New partnership'], [25, 'In sync: quicker passes'], [50, 'Trusted: passes are harder to pick off'], [75, 'Brothers: his screens hit harder'], [100, 'Like brothers: everything clicks']];
 function chemOf(id) { return clamp(((C && C.chem) || {})[id] || 0, 0, 100); }
 function chemTier(v) { let t = CHEM_TIERS[0][1]; for (const [n, s] of CHEM_TIERS) if (v >= n) t = s; return t; }
 function addChem(id, n) { if (!C) return; C.chem = C.chem || {}; const was = chemOf(id); C.chem[id] = clamp(was + n, 0, 100); if (was < 100 && C.chem[id] >= 100) Ach.unlock('chem_max'); }
 function partnerDef(id) {
   id = id || (C && C.partner) || 'saleem';
-  if (id === 'saleem') return saleemDef();
-  const base = CAST[id], b = Math.floor(C.stage * 0.8), st = Object.assign({}, base.stats || { spd: 6, sht: 6, dnk: 5, def: 5, stl: 5 });
-  for (const k of ['spd', 'sht', 'dnk', 'def', 'stl']) st[k] = Math.min(10, st[k] + b);
-  if (id === 'tariq') st.pas = Math.min(10, 7 + b);
-  return Object.assign({}, base, { stats: st, arch: PARTNER_ARCH[id] });
+  if (!MATE_STATS[id]) id = 'saleem';
+  return storyMateDef(id, (C && C.stage) || 0);
 }
 amanahTeam = function () { return { name: 'Masjid Al-Amanah', short: 'AMANAH', place: 'Eastside', c1: '#2c6e8f', c2: '#f2cf6b', crest: 'arch', players: [partnerDef(), playerDef()] }; };
 
@@ -93,60 +85,8 @@ function seasonBoost() { return Math.min(0.6, 0.3 * (((C && C.season) || 1) - 1)
   careerLevels = function (stage) { const r = _cl(stage); r.opp = Math.min(2.5, r.opp + seasonBoost()); return r; };
 }
 function respecRefund() { let n = 0; for (const [k] of STAT_ROWS) for (let l = 4; l < (C.lv[k] || 4); l++) n += statCost(l); return n; }
-function startNewSeason(respec) {
-  C.history = C.history || [];
-  const games = (C.games || []).filter(g => g.s === C.season);
-  C.history.push({ s: C.season, stageLog: C.stageLog, w: games.filter(g => g.w).length, l: games.filter(g => !g.w).length, titles: (C.titles || []).filter(t => t.s === C.season).map(t => t.st) });
-  if (respec) { C.bp += respecRefund(); for (const [k] of STAT_ROWS) C.lv[k] = 4; }
-  C.season = (C.season || 1) + 1; C.seed = (Math.random() * 1e9) | 0; C.stage = 0; C.retries = 0; C.done = false; C.divChamps = {}; C.seasonOver = null;
-  C.stageLog = {}; C.bracket = makeBracket(0); slog(0); C.streak = 0; C.lastResult = null;
-  for (let s = 0; s < 4; s++) C.seen['stage' + s] = true;
-  Ach.unlock('season_2'); saveCareer();
-  playStory([['saleem', 'Season ' + C.season + '. Same masjid, same intention, a new season. Everybody starts at zero again.'],
-    ['tariq', 'New season, new opponents. I already started a new stat sheet. Clean page.'],
-    ['siddiq', 'I wiped the chalkboard, but the banners stay up. Those are earned.'],
-    ['jalal', 'Al-Burhan is back too. Last season was last season.']], careerHub);
-}
-function hubExtra(items) {
-  if (C && C.done && !C.seasonOver) items.unshift({ label: 'Start Season ' + ((C.season || 1) + 1), act: () => { Game.screen = 'newseason'; Game.idx = 0; } });
-  const mp = items.find(x => x.label === 'My Player');
-  if (mp && mp.sub && !mp.sub.some(s => s.label === 'League & stats')) mp.sub.splice(1, 0, { label: 'League & stats', act: () => openStats() });   // v9.7.0: was Stats & box scores
-  return items;
-}
-function newSeasonUpdate() {
-  if (menuHit('up') || menuHit('down')) { Game.idx = (Game.idx + (menuHit('up') ? 2 : 1)) % 3; SFX.blip(); }
-  if (menuHit('ok')) { SFX.blip(); if (Game.idx === 2) careerHub(); else startNewSeason(Game.idx === 1); }
-  else if (menuHit('back')) careerHub();
-}
-function drawNewSeason(g) {
-  panel(g, W / 2 - 330, 60, 660, 420, true);
-  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('Season ' + ((C.season || 1) + 1), W / 2, 108);
-  g.fillStyle = IVORY; g.font = `15px ${BODY}`;
-  const so = C.seasonOver, titles = (C.titles || []).filter(t => t.s === (C.season || 1)).length;
-  const why = so ? 'Season ' + so.s + ' ended: ' + so.round + ' loss to ' + so.opp + ' (' + so.us + '\u2013' + so.them + ') at the ' + STAGES[so.st].name + ' stage.'
-    : C.done ? 'Season ' + (C.season || 1) + ' complete: World Ummah Cup champions, alhamdulillah.' : '';
-  let wy = 0; if (why) { g.fillStyle = so ? '#ffb08a' : '#9dffb0'; g.font = `14px ${FONT}`; wy = wrapText(g, why, W / 2, 136, 600, Input.touchMode && g === ctx ? 24 : 20); }
-  const now = seasonBoost(), next = Math.min(0.6, 0.3 * (C.season || 1)), chem = chemOf(C.partner || 'saleem');
-  const TT = Input.touchMode && g === ctx;                            // v8.6.2: phones get the short version
-  if (TT) {
-    const y0 = why ? wy + 30 : 146;
-    g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Stats, upgrades, banners and chemistry carry over.', W / 2, y0);
-    g.fillStyle = '#9fb3c8'; g.fillText('Next: the Metro Masjid League' + (next > now ? ', CPU one level up.' : ' again.'), W / 2, y0 + 26);
-  } else {
-  g.fillStyle = IVORY; g.font = `13px ${BODY}`;
-  wrapText(g, 'Carries over: your stats (unless you renew), masjid and gym upgrades, ' + (titles ? titles + ' title banner' + (titles > 1 ? 's' : '') + ' from this season, ' : 'every title banner, ') + 'and chemistry with ' + castDef(C.partner || 'saleem').name + ' (' + chemTier(chem).split(':')[0].toLowerCase() + ').', W / 2, so || C.done ? 166 : 140, 600, 18);
-  g.fillStyle = '#9fb3c8';
-  wrapText(g, 'Next year: back to the Metro Masjid League with new opponents' + (next > now ? ', and every CPU opponent steps up a level' : ' (the CPU ladder is already at its toughest)') + '.', W / 2, so || C.done ? 210 : 184, 600, 18);
-  }
-  const opts = [['Keep my stats', 'Carry every level into the new season.'], ['Renew my intention', 'Reset stats to 4 and refund ' + respecRefund() + ' BP to spend again.'], ['Not yet', 'Back to the hub.']];
-  opts.forEach(([t, d], i) => {
-    const y = TT ? 238 + i * 76 : 246 + i * 70, bh = TT ? 68 : 60, on = Game.idx === i;
-    g.fillStyle = on ? 'rgba(232,195,90,0.92)' : 'rgba(255,255,255,0.08)'; roundRect(g, W / 2 - 260, y, 520, bh, 12); g.fill();
-    g.textAlign = 'left'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `17px ${FONT}`; g.fillText(t, W / 2 - 240, TT ? y + 28 : y + 26);
-    g.fillStyle = on ? '#3a2a0a' : '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText(TT ? fitText(g, d, 480) : d, W / 2 - 240, TT ? y + 54 : y + 46);
-    addRect(W / 2 - 260, y, 520, bh, () => { Game.idx = i; if (i === 2) careerHub(); else startNewSeason(i === 1); });
-  });
-}
+// v9.22: the old Season N+1 loop is gone (the story's checkpoints replace it); the hub's entries are the story's (story-hub.js)
+function hubExtra(items) { return items; }
 // banners hang from the gym ceiling for every title, by season
 const BANNER_COL = ['#2e7d5b', '#2c6e8f', '#8e2b3a', '#c9a24a'];
 function drawBanners(g, X, Y) {
@@ -200,11 +140,6 @@ function careerBeatsOnly(lines) { const n = Game.lastBeatN || 0; return lines.sl
   careerBeats = function (c) { const r = _cb(c); Game.lastBeatN = r.length; return r; };
   const _tg = trackCareerGame;
   trackCareerGame = function (g) { const r = _tg(g); r.andOne = !!M.cAndOne; r.pin = !!M.cPin; return r; };
-  BEATS.push(
-    { id: 'first_and_one', label: 'First and-one', when: c => c.andOne, lines: [['khalil', 'AND ONE! I felt that from the bench.'], ['rafiq', 'Strong finish. And you helped him up after. Good.']] },
-    { id: 'first_pin', label: 'First chase-down block', when: c => c.pin, lines: [['tariq', 'Pinned on the glass. I need a new column on the sheet for that.'], ['saleem', 'Never give up on a play. That block is what effort looks like.']] }
-  );
-  const pb = BEATS.find(b => b.id === 'perfect_stage'); if (pb) pb.lines = [['tariq', 'Undefeated tournament. Every game, a win. A perfect sheet, masha’Allah.']];
 }
 function statLine(rows) {
   const t = { gp: rows.length, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, tov: 0 };
@@ -388,7 +323,7 @@ function scoutCore(oppId) {
   const top = ['sht', 'dnk', 'spd', 'def', 'stl'].sort((a, c) => tot[c] - tot[a])[0];
   let tip = SCOUT_TIPS[top][Math.floor(R() * 2)];
   const note = (ARCH_NOTE[arch] || '') + (star.huffath ? ' He\u2019s a hafiz, so expect a Hikmah challenge at some point.' : '');
-  if (oppId === 1) tip = 'Jalal loves his first move. Hold Defend, stay in front, and don\u2019t bite on his fakes.';
+  if (oppId === 1) tip = 'Rayyan loves his first move. Hold Defend, stay in front, and don\u2019t bite on his fakes.';
   const v = Game.cv, road = !!(v && v.v.host === 1 && v.v.kind !== 'arena');
   return { oppId, opp, record: sw + '\u2013' + sl, path: [], star, label, note, tip, extra: '', where: v ? v.name : '', home: !!(v && v.v.host === 0), road };
 }
@@ -403,9 +338,9 @@ function scoutCore(oppId) {
     if (b.round === 2) path.push('Won their semifinal');
     sc.path = path.slice(-3);
     const ours = standings(b, 0).findIndex(r => r.id === 0), rb = standings(b, 1).find(r => r.id === 1);
-    if (oppId === 1) sc.extra = C.rival.w + C.rival.l ? 'Head to head: you are ' + C.rival.w + '\u2013' + C.rival.l + ' against Al-Burhan.' : 'First meeting with Al-Burhan. They\u2019ve been waiting for this.';
-    else if (b.round === 0) sc.extra = 'Group A: you are ' + ['1st', '2nd', '3rd', '4th'][ours] + ' right now.  Al-Burhan is ' + rb.w + '\u2013' + rb.l + ' in Group B.';
-    else { const alive = (b.rounds[b.round - 1] || []).some(q => q.a === 1 || q.b === 1); sc.extra = alive ? 'Around the bracket: Al-Burhan is still alive on the other side.' : 'Around the bracket: Al-Burhan is out. Jalal will be watching.'; }
+    if (oppId === 1) sc.extra = C.rival.w + C.rival.l ? 'Head to head: you are ' + C.rival.w + '\u2013' + C.rival.l + ' against Al-Furqan.' : 'First meeting with Al-Furqan. They\u2019ve been waiting for this.';
+    else if (b.round === 0) sc.extra = 'Group A: you are ' + ['1st', '2nd', '3rd', '4th'][ours] + ' right now.  Al-Furqan is ' + rb.w + '\u2013' + rb.l + ' in Group B.';
+    else { const alive = (b.rounds[b.round - 1] || []).some(q => q.a === 1 || q.b === 1); sc.extra = alive ? 'Around the bracket: Al-Furqan is still alive on the other side.' : 'Around the bracket: Al-Furqan is out. Rayyan will be watching.'; }
     return sc;
   };
 }

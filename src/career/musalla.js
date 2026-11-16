@@ -1,68 +1,68 @@
 // ================================================================ MUSALLA
-// Walk through the partition from the gym. Four people from the masjid are
-// here to talk; lines depend on the career (next opponent, record, projects).
-const MUS_CAST = ['saleem', 'mahmoud', 'rafiq', 'khalil'];
+// Walk through the partition from the gym. The people of the masjid are
+// here to talk; some lines depend on the career (next opponent).
+const MUS_CAST = ['dawud', 'anas', 'mufti', 'hafiz', 'karim', 'musa'];
 function nextOpponent() {
   const b = C.bracket; if (!b || b.out || b.champ) return null;
-  const m = ourMatch(); return { id: m.a === 0 ? m.b : m.a, team: teamOf(C.stage, m.a === 0 ? m.b : m.a) };
+  const m = ourMatch(); return m ? { id: m.a === 0 ? m.b : m.a, team: teamOf(C.stage, m.a === 0 ? m.b : m.a) } : null;
 }
 function cheapestProject() {
   let best = null;
   for (const p of ALL_PROJECTS) { const l = upOf(C.up, p.key); if (l < p.tiers.length && (!best || p.tiers[l][1] < best[1])) best = [p.tiers[l][0], p.tiers[l][1]]; }
   return best;
 }
+// v9.22: the musalla's people are the story's: Imam Dawud, Qari Anas, the Mufti, the Hafiz, Ustath Karim and Musa
 const TALK = {
-  saleem: {
-    greet: () => C.prayBonus ? 'I saw you at salah. May Allah accept it. You\u2019ll feel it in your legs next game, in sha Allah.' : 'Wa alaikum assalam, ' + (C.name || 'brother') + '. Sit with me for a minute.',
+  dawud: {
+    greet: () => C.prayBonus ? 'I saw you in the first row. May Allah accept it from you.' : 'Wa alaykum as-salam, ' + (C.name || 'akhi') + '. Sit, the chai is still warm.',
     options: [
-      ['Any advice for our next game?', () => {
+      ['How long have you been the imam here?', () => ['Thirty-one years. I led Isha the night this was still a print shop. Twelve of us and one folding table.', 'Masjids are not built with bricks first. They are built with people who keep coming back.']],
+      ['Any advice for the next game?', () => {
         const o = nextOpponent();
-        if (C.bracket.champ) return ['We have nothing left to win, alhamdulillah. So now we play for the joy of it.'];
-        if (!o) return ['We\u2019re out of this tournament for now. That\u2019s fine. Enter again when you feel ready.', 'Work on your free throws. Close games are won at the line.'];
-        if (o.id === 1) return ['Al-Burhan. Jalal will want to prove himself.', 'Stay between him and the rim, and don\u2019t bite on his first move. Patience wins that matchup.'];
-        const s = o.team.players.reduce((a, p) => { for (const k in p.stats) a[k] = (a[k] || 0) + p.stats[k]; return a; }, {});
-        const top = ['sht', 'dnk', 'spd', 'def'].sort((a, b) => s[b] - s[a])[0];
-        const tip = { sht: 'They shoot well from outside. Close out on shooters and don\u2019t leave anyone open for three.',
-          dnk: 'They love attacking the rim. Wall up near the basket and time your jumps.', spd: 'They\u2019re quick. Sprint back on defense after every shot.',
-          def: 'Their defense is tough. Move the ball. The open man will be there.' }[top];
-        return ['Next is ' + o.team.name + ' from ' + o.team.place + '.', tip];
+        if (!o) return ['Play the next possession well. Then the one after it. That is the whole secret.', 'And drink water. Old men know this.'];
+        return ['Next is ' + o.team.name + '. Respect them, then beat them.', 'Shake hands before and after. Win with adab, lose with adab.'];
       }],
-      ['How do I stay humble after a win?', () => ['Remember who gave you the win. Say alhamdulillah, and mean it.', 'Then thank the brother who set the screen. Nobody scores alone.']],
-      ['Tell me about this masjid.', () => {
-        const l = masjidLevel();
-        if (l === 0) return ['When we started, this was an old print shop. Twelve brothers, one folding table, and a lot of du\u2019a.', 'Take care of it, and it will take care of the community.'];
-        if (l < 9) return ['Every project we finish brings more families through the door.', 'I saw three new faces at Fajr this week. Alhamdulillah.'];
-        return ['Subhanallah. I remember the print shop. Now the parking lot is full on a Tuesday.', 'The building is beautiful, but the people are the masjid.'];
-      }]
+      ['Tell me about the chai.', () => ['Cardamom, a little ginger, and patience. You cannot rush good chai.', 'The young ones gulp it. Sip, beta. Sip.']]
     ]
   },
-  mahmoud: {
-    greet: () => 'Ah, the star player! Come, come, sit.',
+  anas: {
+    greet: () => 'Wa alaykum as-salam. I was just revising my juz’ for tonight.',
     options: [
-      ['Tell me about 1987.', () => ['It was a cold night. The heater was broken. I scored forty points.', 'Or thirty. It was a long time ago. But it was a lot of points, beta.']],
-      ['Any shooting tips, uncle?', () => ['Hold the shot until the top of your jump, then let it go. Smooth, like pouring chai.',
-        C.best.ft >= 7 ? 'And your free throws are good now. ' + C.best.ft + ' out of 10. I am proud.' : 'And practice your free throws. ' + C.best.ft + ' out of 10 is a start, not a finish.']],
-      ['How is your knee?', () => ['My knee says no. My heart says yes. My wife says sit down.', 'So I sit, and I cheer very loudly.']]
+      ['How did you memorise the whole Quran?', () => ['One page at a time. Then that page again. Then again the next morning.', 'Consistency, brother. The same thing that makes a good free throw.']],
+      ['You’re tall. Do you dunk?', () => ['Alhamdulillah, Allah made me tall. The dunking I had to learn.', 'I try not to hang on the rim. Ammo Jamil says it’s showing off.']],
+      ['Will you recite something?', () => ['“Indeed, with hardship comes ease. Indeed, with hardship comes ease.” Ash-Sharh, ayat five and six.', 'Allah said it twice. So we don’t forget it.']]
     ]
   },
-  rafiq: {
-    greet: () => 'Assalamu alaikum, beta. Adab first, then basketball.',
+  mufti: {
+    greet: () => 'Ah, the new brother. Wa alaykum as-salam. What is your question?',
     options: [
-      ['What does adab look like on the court?', () => ['Shake hands before and after. Help the other team up when they fall.', 'And no shoving. Turbo is for running, not for pushing brothers into the bleachers.']],
-      ['I get frustrated when we lose.', () => ['Frustration means you care. Good. Turn it into practice, not anger.', 'Sabr isn\u2019t sitting still. It\u2019s working without complaining.']],
-      ['Why stop practice for salah?', () => ['Because salah is the appointment. Practice can wait fifteen minutes.', 'And you come back calmer. That\u2019s good for your free throws too.']]
+      ['Is it okay to play right before salah?', () => ['Play, yes. Delay salah past its time, no.', 'When the adhan comes, put the ball down. The court will still be there in fifteen minutes.']],
+      ['Can we pray in sports clothes?', () => ['If your clothes are clean and cover what must be covered, yes.', 'But a man who dresses well to meet his Lord, that is beautiful too.']],
+      ['Why do we make du’a for the other team?', () => ['Because they are our brothers before they are opponents.', 'The Prophet ﷺ said none of you truly believes until he loves for his brother what he loves for himself.']]
     ]
   },
-  khalil: {
-    greet: () => C.wins > C.losses ? 'Brooo, we are rolling! What\u2019s up?' : 'Hey! Don\u2019t worry about the record, we\u2019re just warming up.',
+  hafiz: {
+    greet: () => 'As-salamu alaykum! Are you here for the halaqa or the basketball?',
     options: [
-      ['How do we beat Al-Burhan?', () => ['Honestly? Box out. Jalal never boxes out.', 'Also, pass it to me. Kidding. Pass it to the open guy. Unless it\u2019s me.']],
-      ['What should the masjid build next?', () => {
-        const p = cheapestProject();
-        if (!p) return ['We built everything! Maybe a second minaret? Kidding. Mostly.'];
-        return ['I vote for the ' + p[0].toLowerCase() + '. It costs ' + p[1] + ' Halal Bucks.', C.hb >= p[1] ? 'We have ' + C.hb + ' right now. Just saying.' : 'We have ' + C.hb + '. Win a few more games first.'];
-      }],
-      ['Say something motivating.', () => [pick(['The rim doesn\u2019t know how big our masjid is. Shoot your shot, bismillah.', 'Small masjid, big barakah. Let\u2019s go!', 'Every uncle in this masjid is praying for us. Literally. I asked them.'])]]
+      ['Both, in sha Allah.', () => ['Good answer. Halaqa is Thursday after Maghrib. Basketball is every other day after Isha.', 'The brothers who come to both play better. I have no proof. I just believe it.']],
+      ['Do you play too?', () => ['I keep score. My job is to count. I count ayat, I count points.', 'Sh. Saleem says I’m the most honest scorekeeper in the city.']],
+      ['What should I memorise first?', () => ['Start with the short surahs at the end of the Quran. Al-Ikhlas, Al-Falaq, An-Nas.', 'Recite them in your salah. They stay with you that way.']]
+    ]
+  },
+  karim: {
+    greet: () => 'Wa alaykum as-salam. Excuse the papers, I’m marking the kids’ homework.',
+    options: [
+      ['What do you teach?', () => ['Weekend school. Quran, Arabic, and a little bit of everything. Forty-three kids.', 'We have two classrooms. One of them is the coat room.']],
+      ['How’s your jump shot?', () => ['Elbow in, eyes on the rim, follow through. I teach it like grammar.', 'Subject, verb, swish.']],
+      ['Say something motivating.', () => ['Every brother in this gym was a kid in somebody’s weekend school once.', 'Play like the kids are watching. They usually are.']]
+    ]
+  },
+  musa: {
+    greet: () => 'Hey! You’re the other new guy. As-salamu alaykum. Did I say it right?',
+    options: [
+      ['You said it perfectly.', () => ['Alhamdulillah. I took my shahadah eight months ago. Everything is still new.', 'Sometimes I still say “bless you” instead of “yarhamukAllah.”']],
+      ['How did you find this masjid?', () => ['I played pickup at the park. Ilyas crossed me over so bad I had to ask where he learned it.', 'He said “the masjid.” I thought he was joking.']],
+      ['Can you really dunk?', () => ['Two hands, one hand, off one foot, off two. Allah gave me legs.', 'Free throws, on the other hand… Ustath Karim is working on me.']]
     ]
   }
 };

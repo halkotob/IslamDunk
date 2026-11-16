@@ -27,8 +27,8 @@ export function difficultyTests({ newContext, open }) {
       C = freshCareer(); C.name = 'T'; Object.assign(C.look, { style: 1, height: 1, build: 1 });
       o.shtStart = playerDef().stats.sht; o.refund0 = respecRefund();
       C.lv.sht = 6; o.refund2 = respecRefund(); o.want2 = statCost(4) + statCost(5); o.shtNow = playerDef().stats.sht;
-      // an old save: no style, no new fields; levels kept
-      localStorage.setItem(SAVE_AUTO, JSON.stringify({ v: 1, name: 'Old', look: { skin: 1, height: 2, build: 0 }, lv: { sht: 7, spd: 5, dnk: 6, def: 4, sta: 4, pas: 5 }, stage: 1, bp: 12 }));
+      // a story save missing the newer fields (no style, no hustle): levels kept (v9.22: saves from before the story start a new career)
+      localStorage.setItem(SAVE_AUTO, JSON.stringify({ v: 1, sv: 10, story: { at: 'C3.3' }, name: 'Old', look: { skin: 1, height: 2, build: 0 }, lv: { sht: 7, spd: 5, dnk: 6, def: 4, sta: 4, pas: 5 }, stage: 1, bp: 12 }));
       C = null; o.oldLoads = loadCareer(SAVE_AUTO); o.oldLv = C && [C.lv.sht, C.lv.spd, C.lv.dnk, C.lv.hus || 4].join(); o.oldDef = C && !!playerDef().stats;
       o.summary = buildSummary(bodyMods(1, 1, 'sharpshooter'));
       return o;

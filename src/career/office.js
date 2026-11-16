@@ -16,12 +16,12 @@ function finishMini() {
   Gym.result = { title: mg.kind === 'lightning' ? 'Lightning' : 'HORSE vs ' + M.players[1].def.name, line, bp, pb: 0, hb, best: false, kind: mg.kind };
   Gym.drill = null;
 }
-const HORSE_OPPS = [['saleem', 'Sh. Saleem'], ['nasser', 'Nasser'], ['khalil', 'Khalil'], ['mahmoud', 'Uncle Mahmoud'], ['rafiq', 'Uncle Rafiq']];
+const HORSE_OPPS = [['saleem', 'Sh. Saleem'], ['jamil', 'Ammo Jamil'], ['ilyas', 'Ilyas'], ['karim', 'Ustath Karim'], ['anas', 'Qari Anas'], ['dawud', 'Imam Dawud'], ['musa', 'Musa']];   // v9.22: the story's cast
 const DRILL_MENU = () => [
   { label: 'Free throws', act: () => { Gym.overlay = null; startDrill('ft'); } },
   { label: 'Three-point challenge', act: () => { Gym.overlay = null; startDrill('three'); } },
   { label: 'Cone dribble', act: () => { Gym.overlay = null; startDrill('cones'); } },
-  { label: '1v1 vs Nasser', act: () => { Gym.overlay = null; startDrill('v1'); } },
+  { label: '1v1 vs Ilyas', act: () => { Gym.overlay = null; startDrill('v1'); } },
   { label: 'Lightning', act: () => startMini('lightning') },
   { label: 'HORSE', sub: HORSE_OPPS.map(([id, name]) => ({ label: 'vs ' + name, act: () => startMini('horse', id) })) },
   { label: 'Back', act: () => { Gym.overlay = null; } }
@@ -269,8 +269,8 @@ const SHEIKH_LINES = {
   cold: ['Two hard games. Lean on your brothers. The Quran promises that with hardship comes ease (94:5-6).',
     'When things go badly, go back to the basics: defense, the extra pass, and your salah.',
     'Seek help through patience and prayer (2:45). That works on the court too.'],
-  rival: ['Al-Burhan is next. Respect Jalal. Rivals push us to be better, and they’re still our brothers.', 'Against Al-Burhan, don’t play angry. Play smart and let your work speak.',
-    'Jalal plays hard and plays fair. So will we.', 'Whatever happens against Al-Burhan, we pray Maghrib together afterward. That’s who we are.',
+  rival: ['Al-Furqan is next. Respect Rayyan. Rivals push us to be better, and they’re still our brothers.', 'Against Al-Furqan, don’t play angry. Play smart and let your work speak.',
+    'Rayyan plays hard and plays fair. So will we.', 'Whatever happens against Al-Furqan, we pray Maghrib together afterward. That’s who we are.',
     'A rival is a mirror. He shows you what you still need to work on.'],
   stage: [['The Metro League is where we build habits. Good habits now carry us far.', 'Small gyms, small crowds, big lessons. Take every game seriously.'],
     ['State is a bigger stage. Same fundamentals, same intention.', 'New gyms, new faces. Be a good guest wherever we play.'],
@@ -279,7 +279,7 @@ const SHEIKH_LINES = {
   // v5.0 habit pools
   salahGood: ['You’ve been answering the adhan. I can see it in how calm you are on the court.', 'Salah on time, game after game. Keep that. It’s worth more than any stat.'],
   noSalah: ['When the adhan comes, the court can wait fifteen minutes. Trust me.', 'Salah keeps us away from shameful and wrong deeds (29:45). It keeps a hothead calm, too.'],
-  drills: ['Tariq says you’ve been in the gym a lot. Good. Consistency is a form of worship too, when the intention is right.', 'Your free throws look smoother. That’s the practice paying off.'],
+  drills: ['The brothers say you’ve been in the gym a lot. Good. Consistency is a form of worship too, when the intention is right.', 'Your free throws look smoother. That’s the practice paying off.'],
   noDrills: ['The gym misses you. Even a few free throws between games keeps the touch.', 'Games are the exam. Practice is the studying.'],
   undefeated: ['Undefeated, masha’Allah. Guard your heart from pride. It’s the one opponent that beats every champion.', 'Keep winning like you’re still the underdog.'],
   general: [
@@ -399,14 +399,14 @@ const SHEIKH_TALKS = [
     open: () => [-C.streak + ' losses in a row. Close the door, sit down. How are you feeling about it?'],
     choices: [
       ['Frustrated. We practice hard and still lose.', ['That frustration means you care. Good. Don’t let it turn into blame.', 'With hardship comes ease (94:5-6). Allah said it twice in a row, so we don’t forget it. Let’s look at the details: free throws, box-outs, turnovers.']],
-      ['Maybe I’m just not good enough.', ['Stop there. You’re a brother who shows up, works and plays with adab. That’s already a lot.', 'Skill grows with patience. Ask Tariq for your numbers, pick one thing, and fix only that this week. Small and consistent.']]] },
+      ['Maybe I’m just not good enough.', ['Stop there. You’re a brother who shows up, works and plays with adab. That’s already a lot.', 'Skill grows with patience. Look at your numbers, pick one thing, and fix only that this week. Small and consistent.']]] },
   { key: 'undefeated', when: () => (C.streak || 0) >= 4, ep: () => 'g' + ((C.gamesPlayed || 0) - (C.streak || 0)),
-    open: () => [C.streak + ' straight wins, masha’Allah. Uncle Siddiq has run out of chalk.', 'So tell me. How’s your heart handling all this winning?'],
+    open: () => [C.streak + ' straight wins, masha’Allah. Imam Dawud has run out of cups.', 'So tell me. How’s your heart handling all this winning?'],
     choices: [
       ['Honestly, it feels great. I think we’re unstoppable.', ['Enjoy it, and be careful with that word. Only Allah is unstoppable.', 'Pride is the one opponent that beats every champion. Keep thanking Allah, keep passing the ball, and keep stacking chairs after games.']],
       ['I’m worried the streak will end.', ['It will end one day. Every streak does. That’s not a reason to fear, it’s a reason to enjoy each game.', 'Focus on the next possession, not the streak. Tie your camel, then trust Allah.']]] },
   { key: 'noDrills', when: () => (C.noDrillGames || 0) >= 2, ep: () => 'g' + ((C.gamesPlayed || 0) - (C.noDrillGames || 0)),
-    open: () => ['Tariq tells me you haven’t been in the gym between games. His stat sheet has a very empty column.', 'Is everything alright?'],
+    open: () => ['Ammo Jamil tells me you haven’t been in the gym between games. He says the rebounds miss you.', 'Is everything alright?'],
     choices: [
       ['I figured the games were enough practice.', ['Games show you what you need. Practice is where you fix it.', 'The deeds most beloved to Allah are the consistent ones, even if small. Ten free throws a day. That’s all I ask. And the drills pay Barakah Points.']],
       ['Life has been busy, to be honest.', ['That’s understandable. Take care of your family and your duties first.', 'When you have fifteen minutes, come shoot. Consistency beats cramming, on the court and with the Quran.']]] }

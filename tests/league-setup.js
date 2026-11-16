@@ -1,5 +1,5 @@
 // v9.7.0 league fixtures: page-side helpers shared by tests/run.mjs (league-*), tests/phone-audit.mjs and
-// scripts/review-league.mjs. Evaluate CAL_HELPERS, then LEAGUE_HELPERS.
+// scripts/review-league.mjs. Evaluate CAREER_HELPERS, then LEAGUE_HELPERS.
 //   __lgPlayDay(real)   one game day: our game played to the end by the CPU on both sides (so our lines are real too),
 //                       then the normal after-game flow (the rest of the round is played by the league)
 //   __lgBuild(days, mode)  a fresh seeded career, `days` game days in LEAGUE.mode `mode` ('real' or 'fallback')
@@ -7,8 +7,7 @@
 //   __lgOpen(view, opts)  the stats screen on a view: 'leaders' | 'league' | 'player' | 'box' (opts: cat, filter, pid)
 export const LEAGUE_HELPERS = `(() => {
   window.__lgPlayDay = () => {
-    const gd = calGameDay(); if (gd == null) return false;
-    if (gd > C.cal.d) calSetDay(gd);
+    if (!C.bracket || C.bracket.out || C.bracket.champ) return false;
     startCareerMatch(); for (let i = 0; i < 8 && Game.screen === 'story'; i++) Game.story.then();
     for (const p of M.players) p.human = -1;
     for (let n = 0; n < 60 * 60 * 30 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; }
@@ -16,7 +15,7 @@ export const LEAGUE_HELPERS = `(() => {
     M.players[1].human = 0; careerAfterMatch(); Game.screen = 'title'; return true;
   };
   window.__lgBuild = (days, mode) => {
-    LEAGUE.mode = mode || 'real'; LEAGUE.cache = {}; LEAGUE.cur = null; window.__calFresh();
+    LEAGUE.mode = mode || 'real'; LEAGUE.cache = {}; LEAGUE.cur = null; window.__cFresh();
     for (let d = 0; d < days && !C.bracket.out && !C.done; d++) window.__lgPlayDay();
     return { days, stage: C.stage, games: (C.games || []).length, runs: C.lg.runs.length };
   };

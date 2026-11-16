@@ -9,6 +9,7 @@
 //   shoes       sneaker colour
 //   stance      idle posture between plays (src/sim/cast-life.js)
 //   cele        signature celebration after his own big play or a win (src/sim/cast-life.js)
+const BAND_COLS = [null, '#f4f4ef', '#1e7a4c'];   // headband colours (v9.22: moved here from the neighbourhood, which left with the calendar)
 const CAST_LOOKS = {
   'Sh. Kareem':  { vh: 1, vw: 1, glasses: true, stance: 'upright', cele: 'heart' },
   'Tariq':       { vh: 2, vw: 1, band: 1, stance: 'bouncy', cele: 'both' },

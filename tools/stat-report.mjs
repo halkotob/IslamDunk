@@ -182,11 +182,9 @@ if (ONLY.includes('econ')) {
       const prices = (typeof STORE_ITEMS !== 'undefined' ? STORE_ITEMS : []).filter(x => x.price > 0).map(x => x.price).concat(ALL_PROJECTS.flatMap(pj => pj.tiers.map(t => t[1]))).sort((a, b) => a - b);
       const total = prices.reduce((a, b) => a + b, 0), games = [], buys = {}; let hbAll = 0, firstAt = null, allAt = null, pool = 0;
       for (let g = 0; g < 240 && !C.done; g++) {
-        if (C.seasonOver) startNewSeason(false);
         if (C.bracket.out || C.bracket.champ) { C.retries = (C.retries || 0) + 1; C.bracket = makeBracket(C.stage); }
         C.seen['stage' + C.stage] = true;
         const st = C.stage, bp0 = C.bp, hb0 = C.hb;
-        calEnsure(); if (calGameDay() != null && !calGameToday()) calSetDay(calGameDay());
         if (!Game.cv) prepCareerVenue(); Game.screen = 'pregame'; startCareerMatch();
         for (let k = 0; k < 12 && Game.screen !== 'play'; k++) { if (Game.screen === 'story' && Game.story) Game.story.then(); else { if (!Game.cv) prepCareerVenue(); Game.screen = 'pregame'; startCareerMatch(); } }
         const me = M.career && M.players.find(q => q.human === 0); if (!me) { res.push({ wr, err: 'no match at game ' + g }); break; }

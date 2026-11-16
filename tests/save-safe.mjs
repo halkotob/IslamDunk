@@ -6,7 +6,8 @@
 //                 save works, a new failure is told again; persist() asked once; the Home Screen note once, on a phone
 //   save-export   export, wipe, import (the file through the screens, with the keyboard): the same career, profile and
 //                 teams; the career lands in the manual slot, not the autosave; a changed checksum is refused
-//   save-old      saves made by the 8.6.0, 9.0.0 and 9.14.3 builds load unchanged (tests/fixtures/old-saves.json)
+//   save-old      saves made by the 8.6.0, 9.0.0 and 9.14.3 builds: their careers are not loaded (v9.22: old careers start
+//                 a new story), their profile and teams load unchanged, and nothing in storage is changed or marked broken
 // and no page errors in any of them.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -25,7 +26,11 @@ export function saveSafeTests({ newContext, open }) {
     return { ctx, p, errs };
   }
   const frames = (p, n = 30) => p.evaluate(n => new Promise(r => { let k = 0; const f = () => (++k >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
-  const fx = OLD['9.14.3'].keys;
+  // v9.22: a career save from before the story (sv < 10) isn't loaded any more, so these tests use the 9.14.3 fixture's
+  // career brought up to the story's format (the same career, with sv 10 and a story position)
+  const storyfy = t => { const o = JSON.parse(t); o.sv = 10; o.story = { at: 'C2.6', cp: 'C2.4', seen: {}, fund: 0, fundOn: true, att: 0, done: false }; return JSON.stringify(o); };
+  const fx = Object.assign({}, OLD['9.14.3'].keys);
+  for (const k of ['islamdunk.career.auto', 'islamdunk.career.slot1']) if (fx[k]) fx[k] = storyfy(fx[k]);
   T['save-backup'] = async ({ browser, base }) => {
     const { ctx, p, errs } = await pageWith(browser, base, { 'islamdunk.career.auto': fx['islamdunk.career.auto'] });
     // three autosaves (the old save, then 7 wins, then 9): the one before the last is the backup, with its date
@@ -113,7 +118,8 @@ export function saveSafeTests({ newContext, open }) {
     const after = await p.evaluate(() => ({ auto: localStorage.getItem(SAVE_AUTO), slot1: localStorage.getItem(SAVE_SLOT), profile: localStorage.getItem(PROFILE_KEY), custom: localStorage.getItem(CS_KEY), msg: SaveIO.msg,
       loaded: loadCareer(SAVE_SLOT) && C.name === 'Yusuf' && C.wins === 5, xp: Profile.load().xp, players: csLoad().players.length }));
     await ctx.close();
-    const deep = (a, b) => JSON.stringify(JSON.parse(a)) === JSON.stringify(JSON.parse(b));
+    const canon = v => Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map(k => [k, canon(v[k])])) : v;   // (v9.22: key order aside)
+    const deep = (a, b) => JSON.stringify(canon(JSON.parse(a))) === JSON.stringify(canon(JSON.parse(b)));
     const ok = onExport === 'saveexport' && !!dl && /^islamdunk-save-\d{4}-\d\d-\d\d\.json$/.test(dl.suggestedFilename()) && /check doesn.t match/.test(tampered)
       && /^Yusuf, Masjid Al-Amanah: season 1, (week \d+, )?5-2, profile, your teams$/.test(r.line || '') && after.auto === null && deep(after.slot1, before.auto)
       && deep(after.profile, before.profile) && deep(after.custom, before.custom) && after.loaded && after.xp === 900 && after.players === 1 && !errs.length;
@@ -133,7 +139,7 @@ export function saveSafeTests({ newContext, open }) {
       await P.ctx.close(); errs.push(...P.errs);
       rows.push({ v, ...r });
     }
-    const ok = rows.every(r => r.ok && r.name === 'Yusuf' && r.wins === 5 && r.losses === 2 && r.sht === 6 && r.slotWins === 4 && r.xp === 900 && r.players === 1 && r.same && r.broken === 0) && !errs.length;
+    const ok = rows.every(r => r.ok === false && r.slotWins === null && r.xp === 900 && r.players === 1 && r.same && r.broken === 0) && !errs.length;
     return { ok, detail: [...rows.map(r => JSON.stringify(r)), ...errs] };
   };
   return T;

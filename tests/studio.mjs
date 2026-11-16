@@ -106,7 +106,7 @@ STUDIO_TESTS['studio-csv'] = async ({ browser }) => {
   out.afterUndo = { m1: (await mk('trivia/1') || {}).suggested || '', m2: (await mk('trivia/2') || {}).verdict || '' };
   await ev(() => { window.__studio.select('trivia/2'); }); await p.locator('#list').focus(); await key('d');
   // more marks by a second reviewer, across categories
-  await ev(() => { const s = window.__studio.store; s.set('dialogue/niyyah/0', { verdict: 'fix', comment: 'too long, the "intention" line', suggested: 'Before you go out: what is your intention?' });
+  await ev(() => { const s = window.__studio.store; s.set('dialogue/scene/C0.6/0', { verdict: 'fix', comment: 'too long, the "intention" line', suggested: 'Before you go out: what is your intention?' });
     s.setReviewer('Yusuf', 'Art'); s.set('sprite/cast/saleem', { verdict: 'keep' }); s.set('sprite/ball/night', { verdict: 'delete', comment: 'hard to see, on dark courts' }); s.set('trivia/0', { verdict: 'fix', comment: 'second opinion' });
     s.set('sound/bounce', { verdict: 'fix', pick: 'B', comment: 'the real one' }); s.set('sound/cheer', { pick: 'none' }); s.set('screen/about/desktop', { verdict: 'merge', merge: 'screen/howto/desktop', comment: 'one help screen' }); });
   const csv1 = await ev(() => window.__studio.exportCsv());
@@ -133,17 +133,17 @@ STUDIO_TESTS['studio-csv'] = async ({ browser }) => {
   // legacy: the game-text.csv packet with marks filled in
   const gt = fs.readFileSync(path.join(ROOT, 'docs/review/game-text.csv'), 'utf8').split('\n');
   const pick = (re) => gt.findIndex((l, i) => i > 0 && re.test(l));
-  const iK = pick(/,What is the shortest surah in the Quran\?,/), iC = pick(/Chalk is forgiving, beta/), iX = pick(/Our first win! I’m framing/);
+  const iK = pick(/,What is the shortest surah in the Quran\?,/), iC = pick(/Box out first, then go get the ball/), iX = pick(/The extra pass is a gift. Give it freely/);   // (v9.22: sheikh lines; the old cast's lines left with the story)
   const fill = (l, mark, sug, note) => l.replace(/,,,$/, ',' + mark + ',' + sug + ',' + note);
-  const legacy = [gt[0], fill(gt[iK], 'Keep', '', ''), fill(gt[iC], 'Change', '"Chalk forgives, beta."', 'shorter'), fill(gt[iX], 'Cut', '', '')].join('\n') + '\n';
+  const legacy = [gt[0], fill(gt[iK], 'Keep', '', ''), fill(gt[iC], 'Change', '"Box out, then rebound."', 'shorter'), fill(gt[iX], 'Cut', '', '')].join('\n') + '\n';
   await ev(() => { window.__studio.store.setReviewer('Packet', 'Content/religious'); });
   out.legacy = await ev(t => window.__studio.importCsv(t, 'game-text.csv'), legacy);
-  out.legacyMarks = await ev(() => { const s = window.__studio.store; return { kaw: (s.mark('trivia/3') || {}).verdict, chalk: s.mark('dialogue/story/poolLoss-1/0'), win: (s.mark('dialogue/beat/first_win/0') || {}).verdict }; });
+  out.legacyMarks = await ev(() => { const s = window.__studio.store; return { kaw: (s.mark('trivia/3') || {}).verdict, chalk: s.mark('dialogue/sheikh/general/3'), win: (s.mark('dialogue/sheikh/general/1') || {}).verdict }; });
   // legacy: the in-game ?review=1 export
-  const inGame = 'Kind,Text,Mark,Note\n"line","We just need the next one. Bismillah.","change","say it calmer"\n"line","I ran the numbers. We control our own path.","cut",""\n"feel","Games are a good length","4",""\n"line","A line that is not in the game","keep",""\n';
+  const inGame = 'Kind,Text,Mark,Note\n"line","On defense, stay between your man and the rim. Make him take the hard shot.","change","say it calmer"\n"line","Free throws are won in practice, not in the game.","cut",""\n"feel","Games are a good length","4",""\n"line","A line that is not in the game","keep",""\n';
   await ev(() => { window.__studio.store.setReviewer('Playtest', 'Gameplay'); });
   out.inGame = await ev(t => window.__studio.importCsv(t, 'islamdunk-review.csv'), inGame);
-  out.inGameMarks = await ev(() => { const s = window.__studio.store; return { a: s.mark('dialogue/story/poolLoss-1/1'), b: (s.mark('dialogue/story/poolLoss-0/1') || {}).verdict }; });
+  out.inGameMarks = await ev(() => { const s = window.__studio.store; return { a: s.mark('dialogue/sheikh/general/2'), b: (s.mark('dialogue/sheikh/general/5') || {}).verdict }; });
   // sandbox: the game frame has its own storage, the studio's marks are not in it
   out.sandbox = await ev(() => { const G = document.getElementById('gameframe').contentWindow; return G.localStorage !== window.localStorage && G.localStorage.getItem('islamdunk.studio') === null && !!window.localStorage.getItem('islamdunk.studio'); });
   const csvFinal = await ev(() => window.__studio.exportCsv());
@@ -164,7 +164,7 @@ STUDIO_TESTS['studio-csv'] = async ({ browser }) => {
     && out.afterUndo.m1 === '' && out.afterUndo.m2 === '' && out.header === 'id,category,name,where,version_added,verdict,comment,suggested,reviewer,role,reviewed_at,build_version,merge_into,pick'
     && rows1 >= items && out.roundTrip && out.picks === 'B|none|merge|screen/howto/desktop' && out.picksInCsv && out.imp.added > 0 && out.imp.conflicts === 0
     && out.newer.updated === 1 && out.afterNewer === 'keep' && out.older.kept === 1 && out.afterOlder === 'keep' && out.conflictsListed >= 2
-    && out.legacy.format === 'game-text.csv' && out.legacyMarks.kaw === 'keep' && out.legacyMarks.chalk && out.legacyMarks.chalk.verdict === 'fix' && out.legacyMarks.chalk.suggested === 'Chalk forgives, beta.' && out.legacyMarks.win === 'delete'
+    && out.legacy.format === 'game-text.csv' && out.legacyMarks.kaw === 'keep' && out.legacyMarks.chalk && out.legacyMarks.chalk.verdict === 'fix' && out.legacyMarks.chalk.suggested === 'Box out, then rebound.' && out.legacyMarks.win === 'delete'
     && out.inGame.format === 'in-game review' && out.inGame.unmatched === 1 && out.inGameMarks.a && out.inGameMarks.a.verdict === 'fix' && out.inGameMarks.a.comment === 'say it calmer' && out.inGameMarks.b === 'delete'
     && out.sandbox && out.persist && out.report && out.untouched && !st.errors.length && !gameErr.length;
   return { ok, detail: [`${rows1} CSV rows for ${items} items`, JSON.stringify(out).slice(0, 1800), ...st.errors, ...gameErr] };

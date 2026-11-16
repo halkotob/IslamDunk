@@ -28,22 +28,12 @@ window.__RS = (() => {
     // the sheikh: pools, talks and lessons
     for (const pool of Object.keys(SHEIKH_LINES)) { const v = SHEIKH_LINES[pool]; if (Array.isArray(v)) add('Sheikh', 'sheikh/' + pool, 'Sheikh pool: ' + pool, v.map(t => L('saleem', typeof t === 'string' ? t : String(t))), 'career/office.js'); }
     for (const t of SHEIKH_TALKS) safe(() => add(t.key.startsWith('lesson') ? 'Sheikh lessons' : 'Sheikh talks', 'sheikh-talk/' + t.key, t.key, flat([...t.open().map(l => ['saleem', l]), ['choice', t.choices.map(([q, a]) => [q, a.map(l => ['saleem', l])])]]), 'career/office.js'));
-    // niyyah, partners, the musalla, milestone beats
-    const nv = safe(() => rvScenes().find(s => s.group === 'Niyyah'), null);          // the same scene ?review=1 plays
-    if (nv) add('Niyyah', 'niyyah', 'Before a game: the intention', flat(nv.lines), 'career/career-story.js');
-    for (const id of Object.keys(PARTNER_STORY)) PARTNER_STORY[id].forEach((sc, i) => add('Partners', 'partner/' + id + '/' + i, castDef(id).name + ' ' + (i + 1), flat(sc), 'career/career-story.js'));
-    for (const id of Object.keys(NEWS)) NEWS[id].forEach(n => safe(() => add('Musalla news', 'news/' + id + '/' + n.key, castDef(id).name + ': ' + n.topic, n.lines().map(l => L(id, l)), 'career/career-story.js')));
+    // v9.22: the career story, every scene by chapter and ID (story-data.js), and the walks' talks
+    for (const S of Object.values(SC)) for (const k of ['lines', 'winLines', 'lossLines']) { const v = safe(() => typeof S[k] === 'function' ? S[k]() : S[k], null); if (v && v.length) add(S.ch <= 5 ? 'Chapter ' + S.ch : 'After the story', 'scene/' + S.id + (k === 'lines' ? '' : '/' + k), S.id + ' ' + S.name + (k === 'lines' ? '' : k === 'winLines' ? ' (win)' : ' (loss)'), flat(v), 'career/story/story-data.js'); }
+    for (const [wid, D] of Object.entries(STORY_WALKS)) for (const n of D.npcs) for (const k of ['lines', 'early']) { const v = n[k]; if (Array.isArray(v)) add('Walks', 'walk/' + wid + '/' + n.id + (k === 'early' ? '/early' : ''), wid + ' ' + safe(() => castDef(n.id).name, n.id) + (k === 'early' ? ' (too early)' : ''), flat(v), 'career/story/story-data.js'); }
     for (const id of MUS_CAST) { const T = TALK[id]; if (!T) continue; safe(() => { const base = T.options.filter(o => !/^! /.test(o[0]));
       add('Musalla talks', 'talk/' + id, castDef(id).name, flat([[id, T.greet()], ['choice', base.map(([q, f]) => { let r = []; try { r = f(); } catch (e) {} return [q, r.map(l => [id, l])]; })]]), 'career/musalla.js'); }); }
     for (const b of BEATS) if (b.lines) add('Milestones', 'beat/' + b.id, b.label || b.id, flat(b.lines), 'career/progression.js');
-    // the career intro
-    add('Intro', 'intro/outside', 'Intro: outside the masjid', flat(INTRO_OUT), 'career/intro-world.js');
-    for (const id of Object.keys(INTRO_CAST)) add('Intro', 'intro/gym/' + id, 'Intro: ' + castDef(id).name, flat(INTRO_CAST[id].lines), 'career/intro-world.js');
-    add('Intro', 'intro/wrap', 'Intro: Saleem wraps up', flat(INTRO_WRAP), 'career/intro-world.js');
-    // the neighbourhood (v9.2)
-    if (typeof WORLD_LINES !== 'undefined') for (const id of Object.keys(WORLD_LINES)) WORLD_LINES[id].forEach((set, i) => add('Neighbourhood', 'npc/' + id + '/' + i, WORLD_NPC_LOOK[id].name + ' (day ' + (i + 1) + ')', set.map(([sp, t]) => L(sp, t)), 'career/world/world-scenes.js'));
-    // v9.4: every reminder the Jumu'ah khutbah can say (each is a trivia question + its explanation)
-    if (typeof jumuahEligible === 'function') for (const i of jumuahEligible()) add('Jumu’ah khutbah', 'jumuah/' + i, 'Khutbah reminder from trivia #' + i, [L('saleem', JUMUAH_LEAD[0] + jumuahCore(i))], 'career/jumuah.js');
     return U;
   };
   RS.speakerName = sp => sp === 'you' ? 'You' : sp === 'elder' ? 'An elder' : safe(() => castDef(sp).name, null) || (typeof WORLD_NPC_LOOK !== 'undefined' && WORLD_NPC_LOOK[sp] ? WORLD_NPC_LOOK[sp].name : sp);
@@ -58,16 +48,15 @@ window.__RS = (() => {
   const people = () => {
     RS.ensureCareer();
     const out = [];
-    for (const id of Object.keys(CAST)) { if (!CAST[id] && id !== 'jalal') continue; out.push({ key: 'cast/' + id, name: safe(() => castDef(id).name, id), def: () => castDef(id), team: () => id === 'jalal' ? rivalTeam(0) : amanahTeam() }); }
+    for (const id of Object.keys(CAST)) { if (!CAST[id] || id === 'narr') continue; out.push({ key: 'cast/' + id, name: safe(() => castDef(id).name, id), def: () => castDef(id), team: () => id === 'jalal' ? rivalTeam(0) : amanahTeam() }); }
     out.push({ key: 'cast/you', name: 'Your player (default look)', def: () => playerDef(), team: () => amanahTeam() });
     TEAMS.forEach(T => T.players.forEach((p, i) => out.push({ key: 'team/' + T.short + '/' + i, name: p.name + ' (' + T.name + ')', def: () => p, team: () => T })));
-    rivalTeam(0).players.forEach((p, i) => out.push({ key: 'team/' + rivalTeam(0).short + '/' + i, name: p.name + ' (Al-Burhan, rival)', def: () => p, team: () => rivalTeam(0) }));
     if (typeof WORLD_NPC_LOOK !== 'undefined') for (const id of Object.keys(WORLD_NPC_LOOK)) out.push({ key: 'npc/' + id, name: WORLD_NPC_LOOK[id].name + ' (neighbourhood)', def: () => Object.assign({ num: 0 }, WORLD_NPC_LOOK[id]), team: () => amanahTeam() });
     return out;
   };
   RS.people = () => people().map(p => ({ key: p.key, name: p.name }));
   RS.defOf = key => { const p = people().find(q => q.key === key); if (!p) throw new Error('no person ' + key); return p.def(); };
-  RS.teams = () => TEAMS.concat([rivalTeam(0)]).map(T => ({ short: T.short, name: T.name, c1: T.c1, c2: T.c2, crest: T.crest, players: T.players.map(p => p.name) }));
+  RS.teams = () => TEAMS.map(T => ({ short: T.short, name: T.name, c1: T.c1, c2: T.c2, crest: T.crest, players: T.players.map(p => p.name) }));
   // draw a person: outfit 'thobe' or 'kit' (team colours), facing right or left, at (x, y) feet, scale s
   RS.drawPerson = (g, key, x, y, s, o = {}) => {
     const P_ = people().find(p => p.key === key); if (!P_) throw new Error('no person ' + key);
@@ -86,7 +75,7 @@ window.__RS = (() => {
     g.save(); if (o.face === -1) { g.translate(x * 2, 0); g.scale(-1, 1); }
     drawPortrait(g, x, y, d2, amanahTeam(), s, o.outfit === 'kit' ? null : 'thobe'); g.restore();
   };
-  RS.drawCrest = (g, short, x, y, r) => { const T = TEAMS.concat([rivalTeam(0), amanahTeam()]).find(t => t.short === short); drawCrest(g, x, y, r, T); };
+  RS.drawCrest = (g, short, x, y, r) => { const T = TEAMS.concat([amanahTeam()]).find(t => t.short === short); drawCrest(g, x, y, r, T); };
   RS.venues = () => VENUE_LIST.map(v => ({ id: v.id, name: v.name, kind: v.kind }));
   RS.drawVenue = (g, id, w, h) => {                     // venueThumb's drawing, at full size (960x540)
     let v = VENUE_LIST.find(q => q.id === id);

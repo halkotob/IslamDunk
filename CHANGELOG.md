@@ -1,5 +1,62 @@
 # Changelog
 
+## 9.22.0: the career is a story, starting with Chapter 0
+Career is now a chaptered story (docs/career-overhaul/: the brief, the scene list and MAP.md, which maps every scene to
+the code). This release is the foundation and its first chapter. A new career goes from the creator straight into
+**Chapter 0: Introduction**:
+- **C0.1** On black, the closing salams of Isha fade in, “As-salamu alaykum wa rahmatullah” to the right, then to the
+  left, in Arabic and in English. Only the words are shown, never the prayer.
+- **C0.2** The musalla just after Isha: rows of brothers seated on the carpet, and Imam Dawud welcomes you and sends you
+  to the gym.
+- **C0.3** The gym. Ilyas is shooting around, Ammo Jamil is watching, Sh. Saleem is waiting. Walk up and say salaam to
+  each of them (E, Enter, or tap Talk). A checklist in the corner shows who is left, and Sh. Saleem ends the walk.
+- **C0.4** Shoot around, the tutorial on the real gym floor: move, sprint, take a jump shot, make two. Each step's
+  controls are on the hint (keyboard or touch), and each step ticks off as you do it.
+- **C0.5** A pickup game: you and Sh. Saleem against Ammo Jamil and Ilyas, first to 11, against the easiest CPU there
+  is. Lose, and they run it back until you win.
+- **C0.6** They invite you back tomorrow. Father and son bicker about the loss, and Sh. Saleem has a word for both.
+  Then you land on the new hub in **Chapter 1: Making the team**. Chapter 1 arrives in the next release, so Continue
+  says so for now.
+
+**The new hub** has four entries and nothing else: **Continue** (the next scene or game), **Gym** (practice and
+drills), **Masjid** (the musalla, Sh. Saleem’s office, outside, projects) and **My Player** (upgrade stats, look,
+Journal, league and stats). Beside them are the chapter, the next event and, once Chapter 2 starts it, the school
+wing fundraiser. The corner menu (Save and load, Title) is unchanged. Every scene goes into the **Journal** by its ID.
+
+**The new cast** (in `CAST`, with looks, numbers and stats): Sh. Saleem, Ammo Jamil, Ilyas, Ustath Karim, Qari Anas,
+Imam Dawud and Musa are the seven teammates. Each is in the top two of the seven in both of his standout stats, at
+every stage. The Mufti (Mufti Abdullah) and the Hafiz (Hafiz Zubair) are in the musalla. The rival is Masjid
+Al-Furqan, captain Rayyan. The musalla, the HORSE opponents, the 1v1 drill (now against Ilyas), the passing drill
+(Musa) and King of the Court in the gym all use the new cast.
+
+**Removed from career** (MAP.md lists every file, save field, screen and test each one touched): the calendar and
+the neighbourhood that ran its free days (with its Settings row), Jumu’ah, the hub-first rows, the pregame intention
+picker, the office lessons, partner side-scenes, the rival feud, the end-of-season ceremony and the Season N+1
+screen, weekly goals, the rookie checklist, badges, the old intro, and Jalal and the old regulars as named characters
+in career. Khalil, Nasser, Tariq and the uncles are still in the mini games outside career, which play as before.
+The Barakah Run had no link from career to remove and is untouched.
+
+**Old career saves are not migrated.** The game is still in testing, so a career saved before this version
+(`sv` < 10) isn't offered: the Career menu starts a new career. The profile, custom teams and everything else are
+kept.
+
+How it was checked:
+- **New tests** (`tests/story.mjs`, fast tier): `story-ch0` (a bot plays C0.1 to C0.6, loses the pickup game once,
+  then wins and lands at the hub in Chapter 1, with every scene in the Journal and every screen drawn); `story-reload`
+  (a save at each Chapter 0 scene, a page reload, Continue: the same scene); `story-hub` (exactly the four entries;
+  every entry and sub-entry opens its screen, at desktop and phone sizes); `story-cast` (the standout stats);
+  `story-oldsave` (old saves start a new career, the profile is kept).
+- `hub-layout` checks the new hub at 5 sizes and 10 cases (chapters, long names, 5-digit balances, the fundraiser,
+  maxed stats, open submenus): no text on text, no panel on panel, nothing outside its panel, no text under 11 px on
+  phones. The phone text audit has the story screens (the salams, the musalla, a walk, a bubble, the tutorial, the hub).
+- Retired with their systems: `calendar`, `career-run`, `world-*`, `jumuah`, `jumuah-visual`, `hub-presses`,
+  `hub-arrive`, `career-intro` and the old `career` test, plus the review scripts `review:calendar`, `review:world`,
+  `review:jumuah` and `review:hub`. Updated to the new career: the save tests (they use a story save, and `save-old`
+  now checks that old careers aren’t loaded while the profile and teams are), the league fixtures (no calendar), the
+  Review Studio (the story's scenes by chapter and ID instead of the old threads), `v98` (no niyyah), and the sound
+  tests (the calendar's chime is gone: 39 sounds).
+- `npm test`: every fast-tier test passes.
+
 ## 9.21.1: the Review Studio opens on a phone from a link
 **How to use it:** open **https://halkotob.github.io/IslamDunk/studio/** on your phone. Type your name under ⋯ (the
 same name you use on the computer), then review: the bar at the bottom has Keep / Fix / Delete (and Merge on

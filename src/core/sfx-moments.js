@@ -6,10 +6,10 @@
 //                  crowdTurnover / crowdBlock / crowdBadMiss (a few voices, when nobody is drawn; scaled by the
 //                  venue's crowd level, so the practice gym is silent), catch (Lightning's fed ball)
 //   between plays  halftimeStinger, winStinger, lossStinger (calm, never mocking), earnTick, triviaLow
-//   menus, career  uiBack, uiConfirm, toast (quieter than blip), calChime (two notes: no adhan, Quran or takbir)
+//   menus, career  uiBack, uiConfirm, toast (quieter than blip)
 // No music anywhere: a stinger is two or three notes, under a second.
 const SFX_MOMENTS = ['shotTick', 'ftStep', 'ftAttempt', 'hotSpot', 'crowdTurnover', 'crowdBlock', 'crowdBadMiss', 'catch',
-  'halftimeStinger', 'winStinger', 'lossStinger', 'earnTick', 'triviaLow', 'uiBack', 'uiConfirm', 'toast', 'calChime'];
+  'halftimeStinger', 'winStinger', 'lossStinger', 'earnTick', 'triviaLow', 'uiBack', 'uiConfirm', 'toast'];
 Object.assign(SFX_WHERE, {
   shotTick: 'The last 3 seconds of the shot clock: a quiet tick each second, a little higher each time',
   ftStep: 'A player stepping to the free throw line', ftAttempt: 'Each free throw attempt (a soft "ready")',
@@ -18,7 +18,7 @@ Object.assign(SFX_WHERE, {
   catch: 'Lightning: a fed ball caught', halftimeStinger: 'The halftime screen', winStinger: 'The final screen after a win',
   lossStinger: 'The final screen after a loss (calm)', earnTick: 'Barakah Points and Halal Bucks counting in after a career game',
   triviaLow: 'The last 5 seconds of a trivia question', uiBack: 'Back or Esc out of a screen', uiConfirm: 'Yes or No in a confirmation',
-  toast: 'A message at the bottom of the screen (saved, copied)', calChime: 'A new month, Ramadan, Eid or a holiday in the career calendar'
+  toast: 'A message at the bottom of the screen (saved, copied)'
 });
 for (const id of ['ftStep', 'ftAttempt', 'catch', 'shotTick']) SFX_ROOM.add(id);
 // each variant's trim (dB): the four land on one level, the match sounds at least 10 dB under the swish (-30.5 dB),
@@ -39,8 +39,7 @@ const SFX_MOMENT_TRIM = {
   triviaLow: { A: 0.0, B: 12.2, C: 1.2, D: -4.4 },
   uiBack: { A: -0.3, B: -0.6, C: -4.8, D: -5.3 },
   uiConfirm: { A: -0.6, B: -0.6, C: -2.0, D: -3.9 },
-  toast: { A: -0.2, B: -3.0, C: -0.9, D: -5.0 },
-  calChime: { A: -7.9, B: -6.6, C: -2.1, D: -7.7 }
+  toast: { A: -0.2, B: -3.0, C: -0.9, D: -5.0 }
 };
 
 {
@@ -73,7 +72,6 @@ const SFX_MOMENT_TRIM = {
     uiBack() { S.tone(620, 0.05, 'square', 0.016, 420); },
     uiConfirm() { S.tone(700, 0.04, 'sine', 0.035); S.tone(940, 0.06, 'sine', 0.035, null, 0.04); },
     toast() { S.tone(1050, 0.035, 'sine', 0.014); },
-    calChime() { S.tone(784, 0.6, 'sine', 0.04); S.tone(1568, 0.25, 'sine', 0.008); S.tone(1047, 0.8, 'sine', 0.04, null, 0.22); S.tone(2094, 0.3, 'sine', 0.008, null, 0.22); }
   };
   // B: Real
   const B = {
@@ -93,7 +91,6 @@ const SFX_MOMENT_TRIM = {
     uiBack() { nz(0.006, 'bandpass', 2400, 1.2, 0.08); tn(820, 0.02, 'sine', 0.03); },
     uiConfirm() { nz(0.006, 'bandpass', 3200, 1.2, 0.1); tn(1150, 0.02, 'sine', 0.05); tn(1530, 0.025, 'sine', 0.04, { d: 0.035 }); },
     toast() { tn(1300, 0.03, 'sine', 0.02, { att: 0.004 }); },
-    calChime() { [784, 1047].forEach((f, i) => { tn(f, 1.0, 'sine', 0.03, { d: i * 0.25, att: 0.004 }); tn(f * 2.76, 0.3, 'sine', 0.006, { d: i * 0.25 }); tn(f * 5.4, 0.1, 'sine', 0.002, { d: i * 0.25 }); }); }
   };
   // C: Arcade
   const C = {
@@ -113,7 +110,6 @@ const SFX_MOMENT_TRIM = {
     uiBack() { tn(660, 0.03, 'square', 0.03); tn(440, 0.03, 'square', 0.02, { d: 0.025 }); },
     uiConfirm() { tn(880, 0.03, 'square', 0.04); tn(1175, 0.04, 'square', 0.035, { d: 0.03 }); },
     toast() { tn(1320, 0.03, 'square', 0.012); },
-    calChime() { tn(784, 0.25, 'square', 0.02); tn(1047, 0.45, 'square', 0.02, { d: 0.2 }); }
   };
   // D: Soft
   const D = {
@@ -133,7 +129,6 @@ const SFX_MOMENT_TRIM = {
     uiBack() { tn(480, 0.05, 'sine', 0.04, { f2: 360, att: 0.006 }); },
     uiConfirm() { tn(520, 0.05, 'sine', 0.05, { att: 0.006 }); tn(660, 0.07, 'sine', 0.05, { d: 0.05, att: 0.006 }); },
     toast() { tn(880, 0.04, 'sine', 0.025, { att: 0.006 }); },
-    calChime() { tn(587, 0.7, 'sine', 0.04, { att: 0.02 }); tn(784, 0.9, 'sine', 0.04, { d: 0.28, att: 0.02 }); }
   };
   for (const id of SFX_MOMENTS) {
     SFX_IDS.push(id);

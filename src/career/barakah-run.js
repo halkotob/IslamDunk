@@ -262,24 +262,7 @@ for(const a of [
 }
 refreshReplayability();
 
-// ------------------------------------------------------------- season-ending knockout losses
-// Losing in the group stage still lets you re-enter. Losing a semifinal or final (after getting
-// out of the group) ends the season: summary first, then the year transition.
-{
-  const _cam = careerAfterMatch;
-  careerAfterMatch = function () {
-    _cam.apply(this, arguments);
-    const b = C.bracket, p = Game.post;
-    if (b && b.fmt === 'pool' && b.out && !b.outGroup && b.round >= 1 && p && p.res === 'out') {
-      C.seasonOver = { s: C.season || 1, st: M.careerStage, round: p.roundName, opp: p.opp.name, us: p.us, them: p.them };
-      p.lines = p.lines.concat([['saleem', 'That ends our season. We gave everything in the ' + p.roundName.toLowerCase() + '. Next year we come back stronger, in sha Allah.'],
-        ['tariq', 'Everything we built carries over: the banners, the upgrades, the chemistry. Season ' + ((C.season || 1) + 1) + ' starts back at the Metro League.']]);
-      p.summary = M.careerStage; p.seasonEnd = true; saveCareer();
-    }
-  };
-  const _sc = summaryClose;
-  summaryClose = function () { _sc.apply(this, arguments); if (C && C.seasonOver) { Game.screen = 'newseason'; Game.idx = 0; } };
-}
+// (v9.22: the season-ending knockout loss is the story's now: a run-ending loss goes back to the chapter's checkpoint)
 
 // ------------------------------------------------------------- smooth inbounds
 // After a basket or a dead ball: the inbounding team's nearest player jogs to the ball under the

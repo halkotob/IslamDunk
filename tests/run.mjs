@@ -10,7 +10,6 @@
 //   controls     scripted human input after a pump fake: a crossover is ignored (no turnover), he can't move at all
 //                (the stick only turns him), shoot and pass still work (v8.6.3: no double dribbles; v8.6.4: no walking)
 //   half-court   lobby-driven half-court / points-target games run to completion
-//   career       new career -> 3 matches -> post-game -> save written
 //   feel         v7.9 rules: holding sprint gets at least the CPU's sprint time (same stamina rule), nobody
 //                walks through the end walls, a loose ball bounces off them, side-outs start with room
 //   minis        Lightning rules (threes first, in order, own rebounds, on deck shoots once the ball ahead
@@ -21,8 +20,6 @@
 //                guard), the tutorial runs to the end, the ball watchdog recovers a lost ball
 //   phase4       half-court restarts don't teleport, Around the World and King of the Court play out,
 //                profile XP and unlocks, Barakah Run 2.0 (vow, map, the final), 3 on 3 beta
-//   career-intro creator (Start career) -> walk to Saleem outside the masjid -> up the path -> gym -> meet
-//                all five brothers -> hub; body builds sum to zero; CPU stages have 2/3/2 strength tiers
 //   online-loop  loopback transport: lobby, 7 game types (HORSE with the HAQ word, Around the World, King of the Court), back to lobby, direct (P2P) link + fallback,
 //                v8.6.1: a Noor power-up pick on the host and on the guest (host authoritative, effect mirrored)
 //                v8.6.3: the guest sees a hot spot's +2 value and the pick-up pivot; v8.6.5: a default game is 2 halves on both
@@ -39,24 +36,10 @@
 //                two pads for two players, hot-plug, trivia and a Noor card, the on-screen picker, rumble, keyboard
 //   clip         v8.7.1: a seeded game's best play exported as a video (MediaRecorder): video Blob, 4-8 s, state untouched;
 //                refused during a live match; falls back to the still image without MediaRecorder
-//   calendar     v9.0: the career calendar model (month lengths, weekdays, Jumu'ah, Ramadan, the Eids, year rollover), stage
-//                schedules (every round a day, Wed/Sat only, never a Friday or two games a day, breaks, re-entry after the
-//                break), Continue skips empty days, saves from v5 (knockout), v6 (group stage), finished and season-over
-//                careers load with a sensible calendar, Settings → Career calendar Off, activity counters
-//   career-run   v9.0: a full career by bot: new career -> creator -> intro -> hub -> Continue, every game played (CPU-vs-CPU,
-//                the human's team forced to win) through all four stages and into a new season; the date only moves
-//                forward and the hub's strip always shows 4 days
-//   world-flow   v9.2 neighbourhood: a free day starts at home; Go out, the store and the masjid once a day, each visit moves
-//                the time of day on, night only home, End the day, Skip the day, after a game the next morning at home,
-//                Jumu'ah highlight, short leavable talks (a different set the next day), the store (Halal Bucks, cosmetic,
-//                owned/worn, creator rows), the mirror, saves (old saves start at home), calendar Off, sign text size
-//   world-walk   v9.2 walk bot: reachability over the walkable mask, walks to every portal, NPC and use point (stuck, off the
-//                floor, through a prop), feet on the ground line, depth order, camera inside the drawn world
-//   world-robust v9.2 rapid presses and taps in every scene, leaving mid-talk (Esc, Leave), tab away/back, resizes, phone
-//                rotation, no page errors; night frame time per scene with the game's own loop
-//   world-save   v9.2 save in every scene and time of day, reload, same place; the hub comes back; old saves start at home
-//   world-visual v9.2 visual regression: every view x time of day x 3 sizes against docs/review/img/world-*.png
-//   world-pad    v9.2 the stick walks, A talks, B leaves, Start opens the menu
+//   hub-layout   v9.6.2: the career hub at 5 sizes x 10 cases (v9.22: the story hub): no text on text, no panel on panel,
+//                no text outside its container, 12 px gutters, no small text on phones (tests/hub-layout.mjs)
+//   story-*      v9.22: the career story by bot (tests/story-setup.js): Chapter 0 end to end, reloads at every scene, the
+//                Journal, the hub's four entries, the cast's standout stats, old saves start a new career
 //   shot-clock   v9.6.3: 14 s in every format and period length (first to 21 too), the title demo and career; a violation
 //                turns the ball over; resets on a steal and a rebound; side-outs keep at least 8; Barakah Run texts; the
 //                online guest shows the host's clock
@@ -70,13 +53,6 @@
 //                shooter (dunks and mini-game spots unchanged); CPU uses a live spot (at most every other
 //                possession), closes out on it, and is unchanged with no spot; late game (trailing gets a shot
 //                up, leading uses the shot clock); off the glass only to a trailing teammate
-//   jumuah       v9.4 Jumu'ah: only on Fridays (calendar on), the question at the door (Attend / Not today, one press),
-//                attending marks 2-3 new questions studied (Noor challenge "Studied", books_10, calendar counter), every
-//                reminder traces to a trivia question + explanation, skipping at each point, same talk after a reload,
-//                all studied (2 general reminders, no marks), old saves, Career calendar Off; the walk in and out by keys
-//   jumuah-visual v9.4 the door question, the room, a reminder and the card at 3 sizes against docs/review/img/jumuah-*.png
-//   hub-layout   v9.6.2: the career hub at 5 sizes x 13 cases: no text on text, no panel on panel, no text outside its
-//                container, badge pills inside the card, 12 px gutters, no small text on phones (tests/hub-layout.mjs)
 //   league-*     v9.7.0: real league games, isolation, formats, boards, time, calibration, layout (tests/league.mjs)
 //   rb-*         v9.14: rollback netcode: determinism across pages and engines (tests/rollback.mjs)
 //   anim-moves, anim-retired   v9.16.1 the reviewed animations, the retired items (tests/anim-fix.mjs)
@@ -87,7 +63,7 @@
 //                codes, career away games, online lobby), 3 on 3 third-player picks, your players as mini game
 //                opponents (HORSE, Lightning and King of the Court line-ups), Teams & Players: right no longer duplicates
 //   v98          v9.8.0: play-test review: foul/timeout restarts walk and check, blocks by position and Defense, difficulty scales
-//                the CPU defense, niyyah on big games only, story choices fit and Skip, layup poses, menu help, 3 mini games
+//                the CPU defense, story choices fit and Skip, layup poses, menu help, 3 mini games
 //   v95          v9.5.0: a tournament (bracket, a real game to the post-game screen, knocked out, played out, saved), a
 //                league (schedule, standings, final, leaders), the Quick Play entries, colorblind-safe kits, larger
 //                text on a computer, automatic shot release, Settings → Accessibility, the top plays reel, My clips
@@ -99,13 +75,10 @@ import path from 'node:path';
 import { FAKE_FIREBASE_APP, FAKE_FIREBASE_DB, FAKE_FIREBASE_AUTH, FAKE_ROOM_INIT } from './fakes.js';
 import { PHONES, auditPhone, MIN_CSS_PX, tapReport, MIN_TAP } from './phone-audit.mjs';
 import { TOMAHAWK_REC } from './tomahawk-rec.mjs';
+import { CAREER_HELPERS } from './career-setup.js';
 import { FAKE_PAD_INIT } from './fake-pad.js';
-import { CAL_HELPERS } from './calendar-setup.js';
-import { WORLD_HELPERS, WORLD_VIEWS, WORLD_TODS } from './world-setup.js';
-import { PHONES as WORLD_PHONES } from './phone-audit.mjs';
 import { STUDIO_TESTS } from './studio.mjs';
 import { STUDIO_PHONE_TESTS } from './studio-phone.mjs';
-import { hubTests } from './hub-layout.mjs';
 import { leagueTests } from './league.mjs';
 import { netTests } from './net.mjs';
 import { rollbackTests } from './rollback.mjs';
@@ -123,11 +96,11 @@ import { ballHandsTests } from './ball-hands.mjs';
 import { difficultyTests } from './difficulty.mjs';
 import { lobbyTests } from './lobby.mjs';
 import { v921Tests } from './v921.mjs';
-import { hubFirstTests } from './hub-first.mjs';
 import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
 import { animFixTests } from './anim-fix.mjs';
-import { JUMUAH_HELPERS, JUMUAH_STAGES } from './jumuah-setup.js';
+import { storyTests } from './story.mjs';
+import { hubTests } from './hub-layout.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -314,29 +287,6 @@ T['half-court'] = async ({ browser, base }) => {
   await ctx.close();
   const ok = r.every(x => x.over && x.top >= x.target && x.half === (x.court === 'half') && x.label === 'FIRST TO ' + x.target) && !errs.length;
   return { ok, detail: [...r.map(x => JSON.stringify(x)), ...errs] };
-};
-
-T['career'] = async ({ browser, base }) => {
-  const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'career');
-  const r = await p.evaluate(() => {
-    const out = [];
-    C = freshCareer(); if (!C.bracket) C.bracket = makeBracket(C.stage); saveCareer();
-    for (let g = 0; g < 3; g++) {
-      startCareerMatch();
-      let n = 0; for (; n < 60 * 60 * 20 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; }
-      const over = M.phase === 'over', score = M.teams[0].score + '-' + M.teams[1].score;
-      careerAfterMatch();
-      out.push({ g, over, score, screen: Game.screen, played: C.gamesPlayed, rec: C.wins + '-' + C.losses });
-      Game.screen = 'title';
-    }
-    const saved = readSave(SAVE_AUTO);
-    return { out, saved: !!saved, savedGames: saved && saved.gamesPlayed };
-  });
-  // render a few career screens to catch drawing errors
-  for (const s of ['hub', 'postgame', 'cbracket']) { await p.evaluate(sc => { try { Game.screen = sc; } catch (e) {} }, s); await sleep(400); }
-  await ctx.close();
-  const ok = r.out.every((x, i) => x.over && x.screen === 'postgame' && x.played === i + 1) && r.saved && r.savedGames === 3 && !errs.length;
-  return { ok, detail: [...r.out.map(x => JSON.stringify(x)), 'save written: ' + r.saved, ...errs] };
 };
 
 T['feel'] = async ({ browser, base }) => {
@@ -596,20 +546,7 @@ T['phase5'] = async ({ browser, base }) => {
   const r = await p.evaluate(() => {
     window.__seed(5); const out = {};
     C = freshCareer(); C.name = 'Yusuf'; C.bracket = makeBracket(0); saveCareer(); careerHub();
-    // goals: rookie pays once, badges are earned (never bought), a week is 3 games
-    const bp0 = C.bp; rookieDo('masjid'); rookieDo('masjid'); out.rookie = C.bp - bp0 === Math.round(40 * ECON.bpK);   // (v9.19.0: 40 x bpK)
-    badgeAdd('lungs', 5); out.notYet = !hasBadge('lungs'); badgeAdd('lungs'); out.badge = hasBadge('lungs');
-    // niyyah before a game, kept, opens the first lesson
-    Game.screen = 'pregame'; startCareerMatch(); out.asked = Game.screen === 'story';
-    while (storyLine(Game.story)[0] !== 'choice') { Game.story.t = 99; storyNext(Game.story); }
-    storyChoose(Game.story, 1); out.picked = !!C.niyyah;
-    for (let i = 0; i < 20 && Game.screen === 'story'; i++) { Game.story.t = 99; storyNext(Game.story); }
-    out.played = Game.screen === 'play' && M.career;
-    C.niyyah = 'pass'; M.players.find(q => q.human === 0).stats.ast = 5;
-    for (let n = 0; n < 60 * 60 * 20 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; }
-    careerAfterMatch(); out.kept = C.niyyahKept === 1 && C.lessons === 1 && (sheikhSituation() || {}).key === 'lesson0';
-    for (let g = 0; g < 2; g++) { startCareerMatch(); for (let n = 0; n < 60 * 60 * 20 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; } careerAfterMatch(); }
-    out.week = cg().week.n === 2;
+    // (v9.22: the rookie checklist, badges, weekly goals, the niyyah and its lessons left the career with the story)
     // gym routines run and pay
     enterGym(); const res = {};
     for (const k of ['mikan', 'slides', 'passing', 'cond']) {
@@ -625,25 +562,21 @@ T['phase5'] = async ({ browser, base }) => {
       res[k] = Gym.result ? Gym.result.kind : null;
     }
     out.routines = res;
-    Gym.result = null; startMini('atw', 'khalil'); M.mini.done = true; M.mini.doneT = 0; M.mini.winner = 1;
+    Gym.result = null; startMini('atw', 'ilyas'); M.mini.done = true; M.mini.doneT = 0; M.mini.winner = 1;
     for (let n = 0; n < 200 && !Gym.result; n++) gymUpdate(STEP);
     out.atwGym = Gym.result && Gym.result.kind === 'atw';
     // a project you can use: the water cooler
     Gym.result = null; C.up.fountain = 1; enterGym(); M.players[0].turbo = 10; useGymProp(GYM_PROPS[0]);
     for (let n = 0; n < 60 * 3; n++) gymUpdate(STEP);
     out.cooler = !Gym.prop && M.players[0].turbo === 100;
-    // musalla: new lines, then heard
-    C.wins = Math.max(1, C.wins); const before = newsFor('khalil').length; TALK.khalil.options[0][1](); out.news = before > 0 && newsFor('khalil').length === before - 1;
-    // end of season ceremony, once
-    C.done = true; careerHub(); out.awards = Game.screen === 'story' && /awards/.test(Game.story.title); careerHub(); out.awardsOnce = Game.screen === 'hub';
     return out;
   });
-  for (const s of ['hub', 'cgoals', 'journal']) { await p.evaluate(sc => { Game.screen = sc; }, s); await sleep(300); }
+  for (const s of ['hub', 'journal']) { await p.evaluate(sc => { Game.screen = sc; }, s); await sleep(300); }
   await p.evaluate(() => { openMusalla(); }); await sleep(300);
   await p.evaluate(() => { Object.assign(C.up, { minaret: 1, dome: 1, garden: 2, parking: 1 }); Game.screen = 'masjid'; Game.masjidView = 'ext'; ExtFx.id = 'fount'; ExtFx.t = 0; }); await sleep(400);
   await ctx.close();
   const R = r.routines || {};
-  const ok = r.rookie && r.notYet && r.badge && r.asked && r.picked && r.played && r.kept && r.week && R.mikan === 'mikan' && R.slides === 'slides' && R.passing === 'passing' && R.cond === 'cond' && r.atwGym && r.cooler && r.news && r.awards && r.awardsOnce && !errs.length;
+  const ok = R.mikan === 'mikan' && R.slides === 'slides' && R.passing === 'passing' && R.cond === 'cond' && r.atwGym && r.cooler && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
@@ -682,7 +615,7 @@ T['phase6'] = async ({ browser, base }) => {
     goTitle(); loadCareer(SAVE_AUTO);
     const T = stageTeams(0); out.league = T.some(t => t && t.name === 'Masjid Al-Fajr') && amanahTeam().players.every(q => q.name !== 'Bilal') && playerDef().stats.spd < 10;
     // review mode: scenes, a mark, export
-    C = null; out.scenes = rvScenes().length > 40;
+    C = null; out.scenes = rvScenes().length > 20;
     rvMark('That was a... strategic loss.', 'cut'); rvLoad().feel[0] = { r: 4 }; rvExport();
     out.export = /strategic loss.*cut/.test(RV.lastExport) && /feel/.test(RV.lastExport);
     rvExit(); out.noSave = (readSave(SAVE_AUTO) || {}).name === 'Yusuf';
@@ -899,10 +832,8 @@ T['v98'] = async ({ browser, base }) => {
       const was = blockBall; let hit = false; blockBall = () => { hit = true; }; try { checkBlockJump(o); } finally { blockBall = was; } if (hit) b++; } return b / 400; };
     const b3 = tries(3), b10 = tries(10); out.blocks = b10 > b3 + 0.2 && b10 > 0.45 && b3 < 0.4;
     out.defK = defK(M.players[2]) === 1 && DIFF.veryeasy.dk < DIFF.easy.dk && DIFF.easy.dk < DIFF.medium.dk && DIFF.medium.dk < DIFF.hard.dk;
-    // niyyah: asked before the first game, the first group game, semis and finals, not group games 2 and 3
+    // (v9.22: the niyyah question before games left the career with the story)
     if (!C) { C = freshCareer(); C.name = 'T'; C.bracket = makeBracket(0); }
-    C.gamesPlayed = 0; const a0 = niyyahBigGame(); C.gamesPlayed = 4; C.bracket.round = 0; C.bracket.md = 1; const a1 = niyyahBigGame(); C.bracket.md = 0; const a2 = niyyahBigGame(); C.bracket.round = 1; const a3 = niyyahBigGame();
-    out.niyyah = a0 && !a1 && a2 && a3;
     // story: four long choices fit their buttons; Skip ends the scene
     let done = false; playStory([['saleem', 'Hello.'], ['choice', [['Just let me play today.', [['saleem', 'Ok.']]], ['Make the extra pass. Get my brothers involved.', [['saleem', 'Ok.']]], ['Defend every possession like it matters.', [['saleem', 'Ok.']]], ['Knock down my free throws when it counts.', [['saleem', 'Ok.']]]]]], () => { done = true; }, 'Test');
     Game.story.i = 1; storySkip(Game.story); out.skip = done;
@@ -976,50 +907,6 @@ T['v99'] = async ({ browser, base }) => {
     && !r.oopCold.oop && r.oopCold.kinds === 'euro' && r.oopFire.oop && r.dunk.dunk && !r.dunk.kinds && r.floater.types === 'floater' && !r.floater.kinds
     && r.bankMakes >= 15 && r.bankGlass >= r.bankMakes * 0.8 && r.openRate >= 0.7 && r.guardedRate < r.openRate - 0.1 && !r.greens && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
-};
-
-T['career-intro'] = async ({ browser, base }) => {
-  const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'career-intro');
-  const st = () => p.evaluate(() => ({ scr: Game.screen, scene: typeof INTRO !== 'undefined' && INTRO ? INTRO.scene : null, x: INTRO && Math.round(INTRO.x || 0), talk: INTRO && INTRO.talk ? INTRO.talk.lines[INTRO.talk.i][0] : null, met: INTRO && INTRO.met ? Object.keys(INTRO.met).length : 0 }));
-  const press = async (k, n = 1) => { for (let i = 0; i < n; i++) { await p.keyboard.press(k); await sleep(380); } };
-  const checks = await p.evaluate(() => {
-    let zero = true, maxAbs = 0;
-    for (const h of [0, 1, 2]) for (const b of [0, 1, 2]) for (const s of [null, ...PLAY_STYLES]) { const m = bodyMods(h, b, s === 'classic' ? null : s), v = Object.values(m); if (v.reduce((a, x) => a + x, 0)) zero = false; maxAbs = Math.max(maxAbs, ...v.map(Math.abs), 0); }
-    C = freshCareer(); C.seed = 4242;
-    const tiers = [0, 1, 2, 3].map(st => { const T = stageTeams(st).slice(1), c = { '-1': 0, '0': 0, '1': 0 }; T.forEach(t => c[t.tier]++); return c; });
-    const bodies = stageTeams(0).slice(2).every(t => t.players.every(p => p.bh != null && p.bw != null));
-    return { zero, maxAbs, tiers, bodies };
-  });
-  // creator -> Tab to the Start career button -> Enter
-  await p.evaluate(() => { C = freshCareer(); C.name = 'Test'; Game.creator = { idx: 0, isNew: true }; setupPractice('free'); Game.screen = 'creator'; });
-  await sleep(300); await press('Tab'); await press('Enter');
-  const s0 = await st();
-  await p.keyboard.down('KeyD'); for (let i = 0; i < 50 && !(await st()).talk; i++) await sleep(100); await p.keyboard.up('KeyD');
-  const greeted = (await st()).talk;
-  for (let i = 0; i < 6 && (await st()).talk; i++) await press('Enter');
-  await sleep(1200);
-  for (let i = 0; i < 80; i++) {
-    const s = await st(); if (s.scr !== 'introout') break;
-    const k = Math.abs(s.x - 420) > 12 ? (s.x < 420 ? 'KeyD' : 'KeyA') : 'KeyW';
-    await p.keyboard.down(k); await sleep(k === 'KeyW' ? 200 : 120); await p.keyboard.up(k);
-  }
-  await sleep(1800); const s1 = await st();
-  for (let i = 0; i < 4 && (await st()).talk; i++) await press('Enter');
-  for (const id of ['khalil', 'nasser', 'mahmoud']) {             // v9.8: Tariq and Siddiq left the intro
-    await p.evaluate(id => { const s = INTRO_CAST[id], me = M.players[0]; me.x = s.x + (s.x > 900 ? -70 : 70); me.z = s.z; }, id);
-    await sleep(350); await press('KeyE');
-    for (let k = 0; k < 4 && (await st()).talk; k++) await press('Enter');
-  }
-  const s2 = await st();
-  for (let k = 0; k < 3 && (await st()).talk; k++) await press('Enter');
-  await p.evaluate(() => { const me = M.players[0]; me.x = INTRO_SALEEM.x - 70; me.z = INTRO_SALEEM.z; }); await sleep(350);
-  await press('KeyE'); for (let k = 0; k < 4 && (await st()).talk; k++) await press('Enter');
-  await sleep(1600);
-  const end = await p.evaluate(() => ({ scr: Game.screen, seen: C.seen.intro && C.seen.meetNew, saved: !!readSave(SAVE_AUTO) }));
-  await ctx.close();
-  const tiersOk = checks.tiers.every(c => c['-1'] === 2 && c['0'] === 3 && c['1'] === 2);
-  const ok = checks.zero && checks.maxAbs <= 3 && tiersOk && checks.bodies && s0.scr === 'introout' && greeted === 'saleem' && s1.scr === 'gym' && s1.scene === 'gym' && s2.met === 3 && end.scr === 'hub' && end.seen && end.saved && !errs.length;
-  return { ok, detail: [JSON.stringify(checks), 'start: ' + JSON.stringify(s0), 'greeted by ' + greeted, 'gym: ' + JSON.stringify(s1), 'met: ' + JSON.stringify(s2), 'end: ' + JSON.stringify(end), ...errs] };
 };
 
 // v8.6.1: power-ups (v9.19.0: one at random for a correct answer, no picker; each of the 6 applies and expires,
@@ -1997,166 +1884,13 @@ T['clip'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
-// v9.0: the career calendar (model, schedules, Continue, saves, the setting)
-T['calendar'] = async ({ browser, base }) => {
-  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'calendar');
-  await p.evaluate(CAL_HELPERS);
-  const r = await p.evaluate(() => {
-    window.__seed(9); const o = {};
-    // ---- model
-    o.lengths = CAL_LEN.join(',') === '30,29,30,29,30,29,30,29,30,29,30,29' && CAL_YEAR === 354 && CAL_MONTHS.length === 12 && CAL_MONTHS[8] === 'Ramadan';
-    let rt = true, wd = true, ram = true, fri = true, eids = [];
-    for (let d = 0; d < 3 * 354; d++) {
-      const t = calDate(d); if (calDayOf(t.y, t.m, t.day) !== d || t.day < 1 || t.day > CAL_LEN[t.m]) rt = false;
-      if (calWd(d + 1) !== (calWd(d) + 1) % 7 || calWd(d + 7) !== calWd(d)) wd = false;
-      if (calIsRamadan(d) !== (t.m === 8)) ram = false;
-      const h = calHoliday(d); if (h) eids.push(t.y + ':' + t.m + ':' + t.day + ':' + h.name);
-    }
-    o.roundTrip = rt; o.weekdays = wd && calWd(0) === 0 && CAL_WEEKDAYS[calWd(5)] === 'Friday'; o.ramadanMonth9 = ram;
-    o.eids = eids.join('|') === '1:9:1:Eid al-Fitr|1:11:10:Eid al-Adha|2:9:1:Eid al-Fitr|2:11:10:Eid al-Adha|3:9:1:Eid al-Fitr|3:11:10:Eid al-Adha';
-    o.rollover = JSON.stringify(calDate(353)) === JSON.stringify({ y: 1, m: 11, day: 29, wd: calWd(353) }) && calDate(354).y === 2 && calDate(354).m === 0 && calDate(354).day === 1;
-    window.__calFresh();
-    for (let d = 0; d < 354; d++) { const D = calDay(d); if (D.fri !== (calWd(d) === 5) || (D.fri && !D.games.length && !D.holiday && D.type !== 'jumuah') || (D.overlay === 'ramadan') !== calIsRamadan(d)) fri = false; }
-    o.jumuahFridays = fri;
-    // ---- schedules: every slot a day, in order, Wed/Sat only (final Saturday), never a Friday or an Eid
-    let sch = true;
-    for (let st = 0; st < 4; st++) for (let S = 0; S < 400; S += 3) for (const fmt of ['pool', 'ko']) {
-      const s = buildSchedule(st, S, { fmt }), n = fmt === 'pool' ? 5 : 3;
-      if (s.days.length !== n || s.keys.length !== n) sch = false;
-      s.days.forEach((d, i) => { const w = calWd(d); if ((w !== 3 && w !== 6) || calHoliday(d) || (i && d <= s.days[i - 1]) || d < S) sch = false; });
-      if (calWd(s.days[n - 1]) !== 6) sch = false;
-    }
-    o.schedules = sch;
-    const run = calTypicalRun(); o.breaks = run.every((s, i) => !i || s.days[0] - run[i - 1].days[4] >= CAL_CFG.brk + 1);
-    o.typical = run.map(s => STAGES[s.st].name + ' m' + (calDate(s.days[0]).m + 1) + '-m' + (calDate(s.days[4]).m + 1));
-    o.typicalOk = o.typical.join(',') === 'Local m3-m5,State m6-m8,National m9-m11,World m12-m1' && calIsRamadan(run[2].days[0]);
-    // ---- Continue: skips empty days, stops on Jumu'ah, runs the pregame flow on a game day
-    window.__calFresh(); const d0 = C.cal.d, D0 = calDay(d0);
-    const items = HUB_MENU(); o.hubItems = items.map(e => e.label + (e.badge ? '[' + e.badge + ']' : '')).join(',');
-    calContinue(); const d1 = C.cal.d, t1 = calDay(d1).type, s1 = Game.screen;
-    if (Game.screen === 'world') { Game.worldSuppress = true; careerHub(); } calContinue(); const d2 = C.cal.d, s2 = Game.screen;
-    o.cont = { d0: calText(d0), d1: calText(d1), t1, s1, d2: calText(d2), s2 };
-    o.continueOk = d1 > d0 + 1 && t1 === 'jumuah' && s1 === 'hub' &&   // v9.18: a non-game day opens at the hub (v9.2-9.17: at home)
-      calDay(d2).type === 'game' && d2 === calGameDay() && ['scout', 'story'].includes(s2);
-    careerHub(); calContinue(); o.noSkip = C.cal.d === d2;   // a game day isn't passed by Continue...
-    careerHub(); calNextDay(); o.noSkipNext = C.cal.d === d2 && ['scout', 'story'].includes(Game.screen);   // ...or by Next day
-    // ---- a whole stage: one game per day, on its day, Wed/Sat; then a break; the next stage's days
-    window.__calFresh(); window.__calPlayTo(1, 0);
-    const L = C.cal.log; o.logDays = L.map(x => CAL_WD[calWd(x.d)] + ' ' + calDate(x.d).day);
-    o.stageGames = L.length === 5 && new Set(L.map(x => x.d)).size === 5 && L.every(x => [3, 6].includes(calWd(x.d))) && L.every((x, i) => !i || x.d > L[i - 1].d);
-    o.afterFinal = C.cal.d === L[4].d + 1 && C.cal.sched.st === 1 && C.cal.sched.days[0] >= L[4].d + 1 + CAL_CFG.brk && !C.cal.sched.entry;
-    // ---- out in the group stage: the re-entry is scheduled after the break, and played on its day
-    window.__calFresh();
-    const lose = () => { const gd = calGameDay(); calSetDay(gd); startCareerMatch(); M.teams[0].score = 10; M.teams[1].score = 30; M.winner = 1; M.phase = 'over'; careerAfterMatch(); return gd; };
-    lose(); lose(); const last = lose();
-    const rs = C.cal.sched; o.out = { out: !!C.bracket.out, entry: rs.entry, gap: rs.days[0] - last, today: C.cal.d - last };
-    let k = 0; careerHub(); while ((Game.screen === 'hub' || Game.screen === 'world') && k++ < 20) { if (Game.screen === 'world') { Game.worldSuppress = true; careerHub(); } calContinue(); }
-    o.retry = C.bracket.out === false && C.retries === 1 && C.cal.d === rs.days[0] && !C.cal.sched.entry && calSlot() === 0 && ['scout', 'story'].includes(Game.screen);
-    o.outOk = o.out.out && o.out.entry && o.out.gap >= CAL_CFG.brk + 1 && o.out.today === 1;
-    // ---- counters for "activities done today" (unlimited; recorded)
-    window.__calFresh(); C.bp = 5000; buyStat(0); buyStat(1); const lv = C.cal.done.levels; calNextDay(); o.counters = lv === 2 && !C.cal.done.levels;
-    // ---- saves
-    // v5 era: no sv, a knockout bracket after its quarterfinal, State stage
-    const v5 = { v: 1, seed: 777, name: 'Old', look: freshCareer().look, stage: 1, bp: 50, hb: 80, lv: { sht: 5, spd: 5, dnk: 4, def: 4, sta: 4, pas: 4 }, trophies: [0], wins: 5, losses: 0, up: {}, seen: { intro: true, stage0: true, stage1: true }, done: false, divChamps: {},
-      bracket: { round: 1, out: false, rounds: [[{ a: 0, b: 5, sa: 30, sb: 22, w: 0 }, { a: 2, b: 3, sa: 20, sb: 25, w: 3 }, { a: 4, b: 6, sa: 28, sb: 18, w: 4 }, { a: 7, b: 1, sa: 21, sb: 30, w: 1 }], [{ a: 0, b: 3, sa: null, sb: null, w: null }, { a: 4, b: 1, sa: null, sb: null, w: null }]] } };
-    localStorage.setItem(SAVE_SLOT, JSON.stringify(v5)); C = null; loadCareer(SAVE_SLOT);
-    const c5 = C.cal; o.v5 = { sv: C.sv, d: calText(c5.d) + ' Y' + calDate(c5.d).y, fmt: c5.sched.fmt, slot: calSlot(), next: calText(calGameDay()), log: c5.log.map(x => calText(x.d) + ' ' + (x.w ? 'W' : 'L') + ' ' + x.r) };
-    o.v5ok = C.sv >= 4 && c5.sched.fmt === 'ko' && calSlot() === 1 && c5.log.length === 1 && c5.log[0].w === 1 && c5.log[0].d < c5.d && calGameDay() >= c5.d && calDate(c5.d).m >= 4 && calDate(c5.d).m <= 7;
-    window.__calWin(); o.v5play = C.cal.log.length === 2 && C.bracket.round === 2 && calSlot() === 2 && calGameDay() > C.cal.log[1].d;
-    // v6 era: sv 3, group stage in progress (National, after group game 1)
-    window.__calFresh(); window.__calPlayTo(2, 1); delete C.cal; C.sv = 3; saveCareer(SAVE_SLOT); C = null; loadCareer(SAVE_SLOT);
-    o.v6 = { d: calText(C.cal.d), slot: calSlot(), next: calText(calGameDay()), log: C.cal.log.map(x => calText(x.d) + ' ' + x.r) };
-    o.v6ok = C.sv >= 4 && C.cal.sched.fmt === 'pool' && calSlot() === 1 && C.cal.log.length === 1 && C.cal.log[0].d < C.cal.d && calGameDay() >= C.cal.d && calIsRamadan(calGameDay()) === calIsRamadan(calTypicalRun()[2].days[1]);
-    // finished career (World champions): the next thing is the Cup again after a break
-    window.__calFresh(); window.__calPlayTo(3, 4); window.__calWin(); const doneOk1 = C.done && C.bracket.champ;
-    delete C.cal; C.sv = 3; saveCareer(SAVE_SLOT); C = null; loadCareer(SAVE_SLOT);
-    o.doneOk = doneOk1 && C.cal.sched.entry && C.cal.sched.st === 3 && calGameDay() > C.cal.d && HUB_MENU().some(e => e.cont) && HUB_MENU()[0].label.startsWith('Start Season');
-    // season over (lost a semifinal): no schedule until the new season, which starts after a break
-    window.__calFresh(); window.__calPlayTo(0, 3); const sf = calGameDay(); calSetDay(sf); startCareerMatch(); M.teams[0].score = 10; M.teams[1].score = 30; M.winner = 1; M.phase = 'over'; careerAfterMatch();
-    const so = !!C.seasonOver && C.cal.sched === null && C.cal.d === sf + 1;
-    delete C.cal; saveCareer(SAVE_SLOT); C = null; loadCareer(SAVE_SLOT);
-    const soLoad = !!C.seasonOver && C.cal.sched === null && typeof C.cal.d === 'number';
-    const dBefore = C.cal.d; startNewSeason(false);
-    o.seasonOver = so && soLoad && C.season === 2 && C.cal.sched.st === 0 && C.cal.sched.days[0] > dBefore && calGameDay() === C.cal.sched.days[0];
-    // the current format round-trips
-    window.__calFresh(); window.__calPlayTo(0, 2); saveCareer(SAVE_SLOT); const before = JSON.stringify(C.cal); C = null; loadCareer(SAVE_SLOT); o.roundTripSave = JSON.stringify(C.cal) === before;
-    // ---- out of step (the dev panel moves the stage, review mode changes the season): the next game is re-anchored on today
-    window.__calState('game'); const dA = C.cal.d; C.season = 2; calEnsure(); const sameDay = calGameDay() === dA && calDay(dA).type === 'game';
-    C.stage = 2; C.bracket = makeBracket(2); calEnsure(); const gap = calGameDay() - C.cal.d;
-    o.reanchor = sameDay && C.cal.sched.st === 2 && gap >= 0 && gap <= 6 && C.cal.d === dA;
-    // ---- Settings → Game → Career calendar Off: the old hub, no strip; the date still moves to the game's day
-    o.setting = setGroupItems(0).some(s => s.label === 'Career calendar');
-    window.__calFresh(); SETTINGS.calendar = false; const off = HUB_MENU().map(e => e.label);
-    Game.screen = 'hub'; CalUI.n = 0; render(ctx); const stripOff = CalUI.n;
-    const dOff = C.cal.d; hubSelect(0);
-    o.off = off[0] === 'Play next game' && off.includes('Bracket') && !off.includes('Schedule') && stripOff === 0 && C.cal.d === calGameDay() && C.cal.d > dOff;
-    SETTINGS.calendar = true; careerHub(); CalUI.n = 0; render(ctx); o.stripOn = CalUI.n === 4;
-    return o;
-  });
-  // render the month view on a few months (drawing errors)
-  await p.evaluate(() => { window.__calState('ramadan'); openCalendar(); }); await sleep(300);
-  for (const k of ['KeyE', 'KeyE', 'ArrowRight', 'ArrowDown', 'KeyQ', 'Escape']) { await p.keyboard.press(k); await sleep(120); }
-  const back = await p.evaluate(() => Game.screen);
-  await ctx.close();
-  const ok = Object.entries(r).every(([k, v]) => typeof v !== 'boolean' || v) && back === 'hub' && !errs.length;
-  return { ok, detail: [...Object.entries(r).map(([k, v]) => k + ': ' + JSON.stringify(v)), 'month view keys, Esc back to: ' + back, ...errs] };
-};
-
-// v9.0: a full career by bot, Continue only
-T['career-run'] = async ({ browser, base }) => {
-  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'career-run');
-  const r = await p.evaluate(() => {
-    window.__seed(90);
-    const out = { games: [], back: 0, strip: [], screens: {}, steps: 0 };
-    C = freshCareer(); C.name = 'Bot'; Game.creator = { idx: 0, isNew: true }; setupPractice('free'); Game.screen = 'creator';
-    creatorDone(); out.intro = Game.screen; introSkip(); out.hub = Game.screen;
-    let lastD = C.cal.d, season2 = 0;
-    const playGame = () => {                                                   // the match itself (after any pregame dialogue)
-      for (let n = 0; n < 60 * 60 * 20 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; }
-      if (M.teams[0].score <= M.teams[1].score) M.teams[0].score = M.teams[1].score + 2;   // the human's team is forced to win
-      M.winner = 0; M.phase = 'over';
-      const d = C.cal.d, st = C.stage; careerAfterMatch();
-      out.games.push({ s: C.season, st, d, wd: CAL_WD[calWd(d)], date: calText(d) + ' Y' + calDate(d).y });
-    };
-    try { for (let step = 0; step < 900; step++) {
-      out.steps = step; const s = Game.screen; out.screens[s] = (out.screens[s] || 0) + 1;
-      if (C.cal.d < lastD) out.back++; lastD = C.cal.d;
-      if (s === 'hub') {
-        CalUI.n = 0; render(ctx); out.strip.push(CalUI.n);
-        if (C.season === 2 && out.games.some(g => g.s === 2)) break;              // into the new season: done
-        const items = HUB_MENU();
-        if (C.done && C.season === 1) { const ns = items.find(e => /^Start Season/.test(e.label)); ns.act(); continue; }
-        const c = items.find(e => e.cont); if (!c) { out.noContinue = items.map(e => e.label); break; }
-        c.act();
-      } else if (s === 'story') Game.story.then();
-      else if (s === 'scout') Game.screen = 'pregame';
-      else if (s === 'pregame') startCareerMatch();                               // may open the niyyah dialogue first
-      else if (s === 'play' && M.career) playGame();
-      else if (s === 'postgame') postgameContinue();
-      else if (s === 'csummary') summaryClose();
-      else if (s === 'newseason') { startNewSeason(false); season2++; }
-      else careerHub();
-    } } catch (e) { out.err = String(e && e.stack || e).slice(0, 300) + ' | screen ' + Game.screen + ' stage ' + C.stage + ' M.careerStage ' + M.careerStage + ' games ' + out.games.length; }
-    out.done1 = C.season === 2; out.d = calText(C.cal.d) + ' Y' + calDate(C.cal.d).y; out.trophies = C.titles.filter(t => t.s === 1).length;
-    out.byStage = [0, 1, 2, 3].map(st => { const G = out.games.filter(g => g.s === 1 && g.st === st); return G.length ? STAGES[st].name + ': ' + G[0].date + ' .. ' + G[G.length - 1].date + ' (' + G.length + ')' : ''; });
-    out.saveSize = JSON.stringify(C).length;   // (v9.17.3: reported, not checked)
-    return out;
-  });
-  await ctx.close();
-  const s1 = r.games.filter(g => g.s === 1), s2 = r.games.filter(g => g.s === 2);
-  const ok = r.intro === 'introout' && r.hub === 'hub' && s1.length === 20 && r.trophies === 4 && s2.length >= 1 && r.back === 0
-    && r.strip.length > 20 && r.strip.every(n => n === 4) && r.games.every(g => g.wd === 'Wed' || g.wd === 'Sat') && new Set(r.games.map(g => g.d)).size === r.games.length && !r.noContinue && !r.err && !errs.length;
-  return { ok, detail: [r.err || '', `games: season 1 ${s1.length}, season 2 ${s2.length}; titles ${r.trophies}; career save ${(r.saveSize / 1024).toFixed(1)} KB; hub visits ${r.strip.length}, strip always 4: ${r.strip.every(n => n === 4)}; date went back: ${r.back}`,
-    ...r.byStage, 'season 2 first game: ' + (s2[0] && s2[0].date), 'last day: ' + r.d, 'screens: ' + JSON.stringify(r.screens), r.noContinue ? 'no Continue: ' + r.noContinue : '', ...errs].filter(Boolean) };
-};
-
 // v9.0.1: career games follow the Settings format (2 halves of 2:00 by default)
 T['career-format'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'career-format');
-  await p.evaluate(CAL_HELPERS);
+  await p.evaluate(CAREER_HELPERS);
   const r = await p.evaluate(() => {
     const play = (format, seed) => {
-      window.__seed(seed); SETTINGS.format = format; window.__calFresh();
+      window.__seed(seed); SETTINGS.format = format; window.__cFresh();
       startCareerMatch(); for (let i = 0; i < 6 && Game.screen === 'story'; i++) Game.story.then();
       const o = { screen: Game.screen, career: M.career, fmt: M.fmt.format + '/' + M.fmt.periods + '/' + M.fmt.len };
       const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540; const g = cv.getContext('2d'), seen = [], ft = g.fillText.bind(g); g.fillText = (t, ...a) => { seen.push(String(t)); return ft(t, ...a); };
@@ -2186,305 +1920,6 @@ T['career-format'] = async ({ browser, base }) => {
   return { ok, detail: Object.entries(r).map(([k, v]) => k + ': ' + JSON.stringify(v)).concat(errs) };
 };
 
-// v9.2: the neighbourhood: the day's flow, the store, talking, look items, saves, the setting
-T['world-flow'] = async ({ browser, base }) => {
-  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'world-flow');
-  await p.evaluate(WORLD_HELPERS);
-  const r = await p.evaluate(() => {
-    window.__seed(92); const o = {}, step = n => { for (let i = 0; i < n; i++) careerUpdate(1 / 60); for (let i = 0; i < 120 && Game.screen === 'world' && World.fadeDir; i++) careerUpdate(1 / 60); }, press = k => { Input.pressed[k] = true; careerUpdate(1 / 60); Input.pressed = {}; };
-    const where = () => Game.screen === 'world' ? World.scene + '/' + worldLoc().tod : Game.screen;
-    const portal = id => World.def.portals.find(q => q.id === id), use = id => World.def.uses.find(q => q.id === id);
-    // a free day opens at the hub (v9.18); home in the morning still has Go out and Skip the day on screen
-    window.__worldDay(); worldStartDay(); step(30); const hubFirst = Game.screen === 'hub';
-    worldEnter('home', 'start', { noFade: true }); step(30);
-    o.start = hubFirst && where() === 'home/0' && worldButtons().map(b => b.label).join() === 'Skip the day,Go out';
-    // G goes out; the store (once a day) moves the time on when you leave it
-    press('KeyG'); step(30); o.out = where() === 'street/0';
-    portal('store').act(); step(30); o.store = where() === 'store/0' && !!worldLoc().vis.store && C.cal.done.visit_store === 1;
-    portal('out').act(); step(30); o.afterStore = where() === 'street/1' && worldStoreOk() === 'You went to the store today';
-    // the masjid: the door goes into the hub (inside the masjid); Go outside comes back out, an hour on
-    portal('masjid').act(); step(30); portal('door').act(); step(30);
-    const hub = HUB_MENU().map(e => e.label); o.hub = Game.screen === 'hub' && /^(Play|Continue)/.test(hub[0]) && hub.includes('Go outside');
-    hub && HUB_MENU().find(e => e.label === 'Go outside').act(); step(30);
-    o.outside = where() === 'masjidfront/2' && worldMasjidOk() !== true;
-    // home at dusk: night; at night only home is open
-    portal('street').act(); step(30); portal('home').act(); step(30);
-    o.night = where() === 'home/3' && worldStoreOk() !== true && worldNightOk() !== true;
-    // End the day at the bed: tomorrow, the hub (v9.18; home before), nothing visited
-    const d0 = C.cal.d; use('bed').act(); step(30);
-    o.endDay = C.cal.d === d0 + 1 && where() === 'hub' && !worldLoc().vis.store;
-    // Play on the hub: straight to the next game (a game day goes to the pregame)
-    Game.hubJum = null; HUB_MENU()[0].act(); for (let i = 0; i < 4 && Game.screen === 'story'; i++) Game.story.then();
-    o.skipToGame = ['scout', 'story', 'pregame'].includes(Game.screen) && calGameToday();
-    // after the game: the next morning at home
-    careerHub(); for (let i = 0; i < 6 && Game.screen === 'story'; i++) Game.story.then();
-    if (Game.screen === 'hub') calContinue();
-    for (let i = 0; i < 6 && Game.screen === 'story'; i++) Game.story.then();
-    if (Game.screen === 'scout') Game.screen = 'pregame';
-    if (Game.screen === 'pregame') startCareerMatch(); for (let i = 0; i < 6 && Game.screen === 'story'; i++) Game.story.then();
-    M.teams[0].score = 30; M.teams[1].score = 20; M.winner = 0; M.phase = 'over'; careerAfterMatch(); postgameContinue();
-    for (let i = 0; i < 12 && Game.screen === 'story'; i++) Game.story.then();
-    o.wake = where() === 'hub' && !calGameToday();   // (v9.18: the hub, not home)
-    // Jumu'ah: the way to the masjid is highlighted
-    let fri = C.cal.d; while (calWd(fri) !== 5) fri++; calSetDay(fri); worldStartDay(); step(20);
-    o.jumuah = Game.screen === 'hub' && !!Game.hubJum; Game.hubJum = null; worldEnter('street', 'start', { noFade: true }); step(30); o.beacon = !!portal('masjid').beacon();   // (v9.18: the hub asks first)
-    // talking: short, leavable, a different set the next day
-    worldEnter('street', { x: 1000, d: 0.32, face: -1 }, { noFade: true }); step(2);
-    const yusuf = World.npcs.find(q => q.id === 'yusuf'); worldTalkTo(yusuf); const L1 = JSON.stringify(World.talk.lines);
-    o.talkShort = World.talk.lines.length <= 2; press('Escape'); o.leftTalk = !World.talk && Game.screen === 'world';
-    worldTalkTo(yusuf); const nl = World.talk.lines.length; for (let i = 0; i < nl; i++) { step(20); press('KeyE'); } press('KeyE'); step(5); o.talkEnds = !World.talk;   // the extra press doesn't reopen it
-    calSetDay(C.cal.d + 1); worldEnter('street', { x: 1000, d: 0.32, face: -1 }, { noFade: true }); worldTalkTo(World.npcs.find(q => q.id === 'yusuf'));
-    o.nextDayDiffers = JSON.stringify(World.talk.lines) !== L1; worldLeaveTalk();
-    // the store: cosmetic only, Halal Bucks, owned and worn shown; creator rows only offer what you own
-    worldEnter('store', 'door', { noFade: true }); worldOpenShop(true);
-    const lv = JSON.stringify(C.lv), it = STORE_ITEMS.find(x => x.id === 'band_green'); C.hb = 50; storeBuy(it); o.poor = !storeOwned(it.id) && C.hb === 50 && /more Halal Bucks/.test(World.shop.msg);
-    C.hb = 500; storeBuy(it); o.bought = storeOwned(it.id) && C.hb === 440 && C.look.band === 2 && JSON.stringify(C.lv) === lv;
-    const bi = CREATOR_ROWS.findIndex(q => q.key === 'band'); C.look.band = 0; creatorStep(bi, 1); o.rowOwned = C.look.band === 2;   // white isn't owned: skipped
-    const shoe = STORE_ITEMS.find(x => x.id === 'shoe_gold'); o.locked = swatchLocked('shoe', shoe.idx); storeBuy(shoe); o.unlocked = !swatchLocked('shoe', shoe.idx) && C.look.shoes === shoe.idx;
-    o.items = STORE_ITEMS.length >= 6 && STORE_ITEMS.length <= 8 && STORE_ITEMS.every(x => x.price > 0 && ['shoe', 'kufi', 'band', 'bottle'].includes(x.kind));
-    press('Escape'); o.shopLeft = !World.shop;
-    // the mirror opens the look editor and comes back to the same spot
-    worldEnter('home', 'mirror', { noFade: true }); const mx = World.x; use('mirror').act(); o.mirror = Game.screen === 'creator';
-    careerHub(); o.mirrorBack = Game.screen === 'world' && World.scene === 'home' && World.x === mx;
-    // an old save (no location) loads; a save made on the street opens at the hub, the same day (v9.18; it came back to the street before)
-    worldEnter('street', { x: 1500, d: 0.5, face: 1 }, { noFade: true }); worldSaveLoc(); const keep = JSON.stringify(C.cal.loc), dk = C.cal.d;
-    delete C.cal.loc; saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); o.oldSave = where() === 'hub';
-    C.cal.loc = JSON.parse(keep); saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); o.resume = where() === 'hub' && C.cal.d === dk;
-    // text baked into scenes (signs) is big enough for the smallest phone: >= 19.8 game px (11 CSS px at 667x300),
-    // with every masjid upgrade at its top level and at every time of day
-    const keepUp = C.up; C.up = {}; for (const pj of PROJECTS.masjid) C.up[pj.key] = pj.tiers.length;
-    World.signText.clear();
-    for (const id in WORLD_SCENES) for (let tod = 0; tod < 4; tod++) { World.cache = null; worldCache(WORLD_SCENES[id], tod); }
-    C.up = keepUp; World.cache = null;
-    o.signs = [...World.signText.entries()].map(([t, px]) => t + ' ' + px).join(' | ');
-    o.signText = World.signText.size >= 6 && [...World.signText.values()].every(px => px >= 19.8);
-    // calendar Off: the old hub, no walking
-    SETTINGS.calendar = false; window.__calFresh(); careerHub(); o.off = Game.screen === 'hub' && !HUB_MENU().some(e => e.label === 'Go outside');
-    Game.worldWake = C; careerHub(); o.offWake = Game.screen === 'hub'; SETTINGS.calendar = true;
-    return o;
-  });
-  await ctx.close();
-  const ok = Object.entries(r).every(([k, v]) => k === 'signs' || v === true) && !errs.length;
-  return { ok, detail: [JSON.stringify(r), ...errs] };
-};
-
-// v9.2: the walk bot. In every scene: a reachability check over the walkable mask, then it walks (real stick
-// input through the game's update) to every portal, NPC and interaction point and checks the prompt appears.
-// Fails if it gets stuck, stands somewhere not walkable, steps through a prop, or can't reach a target; checks
-// feet on the ground line (pixels), depth order every frame it draws, the camera inside the drawn world, and
-// records the average update and draw time per scene.
-T['world-walk'] = async ({ browser, base }) => {
-  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'world-walk');
-  await p.evaluate(WORLD_HELPERS);
-  const r = await p.evaluate(() => {
-    window.__seed(7); window.__worldDay(); worldStartDay(); World.perf = {};
-    const out = { scenes: {}, problems: [] }, bad = m => { if (out.problems.length < 30) out.problems.push(m); };
-    for (const id of ['home', 'street', 'masjidfront', 'store']) {
-      const def = WORLD_SCENES[id]; worldLoc().tod = 1; worldEnter(id, 'start', { noFade: true });
-      const res = out.scenes[id] = { cells: 0, reach: 0, targets: 0, reached: 0, frames: 0, maxStep: 0, depthOk: true, feet: [], cam: true };
-      // ---- the grid: walkable cells (static NPCs count as obstacles), flood fill from the spawn
-      let x0 = 1e9, x1 = -1e9; for (const P of def.walk) for (const [x] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
-      const DX = 6, DD = 0.01, nx = Math.ceil((x1 - x0) / DX) + 1, nd = 101, idx = (i, j) => j * nx + i;
-      const still = World.npcs.filter(o => !(o.n.path && o.n.path.length > 1));
-      const free = new Uint8Array(nx * nd);
-      for (let j = 0; j < nd; j++) for (let i = 0; i < nx; i++) { const x = x0 + i * DX, d = j * DD; if (wWalkable(def, x, d, false) && !still.some(o => !o.ghost && ((x - o.x) / 30) ** 2 + ((d - o.d) / 0.085) ** 2 < 1.3)) { free[idx(i, j)] = 1; res.cells++; } }
-      const cellOf = (x, d) => [Math.round((x - x0) / DX), Math.round(d / DD)];
-      const bfs = (si, sj) => { const prev = new Int32Array(nx * nd).fill(-2), q = [idx(si, sj)]; prev[q[0]] = -1;
-        for (let h = 0; h < q.length; h++) { const c = q[h], i = c % nx, j = (c - i) / nx; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const ii = i + a, jj = j + b; if (ii < 0 || jj < 0 || ii >= nx || jj >= nd) continue; const k = idx(ii, jj); if (!free[k] || prev[k] !== -2) continue; prev[k] = c; q.push(k); } }
-        return prev; };
-      let [si, sj] = cellOf(World.x, World.d); if (!free[idx(si, sj)]) bad(id + ': the spawn is not walkable');
-      let prev = bfs(si, sj); for (let k = 0; k < free.length; k++) if (free[k] && prev[k] !== -2) res.reach++;
-      if (res.reach !== res.cells) bad(id + ': ' + (res.cells - res.reach) + ' walkable cells cannot be reached from the spawn');
-      // ---- walk to each target
-      const targets = worldTargets().slice();
-      for (const q of targets) {
-        res.targets++;
-        const [tx, td] = wTargetPos(q), rx = (q.rx || WORLD_REACH.x) * 0.8, rd = (q.rd || WORLD_REACH.d) * 0.8;
-        [si, sj] = cellOf(World.x, World.d); prev = bfs(si, sj);
-        let goal = -1, gs = 1e9;
-        for (let k = 0; k < free.length; k++) { if (prev[k] === -2) continue; const i = k % nx, j = (k - i) / nx, x = x0 + i * DX, d = j * DD; if (Math.abs(x - tx) < rx && Math.abs(d - td) < rd) { const sc = Math.abs(x - tx) / rx + Math.abs(d - td) / rd; if (sc < gs) { gs = sc; goal = k; } } }
-        const name = q.id || (q.n && q.n.id);
-        if (goal < 0) { bad(id + ': no reachable spot next to ' + name); continue; }
-        let path = []; for (let c = goal; c >= 0; c = prev[c]) path.unshift(c);
-        let wi = 0, stuck = 0, best = 1e9, lx = World.x, ld = World.d, replans = 0;
-        // re-plan with the moving NPCs where they are now (and the target, if it walks)
-        const replan = () => { const fr = new Uint8Array(free); for (const o of World.npcs) if (o.n.path && o.n.path.length > 1 && o !== q) { const ci = Math.round((o.x - x0) / DX), cj = Math.round(o.d / DD); for (let j = Math.max(0, cj - 11); j <= Math.min(nd - 1, cj + 11); j++) for (let i = Math.max(0, ci - 7); i <= Math.min(nx - 1, ci + 7); i++) { const x = x0 + i * DX, d = j * DD; if (((x - o.x) / 34) ** 2 + ((d - o.d) / 0.1) ** 2 < 1) fr[idx(i, j)] = 0; } }
-          const [ti, tj] = wTargetPos(q); [si, sj] = cellOf(World.x, World.d); const keep = free.slice(); free.set(fr); const pv = bfs(si, sj); free.set(keep);
-          let gg = -1, bs = 1e9; for (let k = 0; k < fr.length; k++) { if (pv[k] === -2) continue; const i = k % nx, j = (k - i) / nx, x = x0 + i * DX, d = j * DD; if (Math.abs(x - ti) < rx && Math.abs(d - tj) < rd) { const sc = Math.abs(x - ti) / rx + Math.abs(d - tj) / rd; if (sc < bs) { bs = sc; gg = k; } } }
-          if (gg >= 0) { path = []; for (let c = gg; c >= 0; c = pv[c]) path.unshift(c); wi = 0; } replans++; };
-        for (let f = 0; f < 6000 && wi < path.length; f++) {
-          if (f > 2 && World.near === q && q.n) break;                     // next to a (moving) person: arrived
-          if (f && f % 45 === 0 && World.npcs.some(o => o.n.path && o.n.path.length > 1)) replan();
-          const c = path[Math.min(path.length - 1, wi)], i = c % nx, j = (c - i) / nx, wx = x0 + i * DX, wd = j * DD;
-          const ddx = wx - World.x, ddd = wd - World.d;
-          if (Math.abs(ddx) < 4 && Math.abs(ddd) < 0.013) { wi += 3; if (wi >= path.length && wi - 3 < path.length - 1) wi = path.length - 1; stuck = 0; best = 1e9; continue; }
-          Input.padAxis[0] = { ax: clamp(ddx / 14, -1, 1), az: clamp(ddd / 0.025, -1, 1) };
-          careerUpdate(1 / 60); res.frames++;
-          if (Game.screen !== 'world' || World.scene !== id) { bad(id + ': left the scene while walking to ' + name); break; }
-          const st = Math.hypot(World.x - lx, (World.d - ld) * 300); res.maxStep = Math.max(res.maxStep, st);
-          if (Math.abs(World.x - lx) > 4.5 || Math.abs(World.d - ld) > 0.016) bad(id + ': moved too far in one frame');
-          if (!wOnFloor(def, World.x, World.d) || wPropHit(def, World.x, World.d, 0, 0)) bad(id + ': stood off the floor or inside a prop at ' + Math.round(World.x) + ',' + World.d.toFixed(2));
-          if (wPropHit(def, (World.x + lx) / 2, (World.d + ld) / 2, 0, 0)) bad(id + ': stepped through a prop');
-          lx = World.x; ld = World.d;
-          if (f % 6 === 0) { worldDraw(ctx); for (let k = 1; k < World.drawn.length; k++) if (World.drawn[k] < World.drawn[k - 1] - 1e-9) res.depthOk = false;
-            const vw = World.vw, m = WORLD_MARGIN; if (World.camX < -m || World.camX + vw > def.w + m || (def.w >= vw && (World.camX < -0.5 || World.camX > def.w - vw + 0.5))) res.cam = false; }
-          const dist = Math.abs(ddx) + Math.abs(ddd) * 300; if (dist < best - 0.5) { best = dist; stuck = 0; } else if (++stuck > 240) { bad(id + ': stuck on the way to ' + name + ' at ' + Math.round(World.x) + ',' + World.d.toFixed(2)); break; }
-        }
-        Input.padAxis[0] = { ax: 0, az: 0 }; careerUpdate(1 / 60); careerUpdate(1 / 60);
-        res.per = (res.per || '') + name + ':' + (res.frames - (res.f0 || 0)) + ' '; res.f0 = res.frames;
-        if (World.near === q) res.reached++; else bad(id + ': no prompt next to ' + name + ' (near: ' + (World.near && (World.near.id || World.near.n.id)) + ')');
-      }
-      // ---- feet on the ground line: draw each person alone and find the lowest solid pixel (shadows are faint)
-      const cv = document.createElement('canvas'); cv.width = 400; cv.height = 400; const g = cv.getContext('2d');
-      for (const who of [{ id: 'you', p: World.me, pose: 'stand', k: 1 }, ...World.npcs.map(o => ({ id: o.id, p: o.p, pose: o.n.pose || 'stand', k: o.k }))]) {
-        g.clearRect(0, 0, 400, 400); const s = wScale(def, 0.5) * who.k; musFigure(g, who.p, 200, 300, s, who.pose);
-        const D = g.getImageData(0, 0, 400, 400).data; let low = -1; for (let y = 399; y >= 0 && low < 0; y--) for (let x = 0; x < 400; x++) if (D[(y * 400 + x) * 4 + 3] > 200) { low = y; break; }
-        res.feet.push(who.id + ':' + (low - 300)); if (low - 300 < -1 || low - 300 > 5 * s) bad(id + ': ' + who.id + ' floats or sinks: lowest solid pixel ' + (low - 300) + ' px from the ground line (allowed -1 .. ' + (5 * s).toFixed(1) + ')');
-      }
-      if (!res.depthOk) bad(id + ': depth order broken'); if (!res.cam) bad(id + ': the camera showed past the drawn world');
-    }
-    out.perf = worldPerfReport();
-    return out;
-  });
-  await ctx.close();
-  const S = r.scenes, ok = !r.problems.length && Object.values(S).every(x => x.targets === x.reached && x.reach === x.cells) && !errs.length;
-  return { ok, detail: [...Object.entries(S).map(([k, v]) => `${k}: ${v.cells} walkable cells, ${v.reach} reachable; ${v.reached}/${v.targets} targets reached in ${v.frames} frames; max step ${v.maxStep.toFixed(1)}; feet ${v.feet.join(' ')}; frames per target ${v.per}`),
-    ...r.problems, ...errs] };
-};
-
-// v9.2: no page errors under abuse: rapid repeated presses in every scene (keyboard and taps), leaving
-// mid-conversation (Esc and the Leave button), tabbing away and back, resizing, rotating a phone; then the
-// average frame time per scene with the game's own loop (update + draw CPU time, and the frame interval)
-T['world-robust'] = async ({ browser, base }) => {
-  const detail = []; let ok = true;
-  for (const [dn, dev] of [['desktop', { viewport: { width: 1280, height: 720 } }], ['phone', Object.assign({}, WORLD_PHONES[0][1])]]) {
-    const errs = [], ctx = await newContext(browser, { device: dev, seed: true }), p = await open(ctx, base + '/', errs, 'world-robust ' + dn);
-    await p.evaluate(WORLD_HELPERS); if (dn === 'phone') await p.evaluate(() => { Input.touchMode = true; });
-    const state = () => p.evaluate(() => ({ s: Game.screen, w: Game.screen === 'world' ? World.scene : null, talk: !!World.talk, fade: World.fadeDir }));
-    await p.evaluate(() => { window.__worldDay(); worldStartDay(); });
-    const keys = ['KeyE', 'Enter', 'KeyK', 'Space', 'Escape', 'KeyG', 'KeyN', 'ArrowLeft', 'ArrowRight', 'KeyD', 'KeyA', 'KeyW', 'KeyS', 'Escape', 'Escape'];
-    const seen = new Set();
-    for (const sc of ['home', 'street', 'masjidfront', 'store']) {
-      await p.evaluate(sc => { if (!C || !C.cal) window.__worldDay(); if (Game.screen !== 'world') { Game.worldSuppress = true; careerHub(); } World.menu = World.shop = World.talk = null; worldEnter(sc, 'start', { noFade: true }); }, sc);
-      for (let i = 0; i < 60; i++) { await p.keyboard.press(keys[(i * 7 + sc.length) % keys.length], { delay: 0 }); if (i % 9 === 0) await sleep(30); }
-      // taps anywhere on the canvas (touch on the phone)
-      const box = await p.evaluate(() => { const c = canvas.getBoundingClientRect(); return { x: c.left, y: c.top, w: c.width, h: c.height }; });
-      for (let i = 0; i < 12; i++) { const x = box.x + box.w * ((i * 37) % 100) / 100, y = box.y + box.h * ((i * 53) % 100) / 100; if (dn === 'phone') await p.touchscreen.tap(x, y); else await p.mouse.click(x, y); }
-      seen.add(JSON.stringify(await state()));
-    }
-    // leaving mid-conversation: Esc, then the Leave button (a click/tap on its rect)
-    const talk = await p.evaluate(() => { Game.worldSuppress = true; careerHub(); worldLoc().tod = 1; worldEnter('street', { x: 1000, d: 0.32, face: -1 }, { noFade: true }); World.menu = null; worldTalkTo(World.npcs.find(q => q.id === 'yusuf')); return !!World.talk; });
-    await sleep(100); await p.keyboard.press('Escape'); await sleep(100); const escLeft = !(await state()).talk;
-    await p.evaluate(() => worldTalkTo(World.npcs.find(q => q.id === 'yusuf'))); await sleep(150);
-    const leave = await p.evaluate(() => { const c = canvas.getBoundingClientRect(), k = c.height / H, ox = Math.round((W - 960) / 2); const r = Game.rects.filter(q => q.w === 112 && q.h === 34).pop(); return r && { x: c.left + (r.x) * k + r.w * k / 2, y: c.top + r.y * k + r.h * k / 2 }; });
-    if (leave) { if (dn === 'phone') await p.touchscreen.tap(leave.x, leave.y); else await p.mouse.click(leave.x, leave.y); }
-    await sleep(120); const btnLeft = !(await state()).talk;
-    // tab away and back, resize, rotate
-    const other = await ctx.newPage(); await other.goto('about:blank'); await other.bringToFront(); await sleep(400); await p.bringToFront(); await other.close();
-    await p.evaluate(() => { window.dispatchEvent(new Event('blur')); document.dispatchEvent(new Event('visibilitychange')); window.dispatchEvent(new Event('focus')); });
-    const sizes = dn === 'phone' ? [[342, 750], [750, 342], [667, 300], [750, 342]] : [[1024, 640], [1600, 900], [800, 600], [1280, 720]];
-    for (const [w, h] of sizes) { await p.setViewportSize({ width: w, height: h }); await p.keyboard.down('KeyD'); await sleep(250); await p.keyboard.up('KeyD'); }
-    const end = await state();
-    // frame time per scene at night (the heaviest: the tint and the lights), with the game's own loop
-    const perf = {};
-    for (const sc of ['home', 'street', 'masjidfront', 'store']) {
-      await p.evaluate(sc => { World.menu = World.shop = World.talk = null; worldLoc().tod = 3; worldEnter(sc, 'start', { noFade: true }); World.perf = {}; window.__fr = []; let last = performance.now(); const tick = t => { window.__fr.push(t - last); last = t; if (window.__fr.length < 120) requestAnimationFrame(tick); }; requestAnimationFrame(tick); }, sc);
-      await sleep(2200);
-      perf[sc] = await p.evaluate(() => { const f = window.__fr.slice(10), r = worldPerfReport()[World.scene] || {}; return { cpu: +((r.update || 0) + (r.draw || 0)).toFixed(2), frame: +(f.reduce((a, x) => a + x, 0) / Math.max(1, f.length)).toFixed(1) }; });
-    }
-    await ctx.close();
-    // (v9.17.9: a conversation has no Leave button any more; the corner pill and Esc are the way out)
-    const good = talk && escLeft && !leave && ['world', 'hub', 'scout', 'story', 'pregame', 'creator'].includes(end.s) && !errs.length;
-    ok = ok && good;
-    detail.push(`${dn}: mashed keys and taps in 4 scenes (states ${[...seen].length}), Esc leaves a talk ${escLeft}, no Leave button ${!leave}, tab away/back + ${sizes.length} resizes ok, end ${JSON.stringify(end)}`);
-    detail.push(`${dn}: night frame time per scene (ms, CPU update+draw / frame interval): ${JSON.stringify(perf)}`);
-    for (const e of errs) detail.push('   pageerror ' + e);
-  }
-  return { ok, detail };
-};
-
-// v9.2: save in every scene and time of day, reload, arrive in the same place; the hub comes back as the hub
-T['world-save'] = async ({ browser, base }) => {
-  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'world-save');
-  await p.evaluate(WORLD_HELPERS);
-  const r = await p.evaluate(() => {
-    const out = [], fails = [];
-    for (const sc of ['home', 'street', 'masjidfront', 'store']) for (let tod = 0; tod < 4; tod++) {
-      window.__worldDay(); worldStartDay(); const L = worldLoc(); L.tod = tod; L.vis.store = tod > 1 ? 1 : 0;
-      const def = WORLD_SCENES[sc], sp = def.spots.start; worldEnter(sc, { x: sp[0] + 37, d: Math.min(0.9, sp[1] + 0.13), face: -1 }, { noFade: true });
-      if (!wWalkable(def, World.x, World.d)) worldEnter(sc, 'start', { noFade: true });
-      const want = { sc, x: Math.round(World.x), d: Math.round(World.d * 1000) / 1000, tod, store: L.vis.store, day: C.cal.d };
-      worldSaveLoc(); C = null; World.scene = null; Game.screen = 'title';
-      loadCareer(SAVE_AUTO); careerHub();
-      want.sc = 'hub';   // v9.18: a save made anywhere in the neighbourhood opens at the hub, the same day and time
-      const got = { sc: Game.screen === 'world' ? World.scene : Game.screen, x: Math.round(World.x), d: Math.round(World.d * 1000) / 1000, tod: worldLoc().tod, store: worldLoc().vis.store || 0, day: C.cal.d };
-      const same = JSON.stringify(want) === JSON.stringify(got); if (!same) fails.push(JSON.stringify(want) + ' -> ' + JSON.stringify(got));
-      out.push(sc + '/' + tod + (same ? ' ok' : ' MOVED'));
-    }
-    // inside the masjid (the hub): comes back to the hub
-    window.__worldDay(); worldStartDay(); worldEnter('masjidfront', 'door', { noFade: true }); WORLD_SCENES.masjidfront.portals[0].act(); for (let i = 0; i < 60; i++) careerUpdate(1 / 60);
-    const inHub = Game.screen === 'hub'; saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); const hubBack = inHub && Game.screen === 'hub';
-    // a save from before 9.2 (no location) opens at the hub too (v9.18; at home before), in the morning
-    delete C.cal.loc; saveCareer(); C = null; loadCareer(SAVE_AUTO); careerHub(); const oldHome = Game.screen === 'hub' && worldLoc().tod === 0;
-    return { out, fails, hubBack, oldHome };
-  });
-  await ctx.close();
-  const ok = !r.fails.length && r.out.length === 16 && r.hubBack && r.oldHome && !errs.length;
-  return { ok, detail: [r.out.join(', '), 'hub comes back as the hub: ' + r.hubBack, 'old save opens at the hub: ' + r.oldHome, ...r.fails, ...errs] };
-};
-
-// v9.2: visual regression. Every view at every time of day on desktop and both phone sizes, rendered as a frozen
-// deterministic frame and compared with the committed baseline (docs/review/img/world-*.png, made by
-// npm run review:world). A pixel differs when any channel is off by more than 10/255; the test fails when more
-// than 0.2% of a frame's pixels differ (frames are exact on the same machine; the slack is for anti-aliasing), or a baseline is missing (an unreviewed change: look at it, then
-// re-run npm run review:world to accept it).
-const WORLD_DIFF = { channel: 10, share: 0.002 };
-T['world-visual'] = async ({ browser, base }) => {
-  const detail = []; let ok = true, frames = 0, worst = { share: 0 };
-  const devs = [['desktop', { viewport: { width: 1280, height: 720 } }], ['iphone', { viewport: { width: 750, height: 342 }, isMobile: true, hasTouch: true }], ['667x300', { viewport: { width: 667, height: 300 }, isMobile: true, hasTouch: true }]];
-  for (const [dn, dev] of devs) {
-    const errs = [], ctx = await newContext(browser, { device: dev, seed: true }), p = await open(ctx, base + '/', errs, 'world-visual ' + dn);
-    await p.evaluate(WORLD_HELPERS); await p.evaluate(t => { Input.touchMode = t; }, dn !== 'desktop');
-    for (const [view] of WORLD_VIEWS) for (let tod = 0; tod < 4; tod++) {
-      const file = path.join(ROOT, 'docs/review/img', `world-${view}-${WORLD_TODS[tod]}-${dn}.png`);
-      await p.evaluate(([v, t]) => window.__worldPhoto(v, t), [view, tod]); await sleep(260);
-      const shot = await p.screenshot(); frames++;
-      if (!fs.existsSync(file)) { ok = false; detail.push(`MISSING baseline ${path.basename(file)}`); continue; }
-      const d = await p.evaluate(async ([a, b, ch]) => {
-        const load = s => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.src = 'data:image/png;base64,' + s; });
-        const [A, B] = await Promise.all([load(a), load(b)]); if (A.width !== B.width || A.height !== B.height) return { size: [A.width, A.height, B.width, B.height] };
-        const c = document.createElement('canvas'); c.width = A.width; c.height = A.height; const g = c.getContext('2d');
-        g.drawImage(A, 0, 0); const da = g.getImageData(0, 0, c.width, c.height).data; g.clearRect(0, 0, c.width, c.height); g.drawImage(B, 0, 0); const db = g.getImageData(0, 0, c.width, c.height).data;
-        let n = 0; for (let i = 0; i < da.length; i += 4) if (Math.abs(da[i] - db[i]) > ch || Math.abs(da[i + 1] - db[i + 1]) > ch || Math.abs(da[i + 2] - db[i + 2]) > ch) n++;
-        return { share: n / (da.length / 4) };
-      }, [shot.toString('base64'), fs.readFileSync(file).toString('base64'), WORLD_DIFF.channel]);
-      if (d.size || d.share > WORLD_DIFF.share) { ok = false; try { fs.mkdirSync(path.join(ROOT, 'tests/output'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'tests/output', path.basename(file)), shot); } catch (e) {} detail.push(`CHANGED ${path.basename(file)}: ${d.size ? 'size ' + d.size : (d.share * 100).toFixed(2) + '% of pixels differ'} (this run: tests/output/${path.basename(file)})`); }   // (v9.17.6: the frame is kept, as jumuah-visual does)
-      if (d.share > worst.share) worst = { share: d.share, file: path.basename(file) };
-    }
-    for (const e of errs) { ok = false; detail.push('pageerror ' + e); }
-    await ctx.close();
-  }
-  detail.unshift(`${frames} frames compared, threshold: a channel off by > ${WORLD_DIFF.channel}, at most ${WORLD_DIFF.share * 100}% of pixels; largest difference ${(worst.share * 100).toFixed(3)}% (${worst.file || '-'})`);
-  return { ok, detail };
-};
-
-// v9.2: the neighbourhood with a gamepad: the stick walks, A talks and advances, B leaves, Start opens the menu
-T['world-pad'] = async ({ browser, base }) => {
-  const errs = [], ctx = await newContext(browser, { seed: true, pad: true }), p = await open(ctx, base + '/', errs, 'world-pad');
-  await p.evaluate(WORLD_HELPERS);
-  await p.evaluate(() => { window.__padPlug(0, true); window.__worldDay(); worldLoc().tod = 1; worldEnter('street', { x: 840, d: 0.3, face: 1 }, { noFade: true }); });
-  const st = () => p.evaluate(() => ({ x: Math.round(World.x), talk: !!World.talk, menu: !!World.menu, near: World.near && (World.near.id || (World.near.n && World.near.n.id)), screen: Game.screen }));
-  const s0 = await st();
-  await p.evaluate(() => window.__padSet(0, { axes: [1, 0] })); await sleep(700); await p.evaluate(() => window.__padSet(0, {}));
-  const s1 = await st();
-  await p.evaluate(() => { worldEnter('street', { x: 1000, d: 0.3, face: -1 }, { noFade: true }); }); await sleep(200);
-  const press = async b => { await p.evaluate(b => window.__padSet(0, { [b]: true }), b); await sleep(120); await p.evaluate(() => window.__padSet(0, {})); await sleep(350); };
-  const near = (await st()).near; await press('A'); const talking = (await st()).talk; await press('B'); const left = !(await st()).talk;
-  await press('START'); const menu = (await st()).menu; await press('B'); const closed = !(await st()).menu;
-  await ctx.close();
-  const ok = s1.x > s0.x + 60 && near === 'yusuf' && talking && left && menu && closed && !errs.length;
-  return { ok, detail: [`stick walked ${s0.x} -> ${s1.x}; next to ${near}; A talks ${talking}; B leaves ${left}; Start menu ${menu}, B closes ${closed}`, ...errs] };
-};
 
 T['adaptive-res'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser, { device: { viewport: { width: 1200, height: 724 }, deviceScaleFactor: 2 } }), p = await open(ctx, base + '/', errs, 'res');
@@ -2525,106 +1960,6 @@ T['adaptive-res'] = async ({ browser, base }) => {
 };
 
 
-// v9.4: Jumu'ah. The scene is calm and optional; these check the flow, what counts as studied, and that nothing breaks.
-T['jumuah'] = async ({ browser, base }) => {
-  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'jumuah');
-  await p.evaluate(JUMUAH_HELPERS);
-  const ev = (f, a) => p.evaluate(f, a), out = {};
-  const key = async k => { await p.keyboard.press(k); await sleep(120); };
-  // 1. not on other days: a free non-Friday has no question at the door
-  out.notFri = await ev(() => { window.__jumFriday(); let d = C.cal.d + 1; while (calWd(d) === CAL_FRIDAY || d === calGameDay() || calDay(d).type === DAY_TYPE.GAME) d++; calSetDay(d); worldLoc().tod = 0; return { pending: jumuahPending(), fri: calDay(d).fri }; });
-  // 2. the walk: up to the door with the keys, E, the question, Enter (attend), the scene
-  await ev(() => { window.__jumFriday(); worldEnter('masjidfront', { x: 750, d: 0.3, face: 1 }, { noFade: true }); });
-  await p.keyboard.down('KeyW'); for (let i = 0; i < 30 && !(await ev(() => World.near && World.near.id === 'door')); i++) await sleep(60); await p.keyboard.up('KeyW');
-  await key('KeyE'); out.asked = await ev(() => !!World.jum);
-  const before = await ev(() => ({ n: C.learned.length, talk: jumuahTalk(), prog: (Ach.load().prog || {}).books_10 || 0 }));
-  await key('Enter'); await p.waitForFunction(() => Game.screen === 'jumuah', null, { timeout: 5000 }).catch(() => {});
-  out.scene = await ev(() => Game.screen);
-  // every line is a lead-in + a trivia explanation (with the question and answer when the explanation doesn't name it)
-  out.lines = await ev(() => Game.jum.lines.map((l, k) => { const q = jumuahTalk().qs[k]; return { q, ok: l.endsWith(TRIVIA_WHY[q]) && JUMUAH_LEAD.some(x => l.startsWith(x)) && (l === JUMUAH_LEAD.find(x => l.startsWith(x)) + TRIVIA_WHY[q] || l.includes(TRIVIA[q][0].replace(/\.\.\.$/, '').trim())) }; }));
-  // listen: Enter advances; the card; Enter leaves into the masjid
-  for (let k = 0; k < 6 && !(await ev(() => Game.jum && Game.jum.card)); k++) await key('Enter');
-  out.card = await ev(() => !!(Game.jum && Game.jum.card));
-  await key('Enter'); await sleep(200);
-  out.after = await ev(t0 => ({ screen: Game.screen, n: C.learned.length, studied: t0.qs.every(q => C.learned.includes(q)), prog: (Ach.load().prog || {}).books_10 || 0, counter: C.cal.done.jumuah || 0, days: C.cal.jum.days.slice(), vis: worldLoc().vis.masjid }), before.talk);
-  out.count = before.talk.qs.length;
-  // the Noor challenge shows "Studied" for one of them
-  out.noor = await ev(q => {
-    const seen = []; const f = CanvasRenderingContext2D.prototype.fillText;
-    CanvasRenderingContext2D.prototype.fillText = function (t) { seen.push(String(t)); return f.apply(this, arguments); };
-    try { newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); openTrivia(M.players[0]); Game.trivia.qi = q; Game.screen = 'play'; render(ctx); }
-    finally { CanvasRenderingContext2D.prototype.fillText = f; }
-    const r = seen.includes('Studied'); Game.trivia = null; goTitle(); return r;
-  }, before.talk.qs[0]);
-  // 3. the same talk after a reload (the talk is kept in the save), and the same talk from the same state
-  const t1 = await ev(() => { window.__jumFriday(); const t = jumuahTalk(); saveCareer(); return { qs: t.qs.slice(), d: C.cal.d }; });
-  await p.reload(); await p.waitForFunction(() => typeof Game !== 'undefined' && Game.screen !== undefined && typeof Net !== 'undefined' && Net.avail !== 'checking');
-  await ev(JUMUAH_HELPERS);
-  out.reload = await ev(t => { loadCareer(SAVE_AUTO); const a = jumuahTalk().qs.slice(); C.cal.jum.talk = null; const b = jumuahTalk().qs.slice(); return { same: JSON.stringify(a) === JSON.stringify(t.qs), regen: JSON.stringify(b) === JSON.stringify(t.qs), d: C.cal.d === t.d }; }, t1);
-  // 4. skipping at each point: the room, after the first reminder, after the second, on the card, at the door
-  out.skips = [];
-  for (const at of ['open', 1, 2, 'card', 'door']) {
-    const r = await ev(at => {
-      window.__jumFriday(); const n0 = C.learned.length;
-      if (at === 'door') { jumuahAsk(); return { n0, at }; }
-      jumuahTalk().answered = 2; openJumuah(); Game.jum.fade = 0;
-      if (typeof at === 'number') for (let k = 0; k < at; k++) jumShow(k);
-      if (at === 'card') { for (let k = 0; k < Game.jum.lines.length; k++) jumShow(k); Game.jum.card = true; }
-      return { n0, at, shown: jumuahTalk().shown.length };
-    }, at);
-    await key('Escape'); await sleep(250);
-    out.skips.push(await ev(r => ({ at: r.at, screen: Game.screen, ask: !!World.jum, added: C.learned.length - r.n0, shown: r.shown == null ? 0 : r.shown }), r));
-  }
-  // 5. every question studied: two general reminders, nothing new marked
-  out.all = await ev(() => { window.__jumFriday(true); const n0 = C.learned.length, t = jumuahTalk(); t.answered = 2; openJumuah(); for (let k = 0; k < Game.jum.lines.length; k++) jumShow(k); Game.jum.card = true; render(ctx); const r = { general: t.general, n: t.qs.length, added: C.learned.length - n0, newly: Game.jum.newly }; jumFinish(); return r; });
-  // 6. an old save (no Jumu'ah state, no learned list) loads and works
-  out.old = await ev(() => { window.__jumFriday(); delete C.cal.jum; delete C.learned; saveCareer(); C = null; loadCareer(SAVE_AUTO); worldLoc().tod = 0; return { learned: Array.isArray(C.learned), pending: jumuahPending(), talk: jumuahTalk().qs.length }; });
-  // 7. Career calendar Off: no neighbourhood, no Jumu'ah
-  out.calOff = await ev(() => { window.__jumFriday(); SETTINGS.calendar = false; const r = { today: jumuahToday(), pending: jumuahPending() }; SETTINGS.calendar = true; return r; });
-  // 8. the shelf is unchanged: it still studies one question after a game
-  out.shelf = await ev(() => { window.__jumFriday(); C.gamesPlayed = 3; C.shelfAt = 0; Game.office = { panel: null }; const n0 = C.learned.length; shelfOpen(); return C.learned.length - n0; });
-  await ctx.close();
-  const sk = out.skips;
-  const ok = out.notFri.pending === false && out.notFri.fri === false && out.asked && out.scene === 'jumuah' && out.count >= 2 && out.count <= 3 && out.lines.every(l => l.ok) && out.card
-    && out.after.screen === 'hub' && out.after.n - before.n === out.count && out.after.studied && out.after.prog === out.after.n && out.after.counter === 1 && out.after.days.length === 1 && out.after.vis === 1 && out.noor
-    && out.reload.same && out.reload.regen && out.reload.d
-    && sk[0].screen === 'hub' && sk[0].added === 0 && sk[1].added === 1 && sk[2].added === 2 && sk[3].added === sk[3].shown && sk.slice(0, 4).every(s => s.screen === 'hub') && sk[4].screen === 'hub' && sk[4].added === 0 && !sk[4].ask
-    && out.all.general && out.all.n === 2 && out.all.added === 0 && out.all.newly === 0 && out.old.learned && out.old.pending && out.old.talk >= 2
-    && out.calOff.today === false && out.calOff.pending === false && out.shelf === 1 && !errs.length;
-  return { ok, detail: [JSON.stringify(out).slice(0, 2500), ...errs] };
-};
-
-// v9.4: Jumu'ah visual regression: the door question, the room, a reminder and the card at desktop and both phone sizes
-T['jumuah-visual'] = async ({ browser, base }) => {
-  const detail = []; let ok = true, frames = 0, worst = { share: 0 };
-  const devs = [['desktop', { viewport: { width: 1280, height: 720 } }], ['iphone', { viewport: { width: 750, height: 342 }, isMobile: true, hasTouch: true }], ['667x300', { viewport: { width: 667, height: 300 }, isMobile: true, hasTouch: true }]];
-  for (const [dn, dev] of devs) {
-    const errs = [], ctx = await newContext(browser, { device: dev, seed: true }), p = await open(ctx, base + '/', errs, 'jumuah-visual ' + dn);
-    await p.evaluate(JUMUAH_HELPERS); await p.evaluate(t => { Input.touchMode = t; try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} }, dn !== 'desktop');
-    for (const st of JUMUAH_STAGES.filter(s => s !== 'long')) {
-      const file = path.join(ROOT, 'docs/review/img', `jumuah-${st}-${dn}.png`);
-      await p.evaluate(s => window.__jumPhoto(s), st); await sleep(300);
-      const shot = await p.screenshot(); frames++;
-      if (!fs.existsSync(file)) { ok = false; detail.push(`MISSING baseline ${path.basename(file)}`); continue; }
-      const d = await p.evaluate(async ([a, b, ch]) => {
-        const load = s => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.src = 'data:image/png;base64,' + s; });
-        const [A, B] = await Promise.all([load(a), load(b)]); if (A.width !== B.width || A.height !== B.height) return { size: [A.width, A.height, B.width, B.height] };
-        const c = document.createElement('canvas'); c.width = A.width; c.height = A.height; const g = c.getContext('2d');
-        g.drawImage(A, 0, 0); const da = g.getImageData(0, 0, c.width, c.height).data; g.clearRect(0, 0, c.width, c.height); g.drawImage(B, 0, 0); const db = g.getImageData(0, 0, c.width, c.height).data;
-        let n = 0; for (let i = 0; i < da.length; i += 4) if (Math.abs(da[i] - db[i]) > ch || Math.abs(da[i + 1] - db[i + 1]) > ch || Math.abs(da[i + 2] - db[i + 2]) > ch) n++;
-        return { share: n / (da.length / 4) };
-      }, [shot.toString('base64'), fs.readFileSync(file).toString('base64'), WORLD_DIFF.channel]);
-      if (d.size || d.share > WORLD_DIFF.share) { ok = false; detail.push(`CHANGED ${path.basename(file)}: ${d.size ? 'size ' + d.size : (d.share * 100).toFixed(2) + '% of pixels differ'} (this run: tests/output/${path.basename(file)})`); fs.mkdirSync(path.join(ROOT, 'tests/output'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'tests/output', path.basename(file)), shot); }
-      if (d.share > worst.share) worst = { share: d.share, file: path.basename(file) };
-    }
-    for (const e of errs) { ok = false; detail.push('pageerror ' + e); }
-    await ctx.close();
-  }
-  detail.unshift(`${frames} frames compared; largest difference ${(worst.share * 100).toFixed(3)}% (${worst.file || '-'})`);
-  return { ok, detail };
-};
-
-Object.assign(T, hubTests({ newContext, open }));
 Object.assign(T, leagueTests({ newContext, open }));   // v9.7.0 the league (tests/league.mjs)   // v9.6.2 career hub fixtures (tests/hub-layout.mjs)
 Object.assign(T, netTests({ newContext, open }));   // v9.10 online latency (tests/net.mjs)
 Object.assign(T, rollbackTests({ newContext, open }));   // v9.14 rollback netcode (tests/rollback.mjs)
@@ -2642,7 +1977,8 @@ Object.assign(T, ballHandsTests({ newContext, open }));   // v9.19.1 the ball st
 Object.assign(T, difficultyTests({ newContext, open }));
 Object.assign(T, lobbyTests({ newContext, open }));
 Object.assign(T, v921Tests({ newContext, open }));   // v9.21.0 two dunks, the CPU's defense, no wall at half court (tests/v921.mjs)   // v9.20.0 the online lobby: the gym, team select, the post-game menu (tests/lobby.mjs)   // v9.19.2 career difficulty: starting stats, the first three games, the ladder (tests/difficulty.mjs)
-Object.assign(T, hubFirstTests({ newContext, open }));   // v9.18.0 the career opens at the hub (tests/hub-first.mjs)
+Object.assign(T, storyTests({ newContext, open }));   // v9.22 the career story (tests/story.mjs)
+Object.assign(T, hubTests({ newContext, open }));   // v9.6.2 the career hub's layout (v9.22: the story hub; tests/hub-layout.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
 Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)
@@ -2686,7 +2022,7 @@ const TAGS = {
   online: n => /^(online-|net-|rb-|lag-)/.test(n),
   phone: n => /^(mobile|gamepad|adaptive-res|world-pad|rb-touch)$/.test(n) || /phone|touch/.test(n),
   cpu: n => /^(cpu-|defense$|v863$|tomahawk$|league-calibration$)/.test(n),
-  career: n => /^(career|world-|jumuah|hub-|calendar|league-|save-|shot-clock$)/.test(n),
+  career: n => /^(career|story-|league-|save-|shot-clock$)/.test(n),
   studio: n => /^studio/.test(n)
 };
 const glob = p => new RegExp('^' + p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');

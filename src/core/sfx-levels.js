@@ -40,6 +40,5 @@ const SFX_LEVELS = {
   triviaLow: { B: 0, C: -0.1, D: 0 },
   uiBack: { B: 0.1, C: 0, D: 0 },
   uiConfirm: { B: 0, C: 0, D: 0 },
-  toast: { B: 0, C: 0, D: 0 },
-  calChime: { B: 0, C: 0, D: 0 }
+  toast: { B: 0, C: 0, D: 0 }
 };

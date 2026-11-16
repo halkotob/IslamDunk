@@ -203,7 +203,6 @@ const SET_DESC = {
   'Difficulty': 'How sharp the CPU is: reactions, decisions, defense and shooting. Player ratings never change.',
   'Keep games close (rubber-band)': 'When a team is down by 6 or more, it recovers stamina a little faster and shoots slightly better, and the leading CPU relaxes a touch. Off: no catch-up help for anyone.',
   'Team control': 'Your player: you control one player and the CPU plays your teammate. Whole team: you switch to whoever has the ball.',
-  'Career calendar': 'Career days, Jumu’ah and events between games. Off: game after game.',
   'Tomahawk style': 'How a tomahawk dunk looks in the air.',
   'Format': 'Halves, quarters or first to 21 (win by 2).',
   'Period length': 'Minutes on the clock in each half or quarter.',

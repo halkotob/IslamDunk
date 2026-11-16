@@ -120,7 +120,7 @@ function genTeam(R, word, place, strength, stage, colors) {
   return { name: 'Masjid ' + word, short: shortOf(word), place, c1: colors[0], c2: colors[1], crest: pr(CRESTS), players };
 }
 const _stageCache = {};
-// Index 0 is always Al-Amanah (built live from the save), 1 is the rival Al-Burhan.
+// Index 0 is always Al-Amanah (built live from the save), 1 is the rival Al-Furqan.
 function stageTeams(stage) {
   const key = C.seed + ':' + stage;
   if (_stageCache[key]) return _stageCache[key];
@@ -140,11 +140,13 @@ function stageTeams(stage) {
   return (_stageCache[key] = teams);
 }
 function pickR(R, a) { return a[Math.floor(R() * a.length)]; }
+// v9.22: the rival is Masjid Al-Furqan (src/data/teams.js), captain Rayyan; stats at the stage's level, a notch up
 function rivalTeam(stage) {
   const s = STAGES[stage].stat + 0.6, st = (a, b, c, d, e) => ({ spd: clamp(Math.round(s + a), 3, 10), sht: clamp(Math.round(s + b), 3, 10), dnk: clamp(Math.round(s + c), 3, 10), def: clamp(Math.round(s + d), 3, 10), stl: clamp(Math.round(s + e), 3, 10) });
-  return { name: 'Masjid Al-Burhan', short: 'BURHAN', place: 'Northgate', c1: '#1d1d1d', c2: '#e0b04a', crest: 'minaret', rival: true, players: [
-    { name: 'Sh. Hakim', num: 5, sheikh: true, huffath: true, mufti: true, skin: '#a86b45', hat: 'imama', capColor: '#232323', hair: '#3b3b3b', bh: 2, bw: 1, stats: st(-1, 1, -1, 1, 0) },   // tall, steady big man
-    { name: 'Jalal', num: 1, sheikh: false, huffath: false, skin: '#e0b48a', hat: 'hair', hair: '#1c1c1c', beardStyle: 2, bh: 1, bw: 0, stats: st(1, 1, 1, -1, 0) }] };   // wiry scorer
+  const F = TEAMS.find(t => t.short === 'FURQAN') || TEAMS[7], adnan = F.players[0], rami = F.players[1];
+  return { name: 'Masjid Al-Furqan', short: 'FURQAN', place: 'Westbrook', c1: F.c1, c2: F.c2, crest: F.crest, rival: true, players: [
+    Object.assign({}, adnan, { stats: st(-1, 0, 1, 1, 0) }),
+    Object.assign({}, rami, { name: 'Rayyan', num: 12, captain: true, stats: st(1, 1, 0, -1, 1) })] };
 }
 function teamOf(stage, i) {
   const t = i === 0 ? amanahTeam() : stageTeams(stage)[i];
@@ -162,7 +164,6 @@ const CAST = {
   tariq: { name: 'Tariq', num: 3, skin: '#d4a174', hat: 'crochet', capColor: '#2f4f7f', hair: '#161616', glasses: true, thobe: '#5f7a5a', beardStyle: 0, stats: { spd: 7, sht: 6, dnk: 3, def: 5, stl: 6 } },
   // v5.0: runs the chai table after Isha and keeps the win/loss streak on the chalkboard
   siddiq: { name: 'Uncle Siddiq', num: 71, skin: '#9a6440', hat: 'kufi', capColor: '#7a1f2b', hair: '#8a8a8a', elder: true, thobe: '#4a3b2a', beardStyle: 3, stats: { spd: 3, sht: 7, dnk: 1, def: 4, stl: 4 } },
-  jalal: null   // filled from the rival roster
 };
 function saleemDef() {
   const b = Math.floor(C.stage * 0.8);
@@ -176,7 +177,6 @@ function playerDef() {
 function amanahTeam() { return { name: 'Masjid Al-Amanah', short: 'AMANAH', place: 'Eastside', c1: '#2c6e8f', c2: '#f2cf6b', crest: 'arch', players: [saleemDef(), playerDef()] }; }
 function castDef(id) {
   if (id === 'you') return playerDef();
-  if (id === 'jalal') return Object.assign({ thobe: '#232323' }, rivalTeam(0).players[1]);
   return CAST[id];
 }
 
@@ -191,7 +191,7 @@ function freshCareer() {
     sv: 3, stageLog: {}, beats: {}, rival: { w: 0, l: 0 }, timing: [], ct: { tmd: 0, grn: 0, early: 0, late: 0 },
     adhanSkips: 0, salahGames: 0, noSalahGames: 0, salahEp: 0, drillsSince: 0, noDrillGames: 0, sheikhSeen: {},
     // v6.0 (seasons): partner + chemistry, season number, titles by season, box scores, past seasons
-    partner: 'saleem', chem: { saleem: 25, nasser: 10, khalil: 10, tariq: 5 }, season: 1, titles: [], games: [], history: [] };
+    partner: 'saleem', chem: { saleem: 10 }, season: 1, titles: [], games: [], history: [] };
 }
 function saveCareer(key = SAVE_AUTO) { if (!C) return false; try { localStorage.setItem(key, JSON.stringify(C)); return true; } catch (e) { return false; } }
 function readSave(key) { try { const s = localStorage.getItem(key); const o = s ? JSON.parse(s) : null; return o && o.v === 1 ? o : null; } catch (e) { return null; } }
@@ -300,7 +300,7 @@ function careerRewards(won, champ, ctx = {}) {
   const round = ctx.round || 0, hb = [];
   if (won) hb.push(['Win (' + (ctx.roundName || ROUND_NAMES[round]) + ')', Math.round(ECON.hbWin * ECON.hbRoundK[round] * S.mult)]);
   else hb.push(['Game played', Math.round(ECON.hbLoss * S.mult)]);
-  if (won && ctx.rival) hb.push(['Beat Al-Burhan', Math.round(ECON.hbRival * S.mult)]);
+  if (won && ctx.rival) hb.push(['Beat Al-Furqan', Math.round(ECON.hbRival * S.mult)]);
   if (champ) hb.push([S.name + ' champions', S.champ]);
   for (const r of bp) r[1] = Math.round(r[1] * ECON.bpK);   // (v9.19.0)
   for (let i = bp.length - 1; i > 0; i--) if (bp[i][1] <= 0) bp.splice(i, 1);   // (a row that rounds to nothing isn't shown)
@@ -309,55 +309,9 @@ function careerRewards(won, champ, ctx = {}) {
 
 // ---------------------------------------------------------------- STORY
 // Short dialogue beats between games: [speaker, line]. Speakers are CAST ids.
+// v9.22: the story's lines live in story/story-data.js; these pools stay empty (the old cast is out of the career)
 const STORY = {
-  intro: [
-    ['saleem', 'Assalamu alaikum! You must be the brother who just moved to Eastside. Welcome to Masjid Al-Amanah.'],
-    ['khalil', "Welcome to the gym! It's also the overflow musalla, the Sunday school, and the potluck hall. Watch out for folding chairs."],
-    ['nasser', 'The rim on the left is bent. Shoot at the right one.'],
-    ['mahmoud', 'Beta, in 1987 I scored forty points in this gym. Nobody was keeping score, but I know.'],
-    ['tariq', "I'm Tariq, from the youth group. Somebody keeps score now. Every shot, every release, every assist. It's all on the sheet."],
-    ['siddiq', "And I'm Uncle Siddiq. Chai after Isha, and the chalkboard by the door keeps our streak. May it only go up."],
-    ['saleem', "We're a small masjid, and we've never won the Metro Masjid League. But we play with adab, and we play for each other."],
-    ['saleem', "You'll run the two-man game with me. Practice in the gym, earn Barakah Points, and get stronger. The league starts soon, in sha Allah."],
-    ['nasser', "One shooting tip: let it go at the top of your jump. Watch the meter for the green. And don't force it with a hand in your face, pass instead."]
-  ],
-  stageIntro: [
-    [['jalal', "Al-Amanah is entering the league? Didn't your team lose to our youth group last year?"], ['khalil', 'That was a... strategic loss.'],
-      ['saleem', 'Salaam, Jalal. May the better team win, and may we all pray Maghrib together after.'],
-      ['tariq', "Before every game I'll bring you a scouting report. Their record, their best player, one tip. Short. I promise."]],
-    [['saleem', 'The State Masjid Championship. Eight of the best small masjids in the state.'], ['rafiq', "Travel light, pray on time, and don't eat gas station food before a game."],
-      ['jalal', 'Al-Burhan made it too. You beat us once. It will not happen twice.'],
-      ['siddiq', "I packed two thermoses. One for us, one for Al-Burhan. Rivals still drink chai."]],
-    [['saleem', 'Nationals. Brothers from masjids across the country, all in one gym.'], ['nasser', "I looked up the other teams. They're good."],
-      ['khalil', "We're good too! ...Right?"], ['tariq', "We are. Our assist numbers went up every stage. I made a chart."],
-      ['saleem', "We prepare, we make du'a, and we leave the rest to Allah."]],
-    [['saleem', 'The World Ummah Cup. Istanbul, Kuala Lumpur, Lagos, Sarajevo. The whole ummah in one tournament.'],
-      ['mahmoud', 'Whatever happens, you are representing all of us back home. Represent us well.'],
-      ['jalal', 'Two teams from our country made it. Let us make sure one of us brings it home.'],
-      ['siddiq', "Whatever the chalkboard says after this, I'm proud of all of you. Now go. The chai will wait."]]
-  ],
-  win: [
-    [['rafiq', 'Good win. Now go help stack the chairs. Humility is also a muscle.']],
-    [['saleem', 'Alhamdulillah. We thank Allah first, then we thank whoever grabbed those rebounds.']],
-    [['khalil', 'Did you see that? DID YOU SEE THAT?'], ['nasser', 'Everyone saw it, Khalil.']],
-    [['mahmoud', 'Very nice. In my day we also won. Stay hungry, but eat first.']]
-  ],
-  loss: [
-    [['saleem', 'Sabr. A loss is a teacher if you let it be one.'], ['nasser', "Free throws after Isha. I'll rebound for you."]],
-    [['mahmoud', 'In 1987 we lost too. Then we had chai and came back. Have some chai.'], ['khalil', 'Next time we get them, bi idhnillah.']],
-    [['rafiq', 'Losing is not the shame. Losing your adab is the shame. You kept yours.'], ['saleem', 'We enter the tournament again. Same effort, more practice.']]
-  ],
-  lossRival: [['jalal', 'Good game. You pushed us all the way. Do not quit now.'], ['saleem', 'He is right. Back to the gym.']],
-  stageWin: [
-    [['khalil', 'LOCAL CHAMPIONS! Put it on the whiteboard! Put it on every whiteboard!'], ['saleem', 'Alhamdulillah. First trophy in our history. Now, who is helping put the chairs back?'],
-      ['jalal', 'Good game. You earned it. Go represent the city at State.'], ['mahmoud', 'The aunties are making biryani for the whole team.']],
-    [['saleem', 'State champions, alhamdulillah. Remember how we felt after our first loss? Patience brought us here.'],
-      ['jalal', 'We qualified for Nationals too. Save us a seat.'], ['rafiq', 'Be humble in winning. The trophy is heavy, but a big ego is heavier.']],
-    [['nasser', "National champions. I don't know what to say."], ['khalil', 'I do! ALHAMDULILLAH!'],
-      ['saleem', "We came from a gym with a bent rim. Now we meet masjids from all over the world. Let's be good guests and good ambassadors."]],
-    [['saleem', 'World Ummah Cup champions. Subhanallah.'], ['saleem', 'Whatever we won, remember why we played: brotherhood, adab, and representing our community.'],
-      ['mahmoud', 'In 1987 I scored forty points. But this... this is better.'], ['khalil', 'Can we fix the left rim now?'], ['nasser', 'We can fix the left rim now.']]
-  ],
+  intro: [], stageIntro: [[], [], [], []], win: [[]], loss: [[]], lossRival: [], stageWin: [[], [], [], []],
   tips: ['Bend your knees on free throws. And your ego.', 'Barakah is in sharing. Pass to the open brother.', "Box out. The rebound doesn't come to the one who waits.",
     'Hold shoot and let go at the top of your jump. Green on the meter is money.', 'A contested shot is a gift to the other team. Find the open brother.', "Change direction while dribbling. The defender's ankles will need a break.",
     'Sprint at the rim and shoot: that is a dunk. Use it wisely.', 'Pray before the game, not just after it.', 'Defense is patience. Stay between your man and the rim.',
