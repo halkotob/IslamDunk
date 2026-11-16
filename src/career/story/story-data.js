@@ -66,7 +66,7 @@ const CHAPTERS = [
   { n: 4, name: 'National tournament', stage: 2, cp: 'C4.1' },
   { n: 5, name: 'Ummah Cup', stage: 3, cp: 'C5.1' }
 ];
-const STORY_BUILT = 3;              // the last chapter that can be played in this build (later chapters arrive one release at a time)
+const STORY_BUILT = 4;              // the last chapter that can be played in this build (later chapters arrive one release at a time)
 const SC = {};
 function scn(id, o) { SC[id] = Object.assign({ id, ch: id[0] === 'C' ? +id[1] : 6 }, o); return SC[id]; }
 const STORY_FIRST = 'C0.1';
@@ -353,7 +353,21 @@ const STORY_TITLE_TEXT = [
     ['karim', 'The fundraiser stands at {fund}. My students drew a picture of the school wing. It has a pool. We are not building a pool.'],
     ['musa', 'Eight months ago I didn’t know how to pray. Today I’m a state champion with my brothers.'],
     ['saleem', 'The title brings {built}. And the invitation to the National tournament.'], ['dawud', 'Masha’Allah. And the chai stays the same.']],
-  [], []
+  [['narr', 'Masjid Al-Amanah: national champions.'], ['saleem', 'Alhamdulillah, alhamdulillah. From a gym with one working light to the best masjid team in the country.'],
+    ['narr', 'In the noise, Ammo Jamil walks across the court to his son.'],
+    ['jamil', 'Ilyas. Come here.'], ['ilyas', 'Dad, if this is about my box-outs—'],
+    ['jamil', 'No. Listen. Twenty years I wanted a trophy. Tonight I have one, and it is not the thing I am proudest of.'],
+    ['jamil', 'I am proud of you. Not for the points. For how you play, how you treat people, how you kept going when I was yelling.'],
+    ['jamil', 'I was hard on you because of my one-point final. That was my loss, not yours. I am sorry, my son.'],
+    ['ilyas', '…Dad. Good game.'], ['jamil', 'Good game, son.'],
+    ['musa', 'Is everyone crying? I’m crying. Anas is crying.'], ['anas', 'I am not crying. I am perspiring from the eyes.'],
+    ['karim', 'Brothers, the fundraiser: {fund}. The rest came in tonight, from the stands, from the stream, from people who never met us.'],
+    ['saleem', 'The school wing is paid for. Four classrooms. No more coat closet. The eleven families we turned away: they all have a place now.'],
+    ['karim', 'Monday morning, I teach in a real classroom. With a window.'],
+    ['dawud', 'Knowledge that benefits, long after us. This is what we played for.'],
+    ['saleem', 'And the title builds {built} as well. Go outside when we get home. Look at the masjid. Look at the new wing.'],
+    ['rayyan', 'National champions. From our street. Al-Furqan is proud of you. Don’t tell my uncle I said that.']],
+  []
 ];
 // after a run-ending loss: a new season, back to the chapter's checkpoint
 const STORY_NEXT_SEASON = {
@@ -492,3 +506,30 @@ const STORY_HAJJ = {
 };
 const STORY_RETURN = { saleem: 'Hajj mabroor to me, and now: the playoffs.', jamil: 'I’m back, a hajji now. The yelling is the same.', ilyas: 'Back from Hajj. My grandmother says hello, and also “bend your knees.”',
   karim: 'Back from Hajj. My students drew me a welcome banner. Elbow in, follow through.', anas: 'Back from Hajj, alhamdulillah. I made du’a for every one of you.', dawud: 'Back from Hajj. Who touched the chai urn?', musa: 'I’m back. I wore the sandals. Anas was right.' };
+
+// ---------------------------------------------------------------- Chapter 4: National tournament (v9.27)
+// Sixteen teams, single elimination: round of 16, quarterfinal, semifinal, final. Any loss: next season, back to C4.1.
+scn('C4.1', { kind: 'scene', name: 'Nationals', checkpoint: true, effect: 'bracket', stage: 2, pickAfter: true, next: 'C4.2', lines: () => storyNatIntro() });
+scn('C4.2', { kind: 'play', name: 'Round of 16', bracket: true, stakes: 'opener', win: 'C4.3', out: 'C4.NS', loss: 'C4.NS',
+  winLines: [['saleem', 'One down, three to go. Alhamdulillah.']], lossLines: [['saleem', 'Out in the first round. It happens to good teams. We learn.'], ['jamil', 'One bad night. That’s the knockout.']] });
+scn('C4.3', { kind: 'scene', name: 'Into the quarterfinals', next: 'C4.4', lines: () => storyNatReact(0) });
+scn('C4.4', { kind: 'play', name: 'National quarterfinal', bracket: true, stakes: 'must-win', win: 'C4.5', out: 'C4.NS', loss: 'C4.NS',
+  winLines: [['saleem', 'The last four in the country. Masha’Allah.']], lossLines: [['saleem', 'The quarterfinals. Further than this masjid has ever been. Heads up.']] });
+scn('C4.5', { kind: 'scene', name: 'The last four', next: 'C4.6', lines: () => storyNatReact(1) });
+scn('C4.6', { kind: 'play', name: 'National semifinal', bracket: true, stakes: 'must-win', win: 'C4.7', out: 'C4.NS', loss: 'C4.NS',
+  winLines: [['saleem', 'THE FINAL! Allahu akbar!'], ['jamil', 'I need to sit down.']], lossLines: [['saleem', 'One game from the final. It hurts because we cared. Good.']] });
+scn('C4.7', { kind: 'scene', name: 'The night before the final', next: 'C4.8', lines: () => storyNatReact(2).concat([
+  ['narr', 'Late that night, the team prays Isha together in the hotel’s small prayer room, then sits up talking.'],
+  ['ilyas', 'Dad? Thanks for driving us to every single game. Even the ones with traffic.'], ['jamil', '…Go to sleep. Big game tomorrow.'],
+  ['saleem', 'Tomorrow, play for each other. The rest is written already.']]) });
+scn('C4.8', { kind: 'play', name: 'National final', bracket: true, stakes: 'final', win: 'C4.9', out: 'C4.NS', loss: 'C4.NS',
+  winLines: [['narr', 'The final buzzer. Al-Amanah are national champions.']], lossLines: [['narr', 'The final buzzer. Second in the whole country.'], ['saleem', 'Second in the nation, brothers. Hold your heads up. We come back.']] });
+scn('C4.9', { kind: 'scene', name: 'National champions', effect: 'title', stage: 2, next: 'C4.10', lines: () => storyTitleLines(2) });
+scn('C4.10', { kind: 'scene', name: 'The Ummah Cup', talk: { at: 'office', who: 'saleem' }, next: 'C5.1', hub: true, lines: [
+  ['narr', 'Home again. A video call is waiting on Sh. Saleem’s laptop.'],
+  ['saleem', 'Come in, come in. This was sent from Istanbul this morning.'],
+  ['saleem', '“Masjid Al-Amanah is invited to the Ummah Cup: the best masjid teams from around the world.”'],
+  ['you', 'The world?'],
+  ['saleem', 'Teams from Cairo, Kuala Lumpur, Sarajevo, Lagos… Brothers who pray the same prayer in a hundred languages.'],
+  ['saleem', 'The school wing is built. Whatever happens at the Cup is a gift. But let’s go and win it anyway.']] });
+scn('C4.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: () => C.story.cp || 'C4.1', hub: true, lines: () => storyNextSeasonLines(4) });

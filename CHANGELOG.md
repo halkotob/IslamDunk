@@ -1,5 +1,26 @@
 # Changelog
 
+## 9.27.0: Chapter 4, National tournament
+The career's Chapter 4 is in. After the State title, Continue plays:
+- **C4.1** The National Masjid Invitational. This is the checkpoint. Renew the intention, represent the whole state,
+  then pick your teammate.
+- **The knockout:** sixteen teams (the eight masjid teams and seven from across the country), single elimination:
+  round of 16, quarterfinal, semifinal, final. Al-Furqan is drawn on the other half, so the earliest you can meet is
+  the final. Any loss: next season, back to C4.1. The bracket screen shows all four rounds.
+- **C4.3, C4.5 and C4.7** React to each win and meet the next opponent, all as walk-up talks. Each one says whether
+  Al-Furqan is still alive. Before the final, Ilyas thanks his dad for driving them to every game.
+- **C4.9 National champions.** Ammo Jamil and Ilyas make peace ("Good game, son"). The community fills whatever the
+  fundraiser still needed, so the school wing is paid for: four classrooms, and the eleven families turned away all
+  have a place. The title also builds the musalla extension and the garden. From now on, **the school wing stands
+  beside the masjid** on Masjid > Outside, with the kids' drawings in its windows.
+- **C4.10** The invitation to the Ummah Cup, in Sh. Saleem's office. Chapter 5 arrives in the next update.
+- A league win adds $1,500 to the fundraiser at Nationals.
+
+How it was checked: **new test** `story-ch4`. A bot plays C4.1 to C4.10 and loses a quarterfinal once (next
+season, back to C4.1). It checks the bracket (eight first-round games, sixteen teams, Al-Furqan on the other half,
+the round names), the fundraiser reaching $100,000, the wing on the Outside view, and the father-and-son lines. Also
+`story-*`, `studio-coverage`, `studio-phone` and the phone audit.
+
 ## 9.26.0: Every scene is a walk-up talk; Hajj instead of an injury
 - **Walk-up talks everywhere.** Every dialogue scene is now played where it happens, as it already was in the
   musalla and the office. You're on the gym floor with the people in the scene standing around, a gold marker over

@@ -10,6 +10,8 @@
 //   story-ch3      Chapter 3 by bot: the nine-team table (eight games, our bye last), CHAI, the dunks-only all-star game
 //                  (a jumper counts nothing), the fund, the injury and the return; a lost semifinal (back to C3.2), and a
 //                  season outside the top four
+//   story-ch4      Chapter 4 by bot: the sixteen-team knockout (Al-Furqan on the other half), a lost quarterfinal (back to
+//                  C4.1), the title: the fundraiser delivered, the school wing on the Outside view, father and son
 //   story-reload   a save at every Chapter 0 and Chapter 1 scene, a reload, Continue: the same scene starts again
 //   story-hub      the hub has exactly its four entries (Continue, Gym, Masjid, My Player), the chapter's name and the
 //                  next event; every entry opens its screen; desktop and phone draw without errors
@@ -164,6 +166,38 @@ export function storyTests({ newContext, open }) {
       && E.s.at === 'C4.1' && E.s.screen === 'hub' && E.bleachers >= 1 && E.trophy && E.att >= 1 && E.ch === 4
       && out.miss.path.includes('C3.18') && out.miss.path.includes('C3.NS') && out.miss.at === 'C3.2' && out.miss.injured === null && !out.draws.length && !errs.length;
     return { ok, detail: ['table: ' + JSON.stringify(T0), 'chai: ' + out.chai, 'dunks: ' + JSON.stringify(D), 'fund: ' + JSON.stringify(F), 'hurt: ' + JSON.stringify(H) + ' back: ' + JSON.stringify(B), steps.join(' '), 'end: ' + JSON.stringify(E), 'missed the top four: ' + JSON.stringify(out.miss), ...out.draws, ...errs] };
+  };
+
+  T['story-ch4'] = async ({ browser, base }) => {
+    const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-ch4');
+    await prep(p);
+    const out = { draws: [] };
+    out.toC4 = await p.evaluate(() => { window.__sNew('Bilal'); window.__sRun('C4.1', { max: 900 }); return C.story.at; });
+    const steps = [];
+    let lostQF = false;
+    for (let n = 0; n < 200; n++) {
+      const st = await p.evaluate(() => window.__sState());
+      if (st.at === 'C5.1' && st.screen === 'hub') break;
+      if (st.at === 'C4.2' && st.screen === 'story' && !out.ko) out.ko = await p.evaluate(() => { const b = C.bracket; return { ko: b.ko, first: b.rounds[0].length, teams: stageTeams(2).length, label: roundLabel(b), cp: C.story.cp, rivalOther: b.rounds[0].findIndex(m => m.a === 1 || m.b === 1) >= 4 }; });
+      if (st.at === 'C4.4' && st.screen === 'story' && !out.qf) out.qf = await p.evaluate(() => roundLabel(C.bracket));
+      if (st.screen !== 'play' || n % 3 === 0) { const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d); }
+      const r = await p.evaluate(lose => window.__sStep({ lose: at => at === 'C4.4' && lose }), !lostQF);
+      if (st.at === 'C4.4' && r === 'lost') lostQF = true;
+      steps.push(st.at + ':' + r);
+    }
+    out.afterLoss = steps.some(x => x.startsWith('C4.NS'));
+    out.end = await p.evaluate(() => {
+      Game.screen = 'masjid'; Game.masjidView = 'ext'; let ext = true; try { drawExterior(ctx, C.up, 1); } catch (e) { ext = String(e); }
+      careerHub();
+      return { s: window.__sState(), journal: (C.journal || []).map(e => e.id).filter(Boolean), fund: C.story.fund, wing: C.story.wing, trophy: C.trophies.includes(2), ch: storyChapter(), ext,
+        peace: JSON.stringify((C.journal || []).filter(e => e.id === 'C4.9').map(e => e.lines)).includes('Good game, son') };
+    });
+    await ctx.close();
+    const ids = ['C4.1', 'C4.2', 'C4.3', 'C4.4', 'C4.5', 'C4.6', 'C4.7', 'C4.8', 'C4.9', 'C4.10', 'C4.NS'], E = out.end, K = out.ko || {};
+    const ok = out.toC4 === 'C4.1' && K.ko && K.first === 8 && K.teams === 16 && K.label === 'Round of 16' && K.cp === 'C4.1' && K.rivalOther && out.qf === 'Quarterfinal'
+      && lostQF && out.afterLoss && ids.every(id => E.s.seen.includes(id) && E.journal.includes(id))
+      && E.s.at === 'C5.1' && E.s.screen === 'hub' && E.wing && E.fund >= 100000 && E.trophy && E.ch === 5 && E.ext === true && E.peace && !out.draws.length && !errs.length;
+    return { ok, detail: ['ko: ' + JSON.stringify(K) + ' qf: ' + out.qf, steps.join(' '), 'end: ' + JSON.stringify(Object.assign({}, E, { journal: E.journal.slice(-14) })), ...out.draws, ...errs] };
   };
 
   T['story-reload'] = async ({ browser, base }) => {
