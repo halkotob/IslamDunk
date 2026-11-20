@@ -427,7 +427,7 @@ function resize() {
 let transCv = null;
 const TRANS_T = 0.25;
 function frame(now) {
-  const rdt = Math.min(0.05, lastT ? (now - lastT) / 1000 : STEP); lastT = now; Game.rdt = rdt;
+  const rdt = clamp(lastT ? (now - lastT) / 1000 : STEP, 0, 0.05);   // (v9.29.3: never negative, if a frame's timestamp is earlier than the last) lastT = now; Game.rdt = rdt;
   const before = Game.screen;
   gameUpdate(rdt);
   if (Game.screen !== before && canvas.width) {

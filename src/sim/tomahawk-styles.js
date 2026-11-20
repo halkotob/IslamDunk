@@ -89,7 +89,7 @@ function tomahawkPose(style, u) {                       // a full pose (all join
     if (!tom || !p._cj) return r;
     const s0 = SETTINGS.tomahawk; let T; SETTINGS.tomahawk = 'classic';
     try { T = poseTargets(p, Math.hypot(p.vx, p.vz)); } finally { SETTINGS.tomahawk = s0; }
-    for (const k of JOINTS) { const j = p._cj[k]; j.v += ((T[k] - j.a) * T.K - j.v * T.D) * dt; j.a += j.v * dt; }
+    springJoints(p._cj, T, dt);   // (v9.29.3: split into 1/60 s steps when dt is longer, as animate() does)
     if (T.direct != null) { p._cj.ns.a = T.direct; p._cj.ns.v = 0; } else if (p._cj.ns.a > 5) p._cj.ns.a -= Math.PI * 2;   // (as animate() does)
     if (ball.owner !== p) return r;
     // where Classic holds it: v9.21.0 runs the game's own placeHands() and attachBall() on the Classic rig. (The copy of

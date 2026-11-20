@@ -56,6 +56,7 @@
 //   league-*     v9.7.0: real league games, isolation, formats, boards, time, calibration, layout (tests/league.mjs)
 //   rb-*         v9.14: rollback netcode: determinism across pages and engines (tests/rollback.mjs)
 //   anim-moves, anim-retired   v9.16.1 the reviewed animations, the retired items (tests/anim-fix.mjs)
+//   anim-framerate  v9.29.3 the joint springs hold at 60, 40, 30, 20 and 12 fps (the real frame time some callers animate with)
 //   cpu-handle, cpu-league   v9.16 CPU dribble moves and dunks by ratings; league averages unchanged (tests/cpu-style.mjs)
 //   sfx-variants, crowd-tiers, sound-list, studio-coverage   v9.13 (tests/audio.mjs)
 //   studio, studio-anim, studio-csv, studio-excluded   v9.2.1-9.2.2 Review Studio (tests/studio.mjs; npm test builds dist/review first)
@@ -229,6 +230,41 @@ T['shot-clock'] = async ({ browser, base }) => {
   return { ok, detail: [JSON.stringify(r), 'online guest: ' + JSON.stringify(g) + ' host clock ' + (snap.m && snap.m[2]), ...errs] };
 };
 
+// v9.29.3: the joint springs hold at any frame rate. The online guest, the guest's predicted player and the career
+// walks animate with the real frame time; at 40 fps and below the running pose's springs blew up (joints at 1e32
+// radians within 3 s: players drawn as a scramble of limbs). A longer step is now split into 1/60 s steps, and a
+// 1/60 s step is the same single step as before (the match, rollback checksums and the tomahawk fixture unchanged).
+T['anim-framerate'] = async ({ browser, base }) => {
+  const errs = [], ctx = await newContext(browser, { seed: true }), p = await open(ctx, base + '/', errs, 'anim-framerate');
+  const r = await p.evaluate(() => {
+    const worst = {}, poses = {
+      run: q => { q.state = 'free'; q.vx = 300; q.vz = 0; q.cmd.turbo = true; },
+      jog: q => { q.state = 'free'; q.vx = 160; q.vz = 60; q.cmd.turbo = false; },
+      defend: q => { q.state = 'free'; q.vx = 120; q.vz = 0; q.cmd.def = true; },
+      land: q => { q.state = 'land'; q.vx = 0; q.vz = 0; },
+      steal: q => { q.state = 'steal'; q.vx = 80; q.vz = 0; }
+    };
+    for (const [name, set] of Object.entries(poses)) for (const fps of [60, 40, 30, 20, 12]) {
+      newMatch(TEAMS[0], TEAMS[1], { humans: [] });
+      const q = M.players[1]; q.y = 0; let w = 0;
+      for (let i = 0; i < fps * 3; i++) { set(q); animate(q, 1 / fps); for (const k of JOINTS) w = Math.max(w, Math.abs(q.j[k].a)); if (!Number.isFinite(q.j.lean.a)) w = Infinity; }
+      worst[name + '@' + fps] = +w.toFixed(2);
+    }
+    // a 1/60 s step is exactly the old single step
+    const J = {}, L = {}, T = { K: 1500, D: 65 }; for (const k of JOINTS) { J[k] = { a: 0.3, v: -1.2 }; L[k] = { a: 0.3, v: -1.2 }; T[k] = 1.1; }
+    springJoints(J, T, STEP); for (const k of JOINTS) { const j = L[k]; j.v += ((T[k] - j.a) * T.K - j.v * T.D) * STEP; j.a += j.v * STEP; }
+    const same = JOINTS.every(k => J[k].a === L[k].a && J[k].v === L[k].v);
+    // nothing moves on a zero, negative or missing step
+    const z = { a: 0.5, v: 2 }, Z = Object.fromEntries(JOINTS.map(k => [k, Object.assign({}, z)]));
+    springJoints(Z, T, -0.02); springJoints(Z, T, NaN); springJoints(Z, T, 0);
+    const still = JOINTS.every(k => Z[k].a === 0.5 && Z[k].v === 2);
+    return { worst, same, still };
+  });
+  await ctx.close();
+  const big = Object.entries(r.worst).filter(([, v]) => !(v < 4));
+  const ok = !big.length && r.same && r.still && !errs.length;
+  return { ok, detail: ['largest joint angle (radians) by pose @ fps: ' + JSON.stringify(r.worst), 'over 4: ' + JSON.stringify(big), '1/60 s step unchanged: ' + r.same + ', no movement on a 0 / negative / NaN step: ' + r.still, ...errs] };
+};
 T['controls'] = async ({ browser, base }) => {
   const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'controls');
   const r = await p.evaluate(() => {
