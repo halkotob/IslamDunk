@@ -94,3 +94,75 @@ const CS_SPOTS = () => ['', ...TEAMS.filter(t => t.short !== 'FURQAN').map(t => 
     return rows;
   };
 }
+// ---------------------------------------------------------------- your characters in place of the story's brothers
+// A player you make can take a story brother's place (Story role: "Replaces Ilyas"). Everywhere that brother appears
+// (the story's scenes, the walks, the team he plays for, the mini games) it's your player: his look and his name, and
+// the brother's lines are his, with the brother's name in everyone else's lines changed to his. His ratings keep their
+// shape at the brother's level for the stage (scaled like the teams: the brother's average, your player's spread), and
+// his play style is his own. One player a role.
+const STORY_CAST_ORIG = {};
+function csStoryRoles() { const d = csLoad(), out = {}; for (const p of d.players) if (p.story && STORY_MATES.includes(p.story) && !out[p.story]) out[p.story] = p; return out; }
+function csStoryCastApply() {
+  for (const id of STORY_MATES) { if (!STORY_CAST_ORIG[id] && CAST[id]) STORY_CAST_ORIG[id] = CAST[id]; if (STORY_CAST_ORIG[id]) CAST[id] = STORY_CAST_ORIG[id]; }
+  const R = csStoryRoles();
+  for (const [id, p] of Object.entries(R)) {
+    const d = csPlayerDef(p), o = STORY_CAST_ORIG[id] || {};
+    CAST[id] = Object.assign({}, o, { name: d.name, num: d.num, sheikh: d.sheikh, huffath: d.huffath, skin: d.skin, hat: d.hat, hair: d.hair, look: d.look, custom: true, storyOf: id });
+  }
+  csNameMap = null;
+}
+// the names in the lines: the brother's whole name first ("Ammo Jamil"), then his name without the title ("Jamil")
+let csNameMap = null;
+const CS_TITLES = /^(Sh\.|Ammo|Ustath|Qari|Imam|Hafiz|Mufti|Uncle)\s+/;
+function csRename(text) {
+  if (typeof text !== 'string') return text;
+  if (!csNameMap) {
+    csNameMap = [];
+    for (const [id, p] of Object.entries(csStoryRoles())) {
+      const o = STORY_CAST_ORIG[id]; if (!o || !o.name) continue;
+      const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), full = o.name, bare = full.replace(CS_TITLES, '');
+      csNameMap.push([new RegExp('\\b' + esc(full) + '\\b', 'g'), p.name]);
+      if (bare !== full) csNameMap.push([new RegExp('\\b' + esc(bare) + '\\b', 'g'), p.name]);
+    }
+  }
+  let t = text; for (const [re, n] of csNameMap) t = t.replace(re, n); return t;
+}
+function csRenameLines(lines) {
+  if (!Array.isArray(lines) || !csNameMap && !Object.keys(csStoryRoles()).length) return lines;
+  return lines.map(l => {
+    if (!Array.isArray(l)) return l;
+    if (l[0] === 'choice' && Array.isArray(l[1])) return ['choice', l[1].map(([label, reply]) => [csRename(label), csRenameLines(reply)])];
+    return [l[0], csRename(l[1]), ...l.slice(2)];
+  });
+}
+{
+  csStoryCastApply();
+  const _sv = csSave; csSave = function () { const r = _sv.apply(this, arguments); csStoryCastApply(); return r; };
+  // the lines of every scene, and the walks' speech bubbles
+  const _ps = playStory; playStory = function (lines) { const a = Array.from(arguments); a[0] = csRenameLines(lines); return _ps.apply(this, a); };
+  if (typeof swBubble === 'function') { const _sb = swBubble; swBubble = function (g, x, y, who, text) { const a = Array.from(arguments); a[4] = csRename(text); return _sb.apply(this, a); }; }
+  // his ratings: his shape at the brother's level for the stage; his own play style
+  const _ms = storyMateStats;
+  storyMateStats = function (id, stage) {
+    const s = _ms.apply(this, arguments), p = csStoryRoles()[id]; if (!p) return s;
+    const keys = Object.keys(s), mean = o => keys.reduce((a, k) => a + (o[k] == null ? 5 : o[k]), 0) / keys.length;
+    const mine = csPlayerDef(p).stats, dlt = Math.round(mean(s) - mean(mine)), out = {};
+    for (const k of keys) out[k] = Math.max(1, Math.min(10, Math.round((mine[k] == null ? 5 : mine[k]) + dlt)));
+    return out;
+  };
+  const _md = storyMateDef;
+  storyMateDef = function (id) { const d = _md.apply(this, arguments), p = csStoryRoles()[id]; if (p) d.arch = csPlayerDef(p).arch || d.arch; return d; };
+  // the player editor: Story role, under the name
+  const _er = csEditRows;
+  csEditRows = function () {
+    const rows = _er.apply(this, arguments), e = CSUI.edit;
+    if (!e || e.kind === 'team' || CSUI.sec !== 0) return rows;
+    const p = e.rec, i = rows.findIndex(r => r.label === 'Name'), opts = ['', ...STORY_MATES];
+    const nameOf = id => (STORY_CAST_ORIG[id] || CAST[id] || {}).name || id;
+    rows.splice(i + 1, 0, { label: 'Story role', get: () => p.story ? 'Replaces ' + nameOf(p.story) : 'None',
+      step: dd => { const taken = new Set(csLoad().players.filter(q => q !== p && q.story).map(q => q.story)); let j = Math.max(0, opts.indexOf(p.story || ''));
+        for (let n = 0; n < opts.length; n++) { j = (j + dd + opts.length) % opts.length; if (!opts[j] || !taken.has(opts[j])) break; }
+        p.story = opts[j]; } });
+    return rows;
+  };
+}

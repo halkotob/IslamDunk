@@ -7,6 +7,17 @@ on the bench, chosen before a game (no substitutions during one).
   which two of them play.
 - A match uses the starters, so Quick Play, online, the career league and share codes work as before; the whole
   roster rides along with the team (T.roster5) for the screens that will let you change the starters.
+- **Your teams in the story career:** Join career puts up to six of them in every stage's field (masjid league, State,
+  Nationals, Ummah Cup), alongside the masjids (a generated team makes room first) or, with the team's Career spot,
+  in place of a masjid you pick; Al-Furqan, the rival, keeps his place. Each is scaled to the stage like the masjid
+  teams (its shape at the stage's level): a team of tens plays at 3 in the masjid league and 7 at Nationals. The
+  stage's Beatable / Even / Contender tiers are ranked again with them in.
+- **Your players in place of the story's brothers:** a player's Story role ("Replaces Ilyas") makes him that brother
+  everywhere (the scenes, the walks, his team, the mini games): his look and his name, the brother's lines in his
+  mouth and the brother's name in everyone else's lines changed to his ("Ammo Jamil" and "Jamil" alike). His ratings
+  keep his shape at the brother's level for each stage, and his play style is his. One player a role. Checked: a
+  sharpshooter-shaped "Bilal" for Ilyas at State averages 5.89 like Ilyas, and Chapter 0's pickup scene has him
+  speaking and no "Ilyas" left in it.
 - Still to come on this branch: changing the starters on team select before each game, the bench in share codes,
   then uploaded images (a logo for the crest and the court, and jersey prints) that only go into your creations and
   that a friend sees online once the creation is finished and in use.
