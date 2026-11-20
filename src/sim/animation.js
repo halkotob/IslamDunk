@@ -81,7 +81,20 @@ function poseTargets(p, sp) {
   }
   return t;
 }
+// The joints are springs (stiffness T.K, damping T.D), stepped explicitly. That is stable only in short steps: the
+// running pose (K 1500, D 65) holds at 1/60 s but blows up at 1/40 s and longer (the damping overshoots and the joint
+// swings wider every frame, to 1e32 radians within 3 s at 30 fps: limbs and body drawn at random angles). The match
+// steps at 1/60, but some callers animate with the real frame time: the online guest, the guest's predicted player,
+// the career walks. So a longer step is split into equal steps of at most 1/60 s; a step of 1/60 s or less is one
+// step, exactly as before (the same numbers, so matches and rollback checksums don't change).
+function springJoints(J, T, dt) {
+  if (!(dt > 0)) return;                                          // (0, negative or not a number: nothing moves)
+  dt = Math.min(dt, 0.25);
+  const n = dt > STEP ? Math.ceil(dt / STEP - 1e-9) : 1, h = n > 1 ? dt / n : dt;
+  for (let i = 0; i < n; i++) for (const k of JOINTS) { const j = J[k]; j.v += ((T[k] - j.a) * T.K - j.v * T.D) * h; j.a += j.v * h; }
+}
 function animate(p, dt) {
+  if (!(dt >= 0)) dt = 0;                                         // (a clock that ran backwards, or no time: hold the pose)
   const sp = Math.hypot(p.vx, p.vz), holding = ball.owner === p;
   if (p.lastState === 'pass' && p.state !== 'pass') p.passKind = null;
   // presentation state (runs on host and guest alike, driven by state changes)
@@ -114,10 +127,7 @@ function animate(p, dt) {
     if (p.move.t >= p.move.dur) { p.dh = p.move.to; p.move = null; p.phase = Math.round(p.phase / Math.PI) * Math.PI; p.dp = 0; }
   }
   const T = poseTargets(p, sp);
-  for (const k of JOINTS) {
-    const j = p.j[k];
-    j.v += ((T[k] - j.a) * T.K - j.v * T.D) * dt; j.a += j.v * dt;
-  }
+  springJoints(p.j, T, dt);
   if (T.direct != null) { p.j.ns.a = T.direct; p.j.ns.v = 0; }
   else if (p.j.ns.a > 5) p.j.ns.a -= Math.PI * 2;   // unwrap after windmill
   // body rotation for knockdowns

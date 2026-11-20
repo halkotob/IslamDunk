@@ -1,5 +1,22 @@
 # Changelog
 
+## 9.29.3: players no longer scramble when the frame rate drops
+Phone report (screen recording, an online game; seen in career too): players' limbs and bodies flail and spin at random
+angles while they run, standing players look fine, the game is unplayable.
+- **The cause:** each joint is a spring stepped forward explicitly. The match always steps it 1/60 s at a time, but some
+  callers step it by the real frame time: the online guest's players, the guest's predicted player, and the career
+  walks. The running pose's springs (stiffness 1500, damping 65) hold at 1/60 s and blow up at 1/40 s or longer: the
+  damping overshoots and the joint swings wider every frame. Measured, a running player animated for 3 s: 1.5 radians
+  at 60 and 45 fps, 358,292 at 40 fps, 10^32 at 30 fps (drawn as the sine of that: a random angle every frame). A phone
+  that dips under 45 fps, as screen recording alone can make it, set it off.
+- **The fix:** `animate()` (and the tomahawk styles' Classic shadow rig, which kept a copy of the same spring code)
+  splits a step longer than 1/60 s into equal steps of at most 1/60 s, in one shared `springJoints()`. A 1/60 s step is
+  the same single step as before, so matches don't change: `cpu-parity` against 9.29.2 gives the same scores and box
+  scores, and `rb-determinism`, `rb-rollback` and the `tomahawk` fixture pass unchanged.
+- A step of zero, a negative step or a missing one moves nothing, and the frame time is never negative (a frame whose
+  timestamp comes before the last one's).
+- `anim-framerate` (new) animates five poses for 3 s at 60, 40, 30, 20 and 12 fps: the largest joint angle is 1.61
+  radians (was over 10^32), a 1/60 s step is bit-for-bit the old one, and a 0 / negative / NaN step moves nothing.
 ## 9.29.2: The career overhaul, on top of 9.21.2's sounds
 This merges main's 9.21.2 (the sounds picked in the first phone review) into the career overhaul, so both are
 together for release. The calendar chime is cut on both sides, and the green-make sound is cut in 9.21.2, so the game

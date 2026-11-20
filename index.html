@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.29.2';
+const VERSION = '9.29.3';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -1444,7 +1444,20 @@ function poseTargets(p, sp) {
   }
   return t;
 }
+// The joints are springs (stiffness T.K, damping T.D), stepped explicitly. That is stable only in short steps: the
+// running pose (K 1500, D 65) holds at 1/60 s but blows up at 1/40 s and longer (the damping overshoots and the joint
+// swings wider every frame, to 1e32 radians within 3 s at 30 fps: limbs and body drawn at random angles). The match
+// steps at 1/60, but some callers animate with the real frame time: the online guest, the guest's predicted player,
+// the career walks. So a longer step is split into equal steps of at most 1/60 s; a step of 1/60 s or less is one
+// step, exactly as before (the same numbers, so matches and rollback checksums don't change).
+function springJoints(J, T, dt) {
+  if (!(dt > 0)) return;                                          // (0, negative or not a number: nothing moves)
+  dt = Math.min(dt, 0.25);
+  const n = dt > STEP ? Math.ceil(dt / STEP - 1e-9) : 1, h = n > 1 ? dt / n : dt;
+  for (let i = 0; i < n; i++) for (const k of JOINTS) { const j = J[k]; j.v += ((T[k] - j.a) * T.K - j.v * T.D) * h; j.a += j.v * h; }
+}
 function animate(p, dt) {
+  if (!(dt >= 0)) dt = 0;                                         // (a clock that ran backwards, or no time: hold the pose)
   const sp = Math.hypot(p.vx, p.vz), holding = ball.owner === p;
   if (p.lastState === 'pass' && p.state !== 'pass') p.passKind = null;
   // presentation state (runs on host and guest alike, driven by state changes)
@@ -1477,10 +1490,7 @@ function animate(p, dt) {
     if (p.move.t >= p.move.dur) { p.dh = p.move.to; p.move = null; p.phase = Math.round(p.phase / Math.PI) * Math.PI; p.dp = 0; }
   }
   const T = poseTargets(p, sp);
-  for (const k of JOINTS) {
-    const j = p.j[k];
-    j.v += ((T[k] - j.a) * T.K - j.v * T.D) * dt; j.a += j.v * dt;
-  }
+  springJoints(p.j, T, dt);
   if (T.direct != null) { p.j.ns.a = T.direct; p.j.ns.v = 0; }
   else if (p.j.ns.a > 5) p.j.ns.a -= Math.PI * 2;   // unwrap after windmill
   // body rotation for knockdowns
@@ -3650,7 +3660,7 @@ function resize() {
 let transCv = null;
 const TRANS_T = 0.25;
 function frame(now) {
-  const rdt = Math.min(0.05, lastT ? (now - lastT) / 1000 : STEP); lastT = now; Game.rdt = rdt;
+  const rdt = clamp(lastT ? (now - lastT) / 1000 : STEP, 0, 0.05); lastT = now; Game.rdt = rdt;   // (v9.29.3: never negative, if a frame's timestamp is earlier than the last)
   const before = Game.screen;
   gameUpdate(rdt);
   if (Game.screen !== before && canvas.width) {
@@ -19066,7 +19076,7 @@ function tomahawkPose(style, u) {                       // a full pose (all join
     if (!tom || !p._cj) return r;
     const s0 = SETTINGS.tomahawk; let T; SETTINGS.tomahawk = 'classic';
     try { T = poseTargets(p, Math.hypot(p.vx, p.vz)); } finally { SETTINGS.tomahawk = s0; }
-    for (const k of JOINTS) { const j = p._cj[k]; j.v += ((T[k] - j.a) * T.K - j.v * T.D) * dt; j.a += j.v * dt; }
+    springJoints(p._cj, T, dt);   // (v9.29.3: split into 1/60 s steps when dt is longer, as animate() does)
     if (T.direct != null) { p._cj.ns.a = T.direct; p._cj.ns.v = 0; } else if (p._cj.ns.a > 5) p._cj.ns.a -= Math.PI * 2;   // (as animate() does)
     if (ball.owner !== p) return r;
     // where Classic holds it: v9.21.0 runs the game's own placeHands() and attachBall() on the Classic rig. (The copy of
