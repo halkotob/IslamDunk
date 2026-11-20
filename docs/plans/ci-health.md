@@ -1,8 +1,9 @@
 # Plan: a CI run you can trust
 
 The full suite (`npm run test:full`, `.github/workflows/test.yml`) has not been green on `main` since the career
-overhaul (9.29.2). Every release since has needed a person to sort real failures from noise. The goal is a suite where
-**green means ship and red means a real problem**.
+overhaul (9.29.2), and it takes about 50 minutes. Every release since has needed a person to sort real failures from
+noise, after a long wait. The goal is a suite where **green means ship, red means a real problem, and the answer comes
+in about 15 minutes**.
 
 ## What is failing (as of 9.30.0, November 2026)
 
@@ -66,14 +67,36 @@ loosening it to pass, or quarantining it.
 
 **Done when** each row's fix is pushed and the test passes locally (or on a CI run, for timing-sensitive ones).
 
-### 4. Prove it
+### 4. Make it fast
 
-**Done when** three consecutive full CI runs on the branch are green, then the same on the PR to `main`.
+Where the time goes (run 38, 9.30.0): 5,524 s of tests in 2,885 s of wall time, one job, 3 workers. The ten slowest
+take about 60% of it: `nav-census` 775 s, `league-calibration` 610 s, `phone-text-size` 542 s, `first-three` 513 s,
+`lag-profiles` 302 s, `mobile` 223 s, `rb-lag` 205 s, `ladder` 200 s, `studio` 195 s, `cpu-league` 127 s. The runner
+(`tests/run.mjs`) runs the parallel batch first and then the SERIAL tests (`rb-*`, `online-*` and others) one at a time.
+Every test keeps running on every PR; the time comes from running them side by side and doing less waste inside them.
+
+- **Shard the suite across parallel jobs.** A matrix in `test.yml` (for example 4 shards), each job running its share
+  with `--only`, balanced by the recorded test times (`tests/output/test-times.json`). The serial tests need a job to
+  themselves or a shard each (they measure timing and frame rates, and a busy machine desyncs them). Build once and
+  share the build between jobs (an artifact, or build in each if that's faster).
+- **Look inside the slowest ten.** For each: what it repeats (screens, games, profiles), whether the repeats each
+  check something different, and where it waits on wall-clock time a condition could replace. Cut repeats that
+  check nothing new; keep every check.
+- **The setup steps** (npm ci, installing Chromium, fonts): cache what can be cached.
+
+**Done when** a full CI run takes 20 minutes or less of wall time, every test that ran before still runs, and the
+before and after times (whole run and the slowest ten) are recorded in the PR description.
+
+### 5. Prove it
+
+**Done when** three consecutive full CI runs on the branch are green and each takes 20 minutes or less, then the same
+on the PR to `main`.
 
 ## Kickoff prompt
 
 ```
-Follow docs/plans/ci-health.md: make the full CI suite reliably green. Work through its steps in order and don't skip
-a "Done when". Each product bug is its own release (version bump, CHANGELOG entry). Push after each fix. When all
-four steps are done, open a PR to main and tell me the three green run links.
+Follow docs/plans/ci-health.md: make the full CI suite reliably green and about 15 minutes long. Work through its
+steps in order and don't skip a "Done when". Each product bug is its own release (version bump, CHANGELOG entry).
+Push after each fix. When all five steps are done, open a PR to main and tell me the three green run links and the
+before and after run times.
 ```
