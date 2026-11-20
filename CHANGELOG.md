@@ -1,5 +1,16 @@
 # Changelog
 
+## 9.30.2: bigger text never overlaps for a frame
+At Large and Larger text on a phone, a label that has to be shortened to fit ("Local champi…") could be drawn at the
+big size for one frame, over the line above it, before it settled: on a won final's post-game screen, "Win (Final)"
+and "Local champions" overlapped as the reward lines came in. A shortened label is now measured and drawn at Normal
+size in the same frame, and "Local champions" now fits whole at Normal instead of being cut.
+- The fitter stepped such a label down, but once it reached Normal it was shortened at the screen's text size and
+  drawn untagged, so the shortened text came out big under a new key that hadn't been stepped down yet.
+- `phone-text-size` failed on this about one run in eight, when the career it audits happened to be on a won final
+  and the last reward line came in just as the audit looked. The post-game screen it audits is now a won final with
+  the most reward lines, on purpose.
+
 ## 9.30.1: the Milestones screen has a way back on a phone
 My Player > Milestones (9.29.0) had no ‹ Back pill, so on a phone, with no Esc key or pad, there was no way off it
 but closing the game. It now has the pill, and it goes back to the hub, as Esc and the pad's B already did. Found by

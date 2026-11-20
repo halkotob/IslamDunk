@@ -122,7 +122,8 @@ export const SCREENS = [
   ['career league box score', LEAGUE_FIX + ` window.__lgOpen('box');`],
   ['career around the league (waiting)', CAREER + ` LEAGUE.waitMs = 0; Game.lgWait = { won: true, us: 30, them: 20, t0: performance.now() + 1e9, done: 1, total: 3, go: () => {} }; Game.screen = 'cleague';`],
   ['csummary', CAREER + ` careerHub(); openSummary(C.stage, 'menu');`],
-  ['postgame', CAREER + ` careerHub(); Game.screen = 'postgame';`],
+  // (ci-health: the reward list as a won final with the most rows, on purpose; it was whatever result the career left)
+  ['postgame', CAREER + ` careerHub(); Game.post = Object.assign({}, Game.post, { won: true, res: 'champ', roundName: 'Final', rw: careerRewards(true, true, { round: 2, roundName: 'Final', stage: 0, rival: true, salah: true }) }); Game.screen = 'postgame';`],
   ['scout', CAREER + ` careerHub(); prepCareerVenue(); Game.scout = buildScout(); Game.screen = 'scout';`],
   ['pregame', CAREER + ` careerHub(); prepCareerVenue(); Game.scout = buildScout(); Game.screen = 'pregame';`],
   ['journal', CAREER + ` careerHub(); openJournal();`],
