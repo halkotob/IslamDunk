@@ -127,10 +127,16 @@ export function rbSameTests({ newContext, open }) {
     await Promise.all([P.H, P.G].map(p => p.waitForFunction(() => M.phase === 'over' || (RBN.f > 60 * 200), null, { timeout: 240000 }).catch(() => {})));
     await sleep(1500);
     const [h, g] = await Promise.all([P.H, P.G].map(p => p.evaluate(READ)));
-    const ex = await Promise.all([P.H, P.G].map(p => p.evaluate(() => ({ over: M.phase === 'over', score: M.teams.map(t => t.score).join('-'), code: typeof rbSyncCode === 'function' ? rbSyncCode() : '', lat: window.__lat || 0, tog: [SETTINGS.defToggle, SETTINGS.sprToggle].join() }))));
+    const ex = await Promise.all([P.H, P.G].map(p => p.evaluate(() => ({ over: M.phase === 'over', score: M.teams.map(t => t.score).join('-'), code: typeof rbSyncCode === 'function' ? rbSyncCode() : '', hashes: [...RBN.hashes], lat: window.__lat || 0, tog: [SETTINGS.defToggle, SETTINGS.sprToggle].join() }))));
     await P.ctx.close();
     const c = compare(h, g);
-    const ok = ex.every(x => x.over) && ex[0].score === ex[1].score && ex[0].code === ex[1].code && ex[0].lat > 20 && ex[0].tog === 'true,true' && ex[1].tog === 'false,false'
+    // (ci-health: the same state on the same frame at the end. This compared each phone's own latest sync code, the last
+    // whole second it had confirmed, read at one moment: "92 HSJM" on the host and "91 TZWQ" on the guest with no desync
+    // and no bad hash (PR #13). Now the latest frame whose checksum both phones hold.)
+    const gh = new Map(ex[1].hashes), endF = ex[0].hashes.map(([f]) => f).filter(f => gh.has(f)).sort((a, b) => b - a)[0];
+    const endSame = endF != null && new Map(ex[0].hashes).get(endF) === gh.get(endF);
+    for (const x of ex) delete x.hashes; ex[0].endF = endF;
+    const ok = ex.every(x => x.over) && ex[0].score === ex[1].score && endSame && ex[0].lat > 20 && ex[0].tog === 'true,true' && ex[1].tog === 'false,false'
       && c.startDiff === -1 && c.badHashes === 0 && c.compared > 10 && h.desyncs + g.desyncs === 0 && g.repairs === 0 && !P.errs.length;
     return { ok, detail: [JSON.stringify({ host: ex[0], guest: ex[1], compare: c, desyncs: [h.desyncs, g.desyncs], repairs: g.repairs }), ...P.errs] };
   };
