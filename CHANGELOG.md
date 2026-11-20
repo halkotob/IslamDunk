@@ -1,5 +1,10 @@
 # Changelog
 
+## 9.30.1: the Milestones screen has a way back on a phone
+My Player > Milestones (9.29.0) had no ‹ Back pill, so on a phone, with no Esc key or pad, there was no way off it
+but closing the game. It now has the pill, and it goes back to the hub, as Esc and the pad's B already did. Found by
+`nav-census` (touch: 1 screen with no way out), which has failed on every run since 9.29.2.
+
 ## 9.30.0: every online mode on rollback (Lightning, HORSE, King of the Court, Barakah Run duos)
 Head to head, Same team vs CPU and 1 on 1 already played online with rollback: both phones run the whole game and send
 each other only their controls, so your own player answers at once and there are no snapshot hiccups. Lightning, HORSE,
