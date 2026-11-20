@@ -387,12 +387,20 @@ export function rollbackTests({ newContext, open }) {
     await H.evaluate(MASH, 31); await G.evaluate(MASH, 37);
     await sleep(10000);
     const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { bytes: (Net.room && Net.room.stats && Net.room.stats.byKey && Net.room.stats.byKey.rb) || 0, t: Date.now(), err: RB.errors || 0, log: RBN.desyncLog || null }); })));
-    // (v9.17.6) then, hands off: do both phones end in the same game? (the same sync code, no desync open)
+    // (v9.17.6) then, hands off: do both phones end in the same game? (the same state on the same frame, no desync open)
+    // (ci-health: this compared each phone's latest sync code at the same moment, the latest whole second it had
+    // confirmed. On Bad mobile one phone confirms seconds behind the other (on CI 35 against 30, on the retry 36 against
+    // 30: run 34, 38), so the codes were of different frames and never matched. Each phone's confirmed hashes (every
+    // 15 frames, the last 16 kept) are now gathered as they come, and the two compared on the latest frame both have
+    // confirmed since the mashing stopped, waiting up to 20 s for the one behind)
+    const stopF = Math.max(...rep.map(r => r.frame || 0)), seen = [new Map(), new Map()];
     let end = null;
-    for (let i = 0; i < 8 && !(end && end.same); i++) {
+    for (let i = 0; i < 40 && !(end && end.same); i++) {
       await sleep(i ? 500 : 3000);
-      const e = await Promise.all([H, G].map(p => p.evaluate(() => ({ code: rbSyncCode(), open: !!RBN.desync }))));
-      end = { same: !!e[0].code && e[0].code === e[1].code && !e[0].open && !e[1].open, codes: e.map(x => x.code) };
+      const e = await Promise.all([H, G].map(p => p.evaluate(() => ({ h: [...RBN.hashes], open: !!RBN.desync, code: rbSyncCode() }))));
+      e.forEach((x, k) => { for (const [f, h] of x.h) seen[k].set(f, h); });
+      const both = [...seen[0].keys()].filter(f => f >= stopF && seen[1].has(f)).sort((a, b) => b - a), f = both[0];
+      end = { same: f != null && seen[0].get(f) === seen[1].get(f) && !e[0].open && !e[1].open, frame: f, codes: e.map(x => x.code) };
     }
     await ctx.close();
     const med = a => { const x = a.slice().sort((p, q) => p - q); return x.length ? x[x.length >> 1] : null; };
