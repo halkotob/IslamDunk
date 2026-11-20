@@ -29085,6 +29085,7 @@ function rbMiniCfg(kind) {
   let mini = null, building = false;
   const _st = RBN.start;
   RBN.start = function (cfg, me) {
+    RB.finish = null;                                                    // (a match's end left from the last match: never run on this one)
     mini = cfg && cfg.mini ? cfg.mini : null;
     try { return _st.apply(this, arguments); } finally { mini = null; }
   };

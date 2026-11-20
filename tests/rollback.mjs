@@ -146,7 +146,12 @@ export function rollbackTests({ newContext, open }) {
     const started = await Promise.all([H, G].map(p => p.evaluate(() => ({ on: RBN.on, me: RBN.me, screen: Game.screen, kind: M.mini && M.mini.kind, mode: Net.mode, word: M.mini && M.mini.word,
       names: M.players.map(q => q.def.name), humans: M.players.map(q => q.human) }))));
     await H.evaluate(MASH, 31); await G.evaluate(MASH, 37);
-    const done = p => p.waitForFunction(() => M.mini && M.mini.done && RBN.endF != null && RBN.endF <= RBN.conf, null, { timeout: 120000 }).then(() => true, () => false);
+    await sleep(15000);
+    // the end, on the same frame on both phones (a frame neither has played): a played-out mini can run for minutes
+    const endAt = Math.max(...await Promise.all([H, G].map(p => p.evaluate(() => RBN.f)))) + 120;
+    await Promise.all([H, G].map(p => p.evaluate(f => { window.__endAt = f; const _s = rbStep;
+      rbStep = function (ins, resim) { const r = _s.apply(this, arguments); if (RB.frame === window.__endAt && M.mini && !M.mini.done) { if (M.mini.kind === 'lightning') M.mini.finish(); else { M.mini.done = true; M.mini.doneT = 0; } } return r; }; }, endAt)));
+    const done = p => p.waitForFunction(() => M.mini && M.mini.done && RBN.endF != null && RBN.endF <= RBN.conf, null, { timeout: 60000 }).then(() => true, () => false);
     const [hd, gd] = await Promise.all([done(H), done(G)]);
     const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { err: RB.errors || 0, log: RBN.desyncLog || null, done: !!(M.mini && M.mini.done), endF: RBN.endF, msg: M.mini && M.mini.msg, state: M.mini && JSON.stringify(M.mini.snap()) }); })));
     // the host goes on: both back in the lobby
@@ -179,7 +184,7 @@ export function rollbackTests({ newContext, open }) {
     // as a rule change would): played on, it finishes on its own
     const endAt = await H.evaluate(() => RBN.f + 30);
     await Promise.all([H, G].map(p => p.evaluate(f => { const t = setInterval(() => { if (RBN.f >= f && RBN.on) { clearInterval(t); } }, 5); window.__endAt = f;
-      const _s = rbStep; rbStep = function (ins, resim) { const r = _s.apply(this, arguments); if (RB.frame === window.__endAt) { M.teams[0].score = M.teams[1].score + 3; M.clock = 0.05; M.shotClock = 9; } return r; }; }, endAt)));
+      const _s = rbStep; rbStep = function (ins, resim) { const r = _s.apply(this, arguments); if (RB.frame === window.__endAt && M.barakahRound === 1) { M.teams[0].score = M.teams[1].score + 3; M.clock = 0.05; M.shotClock = 9; } return r; }; }, endAt)));   // (game 1 only: game 2's frames count from 0 again)
     const fin = p => p.waitForFunction(() => Game.screen === 'final', null, { timeout: 60000 }).then(() => true, () => false);
     const [hf, gf] = await Promise.all([fin(H), fin(G)]);
     const after1 = await Promise.all([H, G].map(p => p.evaluate(() => ({ screen: Game.screen, winner: M.winner, wins: Run.wins, desync: RBN.desync }))));

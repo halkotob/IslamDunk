@@ -42,6 +42,12 @@ stay on snapshots, as the matches always have).
   second match frame for frame over 7,200 frames (three games and their breaks, then six all-CPU games).
 - `rb-kotc` (new): the same line on both phones, a skip pressed on the guest skips the same game on both (the same
   result), the session ends on the same frame with the same champion and standings, and both are back in the lobby.
+- A rollback match starts with no end left over from the last one (RB.finish): a replayed frame of a finished match
+  could set it again after it had run, and it could then run on the next match.
+- The new rollback tests end their game on a set frame on both phones (one neither has played yet), instead of waiting
+  for random play to finish it: a played-out mini can run past the time limit (CI, 9.30.0's first King of the Court
+  run: Lightning and HORSE still going after 2 minutes, no desync), and the Barakah Run test's end of game 1 fired
+  again in game 2.
 - `docs/audio/sound-list.csv` regenerated (9.29.3 moved two bounce triggers in animation.js; `sound-list` failed).
 ## 9.29.3: players no longer scramble when the frame rate drops
 Phone report (screen recording, an online game; seen in career too): players' limbs and bodies flail and spin at random
