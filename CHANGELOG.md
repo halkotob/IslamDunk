@@ -1,5 +1,39 @@
 # Changelog
 
+## 9.30.0: Lightning, HORSE and Barakah Run duos online on rollback
+Head to head, Same team vs CPU and 1 on 1 already played online with rollback: both phones run the whole game and send
+each other only their controls, so your own player answers at once and there are no snapshot hiccups. Lightning, HORSE
+and Barakah Run duos were still on the host's snapshots (the guest followed the host's picture, a beat behind). Now
+they use rollback too, on a direct link (without one, everything through the server, they stay on snapshots, as the
+matches do). King of the Court is next.
+- **Both phones build the mini from the host's start message** (cfg.mini): the kind, the roster, each roster player's
+  definition (the two humans are the lobby picks) and HORSE's word and timer from the host's lobby. Nothing comes
+  from the guest's own device.
+- **Both play it on the same frames:** updateMatch already hands a mini to miniStep, and a mini's whole state is under
+  M (M.mini, both balls in M.balls), which rollback saves, restores and checks.
+- **Drawing no longer leaks into the game:** a mini's two balls take turns in the global ball while they're drawn,
+  and the last one drawn stayed there; the next frame started from whatever that phone drew last, a desync about once
+  a second (64 in a HORSE game). The global ball is put back after drawing. Checked: drawing a mini 1,000 times
+  changes nothing in the game's state, and a run with a rollback every half second matches a straight run frame for
+  frame (2,400 frames, Lightning and HORSE).
+- **Names:** the game's text names both humans ("Khalil wins") on both phones, as the snapshot path does online (the
+  text is part of the game, so both phones have to hold the same).
+- **The end:** the frame a mini is decided on is its end. Once both players have confirmed it, the host's Continue
+  takes both back to the lobby.
+- `rb-lightning` and `rb-horse` (new): two phones on the test link (40 ms, jitter, 2% loss) play a mini to its end:
+  both start it from the message with the same players (and HORSE's HAQ / 6 s), end on the same frame with the same
+  state, with no desync, and are back in the lobby together.
+- **Barakah Run duos:** each game of the run is a rollback match, built on both phones from the host's start message
+  (cfg.brun: the run's team, wins, points, power-ups and shield) with the run's own ladder, so the opponent, the AI
+  level and the power-up stats are the same on both. The pick screen between games stays on the host's snapshots (a
+  menu: nothing there needs to be instant); the host's Continue ends the rollback game for both and the guest follows
+  the pick screen (not the lobby), and the pick starts the next game the same way. The One More Chance shield is used
+  up during a game, outside the match: in a rollback game it lives in the match (M._runShield), so the rollback
+  saves, restores and checks it.
+- `rb-brun` (new): game 1 starts on rollback on both phones with the same players and run, ends for both with the win
+  counted on both, the guest follows the host's pick screen, and the pick starts game 2 on rollback with the win and
+  the power-up on both phones, no desync.
+- `docs/audio/sound-list.csv` regenerated (9.29.3 moved two bounce triggers in animation.js; `sound-list` failed).
 ## 9.29.3: players no longer scramble when the frame rate drops
 Phone report (screen recording, an online game; seen in career too): players' limbs and bodies flail and spin at random
 angles while they run, standing players look fine, the game is unplayable.

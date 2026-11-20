@@ -21,6 +21,10 @@
 //                    buttons) for 15 s: no desync, and a touch player can sprint
 //   rb-slow          the guest's CPU 3x slower: the host's match keeps its pace (no freezing, no slow motion), the
 //                    guest keeps up, no desync left at the end
+//   rb-lightning, rb-horse   v9.30.0 the minis on rollback: started from the host's message on both phones, no desync
+//                    with latency, jitter and loss, the same end frame and state, and both back in the lobby
+//   rb-brun          v9.30.0 Barakah Run duos on rollback: game 1 from the host's message, the guest follows the pick
+//                    screen, the pick starts game 2 on rollback with the run carried over, no desync
 //   rb-freeze        the guest's game stops for 2 s (an app in the background): the host's match keeps going
 //                    (nobody waits), and when the guest is back both are on the same frame and the same game again
 //   rb-resync        a desync made on purpose (the guest's state nudged) is seen at the next checksum, the host sends
@@ -130,6 +134,70 @@ export function rollbackTests({ newContext, open }) {
     const out = { started, host: rep[0], guest: rep[1] };
     const ok = started.every(s => s.on && s.screen === 'play') && started[0].me === 0 && started[1].me === 1
       && rep.every(r => r.desync == null && (r.desyncs || 0) === 0 && r.hashesChecked >= 5 && r.frame > 900 && r.maxRoll <= 20 && r.stepErrors === 0) && !errs.length;
+    return { ok, detail: [JSON.stringify(out), ...errs] };
+  };
+  // v9.30.0: Lightning and HORSE on rollback: both phones start the mini from the host's message, play it on the
+  // same frames (no desync with latency, jitter and loss), see the same game, and both reach its end
+  for (const kind of ['lightning', 'horse']) T['rb-' + kind] = async ({ browser, base }) => {
+    const { ctx, H, G, errs } = await rbPair(browser, base, `?net=loop&mode=udp&lat=40&jit=10&loss=2&p2p=0&room=rb${kind}&nowelcome=1`, { game: kind, word: 'HAQ', timer: 6 });
+    const started = await Promise.all([H, G].map(p => p.evaluate(() => ({ on: RBN.on, me: RBN.me, screen: Game.screen, kind: M.mini && M.mini.kind, mode: Net.mode, word: M.mini && M.mini.word,
+      names: M.players.map(q => q.def.name), humans: M.players.map(q => q.human) }))));
+    await H.evaluate(MASH, 31); await G.evaluate(MASH, 37);
+    const done = p => p.waitForFunction(() => M.mini && M.mini.done && RBN.endF != null && RBN.endF <= RBN.conf, null, { timeout: 120000 }).then(() => true, () => false);
+    const [hd, gd] = await Promise.all([done(H), done(G)]);
+    const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { err: RB.errors || 0, log: RBN.desyncLog || null, done: !!(M.mini && M.mini.done), endF: RBN.endF, msg: M.mini && M.mini.msg, state: M.mini && JSON.stringify(M.mini.snap()) }); })));
+    // the host goes on: both back in the lobby
+    await H.evaluate(() => { Game.paused = false; M.mini.doneT = 9; miniResultContinue(); });
+    const back = await G.waitForFunction(() => !RBN.on && Lobby.isIn(), null, { timeout: 10000 }).then(() => true, () => false);
+    const hostBack = await H.evaluate(() => !RBN.on);
+    await ctx.close();
+    const out = { started, done: [hd, gd], host: rep[0], guest: rep[1], back, hostBack };
+    const ok = started.every(s => s.on && s.screen === 'play' && s.kind === kind && s.mode === kind) && started[0].me === 0 && started[1].me === 1
+      && JSON.stringify(started[0].names) === JSON.stringify(started[1].names) && (kind !== 'horse' || started.every(s => s.word === 'HAQ'))
+      && hd && gd && rep[0].endF === rep[1].endF && rep[0].state === rep[1].state
+      && rep.every(r => r.desync == null && (r.desyncs || 0) === 0 && r.hashesChecked >= 3 && r.err === 0) && back && hostBack && !errs.length;
+    return { ok, detail: [JSON.stringify(out), ...errs] };
+  };
+  // v9.30.0: Barakah Run duos on rollback: game 1 starts from the host's message (the run's team, ladder and power-ups),
+  // ends for both, the guest follows the host's pick screen (not the lobby), and the pick starts game 2 the same way,
+  // with the run (a win, the power-up) carried over on both phones and no desync
+  T['rb-brun'] = async ({ browser, base }) => {
+    const { ctx, H, G, errs } = await rbPair(browser, base, '?net=loop&mode=udp&lat=40&jit=10&loss=2&p2p=0&room=rbbrun&nowelcome=1', { game: 'brun' });
+    const info = () => ({ on: RBN.on, me: RBN.me, id: RBN.id, screen: Game.screen, barakah: !!M.barakah, round: M.barakahRound, wins: Run.wins, up: JSON.stringify(Run.upgrades),
+      names: M.players.map(q => q.def.name).join(), humans: M.players.map(q => q.human).join(), aiLvl: JSON.stringify(M.teams.map(t => t.ai && t.ai.react)) });
+    const g1 = await Promise.all([H, G].map(p => p.evaluate(info)));
+    await H.evaluate(MASH, 41); await G.evaluate(MASH, 43);
+    await sleep(6000);
+    // game 1 ends with a win for the duo (the score set on the host's frame: both phones play it from there)
+    await H.evaluate(() => { clearInterval(window.__mash); });
+    await G.evaluate(() => { clearInterval(window.__mash); });
+    const r1 = await Promise.all([H, G].map(p => p.evaluate(() => Object.assign(RBN.report() || {}, { err: RB.errors || 0 }))));
+    // end the game the normal way on both: the clock runs out with the duo ahead (both phones set it on the same frame,
+    // as a rule change would): played on, it finishes on its own
+    const endAt = await H.evaluate(() => RBN.f + 30);
+    await Promise.all([H, G].map(p => p.evaluate(f => { const t = setInterval(() => { if (RBN.f >= f && RBN.on) { clearInterval(t); } }, 5); window.__endAt = f;
+      const _s = rbStep; rbStep = function (ins, resim) { const r = _s.apply(this, arguments); if (RB.frame === window.__endAt) { M.teams[0].score = M.teams[1].score + 3; M.clock = 0.05; M.shotClock = 9; } return r; }; }, endAt)));
+    const fin = p => p.waitForFunction(() => Game.screen === 'final', null, { timeout: 60000 }).then(() => true, () => false);
+    const [hf, gf] = await Promise.all([fin(H), fin(G)]);
+    const after1 = await Promise.all([H, G].map(p => p.evaluate(() => ({ screen: Game.screen, winner: M.winner, wins: Run.wins, desync: RBN.desync }))));
+    await H.evaluate(() => finalContinue());
+    const pick = await H.waitForFunction(() => Game.screen === 'runchoice' && !RBN.on, null, { timeout: 10000 }).then(() => true, () => false);
+    const follow = await G.waitForFunction(() => Game.screen === 'netplay' && !RBN.on && Game.brun && Game.brun.scr === 'runchoice', null, { timeout: 15000 }).then(() => true, () => false);
+    const turn = await H.evaluate(() => Run.turn);
+    // the pick (the host's turn on game 1; the guest's on the next) starts game 2 on rollback on both
+    await H.evaluate(() => pickRunPower(0));
+    const g2ok = await G.waitForFunction(() => RBN.on && Game.screen === 'play' && M.barakahRound === 2, null, { timeout: 15000 }).then(() => true, () => false);
+    const g2 = await Promise.all([H, G].map(p => p.evaluate(info)));
+    await H.evaluate(MASH, 47); await G.evaluate(MASH, 49);
+    await sleep(8000);
+    const r2 = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { err: RB.errors || 0, log: RBN.desyncLog || null, shield: Run.shieldUsed }); })));
+    await ctx.close();
+    const out = { g1, r1, final: [hf, gf], after1, pick, follow, turn, g2ok, g2, r2 };
+    const same = a => a[0].names === a[1].names && a[0].humans === a[1].humans && a[0].up === a[1].up && a[0].wins === a[1].wins && a[0].aiLvl === a[1].aiLvl;
+    const ok = g1.every(s => s.on && s.screen === 'play' && s.barakah && s.round === 1) && g1[0].me === 0 && g1[1].me === 1 && same(g1)
+      && hf && gf && after1.every(a => a.winner === 0 && a.wins === 1) && pick && follow && turn === 0
+      && g2ok && g2.every(s => s.on && s.barakah && s.round === 2 && s.wins === 1 && s.up !== '{}') && same(g2) && g2[0].id === g2[1].id && g2[0].id !== g1[0].id
+      && [...r1, ...r2].every(r => (r.desyncs || 0) === 0 && r.err === 0) && r2.every(r => r.hashesChecked >= 3) && !errs.length;
     return { ok, detail: [JSON.stringify(out), ...errs] };
   };
   T['rb-flow'] = async ({ browser, base }) => {

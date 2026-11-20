@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.29.3';
+const VERSION = '9.30.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -23893,7 +23893,7 @@ function rbStaticsFresh() { if (RB.staticsOf !== M.teamDefs) { rbMarkStatics(); 
 //   * Every second each side sends the checksum of a frame both have confirmed; a mismatch is a desync (reported in
 //     the network report, and the host's state is sent to put the guest right: rollback-sync.js).
 // The match starts from the host's start message (rbgo): the match setup, the seed and the agreed settings; both
-// sides build the same match from it. HORSE, Lightning and Barakah Run duos still use the host's snapshots, and so do
+// sides build the same match from it. (v9.30.0: Lightning, HORSE and Barakah Run duos too: v930-rb-minis.js, v930-rb-brun.js.) King of the Court still uses the host's snapshots, and so do
 // matches without a direct link (everything through the server: in-order delivery holds every input up behind a lost
 // one, and rollback would wait; there the snapshots keep your own player instant).
 const RBN = {
@@ -29009,6 +29009,162 @@ const STORY_FINAL = [
   ['saleem', 'JazakAllahu khayran, akhi. For everything.'],
   ['narr', 'The golden ball now sits on its stand in the gym. Walk up to it any time.']
 ];
+// ================================================= v9.30.0: LIGHTNING AND HORSE ONLINE WITH ROLLBACK
+// Head to head, Same team vs CPU and 1 on 1 run on rollback (rollback-net.js): both phones play the whole game and
+// send each other only their controls, so your own player answers at once and there are no snapshot hiccups. The
+// minis were still on the host's snapshots. Now Lightning and HORSE start the same way, on a direct link:
+//   * The host's start message (cfg.mini) carries everything setupMini needs: the kind, the roster ids, each roster
+//     player's definition (the two humans are the players picked in the lobby, the rest are cast) and HORSE's word
+//     and timer from the host's lobby. Both phones build the game from it (RBN.start), no device's own settings.
+//   * Both phones step it with rbStep like any rollback match (updateMatch hands a mini to miniStep): its whole state is
+//     under M (M.mini, the two balls in M.balls), which the rollback saves, restores and checks.
+//   * Drawing: a mini's two balls take turns in the global ball while they're drawn; the global ball is put back after
+//     drawing, so the next frame starts where the game left it, not where this phone's drawing did.
+//   * Names: a human is named in the game's own text ("Khalil wins"), on both phones (the text is part of the game,
+//     and both phones must hold the same), as the snapshot path does online.
+//   * The end: the frame the game is decided on (M.mini.done) is the end, as M.phase 'over' is for a match. Once both
+//     players have confirmed it, the host's Continue goes back to the lobby (and takes the guest along: rbend).
+// Without a direct link (everything through the server) the minis stay on the snapshots, as the matches do.
+RBN.modes.add('lightning'); RBN.modes.add('horse');
+function rbMiniCfg(kind) {
+  const L = typeof Lobby !== 'undefined' ? Lobby.lm : null, lo = typeof Lobby !== 'undefined' && Lobby.saved ? Lobby.opts() : (Lobby && Lobby.o) || {};
+  const base = MINI_ONLINE[kind] || MINI_ONLINE.horse, roster = L && L.mp ? ['lp:0', 'lp:1', ...base.slice(2)] : base.slice();
+  const defs = roster.map(id => JSON.parse(JSON.stringify(castPlayer(id))));   // (castPlayer reads the lobby picks for 'lp:k')
+  return { kind, roster, defs, word: MINI_WORDS.includes(lo.word) ? lo.word : 'HORSE', timer: MINI_TIMERS.includes(lo.timer) ? lo.timer : 10 };
+}
+{
+  // the host: a mini's start message
+  const _hs = RBN.hostStart;
+  RBN.hostStart = function () {
+    if (!Net.isMini(Net.mode)) return _hs.apply(this, arguments);
+    const g = Net.guestPeer && Net.peers().find(q => q.peer === Net.guestPeer);
+    const cfg = { id: (this.id = (this.id + 1) % 1e6 || 1), mode: Net.mode, seed: (Math.random() * 2147483647) | 0, set: rbConfig(SETTINGS),
+      teams: [null, null], venue: null, humans: [{ team: 0, slot: 0, pad: 0 }, { team: 0, slot: 1, pad: 1 }],
+      court: null, taunts: [rbTauntId(myTaunt()), rbTauntId(g && g.presence && g.presence.taunt)], fun: null, one: null,
+      mini: rbMiniCfg(Net.mode) };
+    Net.mid++; Net.evs = []; Game.lastMatch = null;
+    Net.setP({ rbgo: cfg, rbend: null, rb: null });
+    this.start(cfg, 0);
+  };
+  // both phones: RBN.start's newMatch builds the mini from the message instead
+  let mini = null, building = false;
+  const _st = RBN.start;
+  RBN.start = function (cfg, me) {
+    mini = cfg && cfg.mini ? cfg.mini : null;
+    try { return _st.apply(this, arguments); } finally { mini = null; }
+  };
+  const _nm = newMatch;
+  newMatch = function () {
+    if (!mini || building) return _nm.apply(this, arguments);
+    const m = mini, _cp = castPlayer; building = true;
+    castPlayer = function (id) { const i = m.roster.indexOf(id); return i >= 0 && m.defs[i] ? JSON.parse(JSON.stringify(m.defs[i])) : _cp.apply(this, arguments); };
+    try { setupMini(m.kind, { online: false, roster: m.roster.slice(), word: m.word, timer: m.timer, humans: RBN.cfg ? RBN.cfg.humans : [{ team: 0, slot: 0, pad: 0 }, { team: 0, slot: 1, pad: 1 }] }); }
+    finally { castPlayer = _cp; building = false; }
+  };
+  // drawing a mini swaps each ball into the global one (withBall) and leaves the last one drawn there; the next frame
+  // then started from whatever this phone drew last. In a rollback mini the global ball is put back after drawing,
+  // so every frame starts from the state the game left, the same on both phones
+  const _rd = render;
+  render = function () {
+    if (!(RBN.on && M.balls)) return _rd.apply(this, arguments);
+    const keep = {}; for (const k of BALL_KEYS) keep[k] = ball[k];
+    try { return _rd.apply(this, arguments); } finally { for (const k of BALL_KEYS) ball[k] = keep[k]; }
+  };
+  // names in the game's text: the same on both phones
+  const _mn = miniName;
+  miniName = function (i) { if (RBN.on) { const p = M.players[i]; return p ? p.def.name : ''; } return _mn.apply(this, arguments); };
+  // the end of a mini is the frame it's decided on
+  const _sf = RBN.stepFrame;
+  RBN.stepFrame = function (f) { const r = _sf.apply(this, arguments); if (this.endF == null && M.mini && M.mini.done) this.endF = f; return r; };
+  // the play screen: the result, and Continue once both have confirmed the end
+  const _pl = RBN.play;
+  RBN.play = function (rdt) {
+    const r = _pl.apply(this, arguments);
+    if (M.mini && M.mini.done && (M.mini.doneT || 0) > 1.2 && this.endF != null && this.endF <= this.conf && Net.role === 'host' && !Game.paused && menuHit('ok')) miniResultContinue();
+    return r;
+  };
+  // the result screen's tap: only once the end is confirmed (a late input from the friend could still change it)
+  const _mrc = miniResultContinue;
+  miniResultContinue = function () { if (RBN.on && M.mini && !(RBN.endF != null && RBN.endF <= RBN.conf)) return; return _mrc.apply(this, arguments); };
+}
+// ================================================= v9.30.0: BARAKAH RUN DUOS ONLINE WITH ROLLBACK
+// A duo run is a ladder of games with a power-up pick between them. Each game is now a rollback match (both phones play
+// it and send each other only their controls, as Head to head does); the picks between games stay on the host's
+// snapshots (a menu, nothing there needs to be instant).
+//   * The start: the host's start message (cfg.brun) carries the run as it stands: the team, wins, points, power-ups and
+//     the shield. Both phones set their run from it and build the game with the run's own nextBarakahGame (the same
+//     ladder, opponent, AI level and power-up stats on both), so nothing comes from the guest's device.
+//   * The shield (One More Chance) is used up during a game, and the run lives outside the match, where the rollback
+//     doesn't look: in a rollback game Run.shieldUsed reads and writes M._runShield, which the rollback saves, restores
+//     and checks like the rest of the match. (After the game it's the run's again.)
+//   * Between games: the host's Continue on the final screen ends the rollback game for both (rbend, with brunNext so
+//     the guest follows the host's pick screen instead of going back to the lobby). The host's pick starts the next
+//     game the same way; the guest picks on its turn as before.
+// Without a direct link (everything through the server) the run stays on snapshots, as the matches do.
+RBN.modes.add('brun');
+{
+  // the shield: the match's while a rollback game runs, the run's otherwise
+  let su = !!Run.shieldUsed;
+  const rbGame = () => RBN.on && M.barakah && !!M.rb;
+  delete Run.shieldUsed;
+  Object.defineProperty(Run, 'shieldUsed', {
+    configurable: true, enumerable: true,
+    get() { return rbGame() ? !!M._runShield : su; },
+    set(v) { if (rbGame()) M._runShield = !!v; else su = !!v; }
+  });
+  const copyRun = () => ({ team: Run.team, wins: Run.wins, points: Run.points, upgrades: Object.assign({}, Run.upgrades), shieldUsed: !!Run.shieldUsed });
+  // the host: a duo run's game starts as a rollback match
+  const _hs = RBN.hostStart;
+  RBN.hostStart = function () {
+    if (Net.mode !== 'brun') return _hs.apply(this, arguments);
+    Net.mid++; Net.evs = []; Game.lastMatch = null;
+    Run.team = Net.sel.a; Run.duo = 'online'; startBarakah();         // (startBarakah -> nextBarakahGame -> below)
+  };
+  let brun = null, building = false;
+  const _nb = nextBarakahGame;
+  nextBarakahGame = function () {
+    if (building) return _nb.apply(this, arguments);
+    if (!(Run.duo === 'online' && Net.role === 'host' && Net.guestPeer && RBN.eligible('brun'))) return _nb.apply(this, arguments);
+    const g = Net.peers().find(q => q.peer === Net.guestPeer);
+    const cfg = { id: (RBN.id = (RBN.id + 1) % 1e6 || 1), mode: 'brun', seed: (Math.random() * 2147483647) | 0, set: rbConfig(SETTINGS),
+      teams: [null, null], venue: null, humans: runHumans(), court: null,
+      taunts: [rbTauntId(myTaunt()), rbTauntId(g && g.presence && g.presence.taunt)], fun: null, one: null, brun: copyRun() };
+    Net.setP({ rbgo: cfg, rbend: null, rb: null, brunNext: null });
+    RBN.start(cfg, 0);
+  };
+  // both phones: RBN.start's newMatch is the run's next game, from the message's run
+  const _st = RBN.start;
+  RBN.start = function (cfg, me) {
+    brun = cfg && cfg.brun ? cfg.brun : null;
+    if (brun) Object.assign(Run, { active: true, duo: 'online', team: brun.team, wins: brun.wins, points: brun.points, upgrades: Object.assign({}, brun.upgrades) });
+    try { return _st.apply(this, arguments); }
+    finally { if (brun && M.barakah) M._runShield = !!brun.shieldUsed; brun = null; }
+  };
+  const _nm = newMatch;
+  newMatch = function () {
+    if (!brun || building) return _nm.apply(this, arguments);
+    building = true;                                                    // (the lobby's picks for the run's team: v920-lobby's wrapper of it)
+    try { _nb(); } finally { building = false; }
+  };
+  // the end of a rollback game: the shield goes back to the run
+  const _stop = RBN.stop;
+  RBN.stop = function () { if (rbGame()) su = !!M._runShield; return _stop.apply(this, arguments); };
+  // the host's Continue on the final screen: the rollback game is over for both, and the guest follows the pick screen
+  const _bc = barakahContinue;
+  barakahContinue = function () {
+    if (RBN.on && Run.duo === 'online' && Net.role === 'host') { Net.setP({ rbend: RBN.id, brunNext: RBN.id }); RBN.stop(); M.online = true; }   // (M.online: the host's snapshots carry the pick screen again; a rollback match has it off)
+    return _bc.apply(this, arguments);
+  };
+  // the guest waits on the final screen for the host's Continue (it doesn't send the lobby's "go to the post-game menu")
+  const _fc = finalContinue;
+  finalContinue = function () { if (Net.role === 'guest' && RBN.on && Net.mode === 'brun') return; return _fc.apply(this, arguments); };
+  const _gb = Lobby.guestBack;
+  Lobby.guestBack = function () {
+    const h = Net.hostPeer && Net.hostPeer(), nx = h && h.presence && h.presence.brunNext;
+    if (Net.role === 'guest' && Net.mode === 'brun' && nx != null && nx === RBN.lastGo) { Game.screen = 'netplay'; Game.paused = false; return; }
+    return _gb.apply(this, arguments);
+  };
+}
 
 boot();
 </script>
