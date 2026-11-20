@@ -41,3 +41,9 @@ Notes:
   test endings") made them end on a chosen frame and cleared a leftover match end; they passed in both attempts of 38.
 - `sound-list` and `sfx-quiet` failed on every run of the commit they failed on and were fixed by the next commit
   (9c5b818 regenerated the list; 9.29.2 updated `sfx-quiet`). They are listed for completeness: they are not flaky.
+
+## Step 2: causes
+
+| Test | Cause | Evidence | Fix |
+|---|---|---|---|
+| `fouls-kept` | **Chance** (a rare event in one fixed seed set), not a rules change | 100 seeded CPU games on 9.21.2 and on 9.30.0 (`dist/web` of each): 7 SHOOTING FOULs each, the same 5,172 shots bit for bit, so 0.07 a game; P(none in 24) ≈ 19%. Jump-shot contact needs a defender within 22 units at the release (92 of 2,370 releases) and most fouled shots are dunks, which score (215 and-ones). The test is seeded, so it gets the same answer every run: 1 on 9.21.1 (run 29), 0 from 9.21.2 on, when a sound-only change moved the random stream (every count changed: AND ONE 30 → 34). | A defender swipes through a jump shooter at the release, retried with new seeds until a fouled shot misses; it must call a 2-shot SHOOTING FOUL. The 24 games keep every other check. |
