@@ -176,8 +176,10 @@ export function v921Tests({ newContext, open }) {
   T['dunk-new-online'] = async ({ browser, base }) => {
     const errs = [], ctx = await newContext(browser, { rb: true }), q = '/?net=loop&mode=udp&lat=30&jit=5&p2p=0&room=dunknew&nowelcome=1';
     const H = await open(ctx, base + q, errs, 'host'), G = await open(ctx, base + q, errs, 'guest');
-    // every dunk is one of the two, taking turns by the match's score (the same on both phones, in a replayed frame too)
-    const FORCE = () => { const sd = startDunk; window.__nd = {}; startDunk = function (p, opts) { const r = sd.apply(this, arguments), a = p.act; if (a && p.state === 'dunk' && !a.alley && !(opts && opts.alley)) { const t = ((M.teams[0].score + M.teams[1].score) >> 1) % 2 ? 'reverse' : 'betweenlegs', d = dxz(p, a.hoop); a.type = t; a.D = clamp(0.6 + d / 450, 0.62, 1.15) * dunkLenK(t); a.peak = 64 + (a.D - 0.7) * 30 + dunkPeakAdd(t); if (!RB.resim) window.__nd[t] = (window.__nd[t] || 0) + 1; } return r; }; };
+    // every dunk is one of the two, taking turns by a count of dunks kept in the match (M: rollback saves and restores it,
+    // so it's the same on both phones and in a replayed frame). (ci-health: the turns were by the score, (total >> 1) % 2,
+    // which gave two between-the-legs when a jumper fell between the dunks: 0-2 by a dunk, 2-4 by a jumper, a dunk at 4)
+    const FORCE = () => { const sd = startDunk; window.__nd = {}; startDunk = function (p, opts) { const r = sd.apply(this, arguments), a = p.act; if (a && p.state === 'dunk' && !a.alley && !(opts && opts.alley)) { const t = (M.ndTurn = (M.ndTurn | 0) + 1) % 2 ? 'betweenlegs' : 'reverse', d = dxz(p, a.hoop); a.type = t; a.D = clamp(0.6 + d / 450, 0.62, 1.15) * dunkLenK(t); a.peak = 64 + (a.D - 0.7) * 30 + dunkPeakAdd(t); if (!RB.resim) window.__nd[t] = (window.__nd[t] || 0) + 1; } return r; }; };
     await H.evaluate(FORCE); await G.evaluate(FORCE);
     const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
     await G.evaluate(c => Lobby.join(c), code); await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 15000 }).catch(() => {});
