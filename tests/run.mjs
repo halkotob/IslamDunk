@@ -423,7 +423,9 @@ T['minis'] = async ({ browser, base }) => {
     // HORSE: word and timer options
     setupMini('horse', { roster: ['you', 'saleem'], humans: [], word: 'HAQ', timer: 6 });
     out.horse = M.mini.word + '/' + M.mini.timerLen;
-    const hm = M.mini; for (let n = 0; n < 60 * 400 && !hm.done; n++) miniStep(STEP);
+    // (ci-health: up to 1,200 s of game time, was 400: 100 seeded CPU games of HAQ took 127 s at the median, 255 s at the
+    // 90th, 412 s at the longest, and 2 ran past 400, so about 1 run in 50 failed here with nothing wrong: run 45)
+    const hm = M.mini; for (let n = 0; n < 60 * 1200 && !hm.done; n++) miniStep(STEP);
     out.horseDone = hm.done && Math.max(...hm.letters) === 3;
     return out;
   });

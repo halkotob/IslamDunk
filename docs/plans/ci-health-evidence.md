@@ -59,3 +59,13 @@ Notes:
 | `sfx-quiet` | **Wrong expectation** (fails every run of its commit) | Run 31 (9.21.2): the test still expected the default sound picks 9.21.2 changed. | Already fixed in 9.29.2 (8c0a974): the test expects 9.21.2's picks; passed in runs 33-38. |
 | (setup) Playwright's apt step | **Runner infrastructure** (transient) | Run 39: `apt-get update` reached only packages.microsoft.com, no Ubuntu archive source, so `fonts-unifont` and the rest "Unable to locate"; run 41's same step on the same image passed 90 minutes later. | The workflow retries the system-package step (apt update and install) up to 3 times. |
 | `rb-holdtap` (reported from PR #13, run 44810942524, after the 10-run window) | **Timing** (the same flaw as `rb-lag`) | Both phones 10-6, no desync, 0 bad hashes over 91 compared frames, but `code` "92 HSJM" on the host and "91 TZWQ" on the guest: each phone's own latest confirmed second, read 1.5 s after the end. `tests/rb-same.mjs` compared those. | Compare the checksum on the latest frame both phones hold in `RBN.hashes`. |
+
+### Found on the sharded runs (44, 45 on this branch)
+
+| Test | Cause | Evidence | Fix |
+|---|---|---|---|
+| `rb-holdtap` (again) | **Timing** | Run 44: `over` false on both phones 1.5 s after the end, 10-9, the same code: the mashed shoot and pass keys also press Continue on the final screen, so a phone had moved on. | Each phone stops its own mashing the moment it sees the match over and keeps the score then. |
+| `dunk-new-online` (again) | **Chance** (how many dunks) | Run 45: one dunk in 80 s (`{"betweenlegs":1}`, score 0-6): turns by count need two. | Two dunks set up from frame 300, every 300 frames, on the same frame on both phones (state in `M`); locally: staged 2, both types. |
+| `minis` (HORSE) | **Wrong threshold** | Run 45: `horseDone` false. 100 seeded CPU games of HAQ: median 127 s of game time, 90th percentile 255 s, longest 412 s; 2 over the 400 s cap. | Cap 1,200 s. |
+| `lobby-flow` | Not yet known | Run 44: the vs game (halves of 8 s) still in play after 240 s, so the final screen never came; it passed in run 45. | Diagnostics added: where the match is if it never reaches the final screen. |
+| `rb-lag` (again) | Not yet known | Run 44: Bad mobile, codes 55 against 44 at the end, no same-frame match within 20 s; passed in run 45. | Diagnostics added: each phone's frame, confirmed frame and hashed range at the end. |
