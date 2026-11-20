@@ -10,8 +10,8 @@
 // Team select shows the tier and an overall rating (the players' average core rating x 10, out of 99) on each card.
 // (Runs right after src/data/teams.js, before anything copies the teams; the shared helpers aren't defined yet, so no
 // clamp.)
-const TEAM_TIER = { 'Masjid Ar-Rahmah': -1, 'Masjid Al-Ihsan': -1, 'Masjid As-Salam': 1, 'Masjid Al-Furqan': 1 };
-const TIER_NAME = { '-1': 'UNDERDOGS', '0': 'SOLID', '1': 'POWERHOUSE' }, TIER_COL = { '-1': '#9fd3ff', '0': '#e8e2cf', '1': '#ffd76a' };
+const TEAM_TIER = { 'Masjid Ar-Rahmah': -1, 'Masjid Al-Ihsan': -1, 'Masjid As-Salam': 2, 'Masjid Al-Furqan': 2 };
+const TIER_NAME = { '-1': 'UNDERDOGS', '0': 'SOLID', '1': 'POWERHOUSE', '2': 'POWERHOUSE' }, TIER_COL = { '-1': '#9fd3ff', '0': '#e8e2cf', '1': '#ffd76a', '2': '#ffd76a' };
 const TEAM_CORE = ['spd', 'sht', 'dnk', 'def', 'stl'];
 const MASJID_NAMES = new Set(TEAMS.map(T => T.name));                    // (the eight, as they load: a copy can carry another name)
 for (const T of TEAMS) {
