@@ -13,7 +13,7 @@
 //   * Every second each side sends the checksum of a frame both have confirmed; a mismatch is a desync (reported in
 //     the network report, and the host's state is sent to put the guest right: rollback-sync.js).
 // The match starts from the host's start message (rbgo): the match setup, the seed and the agreed settings; both
-// sides build the same match from it. (v9.30.0: Lightning, HORSE and Barakah Run duos too: v930-rb-minis.js, v930-rb-brun.js.) King of the Court still uses the host's snapshots, and so do
+// sides build the same match from it. (v9.30.0: Lightning, HORSE, King of the Court and Barakah Run duos too: v930-rb-*.js.) The host's snapshots are left for
 // matches without a direct link (everything through the server: in-order delivery holds every input up behind a lost
 // one, and rollback would wait; there the snapshots keep your own player instant).
 const RBN = {

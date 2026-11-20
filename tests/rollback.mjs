@@ -25,6 +25,8 @@
 //                    with latency, jitter and loss, the same end frame and state, and both back in the lobby
 //   rb-brun          v9.30.0 Barakah Run duos on rollback: game 1 from the host's message, the guest follows the pick
 //                    screen, the pick starts game 2 on rollback with the run carried over, no desync
+//   rb-kotc          v9.30.0 King of the Court on rollback: the same line on both phones, a guest's skip skips the same game
+//                    on both, the session ends on both and both are back in the lobby, no desync
 //   rb-freeze        the guest's game stops for 2 s (an app in the background): the host's match keeps going
 //                    (nobody waits), and when the guest is back both are on the same frame and the same game again
 //   rb-resync        a desync made on purpose (the guest's state nudged) is seen at the next checksum, the host sends
@@ -107,10 +109,11 @@ export function rollbackTests({ newContext, open }) {
     return { ok, detail: [JSON.stringify(out), ...errs] };
   };
   // two tabs in one lobby on a conditioned test link, then a Head to head match
-  async function rbPair(browser, base, q, setup, guestInit) {
+  async function rbPair(browser, base, q, setup, guestInit, hostInit) {
     const errs = [], ctx = await newContext(browser, { rb: true });
     const H = await open(ctx, base + '/' + q, errs, 'host'), G = await open(ctx, base + '/' + q, errs, 'guest');
     if (guestInit) await G.evaluate(guestInit);
+    if (hostInit) await H.evaluate(hostInit);
     const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
     await G.evaluate(c => Lobby.join(c), code);
     await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 15000 }).catch(() => {});
@@ -198,6 +201,42 @@ export function rollbackTests({ newContext, open }) {
       && hf && gf && after1.every(a => a.winner === 0 && a.wins === 1) && pick && follow && turn === 0
       && g2ok && g2.every(s => s.on && s.barakah && s.round === 2 && s.wins === 1 && s.up !== '{}') && same(g2) && g2[0].id === g2[1].id && g2[0].id !== g1[0].id
       && [...r1, ...r2].every(r => (r.desyncs || 0) === 0 && r.err === 0) && r2.every(r => r.hashesChecked >= 3) && !errs.length;
+    return { ok, detail: [JSON.stringify(out), ...errs] };
+  };
+  // v9.30.0: King of the Court on rollback: the session starts from the host's message on both phones (the same line),
+  // a skip pressed on the guest skips the same CPU game on both phones, the games and the break between them play on
+  // the same frames, the session ends on both, and the host's Continue takes both back to the lobby, with no desync
+  T['rb-kotc'] = async ({ browser, base }) => {
+    // (the host's shuffle fixed so the session opens with the two CPU challengers: a game to skip)
+    const { ctx, H, G, errs } = await rbPair(browser, base, '?net=loop&mode=udp&lat=40&jit=10&loss=2&p2p=0&room=rbkotc&nowelcome=1', { game: 'kotc' }, null,
+      () => { const first = ['saleem', 'hamid', 'lp:0', 'lp:1']; window.shuffle = a => first.filter(x => a.includes(x)).concat(a.filter(x => !first.includes(x))); });
+    const st = () => ({ on: RBN.on, me: RBN.me, kotc: !!KOTC.on, roster: (RBN.cfg && RBN.cfg.kotc && RBN.cfg.kotc.roster.join()) || '', q: KOTC.queue.join(), king: KOTC.king, chal: KOTC.chal, games: KOTC.games, spect: !!KOTC.spect, names: M.players.map(q => q.def.name).join() });
+    await sleep(3500);
+    const s0 = await Promise.all([H, G].map(p => p.evaluate(st)));
+    // the guest skips the CPU game: both phones skip it, on the same frame
+    await G.evaluate(() => kotcSkip());
+    const skipped = p => p.waitForFunction(() => KOTC.games >= 2 || KOTC.overT > 0, null, { timeout: 10000 }).then(() => true, () => false);
+    const sk = await Promise.all([skipped(H), skipped(G)]);
+    await sleep(3000);
+    const s1 = await Promise.all([H, G].map(p => p.evaluate(() => ({ games: KOTC.games, last: JSON.stringify(KOTC.last), king: KOTC.king, q: KOTC.queue.join() }))));
+    await H.evaluate(MASH, 51); await G.evaluate(MASH, 53);
+    await sleep(10000);
+    // the end: the king is crowned on the same frame on both phones
+    const endAt = Math.max(...await Promise.all([H, G].map(p => p.evaluate(() => RBN.f)))) + 120;   // (a frame neither phone has played yet)
+    await Promise.all([H, G].map(p => p.evaluate(f => { clearInterval(window.__mash); window.__endAt = f;
+      const _s = rbStep; rbStep = function (ins, resim) { const r = _s.apply(this, arguments); if (RB.frame === window.__endAt && KOTC.on && !KOTC.done) { KOTC.streak = KOTC_CROWN - 1; if (KOTC.overT > 0) KOTC.overT = 0; M.teams[0].score = KOTC_TO; kotcGameOver(0); } return r; }; }, endAt)));
+    const done = p => p.waitForFunction(() => KOTC.done && RBN.endF != null && RBN.endF <= RBN.conf, null, { timeout: 30000 }).then(() => true, () => false);
+    const dn = await Promise.all([done(H), done(G)]);
+    const rep = await Promise.all([H, G].map(p => p.evaluate(() => Object.assign(RBN.report() || {}, { err: RB.errors || 0, log: RBN.desyncLog || null, champ: KOTC.champ, wins: JSON.stringify(KOTC.wins), games: KOTC.games, endF: RBN.endF }))));
+    await H.evaluate(() => { KOTC.doneT = 9; kotcLeave(); });
+    const back = await G.waitForFunction(() => !RBN.on && Lobby.isIn(), null, { timeout: 10000 }).then(() => true, () => false);
+    const hostBack = await H.evaluate(() => !RBN.on && !KOTC.on);
+    await ctx.close();
+    const out = { s0, sk, s1, done: dn, host: rep[0], guest: rep[1], back, hostBack };
+    const ok = s0.every(s => s.on && s.kotc && s.spect && s.games === 1) && s0[0].me === 0 && s0[1].me === 1 && s0[0].roster === s0[1].roster && s0[0].q === s0[1].q && s0[0].names === s0[1].names
+      && sk.every(Boolean) && s1[0].last === s1[1].last && s1[0].king === s1[1].king && s1[0].q === s1[1].q && s1.every(s => s.games >= 1)
+      && dn.every(Boolean) && rep[0].champ === rep[1].champ && rep[0].wins === rep[1].wins && rep[0].endF === rep[1].endF
+      && rep.every(r => (r.desyncs || 0) === 0 && r.err === 0 && r.hashesChecked >= 3) && back && hostBack && !errs.length;
     return { ok, detail: [JSON.stringify(out), ...errs] };
   };
   T['rb-flow'] = async ({ browser, base }) => {

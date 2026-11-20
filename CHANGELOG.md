@@ -1,11 +1,11 @@
 # Changelog
 
-## 9.30.0: Lightning, HORSE and Barakah Run duos online on rollback
+## 9.30.0: every online mode on rollback (Lightning, HORSE, King of the Court, Barakah Run duos)
 Head to head, Same team vs CPU and 1 on 1 already played online with rollback: both phones run the whole game and send
-each other only their controls, so your own player answers at once and there are no snapshot hiccups. Lightning, HORSE
-and Barakah Run duos were still on the host's snapshots (the guest followed the host's picture, a beat behind). Now
-they use rollback too, on a direct link (without one, everything through the server, they stay on snapshots, as the
-matches do). King of the Court is next.
+each other only their controls, so your own player answers at once and there are no snapshot hiccups. Lightning, HORSE,
+King of the Court and Barakah Run duos were still on the host's snapshots (the guest followed the host's picture, a
+beat behind). Now every online mode uses rollback on a direct link (without one, everything through the server, they
+stay on snapshots, as the matches always have).
 - **Both phones build the mini from the host's start message** (cfg.mini): the kind, the roster, each roster player's
   definition (the two humans are the lobby picks) and HORSE's word and timer from the host's lobby. Nothing comes
   from the guest's own device.
@@ -33,6 +33,15 @@ matches do). King of the Court is next.
 - `rb-brun` (new): game 1 starts on rollback on both phones with the same players and run, ends for both with the win
   counted on both, the guest follows the host's pick screen, and the pick starts game 2 on rollback with the win and
   the power-up on both phones, no desync.
+- **King of the Court:** the whole session is one rollback match: the host's start message has the shuffled line (the
+  two lobby picks and the two CPU challengers) with each player's definition, and both phones play every game and the
+  break between them. The session's line, wins, streak and timers live outside the match: in a rollback session the
+  match holds them (M._kotc), so they're saved, restored and checked, and the next game is built inside the frame
+  that ends the break, on both phones. A skip (the button, Enter or Shoot) goes into your controls as a Shoot press, so
+  the game is skipped on the same frame on both phones. Checked: a straight run and one with a rollback every half
+  second match frame for frame over 7,200 frames (three games and their breaks, then six all-CPU games).
+- `rb-kotc` (new): the same line on both phones, a skip pressed on the guest skips the same game on both (the same
+  result), the session ends on the same frame with the same champion and standings, and both are back in the lobby.
 - `docs/audio/sound-list.csv` regenerated (9.29.3 moved two bounce triggers in animation.js; `sound-list` failed).
 ## 9.29.3: players no longer scramble when the frame rate drops
 Phone report (screen recording, an online game; seen in career too): players' limbs and bodies flail and spin at random

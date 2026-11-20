@@ -137,7 +137,7 @@ async function newContext(browser, opts = {}) {
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE_FIREBASE_APP }));
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-database\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE_FIREBASE_DB }));
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-auth\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE_FIREBASE_AUTH }));
-  if (!opts.rb) await ctx.addInitScript('window.ISLAMDUNK_RB = false;');   // v9.14: the snapshot netcode (King of the Court still uses it; v9.30.0: Lightning, HORSE and Barakah Run duos are on rollback), unless a test asks for rollback
+  if (!opts.rb) await ctx.addInitScript('window.ISLAMDUNK_RB = false;');   // v9.14: the snapshot netcode (v9.30.0: every mode is on rollback on a direct link), unless a test asks for rollback
   if (opts.seed) await ctx.addInitScript(SEED_INIT);
   if (opts.room) await ctx.addInitScript(FAKE_ROOM_INIT);
   if (opts.pad) await ctx.addInitScript(FAKE_PAD_INIT);
@@ -2043,7 +2043,7 @@ const HEAVY = new Set([
   'gamepad', 'phase5', 'career', 'v95', 'v99',
   // the online tests that have to run alone (SERIAL), except rb-one, rb-fun and rb-freeze
   'rb-lag', 'rb-same', 'rb-determinism', 'rb-flow', 'rb-rollback', 'rb-taunt', 'rb-online', 'rb-resync', 'rb-settings',
-  'rb-touch', 'rb-slow', 'rb-lightning', 'rb-horse', 'rb-brun', 'rb-sounds', 'rb-linkdrop', 'rb-hostile', 'phone-text-size', 'rb-holdtap', 'nav-census', 'fouls-kept', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
+  'rb-touch', 'rb-slow', 'rb-lightning', 'rb-horse', 'rb-brun', 'rb-kotc', 'rb-sounds', 'rb-linkdrop', 'rb-hostile', 'phone-text-size', 'rb-holdtap', 'nav-census', 'fouls-kept', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
 // alone, after the parallel batch: frame-rate and speed checks, and the rollback and real-time online tests, which a
 // busy CPU makes desync (9.17.2 on 2 workers: rb-settings, rb-touch and rb-one each repaired 1-3 desyncs they don't alone)
 const SERIAL = new Set(['rb-slow', 'rb-lag', 'rb-freeze', 'lag-profiles', 'online-lag', 'league-time', 'net-rate',

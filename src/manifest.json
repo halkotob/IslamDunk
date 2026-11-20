@@ -146,6 +146,7 @@
     "career/story/story-post.js",
     "online/v930-rb-minis.js",
     "online/v930-rb-brun.js",
+    "online/v930-rb-kotc.js",
     "boot.js"
   ]
 }
