@@ -3,6 +3,7 @@
   "files": [
     "core/config.js",
     "data/teams.js",
+    "data/team-tiers.js",
     "data/cast.js",
     "data/trivia.js",
     "core/utils-audio.js",
