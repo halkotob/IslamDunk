@@ -1,5 +1,17 @@
 # Changelog
 
+## Experiment (branch claude/exp-shot-chart, not released): the shot chart
+A third tab on the final screen, **Shots**: each team's half court with every shot it took, where from. Filled is
+made, a ring is missed, gold is a three, light blue is a two, and dunks are a star at the rim with a count ("5 dunks").
+Under each court: FG, 2PT and 3PT for the game. Left / right and Tab cycle Summary, Box score and Shots.
+- Recorded in the match (M.shotLog) from the simulation: a shot when it's released, a dunk when it's slammed, marked
+  made when it scores. Free throws and the mini games aren't on it. In a rollback match both phones keep the same
+  chart (it's part of the match state).
+- The Shots tab draws its own screen (the title, the score, the tabs, the two courts, Continue): the final screen's
+  add-ons draw for the other two tabs.
+- Checked: a CPU game's chart matches its box score (16 of 16 makes; 22 of 23 attempts, the one left out a missed
+  dunk, which never becomes a shot); `cpu-parity` against main (the same games), `rb-determinism` and `rb-rollback`
+  pass.
 ## 9.30.0: every online mode on rollback (Lightning, HORSE, King of the Court, Barakah Run duos)
 Head to head, Same team vs CPU and 1 on 1 already played online with rollback: both phones run the whole game and send
 each other only their controls, so your own player answers at once and there are no snapshot hiccups. Lightning, HORSE,
