@@ -65,7 +65,7 @@ Notes:
 | Test | Cause | Evidence | Fix |
 |---|---|---|---|
 | `rb-holdtap` (again) | **Timing** | Run 44: `over` false on both phones 1.5 s after the end, 10-9, the same code: the mashed shoot and pass keys also press Continue on the final screen, so a phone had moved on. | Each phone stops its own mashing the moment it sees the match over and keeps the score then. |
-| `dunk-new-online` (again) | **Chance** (how many dunks) | Run 45: one dunk in 80 s (`{"betweenlegs":1}`, score 0-6): turns by count need two. | Two dunks set up from frame 300, every 300 frames, on the same frame on both phones (state in `M`); locally: staged 2, both types. |
+| `dunk-new-online` (again) | **Chance** (how many dunks) | Run 45: one dunk in 80 s (`{"betweenlegs":1}`, score 0-6): turns by count need two. | Two dunks set up from frame 300, every 300 frames, on the same frame on both phones (state in `M`), inside the match step: set up from `rbStep` before the step, the dunk's own random picks used each phone's native random numbers and desynced (run 51: 2 desyncs a phone). Locally: staged 2, both types, 0 desyncs. |
 | `minis` (HORSE) | **Wrong threshold** | Run 45: `horseDone` false. 100 seeded CPU games of HAQ: median 127 s of game time, 90th percentile 255 s, longest 412 s; 2 over the 400 s cap. | Cap 1,200 s. |
 | `lobby-flow` | Not yet known | Run 44: the vs game (halves of 8 s) still in play after 240 s, so the final screen never came; it passed in run 45. | Diagnostics added: where the match is if it never reaches the final screen. |
 | `rb-lag` (again) | Not yet known | Run 44: Bad mobile, codes 55 against 44 at the end, no same-frame match within 20 s; passed in run 45. | Diagnostics added: each phone's frame, confirmed frame and hashed range at the end. |

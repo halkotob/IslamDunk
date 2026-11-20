@@ -182,11 +182,12 @@ export function v921Tests({ newContext, open }) {
     const FORCE = () => { const sd = startDunk; window.__nd = {}; startDunk = function (p, opts) { const r = sd.apply(this, arguments), a = p.act; if (a && p.state === 'dunk' && !a.alley && !(opts && opts.alley)) { const t = (M.ndTurn = (M.ndTurn | 0) + 1) % 2 ? 'betweenlegs' : 'reverse', d = dxz(p, a.hoop); a.type = t; a.D = clamp(0.6 + d / 450, 0.62, 1.15) * dunkLenK(t); a.peak = 64 + (a.D - 0.7) * 30 + dunkPeakAdd(t); if (!RB.resim) window.__nd[t] = (window.__nd[t] || 0) + 1; } return r; };
       // (ci-health) and the dunks are set up, so there are two of them: random play gave one in 80 s (run 45). From frame
       // 300, every 300 frames until two forced dunks: a CPU player holding the ball live goes up from 90 out. The next
-      // frame and the count are in M, so both phones, and a replayed frame, do the same.
-      const st = rbStep; rbStep = function () { const f = RB.frame, o = ball.owner;
-        if (f >= (M.ndAt || 300) && (M.ndTurn | 0) < 2 && M.phase === 'live' && o && o.human < 0 && ball.state === 'held' && !ball.shot && o.state !== 'dunk' && o.state !== 'shoot') {
+      // frame and the count are in M, so both phones, and a replayed frame, do the same. Inside the match step, where the
+      // match's own random numbers are in use (a dunk picks some): from rbStep, before it, they desynced (run 51).
+      const um = updateMatch; updateMatch = function () { const f = RB.frame, o = ball.owner;
+        if (RB.sim && f >= (M.ndAt || 300) && (M.ndTurn | 0) < 2 && M.phase === 'live' && o && o.human < 0 && ball.state === 'held' && !ball.shot && o.state !== 'dunk' && o.state !== 'shoot') {
           const h = attackHoop(o.team); place(o, h.x - h.dir * 90, h.z); startDunk(o, {}); M.ndAt = f + 300; if (!RB.resim) window.__staged = (window.__staged || 0) + 1; }
-        return st.apply(this, arguments); }; };
+        return um.apply(this, arguments); }; };
     await H.evaluate(FORCE); await G.evaluate(FORCE);
     const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
     await G.evaluate(c => Lobby.join(c), code); await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 15000 }).catch(() => {});
