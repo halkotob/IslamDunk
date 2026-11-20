@@ -1,4 +1,4 @@
-// ================================================= EXPERIMENT (claude/exp-shot-chart): THE SHOT CHART
+// ================================================= v9.32.0: THE SHOT CHART
 // A third tab on the final screen, Shots: each team's half court with every shot it took, where from, made (filled)
 // or missed (ring), threes in gold, dunks as a star at the rim, and the team's shooting line under it.
 //   * Recorded in the match (M.shotLog), from the simulation: each shot when it's released (releaseShot) or dunked

@@ -1,6 +1,6 @@
 # Changelog
 
-## Experiment (branch claude/exp-shot-chart, not released): the shot chart
+## 9.32.0: the shot chart
 A third tab on the final screen, **Shots**: each team's half court with every shot it took, where from. Filled is
 made, a ring is missed, gold is a three, light blue is a two, and dunks are a star at the rim with a count ("5 dunks").
 Under each court: FG, 2PT and 3PT for the game. Left / right and Tab cycle Summary, Box score and Shots.
