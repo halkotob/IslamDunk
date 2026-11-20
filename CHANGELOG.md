@@ -19,7 +19,12 @@ difficulty setting decided how hard a game was, and picking a team didn't matter
 - **On screen:** team select (and the 1 on 1 select) shows a tier tab with the overall rating (the players' average
   core rating x 10) on each card; the online lobby's team pick shows it at the right of each side's heading. A team
   that isn't one of the eight (your career team, a custom one) gets its tier from its rating.
-- **The story career is unchanged:** it scales every masjid team to its stage's level by the team's average anyway.
+- **The story career is unchanged:** it scales every masjid team to its stage's level from each player's ratings
+  before the tier (`p.base`), so its league plays exactly as before. (Scaling the tiered ratings back down flattened
+  players whose +2 hit the cap of 10, and changed the career league's steals and turnovers.)
+- **How they play:** a Powerhouse player is better at everything, so the CPU picks what he's good at: its rim
+  runners, now shooting 8, take more threes (9% of their shots, 3% before). The `cpu-variety` test compares
+  archetypes on the rosters before the tiers, so team strength doesn't blur them.
 ## 9.30.0: every online mode on rollback (Lightning, HORSE, King of the Court, Barakah Run duos)
 Head to head, Same team vs CPU and 1 on 1 already played online with rollback: both phones run the whole game and send
 each other only their controls, so your own player answers at once and there are no snapshot hiccups. Lightning, HORSE,

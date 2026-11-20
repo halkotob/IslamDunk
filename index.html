@@ -161,7 +161,9 @@ const TEAMS = [
 // gain less from a point than mid ratings lose. At +2: 21 in 80. An Underdog beats a Solid team 5 in 40.)
 // Each player keeps his shape (and so his archetype, which comes from his strongest rating); hustle and clutch are
 // worked out again from the new ratings, as the team list does. The story career is unchanged: it scales every masjid
-// team to its stage's level anyway (storyTeamAt), by the team's average.
+// team to its stage's level anyway (storyTeamAt), and does so from each player's ratings before the tier (p.base), so
+// its league plays exactly as before (a +2 pushed some ratings to the cap of 10, and scaling those back down flattened
+// the players' shapes).
 // Team select shows the tier and an overall rating (the players' average core rating x 10, out of 99) on each card.
 // (Runs right after src/data/teams.js, before anything copies the teams; the shared helpers aren't defined yet, so no
 // clamp.)
@@ -173,6 +175,7 @@ for (const T of TEAMS) {
   const d = TEAM_TIER[T.name] || 0;
   if (!d) continue;
   for (const p of T.players) {
+    p.base = Object.assign({}, p.stats);                                 // (the ratings before the tier: the story career scales from these)
     for (const k of TEAM_CORE) p.stats[k] = Math.max(1, Math.min(10, p.stats[k] + d));
     p.stats.hus = hustleOf(p.stats); p.stats.clu = clutchOf(p.stats, { sheikh: p.sheikh });
   }
@@ -28035,9 +28038,9 @@ drawHub = function (g) {
 // above or below, by its tier), keeping each player's shape.
 const STORY_FIELD = [8, 9, 16, 8];
 function storyTeamAt(T, target) {
-  const core = ['spd', 'sht', 'dnk', 'def', 'stl'], ps = T.players, mean = ps.reduce((a, p) => a + core.reduce((b, k) => b + p.stats[k], 0), 0) / (ps.length * core.length);
+  const core = ['spd', 'sht', 'dnk', 'def', 'stl'], ps = T.players, S = p => p.base || p.stats, mean = ps.reduce((a, p) => a + core.reduce((b, k) => b + S(p)[k], 0), 0) / (ps.length * core.length);   // (p.base: a masjid player's ratings before its quick play tier, src/data/team-tiers.js)
   const d = Math.round(target - mean);
-  return Object.assign({}, T, { players: ps.map(p => { const st = Object.assign({}, p.stats); for (const k of core) st[k] = clamp(st[k] + d, 2, 10); return Object.assign({}, p, { stats: st }); }) });
+  return Object.assign({}, T, { players: ps.map(p => { const st = Object.assign({}, S(p)); for (const k of core) st[k] = clamp(st[k] + d, 2, 10); return Object.assign({}, p, { stats: st, base: undefined }); }) });
 }
 {
   const _st = stageTeams;
