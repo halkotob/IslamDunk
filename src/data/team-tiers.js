@@ -1,4 +1,4 @@
-// ================================================= EXPERIMENT (claude/exp-team-tiers): TEAM STRENGTH TIERS
+// ================================================= v9.31.0: TEAM STRENGTH TIERS
 // Quick play and online: the eight masjid teams were all about the same (players averaging 6.6 to 6.9), so only the
 // difficulty setting decided how hard a game was and picking a team didn't matter. Now they come in three tiers:
 //   Underdogs   (Ar-Rahmah, Al-Ihsan)                -1 on every core rating (about 5.6 to 5.9)
