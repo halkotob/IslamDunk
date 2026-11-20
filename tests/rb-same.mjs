@@ -124,10 +124,15 @@ export function rbSameTests({ newContext, open }) {
     const init = role => { if (role === 'host') { SETTINGS.defToggle = true; SETTINGS.sprToggle = true; window.__lat = 0; setInterval(() => { if (Latch[0].def || Latch[0].spr) window.__lat++; }, 50); } };
     const P = await pair(browser, base, 'rbhold', { game: 'vs', court: 'full', format: 'halves', len: 30 }, init);
     await P.H.evaluate(MASH, 11); await P.G.evaluate(MASH, 12);
-    await Promise.all([P.H, P.G].map(p => p.waitForFunction(() => M.phase === 'over' || (RBN.f > 60 * 200), null, { timeout: 240000 }).catch(() => {})));
+    // (ci-health) each phone stops its own mashing the moment it sees the match over, and keeps the score then: the
+    // mashed shoot and pass keys also press Continue on the final screen, so 1.5 s later a phone had moved on from it
+    // (run 44: "over" false on both, 10-9, the same code)
+    await Promise.all([P.H, P.G].map(p => p.evaluate(() => { const w = setInterval(() => { if (M.phase !== 'over' || window.__over) return;
+      clearInterval(window.__mash); clearInterval(w); for (const k in Input.down) Input.down[k] = false; window.__over = { score: M.teams.map(t => t.score).join('-') }; }, 4); })));
+    await Promise.all([P.H, P.G].map(p => p.waitForFunction(() => window.__over || (RBN.f > 60 * 200), null, { timeout: 240000 }).catch(() => {})));
     await sleep(1500);
     const [h, g] = await Promise.all([P.H, P.G].map(p => p.evaluate(READ)));
-    const ex = await Promise.all([P.H, P.G].map(p => p.evaluate(() => ({ over: M.phase === 'over', score: M.teams.map(t => t.score).join('-'), code: typeof rbSyncCode === 'function' ? rbSyncCode() : '', hashes: [...RBN.hashes], lat: window.__lat || 0, tog: [SETTINGS.defToggle, SETTINGS.sprToggle].join() }))));
+    const ex = await Promise.all([P.H, P.G].map(p => p.evaluate(() => ({ over: !!window.__over, score: window.__over ? window.__over.score : M.teams.map(t => t.score).join('-'), code: typeof rbSyncCode === 'function' ? rbSyncCode() : '', hashes: [...RBN.hashes], lat: window.__lat || 0, tog: [SETTINGS.defToggle, SETTINGS.sprToggle].join() }))));
     await P.ctx.close();
     const c = compare(h, g);
     // (ci-health: the same state on the same frame at the end. This compared each phone's own latest sync code, the last

@@ -397,17 +397,18 @@ export function rollbackTests({ newContext, open }) {
     let end = null;
     for (let i = 0; i < 40 && !(end && end.same); i++) {
       await sleep(i ? 500 : 3000);
-      const e = await Promise.all([H, G].map(p => p.evaluate(() => ({ h: [...RBN.hashes], open: !!RBN.desync, code: rbSyncCode() }))));
+      const e = await Promise.all([H, G].map(p => p.evaluate(() => ({ h: [...RBN.hashes], open: !!RBN.desync, code: rbSyncCode(), f: RBN.f, conf: RBN.conf, behind: (RBN.report() || {}).behind }))));
       e.forEach((x, k) => { for (const [f, h] of x.h) seen[k].set(f, h); });
       const both = [...seen[0].keys()].filter(f => f >= stopF && seen[1].has(f)).sort((a, b) => b - a), f = both[0];
-      end = { same: f != null && seen[0].get(f) === seen[1].get(f) && !e[0].open && !e[1].open, frame: f, codes: e.map(x => x.code) };
+      end = { same: f != null && seen[0].get(f) === seen[1].get(f) && !e[0].open && !e[1].open, frame: f, codes: e.map(x => x.code),
+        state: e.map((x, k) => ({ f: x.f, conf: x.conf, behind: x.behind, open: x.open, hashed: [Math.min(...seen[k].keys()), Math.max(...seen[k].keys())] })) };
     }
     await ctx.close();
     const med = a => { const x = a.slice().sort((p, q) => p - q); return x.length ? x[x.length >> 1] : null; };
     return { name, ownHost: med(own.host), ownGuest: med(own.guest), friendAtGuest: med(remote.atGuest), friendAtHost: med(remote.atHost),
       rollbacksPerSec: +((rep[0].rollbacksPerSec + rep[1].rollbacksPerSec) / 2).toFixed(1), avgRoll: +((rep[0].avgRoll + rep[1].avgRoll) / 2).toFixed(1), maxRoll: Math.max(rep[0].maxRoll, rep[1].maxRoll),
       stalls: rep[0].stalls + rep[1].stalls, delay: [rep[0].delay, rep[1].delay], bytesPerSec: Math.round((rep[0].bytes - b0[0].bytes) / Math.max(1, (rep[0].t - b0[0].t) / 1000)),
-      desync: rep[0].desyncs + rep[1].desyncs, repaired: rep[0].syncsSent + rep[1].syncs, forced: [rep[0].forced, rep[1].forced], sameAtEnd: !!(end && end.same), endCodes: end && end.codes, log: rep[1].log || rep[0].log, err: rep[0].err + rep[1].err, samples: [own.host.length, own.guest.length, remote.atGuest.length, remote.atHost.length], errs };
+      desync: rep[0].desyncs + rep[1].desyncs, repaired: rep[0].syncsSent + rep[1].syncs, forced: [rep[0].forced, rep[1].forced], sameAtEnd: !!(end && end.same), endCodes: end && end.codes, endFrame: end && end.frame, endState: end && end.state, log: rep[1].log || rep[0].log, err: rep[0].err + rep[1].err, samples: [own.host.length, own.guest.length, remote.atGuest.length, remote.atHost.length], errs };
   }
   T['rb-lag'] = async ({ browser, base }) => {
     const rows = [];
