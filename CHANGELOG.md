@@ -1,5 +1,15 @@
 # Changelog
 
+## Experiment (branch claude/exp-team-tiers, not released): team strength tiers
+Quick play and online: the eight masjid teams were all about the same (players averaging 6.6 to 6.9), so only the
+difficulty setting decided how hard a game was, and picking a team didn't matter.
+- **Three tiers:** Underdogs (Ar-Rahmah, Al-Ihsan: -1 on every core rating, overall 56 and 58), Solid (Al-Noor,
+  At-Taqwa, Al-Huda, Al-Falah: as they were, 67-68), Powerhouse (As-Salam, Al-Furqan: +1, 79). Each player keeps his
+  shape and archetype; hustle and clutch are worked out again. `src/data/team-tiers.js`, right after the team list.
+- **On screen:** team select (and the 1 on 1 select) shows a tier tab with the overall rating (the players' average
+  core rating x 10) on each card; the online lobby's team pick shows it at the right of each side's heading. A team
+  that isn't one of the eight (your career team, a custom one) gets its tier from its rating.
+- **The story career is unchanged:** it scales every masjid team to its stage's level by the team's average anyway.
 ## 9.30.0: every online mode on rollback (Lightning, HORSE, King of the Court, Barakah Run duos)
 Head to head, Same team vs CPU and 1 on 1 already played online with rollback: both phones run the whole game and send
 each other only their controls, so your own player answers at once and there are no snapshot hiccups. Lightning, HORSE,
