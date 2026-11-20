@@ -163,8 +163,13 @@ export function sfxMomentsTests({ newContext, open }) {
   const LOG = who => {
     window.__ms = []; const MATCH = ['shotTick', 'ftStep', 'ftAttempt', 'hotSpot', 'crowdTurnover', 'crowdBlock', 'crowdBadMiss', 'swish', 'clank', 'slam', 'board', 'whistle', 'buzzer', 'block', 'snatch'];
     for (const id of MATCH) { const f = SFX[id]; SFX[id] = function () { if (typeof RB !== 'undefined' && RB.sim && !RB.resim && RB.frame != null) window.__ms.push(RB.frame + ':' + id); return f.apply(this, arguments); }; }
-    // the same moments on both phones: the shot clock run down to 3.5 s and a hot spot called, in the match, on set frames
-    if (typeof rbStep === 'function') { const _s = rbStep; rbStep = function () { const f = RB.frame; if (f === 240 || f === 480 || f === 720 || f === 960) { M.shotClock = 3.5; } if (f === 300) M.hotCd = 0.001; return _s.apply(this, arguments); }; }
+    // the same moments on both phones: the shot clock run down to 3.5 s and a hot spot called, in the match. (ci-health:
+    // the clock was set on frames 240, 480, 720 and 960, and only ticks with the ball held live, so a run whose ball was
+    // dead or going in on those frames heard no tick (run 34). Now at the first frame from 240 on, then 240 frames
+    // later, with a player holding a live ball; the next frame is kept in M, so a replayed frame does the same.)
+    if (typeof rbStep === 'function') { const _s = rbStep; rbStep = function () { const f = RB.frame;
+      if (f >= (M.sndAt || 240) && M.phase === 'live' && ball.owner && !M.ft) { M.shotClock = 3.5; M.sndAt = f + 240; }
+      if (f === 300) M.hotCd = 0.001; return _s.apply(this, arguments); }; }
     void who;
   };
   T['rb-sounds'] = async ({ browser, base }) => {
