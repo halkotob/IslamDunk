@@ -383,7 +383,7 @@ export function rollbackTests({ newContext, open }) {
       }
     }
     // then both mash for 10 s: corrections, waits, bytes
-    const b0 = await Promise.all([H, G].map(p => p.evaluate(() => ({ bytes: (Net.room && Net.room.stats && Net.room.stats.byKey && Net.room.stats.byKey.rb) || 0, t: Date.now() }))));
+    const b0 = await Promise.all([H, G].map(p => p.evaluate(() => ({ bytes: (Net.room && Net.room.stats && Net.room.stats.byKey && Net.room.stats.byKey.rb) || 0, t: Date.now(), f: RBN.f }))));
     await H.evaluate(MASH, 31); await G.evaluate(MASH, 37);
     await sleep(10000);
     const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { bytes: (Net.room && Net.room.stats && Net.room.stats.byKey && Net.room.stats.byKey.rb) || 0, t: Date.now(), err: RB.errors || 0, log: RBN.desyncLog || null }); })));
@@ -408,7 +408,7 @@ export function rollbackTests({ newContext, open }) {
     const med = a => { const x = a.slice().sort((p, q) => p - q); return x.length ? x[x.length >> 1] : null; };
     return { name, ownHost: med(own.host), ownGuest: med(own.guest), friendAtGuest: med(remote.atGuest), friendAtHost: med(remote.atHost),
       rollbacksPerSec: +((rep[0].rollbacksPerSec + rep[1].rollbacksPerSec) / 2).toFixed(1), avgRoll: +((rep[0].avgRoll + rep[1].avgRoll) / 2).toFixed(1), maxRoll: Math.max(rep[0].maxRoll, rep[1].maxRoll),
-      stalls: rep[0].stalls + rep[1].stalls, delay: [rep[0].delay, rep[1].delay], bytesPerSec: Math.round((rep[0].bytes - b0[0].bytes) / Math.max(1, (rep[0].t - b0[0].t) / 1000)),
+      stalls: rep[0].stalls + rep[1].stalls, delay: [rep[0].delay, rep[1].delay], bytesPerSec: Math.round((rep[0].bytes - b0[0].bytes) / Math.max(1, (rep[0].t - b0[0].t) / 1000)), fps: [0, 1].map(k => Math.round((rep[k].frame - b0[k].f) / Math.max(1, (rep[k].t - b0[k].t) / 1000))),
       desync: rep[0].desyncs + rep[1].desyncs, repaired: rep[0].syncsSent + rep[1].syncs, forced: [rep[0].forced, rep[1].forced], sameAtEnd: !!(end && end.same), endCodes: end && end.codes, endFrame: end && end.frame, endState: end && end.state, firstState: first && first.state, endSecs: end && first ? (end.t - first.t) / 1000 : null, log: rep[1].log || rep[0].log, err: rep[0].err + rep[1].err, samples: [own.host.length, own.guest.length, remote.atGuest.length, remote.atHost.length], errs };
   }
   T['rb-lag'] = async ({ browser, base }) => {
