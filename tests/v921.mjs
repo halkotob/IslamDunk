@@ -179,7 +179,14 @@ export function v921Tests({ newContext, open }) {
     // every dunk is one of the two, taking turns by a count of dunks kept in the match (M: rollback saves and restores it,
     // so it's the same on both phones and in a replayed frame). (ci-health: the turns were by the score, (total >> 1) % 2,
     // which gave two between-the-legs when a jumper fell between the dunks: 0-2 by a dunk, 2-4 by a jumper, a dunk at 4)
-    const FORCE = () => { const sd = startDunk; window.__nd = {}; startDunk = function (p, opts) { const r = sd.apply(this, arguments), a = p.act; if (a && p.state === 'dunk' && !a.alley && !(opts && opts.alley)) { const t = (M.ndTurn = (M.ndTurn | 0) + 1) % 2 ? 'betweenlegs' : 'reverse', d = dxz(p, a.hoop); a.type = t; a.D = clamp(0.6 + d / 450, 0.62, 1.15) * dunkLenK(t); a.peak = 64 + (a.D - 0.7) * 30 + dunkPeakAdd(t); if (!RB.resim) window.__nd[t] = (window.__nd[t] || 0) + 1; } return r; }; };
+    const FORCE = () => { const sd = startDunk; window.__nd = {}; startDunk = function (p, opts) { const r = sd.apply(this, arguments), a = p.act; if (a && p.state === 'dunk' && !a.alley && !(opts && opts.alley)) { const t = (M.ndTurn = (M.ndTurn | 0) + 1) % 2 ? 'betweenlegs' : 'reverse', d = dxz(p, a.hoop); a.type = t; a.D = clamp(0.6 + d / 450, 0.62, 1.15) * dunkLenK(t); a.peak = 64 + (a.D - 0.7) * 30 + dunkPeakAdd(t); if (!RB.resim) window.__nd[t] = (window.__nd[t] || 0) + 1; } return r; };
+      // (ci-health) and the dunks are set up, so there are two of them: random play gave one in 80 s (run 45). From frame
+      // 300, every 300 frames until two forced dunks: a CPU player holding the ball live goes up from 90 out. The next
+      // frame and the count are in M, so both phones, and a replayed frame, do the same.
+      const st = rbStep; rbStep = function () { const f = RB.frame, o = ball.owner;
+        if (f >= (M.ndAt || 300) && (M.ndTurn | 0) < 2 && M.phase === 'live' && o && o.human < 0 && ball.state === 'held' && !ball.shot && o.state !== 'dunk' && o.state !== 'shoot') {
+          const h = attackHoop(o.team); place(o, h.x - h.dir * 90, h.z); startDunk(o, {}); M.ndAt = f + 300; if (!RB.resim) window.__staged = (window.__staged || 0) + 1; }
+        return st.apply(this, arguments); }; };
     await H.evaluate(FORCE); await G.evaluate(FORCE);
     const code = await H.evaluate(() => { Lobby.open(); return Net.code; });
     await G.evaluate(c => Lobby.join(c), code); await G.waitForFunction(() => Lobby.isIn(), null, { timeout: 15000 }).catch(() => {});
@@ -191,11 +198,11 @@ export function v921Tests({ newContext, open }) {
     for (let t = 0; t < 80; t += 5) { await sleep(5000); if (t < 25) continue;
       const nd = await Promise.all([H, G].map(x => x.evaluate(() => window.__nd || {})));
       if (nd.every(o => o.reverse && o.betweenlegs)) break; }
-    const rep = await Promise.all([H, G].map(x => x.evaluate(() => Object.assign({}, RBN.report() || {}, { nd: window.__nd, score: M.teams.map(t => t.score) }))));
+    const rep = await Promise.all([H, G].map(x => x.evaluate(() => Object.assign({}, RBN.report() || {}, { nd: window.__nd, staged: window.__staged || 0, score: M.teams.map(t => t.score) }))));
     await ctx.close();
     const nd = rep[0].nd || {};
     const ok = rep.every(x => !x.desync && !(x.desyncs > 0) && x.hashesChecked > 5) && (nd.reverse || 0) + (rep[1].nd.reverse || 0) > 0 && (nd.betweenlegs || 0) + (rep[1].nd.betweenlegs || 0) > 0 && !errs.length;
-    return { ok, detail: [`host: ${JSON.stringify({ nd: rep[0].nd, desyncs: rep[0].desyncs || 0, hashes: rep[0].hashesChecked, score: rep[0].score })}`, `guest: ${JSON.stringify({ nd: rep[1].nd, desyncs: rep[1].desyncs || 0, hashes: rep[1].hashesChecked, score: rep[1].score })}`, ...errs] };
+    return { ok, detail: [`host: ${JSON.stringify({ nd: rep[0].nd, staged: rep[0].staged, desyncs: rep[0].desyncs || 0, hashes: rep[0].hashesChecked, score: rep[0].score })}`, `guest: ${JSON.stringify({ nd: rep[1].nd, staged: rep[1].staged, desyncs: rep[1].desyncs || 0, hashes: rep[1].hashesChecked, score: rep[1].score })}`, ...errs] };
   };
   return T;
 }
