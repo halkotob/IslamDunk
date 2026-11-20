@@ -8,7 +8,9 @@
 // gain less from a point than mid ratings lose. At +2: 21 in 80. An Underdog beats a Solid team 5 in 40.)
 // Each player keeps his shape (and so his archetype, which comes from his strongest rating); hustle and clutch are
 // worked out again from the new ratings, as the team list does. The story career is unchanged: it scales every masjid
-// team to its stage's level anyway (storyTeamAt), by the team's average.
+// team to its stage's level anyway (storyTeamAt), and does so from each player's ratings before the tier (p.base), so
+// its league plays exactly as before (a +2 pushed some ratings to the cap of 10, and scaling those back down flattened
+// the players' shapes).
 // Team select shows the tier and an overall rating (the players' average core rating x 10, out of 99) on each card.
 // (Runs right after src/data/teams.js, before anything copies the teams; the shared helpers aren't defined yet, so no
 // clamp.)
@@ -20,6 +22,7 @@ for (const T of TEAMS) {
   const d = TEAM_TIER[T.name] || 0;
   if (!d) continue;
   for (const p of T.players) {
+    p.base = Object.assign({}, p.stats);                                 // (the ratings before the tier: the story career scales from these)
     for (const k of TEAM_CORE) p.stats[k] = Math.max(1, Math.min(10, p.stats[k] + d));
     p.stats.hus = hustleOf(p.stats); p.stats.clu = clutchOf(p.stats, { sheikh: p.sheikh });
   }
