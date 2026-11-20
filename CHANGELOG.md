@@ -1,5 +1,15 @@
 # Changelog
 
+## Experiment (branch claude/exp-team-builder, not released): rosters of five
+Teams & Players: a team you make can have up to five players, two of them starting (the game is 2 on 2) and the rest
+on the bench, chosen before a game (no substitutions during one).
+- The team editor: Player 1 to Player 5 (the bench slots can be empty; nobody can be on a team twice) and Starters,
+  which two of them play.
+- A match uses the starters, so Quick Play, online, the career league and share codes work as before; the whole
+  roster rides along with the team (T.roster5) for the screens that will let you change the starters.
+- Still to come on this branch: changing the starters on team select before each game, the bench in share codes,
+  then uploaded images (a logo for the crest and the court, and jersey prints) that only go into your creations and
+  that a friend sees online once the creation is finished and in use.
 ## 9.30.0: every online mode on rollback (Lightning, HORSE, King of the Court, Barakah Run duos)
 Head to head, Same team vs CPU and 1 on 1 already played online with rollback: both phones run the whole game and send
 each other only their controls, so your own player answers at once and there are no snapshot hiccups. Lightning, HORSE,
