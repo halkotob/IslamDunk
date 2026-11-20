@@ -1,5 +1,14 @@
 # Changelog
 
+## 9.30.3: a friend on an older version can't take over a game in progress
+When your friend dropped out mid-game and someone rejoined with the code, the host checked the newcomer's version only
+once it was known. Joining sends who you are and the code first and your version a moment later, so a host that
+looked in between handed a player to a client on another version (9.9.1 in the test), and told your friend on the
+right version that the game was full. The host now waits for the version before handing anyone a player.
+- Found by `net-version` (1 run in 8 on CI). Its old client now always sends its version half a second late, as on a
+  slow link, so the moment in between is checked on every run: before this fix it let the old client in (1 of 2
+  local runs), after it, never.
+
 ## 9.30.2: bigger text never overlaps for a frame
 At Large and Larger text on a phone, a label that has to be shortened to fit ("Local champi…") could be drawn at the
 big size for one frame, over the line above it, before it settled: on a won final's post-game screen, "Win (Final)"
