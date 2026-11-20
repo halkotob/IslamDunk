@@ -4,8 +4,18 @@
 Quick play and online: the eight masjid teams were all about the same (players averaging 6.6 to 6.9), so only the
 difficulty setting decided how hard a game was, and picking a team didn't matter.
 - **Three tiers:** Underdogs (Ar-Rahmah, Al-Ihsan: -1 on every core rating, overall 56 and 58), Solid (Al-Noor,
-  At-Taqwa, Al-Huda, Al-Falah: as they were, 67-68), Powerhouse (As-Salam, Al-Furqan: +1, 79). Each player keeps his
-  shape and archetype; hustle and clutch are worked out again. `src/data/team-tiers.js`, right after the team list.
+  At-Taqwa, Al-Huda, Al-Falah: as they were, 67-68), Powerhouse (As-Salam, Al-Furqan: +2, 87 and 88). Each player
+  keeps his shape and archetype; hustle and clutch are worked out again. `src/data/team-tiers.js`, right after the
+  team list.
+- **Measured** (CPU v CPU on Medium, halves of 60 s, home and away alternating; on main for comparison):
+  | Games | main | tiers |
+  |---|---|---|
+  | Underdog v Solid (Ar-Rahmah v Al-Noor), Underdog wins | 16 / 40 | 5 / 40 |
+  | Solid v Powerhouse (Al-Noor v Al-Furqan), Solid wins | 25 / 40 | 21 / 80 (17 / 40 with Powerhouse at +1) |
+  | Underdog v Powerhouse (Ar-Rahmah v Al-Furqan), Underdog wins | 19 / 40 | 15 / 80 (8 / 40 at +1) |
+  | Solid v Solid (Al-Noor v Al-Huda), Al-Noor wins | 17 / 40 | 23 / 40 |
+  Powerhouse is +2, not +1: at +1 a Solid team still won 42% (ratings already at 8-9 gain less from a point than mid
+  ratings lose).
 - **On screen:** team select (and the 1 on 1 select) shows a tier tab with the overall rating (the players' average
   core rating x 10) on each card; the online lobby's team pick shows it at the right of each side's heading. A team
   that isn't one of the eight (your career team, a custom one) gets its tier from its rating.

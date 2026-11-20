@@ -3,7 +3,9 @@
 // difficulty setting decided how hard a game was and picking a team didn't matter. Now they come in three tiers:
 //   Underdogs   (Ar-Rahmah, Al-Ihsan)                -1 on every core rating (about 5.6 to 5.9)
 //   Solid       (Al-Noor, At-Taqwa, Al-Huda, Al-Falah) as they were         (about 6.6 to 6.8)
-//   Powerhouse  (As-Salam, Al-Furqan, the rival)     +1 on every core rating (about 7.8 to 7.9, capped at 10)
+//   Powerhouse  (As-Salam, Al-Furqan, the rival)     +2 on every core rating (about 8.7 to 8.8, capped at 10)
+// (+2, not +1: at +1 a Solid team still beat a Powerhouse 17 times in 40, CPU v CPU on Medium; ratings already at 8-9
+// gain less from a point than mid ratings lose. At +2: 21 in 80. An Underdog beats a Solid team 5 in 40.)
 // Each player keeps his shape (and so his archetype, which comes from his strongest rating); hustle and clutch are
 // worked out again from the new ratings, as the team list does. The story career is unchanged: it scales every masjid
 // team to its stage's level anyway (storyTeamAt), by the team's average.
