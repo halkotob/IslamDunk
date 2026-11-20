@@ -2074,11 +2074,28 @@ const WORKERS = Math.max(1, +arg('--workers', 0) || Math.min(4, Math.max(2, core
 // the longest first (times from the last run, tests/output/test-times.json), so a long test doesn't start last
 const TIMES_FILE = path.join(ROOT, 'tests/output/test-times.json');
 let past = {}; try { past = JSON.parse(fs.readFileSync(TIMES_FILE, 'utf8')); } catch (e) {}
-const byTime = L => L.slice().sort((a, b) => (past[b] || 10) - (past[a] || 10));
-const par = byTime(names.filter(n => !isSerial(n))), ser = byTime(names.filter(n => isSerial(n)));
+// (ci-health) --times FILE: the times to order and split by (CI passes the committed tests/ci/test-times.json, so every
+// job splits the same way)
+const TIMES_IN = arg('--times', null); let plan = past;
+if (TIMES_IN) { try { plan = JSON.parse(fs.readFileSync(path.resolve(ROOT, TIMES_IN), 'utf8')); } catch (e) { console.log(`--times: can't read ${TIMES_IN}`); process.exit(2); } }
+const byTime = L => L.slice().sort((a, b) => (plan[b] || 10) - (plan[a] || 10) || (a < b ? -1 : 1));
+let par = byTime(names.filter(n => !isSerial(n))), ser = byTime(names.filter(n => isSerial(n)));
+// (ci-health) --shard K/N: only the K-th of N groups of the parallel tests; --serial K/N: only the K-th of N groups of the
+// SERIAL tests (still one at a time). The groups are filled longest first, each test into the group with the least
+// time so far, so they come out about even and every test is in exactly one group. CI runs each group as its own job.
+const groupOf = (L, spec, flag) => {
+  const m = /^(\d+)\/(\d+)$/.exec(spec || ''); if (!m || +m[1] < 1 || +m[1] > +m[2]) { console.log(`${flag}: give K/N, e.g. ${flag} 2/4`); process.exit(2); }
+  const k = +m[1] - 1, n = +m[2], load = new Array(n).fill(0), out = Array.from({ length: n }, () => []);
+  for (const t of L) { let j = 0; for (let i = 1; i < n; i++) if (load[i] < load[j]) j = i; out[j].push(t); load[j] += plan[t] || 10; }
+  return out[k];
+};
+const SHARD = arg('--shard', null), SSHARD = arg('--serial', null);
+if (SHARD || SSHARD) { par = SHARD ? groupOf(par, SHARD, '--shard') : []; ser = SSHARD ? groupOf(ser, SSHARD, '--serial') : []; }
+const ran = [...par, ...ser];
+if (process.argv.includes('--dry')) { console.log(ran.map(n => `${n} ${plan[n] || 10}`).join('\n')); process.exit(0); }   // (what this group would run, with its planned times)
 
 const { srv, base } = await serve();
-console.log(`Testing ${path.relative(ROOT, PAGE)}${REF ? ' against reference ' + REF : ''}: ${TIER} tier, ${names.length} tests (${par.length} on ${WORKERS} workers, then ${ser.length} alone)\n`);
+console.log(`Testing ${path.relative(ROOT, PAGE)}${REF ? ' against reference ' + REF : ''}: ${TIER} tier, ${ran.length} tests${SHARD || SSHARD ? ` (of ${names.length}: ${SHARD ? 'shard ' + SHARD : ''}${SHARD && SSHARD ? ', ' : ''}${SSHARD ? 'serial ' + SSHARD : ''})` : ''} (${par.length} on ${WORKERS} workers, then ${ser.length} alone)\n`);
 const T0 = Date.now(), took = {}, results = {};
 let failed = 0;
 // (v9.17.6, Q9) an online test whose only failure is a desync the game put right (r.desyncOnly: it says so itself) runs
@@ -2108,10 +2125,12 @@ if (ser.length) await worker(ser.slice());
 srv.close();
 const wall = (Date.now() - T0) / 1000;
 try { fs.mkdirSync(path.dirname(TIMES_FILE), { recursive: true }); fs.writeFileSync(TIMES_FILE, JSON.stringify(Object.assign(past, took), null, 1)); } catch (e) {}
+// (ci-health) what this job ran, for the CI summary: names, times, results, the job's wall time
+try { fs.writeFileSync(path.join(ROOT, 'tests/output/ran.json'), JSON.stringify({ shard: SHARD, serial: SSHARD, tier: TIER, wall: (Date.now() - T0) / 1000, took, results }, null, 1)); } catch (e) {}
 const slow = Object.entries(took).sort((a, b) => b[1] - a[1]).slice(0, 10);
 console.log(`\nSlowest: ${slow.map(([n, t]) => `${n} ${t.toFixed(0)} s`).join(', ')}`);
 console.log(`Total: ${wall.toFixed(0)} s wall, ${Object.values(took).reduce((a, b) => a + b, 0).toFixed(0)} s of tests, ${WORKERS} workers, ${TIER} tier`);
 if (TIER === 'fast' && !ONLY.length && wall > 180) console.log(`WARNING: the fast tier took ${(wall / 60).toFixed(1)} min (target: 3). Move the slowest into HEAVY in tests/run.mjs.`);
 if (retried.length) console.log(`\n!!! RETRIED after a repaired desync: ${retried.join(', ')} (see RETRIED in their details)`);
-console.log(`\n${names.length - failed}/${names.length} passed`);
+console.log(`\n${ran.length - failed}/${ran.length} passed`);
 process.exit(failed ? 1 : 0);
