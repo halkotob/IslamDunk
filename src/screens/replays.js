@@ -211,3 +211,295 @@ function playFinalClip() {
     uiButton(g, 392, 372, 112, 28, done ? 'Saved ✓' : 'Save play (V)', () => { if (!done) saveHighlight(c); }, false);
   };
 }
+
+// ================================================= v9.33.0: MY PLAYS (docs/plans/replays.md, step 2)
+// The library: My plays on the main menu (and in the pause menu offline). A grid of the saved plays, newest first: the
+// chosen one moves, the others show their peak; each card has the play's label, both teams and the date. Enter (a tap,
+// A) watches it: the play with the instant replay's slow motion around its peak, looping, under the same bar a video
+// has (ISLAM DUNK, the teams, the score, the play). Star keeps a play until it's deleted (the newest 20 others are kept).
+// The videos kept in My clips before 9.33 are in the grid too, marked VIDEO: kept until deleted, they play as a video.
+// A saved play is drawn with its own players, court and crowd (playScene), swapped in for the frame and back out, so
+// the match or demo underneath is never touched. The moment's state beyond the frames
+// (a hot spot, a free throw) isn't kept: a play is drawn as live play. (A classic court's crowd is random each time it's built, so the crowd
+// behind a play isn't the same people as on the night; the players, the ball and the court are.)
+const PlayLib = { mem: [], list: null, idx: 0, err: '', back: null, watch: null, confirm: null, row0: 0, frames: new Map(), loading: new Set(), scene: null, posters: new Map(), postQ: [] };
+// (PlayLib.mem: plays shown without being stored, with their frames in memory: the Studio and the screen census set one up)
+// the frames of a stored play, decoded once (the last 6 kept)
+function playFramesOf(rec) {
+  if (rec.frames) return rec.frames;
+  const f = PlayLib.frames.get(rec.id); if (f) return f;
+  if (!PlayLib.loading.has(rec.id) && rec.codec === PLAY_CODEC) {
+    PlayLib.loading.add(rec.id);
+    playInflate(rec.data, rec.z).then(u => { const fr = playUnpack(u); PlayLib.frames.set(rec.id, fr); if (PlayLib.frames.size > 6) PlayLib.frames.delete(PlayLib.frames.keys().next().value); })
+      .catch(e => { rec.bad = String(e && e.message || e); }).finally(() => PlayLib.loading.delete(rec.id));
+  }
+  return null;
+}
+// what a saved play doesn't keep: the moment's state beyond the frames (a hot spot, a free throw, an inbound, a taunt...).
+// A play is drawn as live play, whatever was going on.
+const PLAY_SCENE = { attract: false, practice: null, gym: false, mini: null, balls: null, hot: null, ft: null, inb: null, check: null, taunt: null, highlights: [], phase: 'live',
+  run: null, double: false, online: false, time: 0, introT: 0, pendingEnd: false };
+// a saved play's own players, court and crowd (the live match and venue are left as they were)
+function playScene(rec) {
+  const m = rec.meta || {}, teams = m.teams || [], tA = teams[0], tB = teams[1];
+  if (!tA || !tB) return null;
+  const keep = { courtCv, crowdCv, crowd, VL, SHADOW, venue: M.venue, career: M.career }, scl = SFX.setCrowdLevel, rnd = Math.random;
+  try {
+    SFX.setCrowdLevel = () => {}; Math.random = seededRng(hash32(rec.id));       // (the crowd's random numbers aren't the match's)
+    M.career = !!m.career;
+    const T = [tA, tB].map((d, ti) => ({ def: d, score: (m.score || [])[ti] || 0, qs: [], players: (d.players || []).map((pd, s) => new Player(pd, ti, s, d)) }));
+    const players = [...T[0].players, ...T[1].players];
+    if (players.length < rec.np) return null;
+    if (m.fun && m.fun.uncle) for (const p of players) p.outfit = 'thobe';
+    if (m.venue && m.venue.kind !== 'classic') setVenue(m.venue, tA, tB); else { buildCourt(tA, tB); buildCrowd(tA, tB); setVenue(m.venue || null); }
+    const scene = Object.assign({}, M, PLAY_SCENE, { teams: T, players, teamDefs: [tA, tB], fun: m.fun || null, fmt: m.fmt || M.fmt, halfCourt: !!m.half, venue: m.venue || null,
+      quarter: m.quarter || 1, clock: m.clock != null ? m.clock : 0, career: !!m.career });
+    return { scene, venue: VL, court: courtCv, crowdCanvas: crowdCv, crowdMembers: crowd, shadow: SHADOW, teams: [tA, tB], score: (m.score || [0, 0]).slice(), time: 0, ballState: 'held' };
+  } catch (e) { rec.bad = String(e && e.message || e); return null; }
+  finally {
+    Math.random = rnd; SFX.setCrowdLevel = scl;
+    courtCv = keep.courtCv; crowdCv = keep.crowdCv; crowd = keep.crowd; VL = keep.VL; SHADOW = keep.SHADOW; M.venue = keep.venue; M.career = keep.career;
+  }
+}
+// one frame of a play, drawn into a cw x ch box (the clip video's camera: it follows the player, the ball and the rim);
+// with `bar`, the video's bar on top and the play's label at the bottom
+function playDraw(g, clip, meta, si, camS, k, cw, ch, bar) {
+  const savedM = Object.assign({}, M), savedCam = Object.assign({}, cam), savedVL = VL, savedSh = SHADOW, parts = FX.parts, pops = FX.pops, sx = FX.sx, sy = FX.sy, flash = FX.flashA;
+  const oldCourt = courtCv, oldCrowdCv = crowdCv, oldCrowd = crowd, oldBallState = ball.state, oldShot = ball.shot, oldTime = Game.t, oldEvent = FX.event, oldHype = FX.hypeV, oldScreen = Game.screen, imp = typeof Impact !== 'undefined' ? [Impact.rings, Impact.flash, Impact.trail] : null;
+  let restore = null, vel = null;
+  g.fillStyle = '#0b1722'; g.fillRect(0, 0, cw, ch);
+  try {
+    Game.screen = 'playview';                                // (drawn the same from any screen: some floor marks depend on it)
+    Object.assign(M, meta.scene); VL = meta.venue; if (meta.shadow) SHADOW = meta.shadow; FX.parts = []; FX.pops = []; FX.sx = FX.sy = FX.flashA = 0;
+    courtCv = meta.court || courtCv; crowdCv = meta.crowdCanvas || crowdCv; crowd = meta.crowdMembers || crowd;
+    ball.state = meta.ballState || ball.state; ball.shot = meta.shot || null; Game.t = (meta.time || 0) + k / CLIP_FPS; FX.event = meta.event || null; FX.hypeV = meta.hype || 0;
+    if (imp) { Impact.rings = []; Impact.flash = 0; Impact.trail = []; }      // (the live match's slam rings and flash aren't the play's)
+    restore = Replay.apply(clip.frames[si]);
+    // speed from the frame before (frames don't keep it): the sprint streaks behind fast runners
+    const f0 = clip.frames[Math.max(0, si - 1)].ps; vel = M.players.map(q => [q.vx, q.vz]);
+    M.players.forEach((q, i) => { const a = f0[i], b = clip.frames[si].ps[i]; if (a && b) { q.vx = (b[0] - a[0]) * 60; q.vz = (b[2] - a[2]) * 60; } });
+    const p = M.players[clip.idx] || M.players[0], h = hoops[ball.x > COURT.L / 2 ? 1 : 0];
+    const left = Math.min(p.x, ball.x, h.x) - 120, right = Math.max(p.x, ball.x, h.x) + 120;
+    const top = Math.min(FLOOR_TOP + p.z * ZS - (p.y + 150) * depthK(p.z), FLOOR_TOP + ball.z * ZS - ball.y * depthK(ball.z), FLOOR_TOP + h.z * ZS - (RIM_Y + 75) * depthK(h.z)) - 40;
+    const bottom = Math.max(FLOOR_TOP + p.z * ZS, FLOOR_TOP + h.z * ZS) + 60;
+    const tx = (left + right) / 2 - W / 2, ty = (top + bottom) / 2, tz = clamp(Math.min(W / ((right - left) * K_NEAR), H / (bottom - top)), 1, 1.7);
+    if (!camS.on) Object.assign(camS, { on: true, x: tx, fy: ty, z: tz });
+    else { camS.x += (tx - camS.x) * 0.18; camS.fy += (ty - camS.fy) * 0.18; camS.z += (tz - camS.z) * 0.12; }
+    cam.x = camS.x; cam.fy = camS.fy; cam.zoom = camS.z;
+    const sc = Math.min(cw / W, ch / H);
+    g.save(); g.beginPath(); g.rect(0, 0, cw, ch); g.clip(); g.translate(cw / 2 - W * sc / 2, ch / 2 - H * sc / 2); g.scale(sc, sc);
+    g.translate(W / 2, H / 2); g.scale(cam.zoom, cam.zoom); g.translate(-W / 2, -cam.fy); drawScene(g, Game.t); g.restore();
+  } finally {
+    if (vel) M.players.forEach((q, i) => { if (vel[i]) { q.vx = vel[i][0]; q.vz = vel[i][1]; } });
+    if (imp) { Impact.rings = imp[0]; Impact.flash = imp[1]; Impact.trail = imp[2]; }
+    if (restore) restore(); Object.assign(M, savedM); Object.assign(cam, savedCam); VL = savedVL; SHADOW = savedSh; FX.parts = parts; FX.pops = pops; FX.sx = sx; FX.sy = sy; FX.flashA = flash;
+    courtCv = oldCourt; crowdCv = oldCrowdCv; crowd = oldCrowd; ball.state = oldBallState; ball.shot = oldShot; Game.t = oldTime; FX.event = oldEvent; FX.hypeV = oldHype; Game.screen = oldScreen;
+  }
+  if (!bar) return;
+  const u = cw / CLIP_W;                                   // (the bar is laid out for 1280 x 720)
+  g.save(); g.scale(u, u); g.textBaseline = 'alphabetic';
+  g.fillStyle = 'rgba(8,16,24,0.78)'; g.fillRect(0, 0, CLIP_W, 54);
+  g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `26px ${FONT}`; g.fillText('ISLAM DUNK', 24, 37);
+  const A = clipName(meta.teams[0], 'Home'), B = clipName(meta.teams[1], 'Away');
+  g.textAlign = 'right'; g.fillStyle = IVORY; g.font = `22px ${FONT}`; g.fillText(A + '  ' + meta.score[0] + ' – ' + meta.score[1] + '  ' + B, CLIP_W - 24, 36, CLIP_W - 330);
+  const label = String(clip.label || 'HIGHLIGHT').toUpperCase();
+  g.font = `30px ${FONT}`; const lw = Math.min(CLIP_W - 80, g.measureText(label).width + 48);
+  g.fillStyle = 'rgba(8,16,24,0.8)'; roundRect(g, CLIP_W / 2 - lw / 2, CLIP_H - 72, lw, 50, 25); g.fill();
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.fillText(label, CLIP_W / 2, CLIP_H - 36, CLIP_W - 120);
+  g.restore();
+}
+// the clip video draws through the same function (one camera, one bar)
+clipFrame = function (g, clip, meta, si, camS, k) { return playDraw(g, clip, meta, si, camS, k, CLIP_W, CLIP_H, true); };
+// ---- the list: saved plays and the old My clips videos, newest first
+function playsRefresh() {
+  const plays = playsAll().catch(() => null), vids = mycTx('readonly', s => s.getAll()).catch(() => null);
+  return Promise.all([plays, vids]).then(([P, V]) => {
+    if (!P && !V) { PlayLib.list = []; PlayLib.err = 'My plays needs browser storage, which isn’t available here.'; return []; }
+    const list = [...PlayLib.mem, ...(P || []), ...(V || []).map(v => Object.assign(v, { kind: 'video' }))].sort((a, b) => b.at - a.at);
+    PlayLib.list = list; PlayLib.idx = clamp(PlayLib.idx, 0, Math.max(0, list.length - 1)); return list;
+  });
+}
+function openMyPlays(from) {
+  PlayLib.err = ''; PlayLib.list = null; PlayLib.idx = 0; PlayLib.row0 = 0; PlayLib.watch = null; PlayLib.confirm = null;
+  PlayLib.back = from === 'pause' ? { screen: Game.screen } : null;
+  Game.screen = 'myplays'; Game.idx = 0; playsRefresh();
+}
+function playsLeave() {
+  if (MYC.overlay) MYC.overlay.close();
+  if (PlayLib.watch) { PlayLib.watch = null; PlayLib.scene = null; return; }
+  const b = PlayLib.back; PlayLib.back = null; PlayLib.scene = null; PlayLib.posters.clear();
+  if (b) { Game.screen = b.screen; Game.paused = true; Game.idx = 0; } else goTitle();
+}
+function playLabel(r) { return String(r.label || (r.kind === 'video' ? 'Highlight' : 'Play')).toUpperCase(); }
+function playTeamsLine(r) {
+  const t = r.kind === 'video' ? (r.teams || []) : ((r.meta && r.meta.teams) || []).map(x => x && (x.short ? csClean(x.short, '') : clipName(x, '')));   // (short names: a card is narrow)
+  const d = new Date(r.at), date = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return (t.filter(Boolean).length ? t.join(' vs ') + '  •  ' : '') + date;
+}
+// the scene of the play being watched or animated (one at a time: the canvases are big)
+function playSceneFor(rec) {
+  if (PlayLib.scene && PlayLib.scene.id === rec.id) return PlayLib.scene.meta;
+  const meta = playScene(rec); PlayLib.scene = { id: rec.id, meta }; return meta;
+}
+// a still of a play's peak for its card (made one card a frame, so opening the screen doesn't stall)
+function playPoster(rec) {
+  if (rec.kind === 'video') return mycThumb(rec);
+  const c = PlayLib.posters.get(rec.id); if (c) return c;
+  if (!PlayLib.postQ.includes(rec.id)) PlayLib.postQ.push(rec.id);
+  return null;
+}
+function playPosterStep() {
+  const id = PlayLib.postQ.shift(); if (!id) return;
+  const rec = (PlayLib.list || []).find(r => r.id === id); if (!rec) return;
+  const fr = playFramesOf(rec); if (!fr) { PlayLib.postQ.push(id); return; }
+  const meta = playScene(rec); if (!meta) { PlayLib.posters.set(id, false); return; }
+  const cv = makeCanvas(444, 250), clip = { frames: fr, idx: rec.idx, label: rec.label }, camS = {}, pk = clamp(rec.peak | 0, 0, fr.length - 1);
+  for (let i = Math.max(0, pk - 40); i < pk; i += 8) playDraw(cv.getContext('2d'), clip, meta, i, camS, 0, 444, 250, false);   // (eases the camera in)
+  playDraw(cv.getContext('2d'), clip, meta, pk, camS, 0, 444, 250, false);
+  PlayLib.posters.set(id, cv);
+}
+// ---- starring and deleting
+function playStar(rec) {
+  if (!rec || rec.kind === 'video') return;
+  rec.star = !rec.star; SFX.blip();
+  playTx('readwrite', st => { st.put(Object.assign({}, rec, { frames: undefined })); }).then(() => { if (!rec.star) return playsAll().then(all => playTx('readwrite', st => playsTrim(st, all))); })
+    .then(() => toast(rec.star ? 'Starred: kept until you delete it' : 'Unstarred: one of your 20 recent plays', 2)).catch(() => toast('Couldn’t change this play here', 2));
+}
+function playDelete(rec) {
+  if (!rec) return;
+  if (PlayLib.confirm !== rec.id) { PlayLib.confirm = rec.id; toast('Press Delete again to remove this ' + (rec.kind === 'video' ? 'clip' : 'play'), 2.5); return; }
+  PlayLib.confirm = null; PlayLib.watch = null; PlayLib.posters.delete(rec.id);
+  (rec.kind === 'video' ? mycTx('readwrite', s => s.delete(rec.id)) : playTx('readwrite', st => st.delete(rec.id))).then(playsRefresh);
+  toast('Removed', 1.5);
+}
+// ---- watching
+function playWatch(rec) {
+  if (!rec) return;
+  if (rec.kind === 'video') { mycPlay(rec); return; }
+  PlayLib.watch = { id: rec.id, t0: Game.t, camS: {}, k: -1, focus: 0 }; PlayLib.confirm = null; SFX.blip();
+}
+function playWatchRec() { const w = PlayLib.watch; return w && ((PlayLib.list || []).find(r => r.id === w.id) || PlayLib.mem.find(r => r.id === w.id)); }
+// the watch view's buttons: Star, Share (step 3), Delete; left / right choose, Enter presses
+function playWatchActs(rec) {
+  return [[rec.star ? '★ Starred' : '☆ Star', () => playStar(rec)], ['Delete', () => playDelete(rec)]];
+}
+const PLAY_VIEW = { x: 120, y: 58, w: 720, h: 405 };
+let playCv = null;
+function drawPlayWatch(g, rec) {
+  const w = PlayLib.watch, V = PLAY_VIEW;
+  g.fillStyle = '#0b1722'; g.fillRect(V.x, V.y, V.w, V.h);
+  const fr = playFramesOf(rec), meta = fr && playSceneFor(rec);
+  if (!fr || !meta) {
+    g.fillStyle = '#9fb3c8'; g.font = `14px ${BODY}`; g.textAlign = 'center';
+    g.fillText(rec.bad || rec.codec !== PLAY_CODEC ? 'This play can’t be shown here (made on ' + (rec.v || 'another version') + ').' : 'Loading…', W / 2, V.y + V.h / 2);
+  } else {
+    const clip = { frames: fr, idx: rec.idx, peak: rec.peak, label: rec.label }, plan = w.plan || (w.plan = clipPlan(clip));
+    const k = Math.floor((Game.t - w.t0) * CLIP_FPS) % (plan.length + 20);
+    if (k < w.k) w.camS = {};                                              // (looped: the camera starts again)
+    w.k = k;
+    if (!playCv || playCv.width !== 960) playCv = makeCanvas(960, 540);
+    playDraw(playCv.getContext('2d'), clip, meta, plan[Math.min(k, plan.length - 1)], w.camS, k, 960, 540, true);
+    g.drawImage(playCv, V.x, V.y, V.w, V.h);
+  }
+  g.strokeStyle = 'rgba(232,195,90,0.7)'; g.lineWidth = 2; g.strokeRect(V.x, V.y, V.w, V.h);
+  const acts = playWatchActs(rec), bw = 170, x0 = W / 2 - (acts.length * bw + (acts.length - 1) * 12) / 2;
+  w.focus = clamp(w.focus, 0, acts.length - 1);
+  acts.forEach((a, i) => uiButton(g, x0 + i * (bw + 12), 474, bw, 40, a[0] === 'Delete' && PlayLib.confirm === rec.id ? 'Tap again to delete' : a[0], a[1], i === w.focus));
+  if (!Input.touchMode) { g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('← → choose   Enter press   S star   X delete   Esc back to My plays', W / 2, 532); }
+}
+function playWatchUpdate(rec) {
+  const w = PlayLib.watch, acts = playWatchActs(rec);
+  if (menuHit('left')) { w.focus = (w.focus + acts.length - 1) % acts.length; SFX.blip(); }
+  if (menuHit('right')) { w.focus = (w.focus + 1) % acts.length; SFX.blip(); }
+  if (menuHit('ok')) (acts[w.focus] || acts[0])[1]();
+  else if (Input.pressed.KeyS) playStar(rec);
+  else if (Input.pressed.Delete || Input.pressed.KeyX) playDelete(rec);
+}
+// ---- the grid
+const PG = { cols: 4, rows: 2, x0: 24, y0: 92, w: 222, gap: 12, th: 125, h: 176 };
+function myPlaysUpdate() {
+  if (MYC.overlay) return;
+  playPosterStep();
+  const L = PlayLib.list || [], n = L.length;
+  if (PlayLib.watch) { const rec = playWatchRec(); if (!rec) { if (PlayLib.list) PlayLib.watch = null; } else { playWatchUpdate(rec); if (menuHit('back')) playsLeave(); return; } }
+  if (n) {
+    const c = PG.cols, i = PlayLib.idx, mv = d => { const j = clamp(i + d, 0, n - 1); if (j !== i) { PlayLib.idx = j; PlayLib.confirm = null; SFX.blip(); } };
+    if (menuHit('left')) mv(-1); if (menuHit('right')) mv(1); if (menuHit('up')) mv(-c); if (menuHit('down')) mv(c);
+    const rec = L[PlayLib.idx];
+    if (menuHit('ok')) playWatch(rec);
+    else if (Input.pressed.KeyS) playStar(rec);
+    else if (Input.pressed.Delete || Input.pressed.KeyX) playDelete(rec);
+  }
+  if (menuHit('back')) playsLeave();
+}
+let playThumbCv = null;
+function drawMyPlays(g) {
+  dim(g, 0.86);
+  const o = Math.round((W - 960) / 2), rw = W; g.save(); g.translate(o, 0); W = 960; Game.ox = o;
+  try {
+    const L = PlayLib.list, rec = PlayLib.watch ? playWatchRec() : L && L[PlayLib.idx];
+    g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('My plays', W / 2, PlayLib.watch ? 42 : 44);
+    if (PlayLib.watch && rec) { drawPlayWatch(g, rec); return; }
+    g.fillStyle = IVORY; g.font = `13px ${BODY}`; g.fillText('Your last 20 saved plays, and every one you star. Saved on this device only.', W / 2, 70);
+    if (!L) { g.fillStyle = '#9fb3c8'; g.font = `14px ${BODY}`; g.fillText('Loading…', W / 2, 260); return; }
+    if (!L.length) { g.fillStyle = '#9fb3c8'; g.font = `15px ${BODY}`; wrapText(g, PlayLib.err || 'No saved plays yet. In a game, press V, choose Save play in the pause menu, or tap Save play after a basket.', W / 2, 240, 640, 22); return; }
+    const c = PG.cols, rowOf = Math.floor(PlayLib.idx / c);
+    PlayLib.row0 = clamp(PlayLib.row0, rowOf - PG.rows + 1, rowOf);
+    for (let k = 0; k < c * PG.rows; k++) {
+      const i = PlayLib.row0 * c + k, r = L[i]; if (!r) break;
+      const x = PG.x0 + (k % c) * (PG.w + PG.gap), y = PG.y0 + Math.floor(k / c) * (PG.h + PG.gap), on = i === PlayLib.idx;
+      g.fillStyle = on ? 'rgba(232,195,90,0.9)' : 'rgba(255,255,255,0.06)'; roundRect(g, x - 4, y - 4, PG.w + 8, PG.h + 8, 10); g.fill();
+      g.fillStyle = '#0b1722'; g.fillRect(x, y, PG.w, PG.th);
+      let drew = false;
+      if (on && r.kind !== 'video') {                     // the chosen play moves (real speed, looping)
+        const fr = playFramesOf(r), meta = fr && playSceneFor(r);
+        if (fr && meta) {
+          if (!playThumbCv) playThumbCv = makeCanvas(444, 250);
+          const ps = PlayLib.thumb && PlayLib.thumb.id === r.id ? PlayLib.thumb : (PlayLib.thumb = { id: r.id, t0: Game.t, camS: {}, last: -1 });
+          const si = Math.floor((Game.t - ps.t0) * 60) % fr.length; if (si < ps.last) ps.camS = {}; ps.last = si;
+          playDraw(playThumbCv.getContext('2d'), { frames: fr, idx: r.idx, label: r.label }, meta, si, ps.camS, si / 2, 444, 250, false);
+          g.drawImage(playThumbCv, x, y, PG.w, PG.th); drew = true;
+        }
+      }
+      if (!drew) { const im = playPoster(r); if (im) { g.drawImage(im, x, y, PG.w, PG.th); drew = true; } }
+      if (!drew) { g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.textAlign = 'center'; g.fillText(r.bad ? 'Can’t show this play' : '…', x + PG.w / 2, y + PG.th / 2 + 4); }
+      if (r.kind === 'video') { g.fillStyle = 'rgba(0,0,0,0.7)'; roundRect(g, x + 6, y + 6, 54, 20, 10); g.fill(); g.fillStyle = '#fff'; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.fillText('VIDEO', x + 33, y + 20); }
+      if (r.star) { g.fillStyle = 'rgba(0,0,0,0.7)'; g.beginPath(); g.arc(x + PG.w - 16, y + 16, 12, 0, Math.PI * 2); g.fill(); g.fillStyle = GOLD; drawStar(g, x + PG.w - 16, y + 16, 8); }
+      g.textAlign = 'left'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `14px ${FONT}`; g.fillText(fitText(g, playLabel(r), PG.w - 8), x + 4, y + PG.th + 20);
+      g.fillStyle = on ? NIGHT : '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(fitText(g, playTeamsLine(r), PG.w - 8), x + 4, y + PG.th + 40);
+      addRect(x - 4, y - 4, PG.w + 8, PG.h + 8, () => { if (PlayLib.idx === i || Input.touchMode) { PlayLib.idx = i; playWatch(r); } else { PlayLib.idx = i; PlayLib.confirm = null; } });
+    }
+    const pages = Math.ceil(L.length / c);
+    if (pages > PG.rows) {                                     // more rows: arrows that scroll
+      if (PlayLib.row0 > 0) uiButton(g, W / 2 - 150, 466, 140, 32, '▲ Newer', () => { PlayLib.idx = Math.max(0, PlayLib.idx - c); }, false);
+      if (PlayLib.row0 + PG.rows < pages) uiButton(g, W / 2 + 10, 466, 140, 32, '▼ Older', () => { PlayLib.idx = Math.min(L.length - 1, PlayLib.idx + c); }, false);
+    }
+    g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`;
+    g.fillText(Input.touchMode ? 'Tap a play to watch it, star it, or delete it.' : '← → ↑ ↓ choose   Enter watch   S star   X delete   Esc back', W / 2, 522);
+  } finally { W = rw; Game.ox = 0; g.restore(); }
+}
+{
+  const SCR = { myplays: [myPlaysUpdate, drawMyPlays] };
+  const _gu = gameUpdate;
+  gameUpdate = function (rdt) { const sc = Game.screen, was = SCR[sc]; _gu.apply(this, arguments); if (was && Game.screen === sc) { SCR[sc][0](); if (!PlayLib.back) attractTick(rdt); } };
+  const _r = render;
+  render = function (g) { _r(g); const s = SCR[Game.screen]; if (!s) return; s[1](g); drawBackButton(g); };
+  BACK.myplays = () => playsLeave();
+  // the main menu: My plays above Settings; My clips (Settings > Extras) is now part of it
+  const _tm = TITLE_MENU;
+  TITLE_MENU = function () {
+    const m = _tm.apply(this, arguments).map(e => !e.sub ? e : Object.assign({}, e, { sub: e.sub.map(s => !s.sub ? s : Object.assign({}, s, { sub: s.sub.filter(x => x.label !== 'My clips') })).filter(s => s.label !== 'My clips') }));
+    const at = m.findIndex(e => e.label === 'Settings' || e.label === 'Options');
+    m.splice(at < 0 ? m.length : at, 0, { label: 'My plays', act: () => openMyPlays() });
+    return m;
+  };
+  // the pause menu (offline: online the match has to keep running on its own screen): My plays under Save play
+  const _pi = pauseItems;
+  pauseItems = function () {
+    const it = _pi.apply(this, arguments);
+    if (!Net.role && Game.screen === 'play' && !M.practice && !M.attract) { const i = it.findIndex(x => /^(Save play|Play saved)/.test(x[0])); it.splice(i >= 0 ? i + 1 : 1, 0, ['My plays', () => openMyPlays('pause')]); }
+    return it;
+  };
+  // the old My clips screen goes to My plays
+  openMyClips = function () { openMyPlays(); };
+}

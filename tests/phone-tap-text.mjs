@@ -61,7 +61,8 @@ export function phoneTapTextTests({ newContext, open }) {
     const rep = tapReport(sc), min = Math.min(...sc.flatMap(s => s.tg.targets.filter(t => !rep.exceptions.spacing.includes(t)).map(t => t.short)));
     await ctx.close();
     out.problems = rep.problems.map(t => `${t.screen}: ${t.label} ${t.short}px`);
-    const ok = out.titleRows === 5 && out.betweenGoesTo === 'Online' && out.backGrown && out.keyGap === 'A' && out.tutorial !== 'howto' && out.tutorial !== 'title' && out.mouseUnchanged && !rep.problems.length && !errs.length;
+    const ok = out.titleRows === 6 &&   // (v9.33.0: My plays is a sixth row)
+      out.betweenGoesTo === 'Online' && out.backGrown && out.keyGap === 'A' && out.tutorial !== 'howto' && out.tutorial !== 'title' && out.mouseUnchanged && !rep.problems.length && !errs.length;
     detail.push(JSON.stringify(out), `${sc.reduce((n, s) => n + s.tg.targets.length, 0)} controls on 4 screens: ${rep.exceptions.spacing.length} held under ${MIN_TAP} px by row or key spacing, the rest ${MIN_TAP} px or more`, ...errs);
     return { ok, detail };
   };

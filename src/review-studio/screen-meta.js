@@ -47,7 +47,8 @@ export const META = {
   'league standings': ['results', 'Quick Play league table.', 'After each league game, tab 1.', null, null, 'v9.5'],
   'league schedule': ['results', 'Quick Play league schedule.', 'League screen, tab 2.', null, null, 'v9.5', [NEAR('league standings')]],
   'league leaders': ['results', 'Quick Play league leaders.', 'League screen, tab 3.', null, null, 'v9.5', [NEAR('league standings')]],
-  'my clips': ['rare', 'Saved highlight videos.', 'Settings → Extras → My clips.', T('Settings', 'Extras', 'My clips'), null, 'v9.5'],
+  'my plays': ['rare', 'Your saved plays (and the videos kept in My clips before): a grid, the chosen one moving.', 'Main menu → My plays; the pause menu.', T('My plays'), null, 'v9.33'],
+  'my plays: watching': ['rare', 'One saved play, looping with slow motion at its peak: star, share, delete.', 'My plays → a play.', T('My plays', '(a play)'), null, 'v9.33'],
   'barakah run': ['rare', 'Barakah Run home: start, continue, badges, duos.', 'Quick Play → Barakah Run.', T('Quick Play', 'Barakah Run'), null, 'v8.3'],
   'run vow': ['rare', 'Pick the run’s vow (a handicap for more reward).', 'Barakah Run → Start a run.', T('Quick Play', 'Barakah Run', 'Start a run'), null, 'v8.3'],
   'run map': ['rare', 'The run’s map of games and stops.', 'After the vow.', T('Quick Play', 'Barakah Run', 'Start a run', '(a vow)'), null, 'v8.3'],
@@ -122,6 +123,8 @@ export const NA_META = {
   hostlobby: ['rare', 'The older host screen: a join code and Tip off.', 'Only Barakah Run → Duos → Host online (every other mode uses the v7.4 lobby).', null, null, 'v7.0', ['legacy'], { v: 'merge', into: 'lobby', why: 'The v7.4 lobby replaced it everywhere but Barakah Run duos.' }],
   netplay: ['match', 'The guest’s view of an online match.', 'Joining an online game.', null, null, 'v7.0'],
   netwait: ['rare', 'Joining: searching, the room is full, the host left, a version mismatch.', 'Joining an online game.', null, null, 'v7.0'],
+  playview: ['rare', 'Not a screen: the name the game is under while a saved play is drawn, for a moment.', 'Never seen.', null, null, 'v9.33'],
+  myclips: ['rare', 'The kept highlight videos (v9.5 to v9.32). Now listed in My plays: My clips opens My plays.', 'Nowhere since v9.33.', null, null, 'v9.5', ['legacy'], { v: 'delete', why: 'Replaced by My plays.' }],
   lobbyquit: ['rare', 'Quit to Title from an online screen: a blank moment while the other player is told.', 'Any online screen → Quit to Title.', null, null, 'v9.20.0']
 };
 // thresholds for the measured flags (from the screen census: tap targets and words drawn)

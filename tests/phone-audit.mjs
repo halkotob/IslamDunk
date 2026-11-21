@@ -50,6 +50,9 @@ const SHARE = `if (!window.__shareReady) { window.__shareReady = 1;             
     for (let n = 0; n < 60 * 60 * 10 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; } window.__hl = M.highlights; } }
   M.highlights = window.__hl; Game.screen = 'final'; FX.pops.length = 0; M.hot = null;   // (v9.19.0: no score pops or hot spot ("+2") left from the game: one at the court's edge read as overflowing text, depending on how the unseeded game ended)
 `;
+// v9.33.0: one saved play (the game's best highlight), shown from memory so the screen is ready at once
+const PLAYS = SHARE + ` { const h = window.__hl[0]; PlayLib.mem = [{ id: 'census', kind: 'play', at: Date.now(), v: VERSION, codec: PLAY_CODEC, np: h.frames[0].ps.length, n: h.frames.length,
+  frames: h.frames, idx: h.idx, peak: h.peak, label: h.label, star: false, meta: playMeta(h.share.scene, h.share.score) }]; } goTitle(); openMyPlays();`;
 const MATCH = `Input.touchMode = true; Game.trivia = null; newMatch(TEAMS[0], TEAMS[1], { humans: [{ team: 0, slot: 0, pad: 0 }] }); Game.screen = 'play'; Game.paused = false; M.introT = 0;
   for (let i = 0; i < 400 && M.phase !== 'live'; i++) updateMatch(STEP); M.players[0].def.huffath = true;`;
 export const SCREENS = [
@@ -86,7 +89,8 @@ export const SCREENS = [
   ['league standings', `goTitle(); serDrop('league'); openSeries('league'); serStart(); serPlay(); M.teams[0].score = 21; M.teams[1].score = 17; finishMatch(); finalContinue(); SER.tab = 0;`],
   ['league schedule', `goTitle(); serDrop('league'); openSeries('league'); serStart(); serPlay(); M.teams[0].score = 21; M.teams[1].score = 17; finishMatch(); finalContinue(); SER.tab = 1;`],
   ['league leaders', `goTitle(); serDrop('league'); openSeries('league'); serStart(); serPlay(); M.teams[0].score = 21; M.teams[1].score = 17; finishMatch(); finalContinue(); SER.tab = 2;`],
-  ['my clips', `goTitle(); openMyClips();`],
+  ['my plays', PLAYS],
+  ['my plays: watching', PLAYS + ` playWatch(PlayLib.mem[0]);`],
   ['settings: accessibility', `goTitle(); Game.screen = 'settings'; Game.setGroup = SET_GROUPS.findIndex(x => x.name === 'Accessibility'); Game.idx = 0;`],
   ['barakah run', `goTitle(); openBarakah();`],
   ['daily scenario', `goTitle(); openScenBrief();`],

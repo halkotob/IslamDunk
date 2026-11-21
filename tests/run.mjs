@@ -821,14 +821,15 @@ T['v95'] = async ({ browser, base }) => {
   });
   await p.waitForFunction(() => REEL.i >= 1 || !REEL.on, null, { timeout: 15000 }).catch(() => {});   // (v9.19.0: up to 15 s, was a fixed 4.5: the first highlight's length depends on the seeded game, and a busy machine runs slower)
   r.reelMoves = await p.evaluate(() => REEL.i >= 1 || !REEL.on);
-  // My clips: keep one, list it, delete it
+  // My clips: keep one, list it, delete it (v9.33.0: the kept videos are listed in My plays, on the main menu; tests/replays.mjs)
   r.clips = await p.evaluate(async () => {
     await mycTx('readwrite', s => { s.put({ id: 'test', at: Date.now(), name: 'test.webm', type: 'video/webm', blob: new Blob(['x'], { type: 'video/webm' }), poster: '', label: 'Big dunk', teams: ['A', 'B'], score: [21, 18] }); });
     const until = async f => { for (let t = 0; t < 30 && !f(); t++) await new Promise(r => setTimeout(r, 100)); };   // (v9.19.0: IndexedDB took over 300 ms on a busy machine)
-    openMyClips(); await until(() => (MYC.list || []).length === 1); const one = (MYC.list || []).length === 1;
-    mycDelete(MYC.list[0]); mycDelete(MYC.list[0]); await until(() => (MYC.list || []).length === 0);
-    const menu = TITLE_MENU().find(e => e.label === 'Settings').sub.find(e => e.label === 'Extras').sub.some(e => e.label === 'My clips');
-    return one && MYC.list.length === 0 && menu;
+    const vids = () => (PlayLib.list || []).filter(x => x.kind === 'video');
+    openMyClips(); await until(() => vids().length === 1); const one = vids().length === 1 && Game.screen === 'myplays';
+    playDelete(vids()[0]); playDelete(vids()[0]); await until(() => PlayLib.list && vids().length === 0);
+    const menu = TITLE_MENU().some(e => e.label === 'My plays');
+    return one && vids().length === 0 && menu;
   });
   // the screens draw (with large text too)
   await p.evaluate(() => { SETTINGS.textSize = 2; openSeries('league'); SER.tab = 0; }); await sleep(300);
