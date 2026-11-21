@@ -111,7 +111,8 @@ export const SCREEN_OF = {
   "league standings": "series",
   "league schedule": "series",
   "league leaders": "series",
-  "my clips": "myclips",
+  "my plays": "myplays",
+  "my plays: watching": "myplays",
   "settings: accessibility": "settings",
   "welcome dialog (first launch)": "title",
   "toast message": "title",
@@ -145,5 +146,7 @@ export const NOT_RENDERABLE = {
   lobbyquit: 'A blank 0.3 s while Quit to Title tells the other player and leaves the room (v9.20.0).',
   hostlobby: 'Needs a live online session with you as host and a guest connected. The online-loop, online-room and online-fb tests play it with a fake network.',
   netplay: 'Needs a live online game between two browsers (it is the guest’s view of the host’s match). The online tests cover it.',
+  playview: 'Not a screen: set only while a saved play is drawn (My plays, a play’s video), so the drawing is the same from any screen.',
+  myclips: 'Replaced by My plays in v9.33: My clips opens My plays, which lists the kept videos with the saved plays.',
   netwait: 'Only shown when an online host leaves or a room is full; needs a live online session.'
 };

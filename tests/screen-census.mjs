@@ -17,7 +17,8 @@ export const PLACE_JS = `(() => { const ms = Game.menus && Game.menus[Game.scree
     typeof Gym !== 'undefined' ? Gym.overlay || null : null, !!(Game.hubMenu && Game.hubMenu.open), !!(Game.office && Game.office.panel), typeof World !== 'undefined' && World.menu ? 1 : 0,
     typeof CSUI !== 'undefined' ? [CSUI.share ? 1 : 0, CSUI.edit ? 1 : 0, CSUI.imp ? 1 : 0] : null, Game.screen === 'story' && Game.story ? Game.story.i : null,
     Game.trivia ? [!!Game.trivia.done, Game.trivia.choice] : null, Game.stats ? Game.stats.view || null : null,
-    typeof World !== 'undefined' ? [World.talk ? 1 : 0, World.shop ? 1 : 0, World.jum ? 1 : 0] : null]); })()`;
+    typeof World !== 'undefined' ? [World.talk ? 1 : 0, World.shop ? 1 : 0, World.jum ? 1 : 0] : null,
+    typeof PlayLib !== 'undefined' && PlayLib.watch ? PlayLib.watch.id : null]); })()`;   // (v9.33.0: a play being watched in My plays)
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // did a direction move a focus? Game.idx or a menu's, or the words drawn in a highlight colour changed (screens with a
 // focus of their own: the creator, the custom-team editor, the calendar...); the picker opening doesn't count

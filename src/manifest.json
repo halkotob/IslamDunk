@@ -149,6 +149,7 @@
     "online/v930-rb-brun.js",
     "online/v930-rb-kotc.js",
     "screens/shot-chart.js",
+    "screens/replays.js",
     "boot.js"
   ]
 }

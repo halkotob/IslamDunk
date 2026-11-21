@@ -68,6 +68,10 @@
 //   v95          v9.5.0: a tournament (bracket, a real game to the post-game screen, knocked out, played out, saved), a
 //                league (schedule, standings, final, leaders), the Quick Play entries, colorblind-safe kits, larger
 //                text on a computer, automatic shot release, Settings → Accessibility, the top plays reel, My clips
+//   plays-*      v9.33.0 save any play (tests/replays.mjs): Save play from the pause menu, the V key, the touch pill and
+//                the final screen; My plays (the 20 limit and stars, the same frame live and watched, old My clips videos,
+//                keyboard, pad, touch); Share (a phone profile with Web Share, the download, the link). rb-plays: saves on one
+//                phone during a rollback match, no desync
 // Every test fails on any uncaught page error.
 import { chromium, devices } from 'playwright';
 import http from 'node:http';
@@ -102,6 +106,7 @@ import { cpuStyleTests } from './cpu-style.mjs';
 import { animFixTests } from './anim-fix.mjs';
 import { storyTests } from './story.mjs';
 import { hubTests } from './hub-layout.mjs';
+import { replayTests } from './replays.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -664,7 +669,8 @@ T['phase6'] = async ({ browser, base }) => {
   }
   await p.evaluate(() => { Game.screen = 'settings'; Game.setGroup = 1; }); await sleep(300);
   await ctx.close();
-  const ok = Object.entries(r).every(([k, v]) => k === 'top' || v === true) && r.top === 'Career,Quick Play,Online,Teams & Players,Settings,Review' && !errs.length;
+  const ok = Object.entries(r).every(([k, v]) => k === 'top' || v === true) && r.top === 'Career,Quick Play,Online,Teams & Players,My plays,Settings,Review'   // (v9.33.0: My plays)
+    && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
@@ -820,14 +826,15 @@ T['v95'] = async ({ browser, base }) => {
   });
   await p.waitForFunction(() => REEL.i >= 1 || !REEL.on, null, { timeout: 15000 }).catch(() => {});   // (v9.19.0: up to 15 s, was a fixed 4.5: the first highlight's length depends on the seeded game, and a busy machine runs slower)
   r.reelMoves = await p.evaluate(() => REEL.i >= 1 || !REEL.on);
-  // My clips: keep one, list it, delete it
+  // My clips: keep one, list it, delete it (v9.33.0: the kept videos are listed in My plays, on the main menu; tests/replays.mjs)
   r.clips = await p.evaluate(async () => {
     await mycTx('readwrite', s => { s.put({ id: 'test', at: Date.now(), name: 'test.webm', type: 'video/webm', blob: new Blob(['x'], { type: 'video/webm' }), poster: '', label: 'Big dunk', teams: ['A', 'B'], score: [21, 18] }); });
     const until = async f => { for (let t = 0; t < 30 && !f(); t++) await new Promise(r => setTimeout(r, 100)); };   // (v9.19.0: IndexedDB took over 300 ms on a busy machine)
-    openMyClips(); await until(() => (MYC.list || []).length === 1); const one = (MYC.list || []).length === 1;
-    mycDelete(MYC.list[0]); mycDelete(MYC.list[0]); await until(() => (MYC.list || []).length === 0);
-    const menu = TITLE_MENU().find(e => e.label === 'Settings').sub.find(e => e.label === 'Extras').sub.some(e => e.label === 'My clips');
-    return one && MYC.list.length === 0 && menu;
+    const vids = () => (PlayLib.list || []).filter(x => x.kind === 'video');
+    openMyClips(); await until(() => vids().length === 1); const one = vids().length === 1 && Game.screen === 'myplays';
+    playDelete(vids()[0]); playDelete(vids()[0]); await until(() => PlayLib.list && vids().length === 0);
+    const menu = TITLE_MENU().some(e => e.label === 'My plays');
+    return one && vids().length === 0 && menu;
   });
   // the screens draw (with large text too)
   await p.evaluate(() => { SETTINGS.textSize = 2; openSeries('league'); SER.tab = 0; }); await sleep(300);
@@ -2030,6 +2037,7 @@ Object.assign(T, hubTests({ newContext, open }));   // v9.6.2 the career hub's l
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)
 Object.assign(T, cpuStyleTests({ newContext, open }));   // v9.16 CPU moves and dunks by ratings (tests/cpu-style.mjs)
 Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, crowd tiers, the sound list, Studio coverage (tests/audio.mjs)
+Object.assign(T, replayTests({ newContext, open }));   // v9.33.0 save any play, My plays, share (tests/replays.mjs)
 Object.assign(T, STUDIO_TESTS);   // the Review Studio (tests/studio.mjs)
 Object.assign(T, STUDIO_PHONE_TESTS);   // v9.21.1 the Studio on a phone (tests/studio-phone.mjs)
 
@@ -2052,10 +2060,10 @@ const HEAVY = new Set([
   // over 13 s each when run alone on the 2-core container (v9.17.1 times), so the fast tier fits 3 minutes there
   'league-calibration', 'lag-profiles', 'studio', 'cpu-league', 'hub-layout', 'career-run', 'world-robust', 'world-visual',
   'league-formats', 'league-determinism', 'league-layout', 'league-time', 'cpu-handle', 'v863', 'career-intro', 'v867',
-  'gamepad', 'phase5', 'career', 'v95', 'v99',
+  'gamepad', 'phase5', 'career', 'v95', 'v99', 'plays-share',   // (v9.33.0: plays-share records two videos in real time and opens four pages)
   // the online tests that have to run alone (SERIAL), except rb-one, rb-fun and rb-freeze
   'rb-lag', 'rb-same', 'rb-determinism', 'rb-flow', 'rb-rollback', 'rb-taunt', 'rb-online', 'rb-resync', 'rb-settings',
-  'rb-touch', 'rb-slow', 'rb-lightning', 'rb-horse', 'rb-brun', 'rb-kotc', 'rb-sounds', 'rb-linkdrop', 'rb-hostile', 'phone-text-size', 'rb-holdtap', 'nav-census', 'fouls-kept', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
+  'rb-touch', 'rb-plays', 'rb-slow', 'rb-lightning', 'rb-horse', 'rb-brun', 'rb-kotc', 'rb-sounds', 'rb-linkdrop', 'rb-hostile', 'phone-text-size', 'rb-holdtap', 'nav-census', 'fouls-kept', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
 // alone, after the parallel batch: frame-rate and speed checks, and the rollback and real-time online tests, which a
 // busy CPU makes desync (9.17.2 on 2 workers: rb-settings, rb-touch and rb-one each repaired 1-3 desyncs they don't alone)
 const SERIAL = new Set(['rb-slow', 'rb-lag', 'rb-freeze', 'lag-profiles', 'online-lag', 'league-time', 'net-rate',

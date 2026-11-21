@@ -1,5 +1,39 @@
 # Changelog
 
+## 9.33.0: save any play, share it in two taps
+A play could be shared only if the game picked it as a highlight, only from the final screen, and only through Share →
+Make video → Keep in My clips, with My clips under Settings → Extras. Now any play can be saved the moment it happens
+and kept in **My plays**, one tap from the main menu. (docs/plans/replays.md)
+- **Save play** at any moment of a match keeps the 8 s before the press and 1 s after, so a dunk saved at the rim
+  still lands: Save play in the pause menu, the V key, and on touch a Save play pill at the top for 4 s after every
+  basket, block or steal. One press, a "Play saved" toast, play carries on. On the final screen the highlight shown
+  has Save play (V) too. Online it saves on your phone only: nothing is sent and nothing pauses. Not offered in mini
+  games, demos or practice. Saving again within 3 s replaces the first save.
+- A save is labelled with the last basket, block or steal in its window (DUNK, THREE, BLOCK...) and features that
+  player, or PLAY and your player.
+- **What's kept** is the frames and a little metadata (teams, score, venue, format), not a video: 15-23 KB a play,
+  in this browser (IndexedDB). The newest 20 plays are kept, and every starred one until you delete it. Videos kept
+  in My clips before are listed in My plays too, and play as before.
+- **My plays** (the main menu above Settings, and the pause menu offline): a grid of the saves, newest first, the
+  chosen one moving, each with its label, both teams and the date. A play opens to watch it, looping with the instant
+  replay's slow motion at its peak, under the bar a video has (ISLAM DUNK, the teams, the score, the play): Star,
+  Share, Copy link, Delete. Keyboard, pad and touch all work.
+- **Share** makes the video (as Make video does: about 5 s, MP4 where the browser records it, no sound) and opens the
+  share sheet with the file. On a phone the video is made while you watch the play, so Share opens the sheet at once:
+  Share, then WhatsApp or Instagram. Where files can't be shared (most computers) it's **Save video**, a download.
+- **Copy link** puts the play itself in a link: the frames at 30 fps, else 20 fps (blended back when it plays),
+  rounded for a link, and the teams, score and venue, deflated into the address's `#play=` part (6-8 KB; never sent
+  to a server). Opening it goes straight to watching the play, with Keep in My plays. A play that doesn't fit 8 KB
+  has no Copy link. A link from another version says which version made it. Team and player names in a link go
+  through the word filter.
+- The replay buffer holds 600 frames (10 s; was 300): about 350 KB more memory per match, freed when it ends.
+- A saved play is drawn with its own players, court and crowd, swapped in for the frame and out again, so the match
+  or demo underneath is never touched; the clip video draws through the same code. What isn't in the frames (a hot
+  spot, a free throw's markings, the slam rings) isn't drawn, and a classic court's crowd is different people.
+- Tests: `plays-save`, `plays-library`, `plays-share`, `rb-plays` (tests/replays.mjs; rb-plays in tests/rollback.mjs:
+  saves on the guest during a rollback match with loss, no desync). `v95` and `tap-targets` follow the new menu; the
+  screen census counts leaving a watched play.
+
 ## 9.32.4: a bad connection no longer snowballs after a desync
 On a slow, lossy link, one desync could turn into many. The host puts the guest right by sending its whole game state
 (about 32 KB), and it sent it again for every checksum that still differed, four a second, while the first copy was still
