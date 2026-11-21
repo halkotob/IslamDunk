@@ -55,9 +55,9 @@ export function replayTests({ newContext, open }) {
     r.pill = await q.evaluate(() => { const r = Game.rects.find(x => Math.abs(x.x + x.w / 2 - W / 2) < 2 && x.y < 20); if (!r) return null;
       const b = canvas.getBoundingClientRect(); return { x: b.left + (r.x + r.w / 2) / W * b.width, y: b.top + (r.y + r.h / 2) / H * b.height }; });
     if (r.pill) await q.touchscreen.tap(r.pill.x, r.pill.y);
+    r.pillAfter = await q.evaluate(() => Plays.btnSaved);   // (at once: the match plays on, and its next basket shows a new pill)
     await q.waitForFunction(() => Plays.writes >= 1, null, { timeout: 8000 }).catch(() => {});
     r.touch = (await latest(q))[0] || null;
-    r.pillAfter = await q.evaluate(() => Plays.btnSaved);
     // 5. the final screen: the best play's Save play, and V
     await q.evaluate(() => { for (let n = 0; n < 60 * 60 * 20 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; } Game.screen = 'final'; Game.finalTab = 0; });
     await sleep(300);
@@ -119,8 +119,7 @@ export function replayTests({ newContext, open }) {
       return { count: all.length, starred: all.filter(x => x.star).map(x => ids.indexOf(x.id)).sort((a, b) => a - b), gone: ids.map((_, i) => i).filter(i => !kept.includes(i)) };
     });
     // unstarring the oldest starred play makes it one of the recent ones: the oldest of 21, so it goes
-    r.unstar = await p.evaluate(async () => { Game.screen = 'title'; openMyPlays(); await playsRefresh(); const x = PlayLib.list.find(q => q.label === 'PLAY 1'); playStar(x);
-      await new Promise(r => setTimeout(r, 400)); const all = await playsAll(); return { count: all.length, has1: all.some(q => q.label === 'PLAY 1') }; });
+    r.unstar = await p.evaluate(async () => { Game.screen = 'title'; openMyPlays(); await playsRefresh(); const x = PlayLib.list.find(q => q.label === 'PLAY 1'); await playStar(x); const all = await playsAll(); return { count: all.length, has1: all.some(q => q.label === 'PLAY 1') }; });
     // the same frame, live and watched
     r.same = await p.evaluate(async () => {
       newMatch(TEAMS[2], TEAMS[5], { humans: [], fmt: { format: 'quarters', len: 120 }, venue: makeVenue(VENUE_LIST[1], { host: 0, crowd: 20, level: 0.3 }) }); Game.screen = 'play';

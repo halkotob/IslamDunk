@@ -362,7 +362,7 @@ function playPosterStep() {
 function playStar(rec) {
   if (!rec || rec.kind === 'video') return;
   rec.star = !rec.star; SFX.blip();
-  playTx('readwrite', st => { st.put(Object.assign({}, rec, { frames: undefined })); }).then(() => { if (!rec.star) return playsAll().then(all => playTx('readwrite', st => playsTrim(st, all))); })
+  return playTx('readwrite', st => { st.put(Object.assign({}, rec, { frames: undefined })); }).then(() => { if (!rec.star) return playsAll().then(all => playTx('readwrite', st => playsTrim(st, all))); })
     .then(() => toast(rec.star ? 'Starred: kept until you delete it' : 'Unstarred: one of your 20 recent plays', 2)).catch(() => toast('Couldn’t change this play here', 2));
 }
 function playDelete(rec) {
