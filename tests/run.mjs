@@ -68,6 +68,10 @@
 //   v95          v9.5.0: a tournament (bracket, a real game to the post-game screen, knocked out, played out, saved), a
 //                league (schedule, standings, final, leaders), the Quick Play entries, colorblind-safe kits, larger
 //                text on a computer, automatic shot release, Settings → Accessibility, the top plays reel, My clips
+//   plays-*      v9.33.0 save any play (tests/replays.mjs): Save play from the pause menu, the V key, the touch pill and
+//                the final screen; My plays (the 20 limit and stars, the same frame live and watched, old My clips videos,
+//                keyboard, pad, touch); Share (a phone profile with Web Share, the download, the link). rb-plays: saves on one
+//                phone during a rollback match, no desync
 // Every test fails on any uncaught page error.
 import { chromium, devices } from 'playwright';
 import http from 'node:http';
@@ -665,7 +669,8 @@ T['phase6'] = async ({ browser, base }) => {
   }
   await p.evaluate(() => { Game.screen = 'settings'; Game.setGroup = 1; }); await sleep(300);
   await ctx.close();
-  const ok = Object.entries(r).every(([k, v]) => k === 'top' || v === true) && r.top === 'Career,Quick Play,Online,Teams & Players,Settings,Review' && !errs.length;
+  const ok = Object.entries(r).every(([k, v]) => k === 'top' || v === true) && r.top === 'Career,Quick Play,Online,Teams & Players,My plays,Settings,Review'   // (v9.33.0: My plays)
+    && !errs.length;
   return { ok, detail: [JSON.stringify(r), ...errs] };
 };
 
@@ -2055,7 +2060,7 @@ const HEAVY = new Set([
   // over 13 s each when run alone on the 2-core container (v9.17.1 times), so the fast tier fits 3 minutes there
   'league-calibration', 'lag-profiles', 'studio', 'cpu-league', 'hub-layout', 'career-run', 'world-robust', 'world-visual',
   'league-formats', 'league-determinism', 'league-layout', 'league-time', 'cpu-handle', 'v863', 'career-intro', 'v867',
-  'gamepad', 'phase5', 'career', 'v95', 'v99',
+  'gamepad', 'phase5', 'career', 'v95', 'v99', 'plays-share',   // (v9.33.0: plays-share records two videos in real time and opens four pages)
   // the online tests that have to run alone (SERIAL), except rb-one, rb-fun and rb-freeze
   'rb-lag', 'rb-same', 'rb-determinism', 'rb-flow', 'rb-rollback', 'rb-taunt', 'rb-online', 'rb-resync', 'rb-settings',
   'rb-touch', 'rb-plays', 'rb-slow', 'rb-lightning', 'rb-horse', 'rb-brun', 'rb-kotc', 'rb-sounds', 'rb-linkdrop', 'rb-hostile', 'phone-text-size', 'rb-holdtap', 'nav-census', 'fouls-kept', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
