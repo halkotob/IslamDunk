@@ -29,7 +29,7 @@ function playUnflat(a, np) {
   return { ps, b: a.slice(k, k + 7), cam: a[k + 7], h: [a[k + 8], a[k + 9]] };
 }
 // q: [distance steps per unit, angle steps per radian, small-value steps per unit]; step: keep every step-th frame
-const PLAY_Q_STORE = [8, 1000, 100], PLAY_Q_LINK = [2, 160, 40];
+const PLAY_Q_STORE = [8, 1000, 100], PLAY_Q_LINK = [1, 50, 20];   // (a link: whole units and 1/50 rad, at most half a unit and 0.6° off)
 function playPack(frames, q = PLAY_Q_STORE, step = 1) {
   const np = frames[0].ps.length, kinds = playColKinds(np), C = kinds.length, keep = [];
   for (let i = 0; i < frames.length; i += step) keep.push(i);
@@ -326,8 +326,8 @@ function openMyPlays(from) {
 }
 function playsLeave() {
   if (MYC.overlay) MYC.overlay.close();
-  if (PlayLib.watch) { PlayLib.watch = null; PlayLib.scene = null; return; }
-  const b = PlayLib.back; PlayLib.back = null; PlayLib.scene = null; PlayLib.posters.clear();
+  if (PlayLib.watch) { PlayLib.watch = null; PlayLib.scene = null; playVideoReset(); return; }
+  const b = PlayLib.back; PlayLib.back = null; PlayLib.scene = null; PlayLib.posters.clear(); playVideoReset();
   if (b) { Game.screen = b.screen; Game.paused = true; Game.idx = 0; } else goTitle();
 }
 function playLabel(r) { return String(r.label || (r.kind === 'video' ? 'Highlight' : 'Play')).toUpperCase(); }
@@ -367,6 +367,7 @@ function playStar(rec) {
 }
 function playDelete(rec) {
   if (!rec) return;
+  if (rec.link) { PlayLib.mem = PlayLib.mem.filter(x => x !== rec); PlayLib.watch = null; playsRefresh(); return; }   // (a play from a link isn't stored)
   if (PlayLib.confirm !== rec.id) { PlayLib.confirm = rec.id; toast('Press Delete again to remove this ' + (rec.kind === 'video' ? 'clip' : 'play'), 2.5); return; }
   PlayLib.confirm = null; PlayLib.watch = null; PlayLib.posters.delete(rec.id);
   (rec.kind === 'video' ? mycTx('readwrite', s => s.delete(rec.id)) : playTx('readwrite', st => st.delete(rec.id))).then(playsRefresh);
@@ -377,11 +378,16 @@ function playWatch(rec) {
   if (!rec) return;
   if (rec.kind === 'video') { mycPlay(rec); return; }
   PlayLib.watch = { id: rec.id, t0: Game.t, camS: {}, k: -1, focus: 0 }; PlayLib.confirm = null; SFX.blip();
+  if (!rec.bad) { playLinkPrep(rec); if (playCanShareFiles()) playVideoStart(rec); }   // (a phone: the video is ready by the time Share is tapped)
 }
 function playWatchRec() { const w = PlayLib.watch; return w && ((PlayLib.list || []).find(r => r.id === w.id) || PlayLib.mem.find(r => r.id === w.id)); }
 // the watch view's buttons: Star, Share (step 3), Delete; left / right choose, Enter presses
 function playWatchActs(rec) {
-  return [[rec.star ? '★ Starred' : '☆ Star', () => playStar(rec)], ['Delete', () => playDelete(rec)]];
+  if (rec.bad) return [];
+  const share = ['Share', () => playShare(rec), playShareLabel(rec)], link = PlayShare.linkId === rec.id && PlayShare.link ? [['Copy link', () => playCopyLink(rec)]] : [];
+  if (rec.kind === 'video') return [share, ['Delete', () => playDelete(rec)]];
+  if (rec.link) return [[rec.kept ? 'Kept ✓' : 'Keep in My plays', () => playKeep(rec)], share, ...link];
+  return [[rec.star ? '★ Starred' : '☆ Star', () => playStar(rec)], share, ...link, ['Delete', () => playDelete(rec)]];
 }
 const PLAY_VIEW = { x: 120, y: 58, w: 720, h: 405 };
 let playCv = null;
@@ -391,7 +397,10 @@ function drawPlayWatch(g, rec) {
   const fr = playFramesOf(rec), meta = fr && playSceneFor(rec);
   if (!fr || !meta) {
     g.fillStyle = '#9fb3c8'; g.font = `14px ${BODY}`; g.textAlign = 'center';
-    g.fillText(rec.bad || rec.codec !== PLAY_CODEC ? 'This play can’t be shown here (made on ' + (rec.v || 'another version') + ').' : 'Loading…', W / 2, V.y + V.h / 2);
+    const msg = rec.bad === 'version' ? 'This play was made on Islam Dunk ' + rec.v + '. Open the link on that version to watch it (this is ' + VERSION + ').'
+      : rec.bad === 'broken' ? 'This link is broken: part of it may be missing. Ask your friend to copy it again.'
+      : rec.bad || rec.codec !== PLAY_CODEC ? 'This play can’t be shown here (made on ' + (rec.v || 'another version') + ').' : 'Loading…';
+    wrapText(g, msg, W / 2, V.y + V.h / 2, V.w - 80, 22);
   } else {
     const clip = { frames: fr, idx: rec.idx, peak: rec.peak, label: rec.label }, plan = w.plan || (w.plan = clipPlan(clip));
     const k = Math.floor((Game.t - w.t0) * CLIP_FPS) % (plan.length + 20);
@@ -402,18 +411,20 @@ function drawPlayWatch(g, rec) {
     g.drawImage(playCv, V.x, V.y, V.w, V.h);
   }
   g.strokeStyle = 'rgba(232,195,90,0.7)'; g.lineWidth = 2; g.strokeRect(V.x, V.y, V.w, V.h);
-  const acts = playWatchActs(rec), bw = 170, x0 = W / 2 - (acts.length * bw + (acts.length - 1) * 12) / 2;
+  const acts = playWatchActs(rec), bw = acts.length > 3 ? 176 : 190, x0 = W / 2 - (acts.length * bw + (acts.length - 1) * 12) / 2;
   w.focus = clamp(w.focus, 0, acts.length - 1);
-  acts.forEach((a, i) => uiButton(g, x0 + i * (bw + 12), 474, bw, 40, a[0] === 'Delete' && PlayLib.confirm === rec.id ? 'Tap again to delete' : a[0], a[1], i === w.focus));
-  if (!Input.touchMode) { g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('← → choose   Enter press   S star   X delete   Esc back to My plays', W / 2, 532); }
+  acts.forEach((a, i) => uiButton(g, x0 + i * (bw + 12), 474, bw, 40, a[0] === 'Delete' && PlayLib.confirm === rec.id ? 'Tap again to delete' : a[2] || a[0], a[1], i === w.focus));
+  if (!Input.touchMode && acts.length) { g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('← → choose   Enter press' + (rec.kind === 'play' && !rec.link ? '   S star   X delete' : '') + '   Esc back to My plays', W / 2, 532); }
 }
 function playWatchUpdate(rec) {
   const w = PlayLib.watch, acts = playWatchActs(rec);
+  if (PlayShare.id === rec.id && PlayShare.state === 'wait') playVideoStart(rec);
+  if (!acts.length) return;
   if (menuHit('left')) { w.focus = (w.focus + acts.length - 1) % acts.length; SFX.blip(); }
   if (menuHit('right')) { w.focus = (w.focus + 1) % acts.length; SFX.blip(); }
   if (menuHit('ok')) (acts[w.focus] || acts[0])[1]();
-  else if (Input.pressed.KeyS) playStar(rec);
-  else if (Input.pressed.Delete || Input.pressed.KeyX) playDelete(rec);
+  else if (rec.kind === 'play' && !rec.link && Input.pressed.KeyS) playStar(rec);
+  else if (rec.kind !== 'link' && !rec.link && (Input.pressed.Delete || Input.pressed.KeyX)) playDelete(rec);
 }
 // ---- the grid
 const PG = { cols: 4, rows: 2, x0: 24, y0: 92, w: 222, gap: 12, th: 125, h: 176 };
@@ -502,4 +513,164 @@ function drawMyPlays(g) {
   };
   // the old My clips screen goes to My plays
   openMyClips = function () { openMyPlays(); };
+}
+
+// ================================================= v9.33.0: SHARE A PLAY (docs/plans/replays.md, step 3)
+// Share on a saved play makes its video (as Share → Make video does: the play at 30 fps, slow motion at its peak, the
+// bar on top, about 5 s, no sound) and opens the share sheet with the file, so it's two taps to WhatsApp or Instagram.
+//   * Where a file can be shared (phones), the video is made while you watch the play, so Share opens the sheet at
+//     once: the sheet needs the tap itself (a browser lets a page open it only within a moment of a tap). If Share is
+//     tapped before the video is ready, it opens the sheet when it is, or, if the browser says that's too late, the
+//     button becomes Send video for one more tap.
+//   * Where a file can't be shared, Share downloads the video; where video can't be recorded, the still image.
+//   * A video kept in My clips before 9.33 is shared as it is.
+// Copy link puts the play itself in a link: the frames at 30 fps (every 2nd, blended back when it plays) rounded for a
+// link, and the teams, score, venue and format, deflated and base64url'd into the address's #play= part, which is never
+// sent to a server. Only if it fits in 8 KB: 30 fps when it does, else 20 fps (6-8 KB a play), else no link. Opening the link
+// goes straight to watching the play, with Keep in My plays. A link starts with the version it was made on: one made
+// on another minor version (9.32, 9.34) says so instead of drawing a play its frames may not fit.
+// Names in a link and a video (the teams, the players) go through the word filter (csClean), as online play does.
+const PlayShare = { id: null, job: null, blob: null, name: '', state: null, prog: 0, want: false, send: false, link: null, linkId: null };
+const PLAY_LINK_MAX = 8192;
+function playVideoReset() {
+  const j = PlayShare.job; if (j) { j.cancelled = true; try { if (j.mr.state !== 'inactive') j.mr.stop(); } catch (e) {} }
+  Object.assign(PlayShare, { id: null, job: null, blob: null, name: '', state: null, prog: 0, want: false, send: false });
+}
+function playCanShareFiles() { try { return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [new File([new Uint8Array(8)], 'x.mp4', { type: 'video/mp4' })] })); } catch (e) { return false; } }
+// make the video in the background, in real time (MediaRecorder records what's drawn as it's drawn)
+function playVideoStart(rec) {
+  if (PlayShare.id === rec.id && PlayShare.state && PlayShare.state !== 'wait') return;
+  if (PlayShare.id !== rec.id) playVideoReset();
+  PlayShare.id = rec.id;
+  if (rec.kind === 'video') { Object.assign(PlayShare, { blob: rec.blob, name: rec.name || 'islam-dunk-clip.webm', state: 'done', prog: 1 }); return; }
+  const type = clipVideoType(); if (!type) { PlayShare.state = 'none'; return; }
+  const fr = playFramesOf(rec), meta = fr && playSceneFor(rec); if (!fr || !meta) { PlayShare.state = 'wait'; return; }
+  const clip = { frames: fr, idx: rec.idx, peak: rec.peak, label: rec.label }, plan = clipPlan(clip), cv = makeCanvas(CLIP_W, CLIP_H), g = cv.getContext('2d'), camS = {};
+  let mr, stream; const chunks = [];
+  try { playDraw(g, clip, meta, plan[0], camS, 0, CLIP_W, CLIP_H, true); stream = cv.captureStream(CLIP_FPS); mr = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 5000000 }); }
+  catch (e) { PlayShare.state = 'none'; return; }
+  const job = PlayShare.job = { cancelled: false, mr, i: 0, t0: 0 };
+  Object.assign(PlayShare, { state: 'rec', prog: 0, name: clipFileName(clip, meta, type) });
+  mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  mr.onstop = () => {
+    try { stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    if (job.cancelled || PlayShare.job !== job) return;
+    PlayShare.job = null; PlayShare.blob = new Blob(chunks, { type: type.split(';')[0] }); PlayShare.state = PlayShare.blob.size ? 'done' : 'none'; PlayShare.prog = 1;
+    if (PlayShare.want) playShareNow();
+  };
+  mr.start(250); job.t0 = performance.now();
+  const tick = () => {
+    if (job.cancelled) return;
+    const due = Math.min(plan.length - 1, Math.floor((performance.now() - job.t0) / (1000 / CLIP_FPS)));
+    while (job.i < due) { job.i++; playDraw(g, clip, meta, plan[job.i], camS, job.i, CLIP_W, CLIP_H, true); }
+    PlayShare.prog = job.i / (plan.length - 1);
+    if (job.i >= plan.length - 1) { setTimeout(() => { if (!job.cancelled && mr.state !== 'inactive') mr.stop(); }, 150); return; }
+    setTimeout(tick, 1000 / CLIP_FPS / 2);
+  };
+  setTimeout(tick, 1000 / CLIP_FPS);
+}
+function playFile() { return new File([PlayShare.blob], PlayShare.name, { type: PlayShare.blob.type || 'video/webm' }); }
+function playCanShareThis() { try { return !!(PlayShare.blob && navigator.share && navigator.canShare && navigator.canShare({ files: [playFile()] })); } catch (e) { return false; } }
+function playDownload() {
+  if (!PlayShare.blob) return;
+  try { const url = URL.createObjectURL(PlayShare.blob), a = document.createElement('a'); a.download = PlayShare.name; a.href = url; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000); PlayShare.downloaded = PlayShare.name; toast('Video ready: check your downloads.', 2.5); }
+  catch (e) { toast('Saving isn’t available here.', 2.5); }
+}
+// Share: the sheet with the video where it can, else a download
+function playShare(rec) {
+  playVideoStart(rec);
+  if (PlayShare.state === 'none') { toast(clipVideoType() ? 'The video couldn’t be made here.' : 'This browser can’t make videos. Try Copy link.', 3); return; }
+  if (PlayShare.state !== 'done') { PlayShare.want = true; SFX.blip(); return; }
+  playShareNow();
+}
+function playShareNow() {
+  PlayShare.want = false; PlayShare.send = false;
+  if (!playCanShareThis()) { playDownload(); return; }
+  try {
+    navigator.share({ files: [playFile()], title: 'Islam Dunk' }).then(() => { PlayShare.shared = PlayShare.name; })
+      .catch(e => { if (e && e.name === 'NotAllowedError') PlayShare.send = true; });   // (too long after the tap: one more tap sends it)
+  } catch (e) { PlayShare.send = true; }
+}
+function playShareLabel(rec) {
+  if (rec && PlayShare.id === rec.id) {
+    if (PlayShare.want) return 'Making video ' + Math.round(PlayShare.prog * 100) + '%';
+    if (PlayShare.send) return 'Send video';
+  }
+  return playCanShareFiles() || !clipVideoType() ? 'Share' : 'Save video';
+}
+// ---- the link
+const b64url = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64url = s => { const b = atob(s.replace(/-/g, '+').replace(/_/g, '/')), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+// what a link carries besides the frames: the play's label and player, and its metadata with every name filtered
+function playLinkMeta(rec) {
+  const m = playClone(rec.meta) || {};
+  for (const t of m.teams || []) { if (!t) continue; t.name = csClean(t.name, 'Home'); if (t.short) t.short = csClean(t.short, 'TEAM'); for (const p of t.players || []) if (p) p.name = csClean(p.name, 'Player'); }
+  return { label: csClean(rec.label, 'PLAY'), idx: rec.idx, peak: rec.peak, np: rec.np, meta: m };
+}
+async function playLinkMake(rec) {
+  if (typeof CompressionStream === 'undefined') return null;
+  const fr = rec.frames || PlayLib.frames.get(rec.id) || playUnpack(await playInflate(rec.data, rec.z));
+  const head = new TextEncoder().encode(JSON.stringify(playLinkMeta(rec)));
+  for (const step of [2, 3]) {
+    const body = playPack(fr, PLAY_Q_LINK, step), all = new Uint8Array(3 + head.length + body.length);
+    all[0] = 1; all[1] = head.length >> 8; all[2] = head.length & 255; all.set(head, 3); all.set(body, 3 + head.length);
+    const z = await playDeflate(all);
+    if (z.data.length <= PLAY_LINK_MAX) return { url: location.origin + location.pathname + location.search + '#play=' + VERSION + '.' + b64url(z.data), bytes: z.data.length, step };
+  }
+  return null;
+}
+function playLinkPrep(rec) {
+  if (rec.kind === 'video' || PlayShare.linkId === rec.id) return;
+  PlayShare.linkId = rec.id; PlayShare.link = 'making';
+  playLinkMake(rec).then(l => { if (PlayShare.linkId === rec.id) PlayShare.link = l; }).catch(() => { if (PlayShare.linkId === rec.id) PlayShare.link = null; });
+}
+function playCopyLink(rec) {
+  const L = PlayShare.linkId === rec.id ? PlayShare.link : null;
+  if (!L || L === 'making') { playLinkPrep(rec); toast(L === 'making' ? 'One moment…' : 'This play is too long for a link. Use Share.', 2); return; }
+  const done = () => { PlayShare.copied = L.url; toast('Link copied: send it to a friend', 2.5); SFX.good && SFX.good(); };
+  const other = () => { try { if (navigator.share) { navigator.share({ title: 'Islam Dunk', url: L.url }).catch(() => {}); return; } } catch (e) {} toast('Copying isn’t available here.', 2.5); };
+  try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(L.url).then(done, other); return; } } catch (e) {}
+  other();
+}
+const minorOf = v => String(v || '').split('.').slice(0, 2).join('.');
+// open a #play= link: straight to watching it (a play from another version: a note saying which)
+async function playLinkOpen(hash) {
+  const m = /^#play=(\d+\.\d+\.\d+)\.([A-Za-z0-9_-]+)$/.exec(hash || ''); if (!m) return false;
+  const v = m[1], id = 'link-' + hash32(m[2]).toString(36);
+  let rec = PlayLib.mem.find(r => r.id === id);
+  if (!rec) {
+    rec = { id, kind: 'play', link: true, at: Date.now(), v, label: 'A SHARED PLAY', meta: {}, star: false };
+    if (minorOf(v) !== minorOf(VERSION)) rec.bad = 'version';
+    else try {
+      const u = await playInflate(unb64url(m[2]), 1), n = (u[1] << 8) | u[2], head = JSON.parse(new TextDecoder().decode(u.subarray(3, 3 + n)));
+      const frames = playUnpack(u.subarray(3 + n));
+      Object.assign(rec, { codec: PLAY_CODEC, label: head.label, idx: head.idx, peak: head.peak, np: head.np, n: frames.length, frames, meta: head.meta });
+    } catch (e) { rec.bad = 'broken'; }
+    PlayLib.mem.push(rec);
+  }
+  openMyPlays(); playWatch(rec);
+  return true;
+}
+// keep a play from a link: stored as if saved here
+function playKeep(rec) {
+  if (!rec.frames || rec.kept) return;
+  rec.kept = true;
+  playWrite(rec.frames, { src: 'link', label: rec.label, idx: rec.idx, peak: rec.peak, meta: rec.meta }).then(r => {
+    PlayLib.mem = PlayLib.mem.filter(x => x !== rec); toast('Kept in My plays', 2); SFX.good && SFX.good(); return playsRefresh().then(() => { PlayLib.watch = { id: r.id, t0: Game.t, camS: {}, k: -1, focus: 0 }; });
+  }).catch(() => { rec.kept = false; toast('Couldn’t keep the play here', 2.5); });
+}
+{
+  // a link opens once the game is on its title screen (after the splash and any first-launch dialog)
+  const _gu = gameUpdate;
+  let checked = false;
+  gameUpdate = function (rdt) {
+    const r = _gu.apply(this, arguments);
+    if (!checked && Game.screen === 'title' && !Game.confirm) {
+      checked = true;
+      if (/^#play=/.test(location.hash)) { const h = location.hash; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} playLinkOpen(h); }
+    }
+    return r;
+  };
+  addEventListener('hashchange', () => { if (/^#play=/.test(location.hash) && (Game.screen === 'title' || Game.screen === 'myplays')) { const h = location.hash; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} playLinkOpen(h); } });
 }

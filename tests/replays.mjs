@@ -3,10 +3,18 @@
 //                a phone-sized page) and the final screen's highlight each store a play in IndexedDB with its frames
 //                (8 s before + 1 s after a live press), its label and player; the codec gives the frames back; a second
 //                press within 3 s replaces the first; the sizes (raw, stored, a link at 60/30/20 fps) and the buffer's memory
+//   plays-library  25 saves keep the newest 20 and the starred; a watched play looks as it did live; old My clips videos
+//                play; keyboard, pad and touch
+//   plays-share  Share on a phone (Chromium with Web Share on, a Pixel 7 held sideways): the video is made while the play is watched,
+//                navigator.canShare is true for its file, and one tap on Share opens the sheet with it; on a desktop
+//                without Web Share, Share downloads the video; Copy link gives a link of 8 KB or less that opens, in a
+//                fresh page, straight into the same play (the frames within the link's rounding, the same picture);
+//                a link from another version says which version made it
 //   rb-plays     an online (rollback) match on ?net=loop: the guest saves plays by key, the pause menu and the touch pill
 //                while both phones press their own random buttons: every save is stored on the guest only, the match
 //                never pauses, and every exchanged checksum matches (no desync)
 import fs from 'node:fs';
+import { chromium, devices } from 'playwright';
 import path from 'node:path';
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -184,6 +192,86 @@ export function replayTests({ newContext, open }) {
       && r.menus.pause.indexOf('My plays') === r.menus.pause.indexOf('Save play (V)') + 1 && r.menus.opened === 'myplays' && r.menus.back === 'play:true'
       && r.pad.join() === 'true,myplays:false,title' && r.touch.join() === 'true,myplays:false,title' && !errs.length;
     return { ok, detail: [JSON.stringify(r), ...errs] };
+  };
+  T['plays-share'] = async ({ browser, base }) => {
+    const errs = [], r = {};
+    const PREP_PLAY = async () => { newMatch(TEAMS[1], TEAMS[4], { humans: [], fmt: { format: 'quarters', len: 120 }, venue: makeVenue(VENUE_LIST[1], { host: 0, crowd: 20, level: 0.3 }) }); Game.screen = 'play';
+      for (let n = 0; n < 900; n++) updateMatch(STEP); const rec = await playWrite(Replay.buf.slice(-540), { src: 'test', label: 'BIG DUNK', idx: 0, peak: 420, meta: playMeta(M) });
+      goTitle(); openMyPlays(); await playsRefresh(); return rec.id; };
+    // where the Share / Copy link buttons are (the watch view's row)
+    const btnAt = (p, label) => p.evaluate(label => { const rec = playWatchRec(), acts = playWatchActs(rec), i = acts.findIndex(a => a[0] === label), bw = acts.length > 3 ? 176 : 190;
+      const x0 = 480 - (acts.length * bw + (acts.length - 1) * 12) / 2, x = x0 + i * (bw + 12) + bw / 2 + (W - 960) / 2, y = 494, b = canvas.getBoundingClientRect();
+      return i < 0 ? null : [b.left + x / W * b.width, b.top + y / H * b.height]; }, label);
+    // 1. a phone with Web Share: canShare, and one tap on Share opens the sheet with the video
+    const b2 = await chromium.launch({ args: ['--enable-features=WebShare'] });
+    try {
+      const c1 = await newContext(b2, { device: devices['Pixel 7 landscape'] }), p = await open(c1, base + '/?nowelcome=1', errs, 'share-phone');
+      await p.touchscreen.tap(5, 5);
+      await p.evaluate(PREP_PLAY);
+      await p.evaluate(() => { Input.touchMode = true; window.__shared = []; Object.defineProperty(navigator, 'share', { configurable: true, value: d => { const f = d.files && d.files[0];
+        window.__shared.push({ files: (d.files || []).length, name: f && f.name, type: f && f.type, size: f && f.size, can: navigator.canShare(d), active: navigator.userActivation.isActive }); return Promise.resolve(); } }); });
+      const [cx, cy] = await p.evaluate(() => { const b = canvas.getBoundingClientRect(); return [b.left + (24 + 111 + (W - 960) / 2) / W * b.width, b.top + 152 / H * b.height]; });
+      await p.touchscreen.tap(cx, cy); await sleep(300);
+      r.watching = await p.evaluate(() => !!PlayLib.watch);
+      await p.waitForFunction(() => PlayShare.state === 'done', null, { timeout: 30000 }).catch(() => {});
+      r.phone = await p.evaluate(() => ({ state: PlayShare.state, type: PlayShare.blob && PlayShare.blob.type, size: PlayShare.blob ? PlayShare.blob.size : 0, name: PlayShare.name,
+        canShare: !!(PlayShare.blob && navigator.canShare && navigator.canShare({ files: [playFile()] })), label: playShareLabel(playWatchRec()) }));
+      const sb = await btnAt(p, 'Share'); if (sb) { await p.touchscreen.tap(sb[0], sb[1]); await sleep(400); }
+      r.sheet = await p.evaluate(() => window.__shared);
+      await c1.close();
+    } finally { await b2.close(); }
+    // 2. a desktop without Web Share: Share downloads the video; Copy link
+    const c2 = await newContext(browser, {}); await c2.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
+    const d = await open(c2, base + '/?nowelcome=1', errs, 'share-desktop');
+    const id = await d.evaluate(PREP_PLAY);
+    await d.evaluate(id => { Input.touchMode = false; PlayLib.idx = PlayLib.list.findIndex(x => x.id === id); playWatch(PlayLib.list[PlayLib.idx]); }, id);
+    await d.waitForFunction(() => PlayShare.link && PlayShare.link !== 'making', null, { timeout: 10000 }).catch(() => {});
+    r.desktop = await d.evaluate(() => ({ share: typeof navigator.share, label: playShareLabel(playWatchRec()), acts: playWatchActs(playWatchRec()).map(a => a[0]), link: PlayShare.link && { bytes: PlayShare.link.bytes, step: PlayShare.link.step, len: PlayShare.link.url.length } }));
+    const dl = d.waitForEvent('download', { timeout: 30000 }).catch(() => null);
+    const sb = await btnAt(d, 'Share'); if (sb) await d.mouse.click(sb[0], sb[1]);
+    const got = await dl;
+    if (got) { const f = path.join(ROOT, 'tests/output/' + got.suggestedFilename()); await got.saveAs(f).catch(() => {}); r.download = { name: got.suggestedFilename(), size: fs.existsSync(f) ? fs.statSync(f).size : 0 }; }
+    const lb = await btnAt(d, 'Copy link'); if (lb) await d.mouse.click(lb[0], lb[1]);
+    await sleep(500);
+    const url = await d.evaluate(() => navigator.clipboard.readText().catch(() => ''));
+    r.copied = /#play=\d+\.\d+\.\d+\.[A-Za-z0-9_-]+$/.test(url) && url.includes('#play=' + (await d.evaluate(() => VERSION)) + '.');
+    // the stored play's frames, to compare with what the link carries
+    const si = 270;
+    const orig = await d.evaluate(async ([id, si]) => { const rec = (await playsAll()).find(x => x.id === id), fr = playUnpack(await playInflate(rec.data, rec.z));
+      return { n: fr.length, flat: playFlat(fr[si]), label: rec.label, teams: rec.meta.teams.map(t => t.name), score: rec.meta.score }; }, [id, si]);
+    await c2.close();
+    // 3. the link in a fresh page: straight into the same play
+    const c3 = await newContext(browser, {}), q = await open(c3, url || base + '/', errs, 'link');
+    await q.waitForFunction(() => Game.screen === 'myplays' && PlayLib.watch && playWatchRec() && playWatchRec().frames, null, { timeout: 15000 }).catch(() => {});
+    await sleep(1500); await q.screenshot({ path: path.join(ROOT, 'tests/output/plays-link.png') }).catch(() => {});
+    r.link = await q.evaluate(([o, si]) => { const rec = playWatchRec(); if (!rec || !rec.frames) return null;
+      const a = playFlat(rec.frames[si]), K = playColKinds(rec.np); let ep = 0, ea = 0; a.forEach((v, c) => { const e = Math.abs(v - o.flat[c]); if (K[c] === 'p') ep = Math.max(ep, e); if (K[c] === 'a') ea = Math.max(ea, e); });
+      const meta = playScene(rec), clip = f => ({ frames: [f], idx: rec.idx, label: rec.label }), draw = f => { const C = makeCanvas(960, 540); playDraw(C.getContext('2d'), clip(f), meta, 0, {}, 0, 960, 540, true); return C.getContext('2d').getImageData(0, 0, 960, 540).data; };
+      const A = draw(rec.frames[si]), B = draw(playUnflat(o.flat, rec.np)); let diff = 0;
+      for (let i = 0; i < A.length; i += 4) if (Math.abs(A[i] - B[i]) + Math.abs(A[i + 1] - B[i + 1]) + Math.abs(A[i + 2] - B[i + 2]) > 60) diff++;
+      return { n: rec.frames.length, label: rec.label, teams: rec.meta.teams.map(t => t.name), score: rec.meta.score, posErr: Math.round(ep * 100) / 100, angErr: Math.round(ea * 1000) / 1000,
+        pct: Math.round(diff / (960 * 540) * 10000) / 100, acts: playWatchActs(rec).map(a => a[0]), hash: location.hash }; }, [orig, si]);
+    // keep it: stored as a saved play here
+    await q.evaluate(() => { playKeep(playWatchRec()); });
+    await q.waitForFunction(() => Plays.writes >= 1, null, { timeout: 8000 }).catch(() => {});
+    r.kept = await q.evaluate(() => playsAll().then(a => a.length === 1 && a[0].src === 'link'));
+    await c3.close();
+    // 4. a link from another version
+    const c4 = await newContext(browser, {}), o = await open(c4, (url || base + '/#play=9.32.4.x').replace(/#play=\d+\.\d+\.\d+\./, '#play=9.32.4.'), errs, 'old-link');
+    await o.evaluate(() => { window.__said = []; const f = CanvasRenderingContext2D.prototype.fillText; CanvasRenderingContext2D.prototype.fillText = function (t) { window.__said.push(String(t)); return f.apply(this, arguments); }; });
+    await o.waitForFunction(() => Game.screen === 'myplays' && PlayLib.watch, null, { timeout: 15000 }).catch(() => {});
+    await sleep(400);
+    r.old = await o.evaluate(() => ({ bad: (playWatchRec() || {}).bad, said: window.__said.join(' ').includes('made on Islam Dunk 9.32.4') }));
+    await c4.close();
+    const L = r.link || {};
+    const ok = r.watching && r.phone.state === 'done' && /^video\//.test(r.phone.type || '') && r.phone.size > 10000 && r.phone.canShare && r.phone.label === 'Share'
+      && r.sheet.length === 1 && r.sheet[0].files === 1 && r.sheet[0].can && r.sheet[0].active && /^video\//.test(r.sheet[0].type || '')
+      && r.desktop.share === 'undefined' && r.desktop.label === 'Save video' && r.download && /\.(webm|mp4)$/.test(r.download.name) && r.download.size > 10000
+      && r.desktop.link && r.desktop.link.bytes <= 8192 && r.desktop.acts.includes('Copy link') && r.copied
+      && L.n === orig.n && L.label === orig.label && JSON.stringify(L.teams) === JSON.stringify(orig.teams) && JSON.stringify(L.score) === JSON.stringify(orig.score)
+      && L.posErr <= 0.6 && L.angErr <= 0.011 && L.pct <= 1.5 && L.hash === '' && L.acts[0] === 'Keep in My plays' && r.kept
+      && r.old.bad === 'version' && r.old.said && !errs.length;
+    return { ok, detail: [JSON.stringify(r), 'stored play: ' + JSON.stringify(Object.assign({}, orig, { flat: undefined })), ...errs] };
   };
   return T;
 }
