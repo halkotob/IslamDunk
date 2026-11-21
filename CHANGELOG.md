@@ -1,5 +1,40 @@
 # Changelog
 
+## 9.32.4: a bad connection no longer snowballs after a desync
+On a slow, lossy link, one desync could turn into many. The host puts the guest right by sending its whole game state
+(about 32 KB), and it sent it again for every checksum that still differed, four a second, while the first copy was still
+on its way. On a link that carries 32 KB a second each way, that held the link for seconds: the host's frames reached the
+guest late, so the time sync ran the host fast and the guest slow (80 against 50 frames a second), more inputs came too
+late to use, and more desyncs followed. The host now sends one state at a time: the next only once the guest says it put
+the last one in, or 3 s later in case it was lost. The guest's packets carry the number of the last state it put in.
+- Found by `rb-lag` (its Bad mobile profile, 400 ms and 10% loss: the two phones ended in different games in about one
+  run in three, and on both tries in one).
+
+## 9.32.3: a friend on an older version can't take over a game in progress
+When your friend dropped out mid-game and someone rejoined with the code, the host checked the newcomer's version only
+once it was known. Joining sends who you are and the code first and your version a moment later, so a host that
+looked in between handed a player to a client on another version (9.9.1 in the test), and told your friend on the
+right version that the game was full. The host now waits for the version before handing anyone a player.
+- Found by `net-version` (1 run in 8 on CI). Its old client now always sends its version half a second late, as on a
+  slow link, so the moment in between is checked on every run: before this fix it let the old client in (1 of 2
+  local runs), after it, never.
+
+## 9.32.2: bigger text never overlaps for a frame
+At Large and Larger text on a phone, a label that has to be shortened to fit ("Local champi…") could be drawn at the
+big size for one frame, over the line above it, before it settled: on a won final's post-game screen, "Win (Final)"
+and "Local champions" overlapped as the reward lines came in. A shortened label is now measured and drawn at Normal
+size in the same frame, and "Local champions" now fits whole at Normal instead of being cut.
+- The fitter stepped such a label down, but once it reached Normal it was shortened at the screen's text size and
+  drawn untagged, so the shortened text came out big under a new key that hadn't been stepped down yet.
+- `phone-text-size` failed on this about one run in eight, when the career it audits happened to be on a won final
+  and the last reward line came in just as the audit looked. The post-game screen it audits is now a won final with
+  the most reward lines, on purpose.
+
+## 9.32.1: the Milestones screen has a way back on a phone
+My Player > Milestones (9.29.0) had no ‹ Back pill, so on a phone, with no Esc key or pad, there was no way off it
+but closing the game. It now has the pill, and it goes back to the hub, as Esc and the pad's B already did. Found by
+`nav-census` (touch: 1 screen with no way out), which has failed on every run since 9.29.2.
+
 ## 9.32.0: the shot chart
 A third tab on the final screen, **Shots**: each team's half court with every shot it took, where from. Filled is
 made, a ring is missed, gold is a three, light blue is a two, and dunks are a star at the rim with a count ("5 dunks").

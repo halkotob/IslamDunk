@@ -6,7 +6,8 @@
 //                peer on the old protocol (3) can't start a game with this one
 //   fouls-kept   (full tier) 6 seeded CPU games at each difficulty, 3 of them with a scripted player mashing Turbo +
 //                Pass: every game finishes, no page errors, no shove, nobody knocked down by a defender; across them
-//                reach-ins, blocking fouls, shooting fouls, and-ones and fouls on purpose all still happen
+//                reach-ins, blocking fouls, and-ones and fouls on purpose all still happen; a defender swiping through a
+//                jump shooter gets a 2-shot SHOOTING FOUL when the shot misses (set up: too rare in 24 games)
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 export function noShoveTests({ newContext, open }) {
   const T = {};
@@ -71,13 +72,30 @@ export function noShoveTests({ newContext, open }) {
         let n = 0; for (; n < 60 * 60 * 15 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'play'; if (Game.trivia) Game.trivia = null; }
         games.push({ d, mash, over: M.phase === 'over', shoves: M.players.reduce((t, q) => t + (q.shoves || 0), 0) });
       }
+      // (ci-health) a shooting foul on a missed jumper, set up on purpose. CPU games call one about every 14 games
+      // (7 in 100 seeded games on 9.21.2 and on 9.30.0 alike, the same games bit for bit: rare, not a rules change), so
+      // the 24 games above had 1 on 9.21.1 and none after 9.21.2's sound change moved the random stream. Here a defender
+      // swipes through the shooter's body at the release (the real releaseShot, shotContact and ball flight), retried
+      // with a new seed until a fouled shot misses (2 tries at these seeds).
+      const gameShooting = kinds['SHOOTING FOUL'] || 0, staged = { tries: 0, fouled: 0, call: null, shots: 0 };
+      const fs1 = foulShots; foulShots = function (by, v, n, title) { if (title === 'SHOOTING FOUL') { staged.call = title; staged.shots = n; } return fs1.apply(this, arguments); };
+      SETTINGS.difficulty = 'medium';
+      for (let i = 0; i < 40 && !staged.call; i++) {
+        staged.tries++; window.__seed(500 + i);
+        newMatch(TEAMS[0], TEAMS[1], { humans: [], fmt: { format: 'quarters', len: 60 } }); Game.screen = 'play'; M.introT = 0;
+        for (let k = 0; k < 600 && M.phase !== 'live'; k++) updateMatch(STEP);
+        const s = M.players.find(q => q.team === 0), o = s.opps[0], h = attackHoop(s.team);
+        giveBall(s); place(s, h.x - h.dir * 180, h.z); place(o, s.x + h.dir * 15, s.z); o.swipe = true; o.state = 'free'; s.st_t = 0;
+        releaseShot(s); if (ball.shot && ball.shot.foul) staged.fouled++;
+        for (let k = 0; k < 400 && M.phase === 'live'; k++) updateMatch(STEP);
+      }
       humanCmd = _hc; foulShots = fs0; nonShootingFoul = ns0; knockDown = kd0; SETTINGS.difficulty = 'medium';
-      return { kinds, downs, games };
+      return { kinds, downs, games, gameShooting, staged };
     });
     await ctx.close();
     const has = k => Object.keys(r.kinds).some(x => x.includes(k));
-    const ok = r.games.every(g => g.over && g.shoves === 0) && r.downs === 0 && has('REACH-IN') && has('BLOCKING') && has('SHOOTING FOUL') && has('AND ONE') && has('FOUL ON PURPOSE') && !errs.length;
-    return { ok, detail: [`${r.games.length} games, all finished: ${r.games.every(g => g.over)}; shoves ${r.games.reduce((t, g) => t + g.shoves, 0)}; knocked down by a defender ${r.downs}`, 'fouls: ' + JSON.stringify(r.kinds), ...errs] };
+    const ok = r.games.every(g => g.over && g.shoves === 0) && r.downs === 0 && has('REACH-IN') && has('BLOCKING') && r.staged.call === 'SHOOTING FOUL' && r.staged.shots === 2 && has('AND ONE') && has('FOUL ON PURPOSE') && !errs.length;
+    return { ok, detail: [`${r.games.length} games, all finished: ${r.games.every(g => g.over)}; shoves ${r.games.reduce((t, g) => t + g.shoves, 0)}; knocked down by a defender ${r.downs}`, 'fouls: ' + JSON.stringify(r.kinds), `shooting fouls in the games: ${r.gameShooting} (rare: about 1 in 14 games); set up: ${JSON.stringify(r.staged)}`, ...errs] };
   };
   return T;
 }

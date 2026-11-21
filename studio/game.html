@@ -107,7 +107,7 @@ addEventListener('unhandledrejection', e => { window.__studioErrors.push('unhand
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.32.0';
+const VERSION = '9.32.4';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -22321,12 +22321,14 @@ function unpackEv(e) { if (typeof e[1] !== 'number') return e; const n = SNAP_EV
   Lobby.versionOK = function () { const other = Net.role === 'host' ? this.guestPres() : (Net.hostPeer() || {}).presence; return !other || (other.v == null && other.pv == null) || same(other); };
   const _cs = Lobby.canStart;
   Lobby.canStart = function () { return _cs.call(this) && same(this.guestPres()); };
-  // mid-game rejoin: a guest on another version isn't handed a player (the lobby check doesn't run then)
+  // mid-game rejoin: a guest on another version isn't handed a player (the lobby check doesn't run then). (v9.32.3: nor
+  // one whose version hasn't arrived yet: joining writes the guest's role and code, then its version, and a host that
+  // looked in between handed a 9.9.1 client a player and told the next one the game was full. It waits a tick for it.)
   const _ht = Net.hostTick;
   Net.hostTick = function (rdt) {
     const had = this.guestPeer, peers = this.peers;
     if (!had && M.online && Game.screen !== 'lobby' && Game.screen !== 'hostlobby') {
-      this.peers = function () { return peers.call(this).filter(p => p.sameTab || !(p.presence && p.presence.role === 'guest' && p.presence.join === this.code && p.presence.v != null && !same(p.presence))); };
+      this.peers = function () { return peers.call(this).filter(p => p.sameTab || !(p.presence && p.presence.role === 'guest' && p.presence.join === this.code && (p.presence.v == null || !same(p.presence)))); };
     }
     try { _ht.call(this, rdt); } finally { this.peers = peers; }
     if (!had && this.guestPeer && !NetDiag.t0) NetDiag.t0 = nowMs();
@@ -24076,7 +24078,7 @@ const RBN = {
     const firstMine = Math.max(this.peerAck == null ? 0 : this.peerAck + 1, 0);   // every input they haven't confirmed, oldest first
     for (let k = firstMine; k <= to && d.length < 48; k++) { const I = this.ins[me].get(k); if (!I) break; d.push(rbPackIn(I)); }   // (never a gap: 0 is not "no input"; 48 at most a packet)
     const last = [...this.hashes.entries()].pop();
-    const pkt = { i: this.id, s: firstMine, d: rbRunsOut(d), a: this.conf, F: this.f, v: this.peerF >= 0 ? this.f - this.peerF : 0, t: Math.round(nowMs() * 10) / 10 };   // v: how far ahead of them we are, as we see it
+    const pkt = { i: this.id, s: firstMine, d: rbRunsOut(d), a: this.conf, F: this.f, v: this.peerF >= 0 ? this.f - this.peerF : 0, t: Math.round(nowMs() * 10) / 10, y: this.lastSync | 0 };   // y: the host's last state we put in (v9.32.4)   // v: how far ahead of them we are, as we see it
     if (this.lastPkt) { pkt.et = this.lastPkt.t; pkt.ed = Math.round((nowMs() - this.gotAt) * 10) / 10; }
     if (last) pkt.h = last;
     Net.setP({ rb: pkt }); this.stats.sent++;
@@ -24096,7 +24098,7 @@ const RBN = {
       if (f < this.f) { const u = this.used.get(f); if (!u || !rbSameIn(u, v)) { this.rollTo = Math.min(this.rollTo, f); this.stats.mispredicted++; } }
     }
     while (I.has(this.conf + 1)) this.conf++;
-    this.peerAck = pkt.a; this.peerF = pkt.F; this.peerV = pkt.v;
+    this.peerAck = pkt.a; this.peerF = pkt.F; this.peerV = pkt.v; this.peerSync = pkt.y | 0;
     if (pkt.h) { this.theirHash = pkt.h; this.checkHash(); }
   },
   checkHash() {
@@ -24402,7 +24404,7 @@ function rbDeserialize(D) {
 function rbSendState() {
   const k = Math.min(RBN.conf, RBN.f - 1);
   const S = k + 1 === RBN.f ? rbSave() : RBN.states.get(k + 1); if (!S) return false;
-  Net.setP({ rbstate: { i: RBN.id, k: k + 1, d: rbSerialize(S), n: (RBN.syncs = (RBN.syncs || 0) + 1) } });
+  Net.setP({ rbstate: { i: RBN.id, k: k + 1, d: rbSerialize(S), n: (RBN.syncs = (RBN.syncs || 0) + 1) } }); RBN.syncAt = nowMs();
   RBN.stats.syncsSent = (RBN.stats.syncsSent || 0) + 1;
   return true;
 }
@@ -24432,9 +24434,17 @@ function rbSerialLines(D) {
     if (n.t === 'o') { for (const k in n.v) out.push(p + '.' + k + '=' + v(n.v[k])); } else n.v.forEach((x, j) => out.push(p + '[' + j + ']=' + (Array.isArray(x) ? x.map(v).join(':') : v(x)))); });
   return out;
 }
+// (v9.32.4) one state on its way at a time: until the guest says it put the last one in (its packets carry the number,
+// y), or 3 s pass (it may have been lost), a desync is the same one again, seen in checksums from before the state
+// arrived. A state is ~32 KB. On a slow link (32 KB/s in rb-lag's Bad mobile, where a match without desyncs uses 19 KB/s
+// each way) each one holds the link for a second, so the host's frames reach the guest late, the time sync runs the host
+// fast and the guest slow (80 against 50 frames a second on CI), more inputs come too late to use, and more desyncs
+// follow: 8-15 states in rb-lag's failing tries, up to 50 on a slower machine
+const RB_SYNC_WAIT = 3000;
 function rbOnDesync(f) {
   RBN.stats.desyncs = (RBN.stats.desyncs || 0) + 1;
-  if (Net.role === 'host') RBN.needSync = true;                        // (sent after this update's going back: the saved frames are final then)
+  const onItsWay = (RBN.syncs || 0) > (RBN.peerSync || 0) && nowMs() - (RBN.syncAt || 0) < RB_SYNC_WAIT;
+  if (Net.role === 'host' && !onItsWay) RBN.needSync = true;           // (sent after this update's going back: the saved frames are final then)
 }
 {
   const _nu = Net.update;
@@ -25398,10 +25408,13 @@ function phoneFitCheck() {
   drawScene = court(drawScene); drawHUD = court(drawHUD);
   const _ft = fitText;
   fitText = function (g, t, w) {
-    const L = PhoneText.on && !PhoneText.court ? phoneAt(phoneKey(t), phoneLvl()) : 0;
-    if (!L) return _ft.apply(this, arguments);
-    const keep = PhoneText.use;
-    try { for (let k = L; k >= 0; k--) { PhoneText.use = k; if (g.measureText(t).width <= w) return k === L ? t : phoneTagged(t, k); } PhoneText.use = 0; return _ft.apply(this, arguments); }
+    const lvl = PhoneText.on && !PhoneText.court ? phoneLvl() : 0;
+    if (!lvl) return _ft.apply(this, arguments);
+    const L = phoneAt(phoneKey(t), lvl), keep = PhoneText.use;
+    // (v9.32.2: a label stepped all the way down, or too long at every size, is shortened at Normal and drawn at
+    // Normal. It was shortened at the screen's level and drawn untagged, so the "…" text came out at Larger under a
+    // new key for one frame: "Win (Final)" and "Local champi…" on a won final's post-game screen)
+    try { for (let k = L; k >= 0; k--) { PhoneText.use = k; if (g.measureText(t).width <= w) return k === lvl ? t : phoneTagged(t, k); } PhoneText.use = 0; return phoneTagged(_ft.apply(this, arguments), 0); }
     finally { PhoneText.use = keep; }
   };
   // a paragraph steps down as a whole: its lines share its key and wrap at its size
@@ -28936,6 +28949,7 @@ function drawReplay(g) {
   const _nx = storyNextExtra;
   storyNextExtra = function (S) { if (S.replay) return 'Any tournament, any time. Milestones: ' + msCount() + ' of ' + STORY_MILESTONES.length + '.'; return _nx.apply(this, arguments); };
   CAREER_SCREENS.add('sreplay'); CAREER_SCREENS.add('smiles');
+  BACK.smiles = () => careerHub();   // (v9.32.1: the ‹ Back pill: on touch it was the only way out, and there was none)
   const _cu = careerUpdate;
   careerUpdate = function (rdt) {
     if (Game.screen === 'sreplay') { menuNav(REPLAY_ITEMS().length, replaySelect); if (menuHit('back')) careerHub(); return; }

@@ -173,6 +173,11 @@ export function lobbyTests({ newContext, open }) {
     log.push(`started from team select in ${startMs} ms: host ${teams[0].join(' v ')}, guest ${teams[1].join(' v ')}`);
     if (teams[0].join() !== teams[1].join() || !teams[0][0].startsWith(want[0]) || !teams[0][1].startsWith(want[1])) bad.push('teams ' + JSON.stringify({ teams, want }));
     await Promise.all([H, G].map(x => x.waitForFunction(() => Game.screen === 'final', null, { timeout: 240000 }).catch(() => {})));
+    // (ci-health) if a phone never got to the final screen, where the match was stuck (run 44: still 'play' after 240 s)
+    const stuck = await both(() => Game.screen === 'final' ? null : { screen: Game.screen, phase: M.phase, q: M.quarter, clock: M.clock, sc: M.shotClock, score: M.teams.map(t => t.score),
+      ball: ball.state, owner: ball.owner ? { name: ball.owner.def && ball.owner.def.name, human: ball.owner.human, state: ball.owner.state, x: Math.round(ball.owner.x), z: Math.round(ball.owner.z) } : null,
+      inb: M.inbound ? Object.keys(M.inbound).join() : null, restart: M.restart || null, rb: RBN.on ? { f: RBN.f, conf: RBN.conf, desync: RBN.desync || null } : null });
+    if (stuck.some(Boolean)) log.push('not at the final screen after 240 s: ' + JSON.stringify(stuck));
     await G.evaluate(() => finalContinue());
     await expect('the guest\'s Continue', 'post', 10000);
     // Rematch: needs both; then the same teams, and no desync

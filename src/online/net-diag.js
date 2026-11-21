@@ -266,12 +266,14 @@ function unpackEv(e) { if (typeof e[1] !== 'number') return e; const n = SNAP_EV
   Lobby.versionOK = function () { const other = Net.role === 'host' ? this.guestPres() : (Net.hostPeer() || {}).presence; return !other || (other.v == null && other.pv == null) || same(other); };
   const _cs = Lobby.canStart;
   Lobby.canStart = function () { return _cs.call(this) && same(this.guestPres()); };
-  // mid-game rejoin: a guest on another version isn't handed a player (the lobby check doesn't run then)
+  // mid-game rejoin: a guest on another version isn't handed a player (the lobby check doesn't run then). (v9.32.3: nor
+  // one whose version hasn't arrived yet: joining writes the guest's role and code, then its version, and a host that
+  // looked in between handed a 9.9.1 client a player and told the next one the game was full. It waits a tick for it.)
   const _ht = Net.hostTick;
   Net.hostTick = function (rdt) {
     const had = this.guestPeer, peers = this.peers;
     if (!had && M.online && Game.screen !== 'lobby' && Game.screen !== 'hostlobby') {
-      this.peers = function () { return peers.call(this).filter(p => p.sameTab || !(p.presence && p.presence.role === 'guest' && p.presence.join === this.code && p.presence.v != null && !same(p.presence))); };
+      this.peers = function () { return peers.call(this).filter(p => p.sameTab || !(p.presence && p.presence.role === 'guest' && p.presence.join === this.code && (p.presence.v == null || !same(p.presence)))); };
     }
     try { _ht.call(this, rdt); } finally { this.peers = peers; }
     if (!had && this.guestPeer && !NetDiag.t0) NetDiag.t0 = nowMs();

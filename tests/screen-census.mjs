@@ -115,20 +115,26 @@ async function twoBacks(p, name, js) {
   }
   return dup;
 }
-export async function census(browser, base, { only = [] } = {}) {
+export async function census(browser, base, { only = [], split = 4 } = {}) {
   const DESK = { viewport: { width: 1280, height: 720 } }, PHONE = PHONES.find(x => x[0].startsWith('667'))[1];
   const out = { keyboard: [], gamepad: [], touch: [], twoBacks: [], errs: [] };
-  // the three devices side by side (each screen on a fresh page)
-  await Promise.all([['keyboard', DESK, {}], ['gamepad', DESK, { pad: true }], ['touch', PHONE, { touch: true }]].map(async ([kind, dev, opt]) => {
-    for (const [name, js] of SCREENS) {
-      if (only.length && !only.includes(name)) continue;
-      const { ctx, p, errs } = await boot(browser, base, dev, opt);   // (a fresh page for each screen: no state carried over)
-      try { out[kind].push(await oneScreen(p, name, js, kind)); } catch (e) { out[kind].push({ name, error: String(e.message || e).slice(0, 200) }); }
-      if (kind === 'touch') { try { const d = await twoBacks(p, name, js); if (d.length) out.twoBacks.push({ name, also: d }); } catch (e) {} }
-      out.errs.push(...errs.map(e => kind + ' ' + e));
-      await ctx.close();
-    }
-  }));
+  // the three devices side by side (each screen on a fresh page). (ci-health: each device's screens in `split` lanes
+  // side by side too, every other screen in each, so it takes about half as long (775 s on CI, the slowest test); each
+  // screen still gets a fresh page and the same checks, and the results are put back in the screens' order)
+  const list = SCREENS.filter(([name]) => !only.length || only.includes(name)), order = new Map(list.map(([n], i) => [n, i]));
+  const byOrder = (a, b) => order.get(a.name) - order.get(b.name);
+  await Promise.all([['keyboard', DESK, {}], ['gamepad', DESK, { pad: true }], ['touch', PHONE, { touch: true }]].flatMap(([kind, dev, opt]) =>
+    Array.from({ length: split }, (_, lane) => (async () => {
+      for (const [name, js] of list.filter((_, i) => i % split === lane)) {
+        const { ctx, p, errs } = await boot(browser, base, dev, opt);   // (a fresh page for each screen: no state carried over)
+        try { out[kind].push(await oneScreen(p, name, js, kind)); } catch (e) { out[kind].push({ name, error: String(e.message || e).slice(0, 200) }); }
+        if (kind === 'touch') { try { const d = await twoBacks(p, name, js); if (d.length) out.twoBacks.push({ name, also: d }); } catch (e) {} }
+        out.errs.push(...errs.map(e => kind + ' ' + e));
+        await ctx.close();
+      }
+    })())));
+  for (const k of ['keyboard', 'gamepad', 'touch']) out[k].sort(byOrder);
+  out.twoBacks.sort(byOrder);
   return out;
 }
 // the home screen: nothing to leave to

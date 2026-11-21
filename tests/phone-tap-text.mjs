@@ -121,8 +121,11 @@ export function phoneTapTextTests({ newContext, open }) {
   };
   T['phone-text-size'] = async ({ browser, base }) => {
     const detail = []; let ok = true;
-    for (const lv of [1, 2]) for (const [dn, dev] of PHONES) {
-      const { out, errs } = await auditPhone(browser, base, dev, { textSize: lv });
+    // (ci-health: the four audits side by side, each in its own context as before: 542 s one after another on CI)
+    const runs = [1, 2].flatMap(lv => PHONES.map(([dn, dev]) => ({ lv, dn, dev })));
+    const res = await Promise.all(runs.map(({ lv, dev }) => auditPhone(browser, base, dev, { textSize: lv })));
+    for (const [i, { lv, dn }] of runs.entries()) {
+      const { out, errs } = res[i];
       const bad = out.flatMap(s => s.found);
       ok = ok && !bad.length && !errs.length;
       detail.push(`${['Normal', 'Large', 'Larger'][lv]}, ${dn}: ${out.length} screens, ${bad.length} problems, ${errs.length} page errors`);

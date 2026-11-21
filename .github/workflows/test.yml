@@ -1,5 +1,10 @@
 # T1 (docs/IMPROVEMENTS.md): the full test tier on every push to main and on every pull request.
 # The dev runs `npm test` (the fast tier, about 3 minutes) before pushing; this runs everything (`npm run test:full`).
+# (ci-health, docs/plans/ci-health.md) The full tier is split over 8 jobs side by side: 4 groups of the parallel tests
+# (3 workers each, as before) and 4 groups of the SERIAL ones (frame-rate and real-time online tests: one at a time, each
+# group on a machine of its own, so nothing else runs beside them). The groups are balanced by tests/ci/test-times.json
+# (`node tests/run.mjs --full --times tests/ci/test-times.json --shard K/4 --dry` lists one); every job computes the same
+# split, and the summary job checks that every full-tier test ran exactly once and passed. One job: about 50 minutes.
 name: tests
 on:
   push:
@@ -15,8 +20,13 @@ concurrency:
   cancel-in-progress: true
 jobs:
   full:
+    name: ${{ matrix.group }}
     runs-on: ubuntu-24.04   # (ubuntu-latest is 26.04: the pinned Playwright has no Chromium for it)
-    timeout-minutes: 90
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [shard 1/4, shard 2/4, shard 3/4, shard 4/4, serial 1/4, serial 2/4, serial 3/4, serial 4/4]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,21 +34,57 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # the browser download is cached (keyed by the lockfile, which pins Playwright); its system libraries are not
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install chromium
+      # (ci-health) the system libraries and fonts from apt, tried up to 3 times: run 39's runner reached no Ubuntu
+      # archive ("Unable to locate package fonts-unifont"), and the next run's same step passed
       # (v9.17.6) the same fonts as the machine the screenshot baselines were made on: Inter, preferred for sans-serif,
       # drawn unhinted in grayscale. Without them the text falls back to DejaVu Sans (world and Jumu'ah frames 0.5-1.8%
       # off); with Inter but hinted, glyph edges still differ (0.2-0.7%).
-      - name: Fonts as on the baseline machine
+      - name: System libraries and the baseline fonts
         run: |
-          sudo apt-get install -y --no-install-recommends fonts-inter
+          for i in 1 2 3; do
+            sudo apt-get update && npx playwright install-deps chromium && sudo apt-get install -y --no-install-recommends fonts-inter && break
+            [ $i = 3 ] && exit 1; echo "apt failed, trying again in 20 s"; sleep 20
+          done
           sudo cp tests/ci/56-prefer-inter.conf tests/ci/12-unhinted-grayscale.conf /etc/fonts/conf.d/
           fc-cache -f
           fc-match sans-serif
-      - run: npm run test:full
+      # (each job builds its own copy: 2 s, less than handing one build between jobs)
+      - run: npx vite build --mode web && npx vite build --mode review
+      - run: node tests/run.mjs --full --times tests/ci/test-times.json --${{ matrix.group }}
       - name: Keep the test output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-output
+          name: test-output-${{ strategy.job-index }}
           path: tests/output/
+          if-no-files-found: ignore
+  summary:
+    needs: full
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: test-output-*
+          path: shards
+      # every full-tier test ran exactly once and passed; the jobs' times and the slowest ten
+      - run: node tests/ci/summary.mjs shards
+      - name: Keep the merged test times
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-times
+          path: tests/output/test-times.json
           if-no-files-found: ignore

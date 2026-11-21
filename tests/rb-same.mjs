@@ -124,13 +124,24 @@ export function rbSameTests({ newContext, open }) {
     const init = role => { if (role === 'host') { SETTINGS.defToggle = true; SETTINGS.sprToggle = true; window.__lat = 0; setInterval(() => { if (Latch[0].def || Latch[0].spr) window.__lat++; }, 50); } };
     const P = await pair(browser, base, 'rbhold', { game: 'vs', court: 'full', format: 'halves', len: 30 }, init);
     await P.H.evaluate(MASH, 11); await P.G.evaluate(MASH, 12);
-    await Promise.all([P.H, P.G].map(p => p.waitForFunction(() => M.phase === 'over' || (RBN.f > 60 * 200), null, { timeout: 240000 }).catch(() => {})));
+    // (ci-health) each phone stops its own mashing the moment it sees the match over, and keeps the score then: the
+    // mashed shoot and pass keys also press Continue on the final screen, so 1.5 s later a phone had moved on from it
+    // (run 44: "over" false on both, 10-9, the same code)
+    await Promise.all([P.H, P.G].map(p => p.evaluate(() => { const w = setInterval(() => { if (M.phase !== 'over' || window.__over) return;
+      clearInterval(window.__mash); clearInterval(w); for (const k in Input.down) Input.down[k] = false; window.__over = { score: M.teams.map(t => t.score).join('-') }; }, 4); })));
+    await Promise.all([P.H, P.G].map(p => p.waitForFunction(() => window.__over || (RBN.f > 60 * 200), null, { timeout: 240000 }).catch(() => {})));
     await sleep(1500);
     const [h, g] = await Promise.all([P.H, P.G].map(p => p.evaluate(READ)));
-    const ex = await Promise.all([P.H, P.G].map(p => p.evaluate(() => ({ over: M.phase === 'over', score: M.teams.map(t => t.score).join('-'), code: typeof rbSyncCode === 'function' ? rbSyncCode() : '', lat: window.__lat || 0, tog: [SETTINGS.defToggle, SETTINGS.sprToggle].join() }))));
+    const ex = await Promise.all([P.H, P.G].map(p => p.evaluate(() => ({ over: !!window.__over, score: window.__over ? window.__over.score : M.teams.map(t => t.score).join('-'), code: typeof rbSyncCode === 'function' ? rbSyncCode() : '', hashes: [...RBN.hashes], lat: window.__lat || 0, tog: [SETTINGS.defToggle, SETTINGS.sprToggle].join() }))));
     await P.ctx.close();
     const c = compare(h, g);
-    const ok = ex.every(x => x.over) && ex[0].score === ex[1].score && ex[0].code === ex[1].code && ex[0].lat > 20 && ex[0].tog === 'true,true' && ex[1].tog === 'false,false'
+    // (ci-health: the same state on the same frame at the end. This compared each phone's own latest sync code, the last
+    // whole second it had confirmed, read at one moment: "92 HSJM" on the host and "91 TZWQ" on the guest with no desync
+    // and no bad hash (PR #13). Now the latest frame whose checksum both phones hold.)
+    const gh = new Map(ex[1].hashes), endF = ex[0].hashes.map(([f]) => f).filter(f => gh.has(f)).sort((a, b) => b - a)[0];
+    const endSame = endF != null && new Map(ex[0].hashes).get(endF) === gh.get(endF);
+    for (const x of ex) delete x.hashes; ex[0].endF = endF;
+    const ok = ex.every(x => x.over) && ex[0].score === ex[1].score && endSame && ex[0].lat > 20 && ex[0].tog === 'true,true' && ex[1].tog === 'false,false'
       && c.startDiff === -1 && c.badHashes === 0 && c.compared > 10 && h.desyncs + g.desyncs === 0 && g.repairs === 0 && !P.errs.length;
     return { ok, detail: [JSON.stringify({ host: ex[0], guest: ex[1], compare: c, desyncs: [h.desyncs, g.desyncs], repairs: g.repairs }), ...P.errs] };
   };
