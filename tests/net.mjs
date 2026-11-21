@@ -211,7 +211,7 @@ export function netTests({ newContext, open }) {
       const O = await open(ctx, base + '/?net=loop&lat=10&room=ver2', errs, 'old');
       await O.evaluate(asOld);
       // (ci-health: the old client's version arrives half a second after its join, as on a slow link, so the host sees a
-      // guest of no known version first, every run; before 9.30.2 a host that ticked in between let it in: run 38)
+      // guest of no known version first, every run; before 9.32.3 a host that ticked in between let it in: run 38)
       await O.evaluate(() => { const R = Net.room, pr = R.presence; R.presence = function (patch) { if (patch && 'v' in patch) { const q = patch; return new Promise(r => setTimeout(() => r(pr.call(this, q)), 500)); } return pr.call(this, patch); }; }); await O.evaluate(c => Lobby.join(c), code); await sleep(3000);
       const o = await O.evaluate(() => ({ screen: Game.screen, status: Net.status }));
       const h1 = await H.evaluate(() => ({ g: Net.guestPeer, humans: M.players.filter(q => q.human === 1).length }));

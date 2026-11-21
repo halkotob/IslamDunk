@@ -112,7 +112,7 @@ function phoneFitCheck() {
     const lvl = PhoneText.on && !PhoneText.court ? phoneLvl() : 0;
     if (!lvl) return _ft.apply(this, arguments);
     const L = phoneAt(phoneKey(t), lvl), keep = PhoneText.use;
-    // (v9.30.2: a label stepped all the way down, or too long at every size, is shortened at Normal and drawn at
+    // (v9.32.2: a label stepped all the way down, or too long at every size, is shortened at Normal and drawn at
     // Normal. It was shortened at the screen's level and drawn untagged, so the "…" text came out at Larger under a
     // new key for one frame: "Win (Final)" and "Local champi…" on a won final's post-game screen)
     try { for (let k = L; k >= 0; k--) { PhoneText.use = k; if (g.measureText(t).width <= w) return k === lvl ? t : phoneTagged(t, k); } PhoneText.use = 0; return phoneTagged(_ft.apply(this, arguments), 0); }

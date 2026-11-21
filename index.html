@@ -72,7 +72,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.30.3';
+const VERSION = '9.32.3';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -151,6 +151,73 @@ const TEAMS = [
     PL('Rami', 12, false, true, '#e2b894', 'hair', '#4a2c16', 9, 8, 5, 5, 7)] }
 ];
 
+// ================================================= v9.31.0: TEAM STRENGTH TIERS
+// Quick play and online: the eight masjid teams were all about the same (players averaging 6.6 to 6.9), so only the
+// difficulty setting decided how hard a game was and picking a team didn't matter. Now they come in three tiers:
+//   Underdogs   (Ar-Rahmah, Al-Ihsan)                -1 on every core rating (about 5.6 to 5.9)
+//   Solid       (Al-Noor, At-Taqwa, Al-Huda, Al-Falah) as they were         (about 6.6 to 6.8)
+//   Powerhouse  (As-Salam, Al-Furqan, the rival)     +2 on every core rating (about 8.7 to 8.8, capped at 10)
+// (+2, not +1: at +1 a Solid team still beat a Powerhouse 17 times in 40, CPU v CPU on Medium; ratings already at 8-9
+// gain less from a point than mid ratings lose. At +2: 21 in 80. An Underdog beats a Solid team 5 in 40.)
+// Each player keeps his shape (and so his archetype, which comes from his strongest rating); hustle and clutch are
+// worked out again from the new ratings, as the team list does. The story career is unchanged: it scales every masjid
+// team to its stage's level anyway (storyTeamAt), and does so from each player's ratings before the tier (p.base), so
+// its league plays exactly as before (a +2 pushed some ratings to the cap of 10, and scaling those back down flattened
+// the players' shapes).
+// Team select shows the tier and an overall rating (the players' average core rating x 10, out of 99) on each card.
+// (Runs right after src/data/teams.js, before anything copies the teams; the shared helpers aren't defined yet, so no
+// clamp.)
+const TEAM_TIER = { 'Masjid Ar-Rahmah': -1, 'Masjid Al-Ihsan': -1, 'Masjid As-Salam': 2, 'Masjid Al-Furqan': 2 };
+const TIER_NAME = { '-1': 'UNDERDOGS', '0': 'SOLID', '1': 'POWERHOUSE', '2': 'POWERHOUSE' }, TIER_COL = { '-1': '#9fd3ff', '0': '#e8e2cf', '1': '#ffd76a', '2': '#ffd76a' };
+const TEAM_CORE = ['spd', 'sht', 'dnk', 'def', 'stl'];
+const MASJID_NAMES = new Set(TEAMS.map(T => T.name));                    // (the eight, as they load: a copy can carry another name)
+for (const T of TEAMS) {
+  const d = TEAM_TIER[T.name] || 0;
+  if (!d) continue;
+  for (const p of T.players) {
+    p.base = Object.assign({}, p.stats);                                 // (the ratings before the tier: the story career scales from these)
+    for (const k of TEAM_CORE) p.stats[k] = Math.max(1, Math.min(10, p.stats[k] + d));
+    p.stats.hus = hustleOf(p.stats); p.stats.clu = clutchOf(p.stats, { sheikh: p.sheikh });
+  }
+}
+function teamOverall(T) {
+  const ps = (T && T.players) || []; if (!ps.length) return 0;
+  const avg = ps.reduce((a, p) => a + TEAM_CORE.reduce((b, k) => b + (p.stats[k] || 5), 0), 0) / (ps.length * TEAM_CORE.length);
+  return Math.min(99, Math.round(avg * 10));
+}
+function teamTierOf(T) {
+  if (!T) return 0;
+  if (MASJID_NAMES.has(T.name)) return TEAM_TIER[T.name] || 0;          // (by name: the lobby and the 1 on 1 select work on copies)
+  const o = teamOverall(T); return o < 63 ? -1 : o > 73 ? 1 : 0;         // (any other team, your career's or a custom one: by its rating; a career
+                                                                           // team's own .tier is its place in its stage, not this)
+}
+// the badge on each team-select card: tier and overall, top right of the card's colour band
+{
+  const _dtp = drawTeamPanel;
+  drawTeamPanel = function (g, x, y, T) {
+    const r = _dtp.apply(this, arguments);
+    if (!T || !T.players) return r;
+    const t = teamTierOf(T), label = TIER_NAME[t] + '  ' + teamOverall(T), col = TIER_COL[t];
+    g.save(); g.font = `12px ${FONT}`; g.textAlign = 'right'; g.textBaseline = 'middle';
+    const w = g.measureText(label).width + 18, bx = x + 410 - w, by = y - 11;   // (a tab on the card's top edge: clear of the controller dots in the band)
+    g.fillStyle = 'rgba(8,14,22,0.78)'; roundRect(g, bx, by, w, 22, 11); g.fill();
+    g.strokeStyle = col; g.lineWidth = 1.2; roundRect(g, bx, by, w, 22, 11); g.stroke();
+    g.fillStyle = col; g.fillText(label, x + 410 - 9, by + 11.5);
+    g.restore();
+    return r;
+  };
+}
+// the online lobby's team pick: the tier and overall at the right of the side's heading
+{
+  const _ts = tsSide;
+  tsSide = function (g, X, side) {
+    const r = _ts.apply(this, arguments), t = side && side.t;
+    if (!t || !t.players || !X) return r;
+    const k = teamTierOf(t);
+    g.save(); g.font = `12px ${FONT}`; g.textAlign = 'right'; g.fillStyle = TIER_COL[k]; g.fillText(TIER_NAME[k] + '  ' + teamOverall(t), X.x + X.w - 14, 52 + 20); g.restore();
+    return r;
+  };
+}
 // ================================================= v9.17: THE CAST (docs/IMPROVEMENTS.md CD1–CD5, CD2)
 // The look of the 16 main players, from the cast sheet the owners approved (5 Nov 2026). Looks only: vh/vw are
 // drawn heights and builds (bh/bw would also change contact strength and the CPU's style, so they're not used here),
@@ -22219,7 +22286,7 @@ function unpackEv(e) { if (typeof e[1] !== 'number') return e; const n = SNAP_EV
   Lobby.versionOK = function () { const other = Net.role === 'host' ? this.guestPres() : (Net.hostPeer() || {}).presence; return !other || (other.v == null && other.pv == null) || same(other); };
   const _cs = Lobby.canStart;
   Lobby.canStart = function () { return _cs.call(this) && same(this.guestPres()); };
-  // mid-game rejoin: a guest on another version isn't handed a player (the lobby check doesn't run then). (v9.30.2: nor
+  // mid-game rejoin: a guest on another version isn't handed a player (the lobby check doesn't run then). (v9.32.3: nor
   // one whose version hasn't arrived yet: joining writes the guest's role and code, then its version, and a host that
   // looked in between handed a 9.9.1 client a player and told the next one the game was full. It waits a tick for it.)
   const _ht = Net.hostTick;
@@ -25301,7 +25368,7 @@ function phoneFitCheck() {
     const lvl = PhoneText.on && !PhoneText.court ? phoneLvl() : 0;
     if (!lvl) return _ft.apply(this, arguments);
     const L = phoneAt(phoneKey(t), lvl), keep = PhoneText.use;
-    // (v9.30.2: a label stepped all the way down, or too long at every size, is shortened at Normal and drawn at
+    // (v9.32.2: a label stepped all the way down, or too long at every size, is shortened at Normal and drawn at
     // Normal. It was shortened at the screen's level and drawn untagged, so the "…" text came out at Larger under a
     // new key for one frame: "Win (Final)" and "Local champi…" on a won final's post-game screen)
     try { for (let k = L; k >= 0; k--) { PhoneText.use = k; if (g.measureText(t).width <= w) return k === lvl ? t : phoneTagged(t, k); } PhoneText.use = 0; return phoneTagged(_ft.apply(this, arguments), 0); }
@@ -27976,9 +28043,9 @@ drawHub = function (g) {
 // above or below, by its tier), keeping each player's shape.
 const STORY_FIELD = [8, 9, 16, 8];
 function storyTeamAt(T, target) {
-  const core = ['spd', 'sht', 'dnk', 'def', 'stl'], ps = T.players, mean = ps.reduce((a, p) => a + core.reduce((b, k) => b + p.stats[k], 0), 0) / (ps.length * core.length);
+  const core = ['spd', 'sht', 'dnk', 'def', 'stl'], ps = T.players, S = p => p.base || p.stats, mean = ps.reduce((a, p) => a + core.reduce((b, k) => b + S(p)[k], 0), 0) / (ps.length * core.length);   // (p.base: a masjid player's ratings before its quick play tier, src/data/team-tiers.js)
   const d = Math.round(target - mean);
-  return Object.assign({}, T, { players: ps.map(p => { const st = Object.assign({}, p.stats); for (const k of core) st[k] = clamp(st[k] + d, 2, 10); return Object.assign({}, p, { stats: st }); }) });
+  return Object.assign({}, T, { players: ps.map(p => { const st = Object.assign({}, S(p)); for (const k of core) st[k] = clamp(st[k] + d, 2, 10); return Object.assign({}, p, { stats: st, base: undefined }); }) });
 }
 {
   const _st = stageTeams;
@@ -28839,7 +28906,7 @@ function drawReplay(g) {
   const _nx = storyNextExtra;
   storyNextExtra = function (S) { if (S.replay) return 'Any tournament, any time. Milestones: ' + msCount() + ' of ' + STORY_MILESTONES.length + '.'; return _nx.apply(this, arguments); };
   CAREER_SCREENS.add('sreplay'); CAREER_SCREENS.add('smiles');
-  BACK.smiles = () => careerHub();   // (v9.30.1: the ‹ Back pill: on touch it was the only way out, and there was none)
+  BACK.smiles = () => careerHub();   // (v9.32.1: the ‹ Back pill: on touch it was the only way out, and there was none)
   const _cu = careerUpdate;
   careerUpdate = function (rdt) {
     if (Game.screen === 'sreplay') { menuNav(REPLAY_ITEMS().length, replaySelect); if (menuHit('back')) careerHub(); return; }
@@ -29276,6 +29343,115 @@ RBN.modes.add('kotc');
   // after the session: the session is off on both phones, and out of the match
   const _stop = RBN.stop;
   RBN.stop = function () { const was = rbKotc(); const r = _stop.apply(this, arguments); if (was) { KOTC.on = false; M.kotc = false; delete M._kotc; } return r; };
+}
+// ================================================= v9.32.0: THE SHOT CHART
+// A third tab on the final screen, Shots: each team's half court with every shot it took, where from, made (filled)
+// or missed (ring), threes in gold, dunks as a star at the rim, and the team's shooting line under it.
+//   * Recorded in the match (M.shotLog), from the simulation: each shot when it's released (releaseShot) or dunked
+//     (slam), and marked made when it scores (onScore). So in a rollback match both phones keep the same chart.
+//   * Free throws aren't shots on the chart (M.phase 'ft'), nor are the mini games.
+// (Left / right and Tab cycle the three tabs.)
+function shotLogAdd(p, kind) {
+  if (!M.shotLog || !p || M.mini || M.phase === 'ft' || M.attract) return;
+  const h = attackHoop(p.team); if (!h) return;
+  const sh = ball.shot; if (!sh || sh.shooter !== p || sh._si != null) return;
+  sh._si = M.shotLog.length;
+  M.shotLog.push({ t: p.team, x: Math.round(p.x), z: Math.round(p.z), dx: Math.round(Math.abs(p.x - h.x)), dz: Math.round(p.z - h.z),
+    three: kind !== 'dunk' && isThree(p.x, p.z, h), dunk: kind === 'dunk', made: false, who: p.slot });
+}
+{
+  const _nm = newMatch;
+  newMatch = function () { const r = _nm.apply(this, arguments); M.shotLog = []; return r; };
+  const _rs = releaseShot;
+  releaseShot = function (p) { const r = _rs.apply(this, arguments); shotLogAdd(p, 'shot'); return r; };
+  const _sl = slam;
+  slam = function (p) { const r = _sl.apply(this, arguments); shotLogAdd(p, 'dunk'); return r; };
+  const _os = onScore;
+  onScore = function (h) {
+    const sh = ball.shot && ball.shot.hoop === h ? ball.shot : null;
+    if (sh && sh._si != null && M.shotLog && M.shotLog[sh._si]) M.shotLog[sh._si].made = true;
+    return _os.apply(this, arguments);
+  };
+}
+// one team's half court: the rim at the top, the arc, the paint; shots placed by their distance from the rim
+function drawShotCourt(g, x, y, w, h, T, ti) {
+  const S = (M.shotLog || []).filter(s => s.t === ti);
+  panel(g, x, y, w, h, false);
+  const cx = x + w / 2, top = y + 46, k = Math.min((w - 40) / COURT.D, (h - 96) / (COURT.L / 2)) * 1.12;   // world units to pixels
+  const px = s => [cx + s.dz * k, top + 16 + s.dx * k];
+  // the floor: baseline, the paint, the free-throw circle, the arc (corners straight down), the rim
+  g.save(); g.beginPath(); g.rect(x + 8, top, w - 16, h - (top - y) - 48); g.clip();
+  g.strokeStyle = 'rgba(255,255,255,0.28)'; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(x + 14, top + 2); g.lineTo(x + w - 14, top + 2); g.stroke();
+  const lane = 120 * k, ft = 190 * k; g.strokeRect(cx - lane / 2, top + 2, lane, ft);
+  g.beginPath(); g.arc(cx, top + 2 + ft, lane / 2, 0, Math.PI); g.stroke();
+  const R3 = THREE_R * k, cz = 300 * k, cornerY = Math.sqrt(Math.max(0, THREE_R * THREE_R - 300 * 300)) * k;
+  g.beginPath(); g.moveTo(cx - cz, top + 2); g.lineTo(cx - cz, top + 16 + cornerY);
+  const t1 = Math.acos(Math.min(1, 300 / THREE_R));                    // (the arc meets the corner lines; drawn left corner to right, through the top of the key)
+  g.arc(cx, top + 16, R3, Math.PI - t1, t1, true);
+  g.lineTo(cx + cz, top + 2); g.stroke();
+  g.strokeStyle = '#ff8a3d'; g.lineWidth = 2; g.beginPath(); g.arc(cx, top + 16, 6, 0, Math.PI * 2); g.stroke();
+  // the shots
+  for (const s of S) {
+    const [sx, sy] = s.dunk ? [cx + (s.who ? 4 : -4), top + 16] : px(s), col = s.dunk ? '#ffffff' : s.three ? '#ffd76a' : '#8fd0ff';   // (twos one colour for every team: a gold team colour read as a three)
+    g.lineWidth = 2; g.strokeStyle = col; g.fillStyle = col;
+    if (s.dunk) { if (s.made) drawStar(g, sx, sy, 6); continue; }
+    g.beginPath(); g.arc(sx, sy, 4.5, 0, Math.PI * 2); if (s.made) g.fill(); else g.stroke();
+  }
+  const dk = S.filter(s => s.dunk), dm = dk.filter(s => s.made).length;
+  if (dk.length) { g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.fillText(dm + (dm === 1 ? ' dunk' : ' dunks') + (dk.length > dm ? ' (' + (dk.length - dm) + ' missed)' : ''), cx + 14, top + 20); }
+  g.restore();
+  // the name and the shooting line
+  g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(fitText(g, T.name, w - 30), cx, y + 26);
+  const two = S.filter(s => !s.three), thr = S.filter(s => s.three), m = a => a.filter(s => s.made).length;
+  const pct = a => a.length ? Math.round(m(a) / a.length * 100) + '%' : '-';
+  g.fillStyle = IVORY; g.font = `12px ${BODY}`;
+  g.fillText(`FG ${m(S)}/${S.length} (${pct(S)})   2PT ${m(two)}/${two.length}   3PT ${m(thr)}/${thr.length} (${pct(thr)})`, cx, y + h - 18);
+}
+function drawStar(g, x, y, r) {
+  g.beginPath();
+  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+  g.closePath(); g.fill();
+}
+function drawShotChart(g, y0) {
+  M.teams.forEach((T, ti) => drawShotCourt(g, ti ? W / 2 + 10 : W / 2 - 430, y0, 420, 300, T.def, ti));
+  g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`;
+  g.fillText('filled: made   ring: missed   gold: three   star: dunk', W / 2, y0 + 318);
+}
+{
+  // three tabs: Summary, Box score, Shots
+  const _ft = finalTabs;
+  finalTabs = function () { const t = _ft.apply(this, arguments); return t.includes('Shots') ? t : t.concat('Shots'); };
+  const _fu = finalUpdate;
+  finalUpdate = function () {
+    const n = finalTabs().length, before = Game.finalTab || 0, L = menuHit('left'), R = menuHit('right') || Input.pressed.Tab;
+    const r = _fu.apply(this, arguments);
+    if ((L || R) && Game.screen === 'final' && n > 2) Game.finalTab = (before + (R ? 1 : -1) + n) % n;
+    return r;
+  };
+  // the Shots tab: the final screen as on Box score, with the chart where the box score goes
+  // (the tab buttons are laid out for two: centred again for three, and the one showing lit)
+  const _df = drawFinalScreen;
+  drawFinalScreen = function (g) {
+    const tab = Game.finalTab || 0, tabs = finalTabs(), shift = (tabs.length - 2) * 77, _ub = uiButton, _bs = drawBoxScore;
+    uiButton = function (gg, x, y, w, h, label, fn, active) {
+      if (y === 96 && tabs.includes(label)) { x -= shift; active = label === tabs[tab]; }
+      return _ub.call(this, gg, x, y, w, h, label, fn, active);
+    };
+    if (tab === 2) { uiButton = _ub; return drawShotsScreen(g, tabs); }   // (its own screen: the final screen's add-ons draw for the other tabs)
+    try { return _df.apply(this, arguments); } finally { uiButton = _ub; drawBoxScore = _bs; Game.finalTab = tab; }
+  };
+  function drawShotsScreen(g, tabs) {
+    dim(g, 0.78);
+    const w = M.winner != null ? M.winner : (M.teams[0].score >= M.teams[1].score ? 0 : 1), T = M.teams[w].def;
+    g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `32px ${FONT}`; g.fillText(T.name.toUpperCase() + ' WIN', W / 2, 58);
+    g.fillStyle = IVORY; g.font = `15px ${BODY}`; g.fillText('Final ' + M.teams[0].score + ' \u2013 ' + M.teams[1].score, W / 2, 82);
+    const x0 = W / 2 - tabs.length * 154 / 2 + 4;
+    tabs.forEach((t, i) => uiButton(g, x0 + i * 154, 96, 146, 32, t, () => { Game.finalTab = i; }, i === 2));
+    drawShotChart(g, 140);
+    uiButton(g, W / 2 - 95, 478, 190, 40, Net.role === 'guest' ? 'Waiting for your friend' : 'Continue', () => finalContinue(), true);
+    g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `13px ${BODY}`; g.fillText('\u2190 \u2192 switch tabs, Enter to continue', W / 2, 532);
+  }
 }
 
 boot();

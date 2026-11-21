@@ -1334,6 +1334,12 @@ T['cpu-variety'] = async ({ browser, base }) => {
     const _lp = lobPass; lobPass = function (q) { q._np = (q._np || 0) + 1; return _lp.apply(this, arguments); };
     const _ts = trySteal; trySteal = function (q) { if (q.human < 0) q._ns = (q._ns || 0) + 1; return _ts.apply(this, arguments); };
     const _ns = notifyShot; notifyShot = function (sh) { const r = _ns.apply(this, arguments); for (const o of sh.opps) { if (o.human < 0) o._nf = (o._nf || 0) + 1; if (o.human < 0 && o.ai && o.ai.jumpAt > 0) o._nb = (o._nb || 0) + 1; } return r; };
+    // v9.31.0: on the rosters before the quick play tiers (p.base, src/data/team-tiers.js). This compares archetypes, and
+    // with the tiers each archetype's numbers also depend on how strong its players' teams are (lockdown 42.9 contest v
+    // playmaker 49; Powerhouse rim runners at shooting 8 take more threes, rim runners 0.09 of their shots, which is
+    // intended: a better shooter shoots more).
+    const tiered = TEAMS.map(T => T.players.map(p => p.stats));
+    for (const T of TEAMS) for (const p of T.players) if (p.base) p.stats = Object.assign({}, p.base);
     for (let g = 0; g < 16; g++) {
       window.__seed(500 + g * 7919);
       const a = g % TEAMS.length, b = (g * 3 + 1) % TEAMS.length === a ? (a + 1) % TEAMS.length : (g * 3 + 1) % TEAMS.length;
@@ -1341,7 +1347,7 @@ T['cpu-variety'] = async ({ browser, base }) => {
       for (let n = 0; n < 60 * 60 * 12 && M.phase !== 'over'; n++) { updateMatch(STEP); if (Game.screen === 'halftime') Game.screen = 'title'; }
       for (const q of M.players) { const s = q.stats; add(q, 'n', 1); add(q, 'fga', s.fga); add(q, 'tpa', s.tpa || 0); add(q, 'dnk', s.dnk || 0); add(q, 'pass', q._np || 0); add(q, 'stl', q._ns || 0); add(q, 'blk', q._nb || 0); add(q, 'faced', q._nf || 0); }
     }
-    doPass = _dp; lobPass = _lp; trySteal = _ts; notifyShot = _ns;
+    doPass = _dp; lobPass = _lp; trySteal = _ts; notifyShot = _ns; TEAMS.forEach((T, i) => T.players.forEach((p, k) => { p.stats = tiered[i][k]; }));
     const o = {}; for (const [k, A] of Object.entries(by)) o[k] = { n: A.n, three: +(A.tpa / Math.max(1, A.fga)).toFixed(2), rim: +(A.dnk / Math.max(1, A.fga)).toFixed(2), pass: +(A.pass / A.n).toFixed(1), reach: +(A.stl / A.n).toFixed(1), contest: +(100 * A.blk / Math.max(1, A.faced)).toFixed(1) };   // steal tries a game; shot contests per 100 shots he defended (v9.16.1: a rate, so it doesn't follow how often his man shoots)
     return o;
   });

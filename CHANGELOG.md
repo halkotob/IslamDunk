@@ -1,6 +1,6 @@
 # Changelog
 
-## 9.30.3: a friend on an older version can't take over a game in progress
+## 9.32.3: a friend on an older version can't take over a game in progress
 When your friend dropped out mid-game and someone rejoined with the code, the host checked the newcomer's version only
 once it was known. Joining sends who you are and the code first and your version a moment later, so a host that
 looked in between handed a player to a client on another version (9.9.1 in the test), and told your friend on the
@@ -9,7 +9,7 @@ right version that the game was full. The host now waits for the version before 
   slow link, so the moment in between is checked on every run: before this fix it let the old client in (1 of 2
   local runs), after it, never.
 
-## 9.30.2: bigger text never overlaps for a frame
+## 9.32.2: bigger text never overlaps for a frame
 At Large and Larger text on a phone, a label that has to be shortened to fit ("Local champi…") could be drawn at the
 big size for one frame, over the line above it, before it settled: on a won final's post-game screen, "Win (Final)"
 and "Local champions" overlapped as the reward lines came in. A shortened label is now measured and drawn at Normal
@@ -20,11 +20,49 @@ size in the same frame, and "Local champions" now fits whole at Normal instead o
   and the last reward line came in just as the audit looked. The post-game screen it audits is now a won final with
   the most reward lines, on purpose.
 
-## 9.30.1: the Milestones screen has a way back on a phone
+## 9.32.1: the Milestones screen has a way back on a phone
 My Player > Milestones (9.29.0) had no ‹ Back pill, so on a phone, with no Esc key or pad, there was no way off it
 but closing the game. It now has the pill, and it goes back to the hub, as Esc and the pad's B already did. Found by
 `nav-census` (touch: 1 screen with no way out), which has failed on every run since 9.29.2.
 
+## 9.32.0: the shot chart
+A third tab on the final screen, **Shots**: each team's half court with every shot it took, where from. Filled is
+made, a ring is missed, gold is a three, light blue is a two, and dunks are a star at the rim with a count ("5 dunks").
+Under each court: FG, 2PT and 3PT for the game. Left / right and Tab cycle Summary, Box score and Shots.
+- Recorded in the match (M.shotLog) from the simulation: a shot when it's released, a dunk when it's slammed, marked
+  made when it scores. Free throws and the mini games aren't on it. In a rollback match both phones keep the same
+  chart (it's part of the match state).
+- The Shots tab draws its own screen (the title, the score, the tabs, the two courts, Continue): the final screen's
+  add-ons draw for the other two tabs.
+- Checked: a CPU game's chart matches its box score (16 of 16 makes; 22 of 23 attempts, the one left out a missed
+  dunk, which never becomes a shot); `cpu-parity` against main (the same games), `rb-determinism` and `rb-rollback`
+  pass.
+
+## 9.31.0: the masjid teams come in three strengths
+Quick play and online: the eight masjid teams were all about the same (players averaging 6.6 to 6.9), so only the
+difficulty setting decided how hard a game was, and picking a team didn't matter.
+- **Three tiers:** Underdogs (Ar-Rahmah, Al-Ihsan: -1 on every core rating, overall 56 and 58), Solid (Al-Noor,
+  At-Taqwa, Al-Huda, Al-Falah: as they were, 67-68), Powerhouse (As-Salam, Al-Furqan: +2, 87 and 88). Each player
+  keeps his shape and archetype; hustle and clutch are worked out again. `src/data/team-tiers.js`, right after the
+  team list.
+- **Measured** (CPU v CPU on Medium, halves of 60 s, home and away alternating; on main for comparison):
+  | Games | main | tiers |
+  |---|---|---|
+  | Underdog v Solid (Ar-Rahmah v Al-Noor), Underdog wins | 16 / 40 | 5 / 40 |
+  | Solid v Powerhouse (Al-Noor v Al-Furqan), Solid wins | 25 / 40 | 21 / 80 (17 / 40 with Powerhouse at +1) |
+  | Underdog v Powerhouse (Ar-Rahmah v Al-Furqan), Underdog wins | 19 / 40 | 15 / 80 (8 / 40 at +1) |
+  | Solid v Solid (Al-Noor v Al-Huda), Al-Noor wins | 17 / 40 | 23 / 40 |
+  Powerhouse is +2, not +1: at +1 a Solid team still won 42% (ratings already at 8-9 gain less from a point than mid
+  ratings lose).
+- **On screen:** team select (and the 1 on 1 select) shows a tier tab with the overall rating (the players' average
+  core rating x 10) on each card; the online lobby's team pick shows it at the right of each side's heading. A team
+  that isn't one of the eight (your career team, a custom one) gets its tier from its rating.
+- **The story career is unchanged:** it scales every masjid team to its stage's level from each player's ratings
+  before the tier (`p.base`), so its league plays exactly as before. (Scaling the tiered ratings back down flattened
+  players whose +2 hit the cap of 10, and changed the career league's steals and turnovers.)
+- **How they play:** a Powerhouse player is better at everything, so the CPU picks what he's good at: its rim
+  runners, now shooting 8, take more threes (9% of their shots, 3% before). The `cpu-variety` test compares
+  archetypes on the rosters before the tiers, so team strength doesn't blur them.
 ## 9.30.0: every online mode on rollback (Lightning, HORSE, King of the Court, Barakah Run duos)
 Head to head, Same team vs CPU and 1 on 1 already played online with rollback: both phones run the whole game and send
 each other only their controls, so your own player answers at once and there are no snapshot hiccups. Lightning, HORSE,

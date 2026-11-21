@@ -111,7 +111,7 @@ function drawReplay(g) {
   const _nx = storyNextExtra;
   storyNextExtra = function (S) { if (S.replay) return 'Any tournament, any time. Milestones: ' + msCount() + ' of ' + STORY_MILESTONES.length + '.'; return _nx.apply(this, arguments); };
   CAREER_SCREENS.add('sreplay'); CAREER_SCREENS.add('smiles');
-  BACK.smiles = () => careerHub();   // (v9.30.1: the ‹ Back pill: on touch it was the only way out, and there was none)
+  BACK.smiles = () => careerHub();   // (v9.32.1: the ‹ Back pill: on touch it was the only way out, and there was none)
   const _cu = careerUpdate;
   careerUpdate = function (rdt) {
     if (Game.screen === 'sreplay') { menuNav(REPLAY_ITEMS().length, replaySelect); if (menuHit('back')) careerHub(); return; }

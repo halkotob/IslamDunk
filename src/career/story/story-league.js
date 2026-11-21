@@ -12,9 +12,9 @@
 // above or below, by its tier), keeping each player's shape.
 const STORY_FIELD = [8, 9, 16, 8];
 function storyTeamAt(T, target) {
-  const core = ['spd', 'sht', 'dnk', 'def', 'stl'], ps = T.players, mean = ps.reduce((a, p) => a + core.reduce((b, k) => b + p.stats[k], 0), 0) / (ps.length * core.length);
+  const core = ['spd', 'sht', 'dnk', 'def', 'stl'], ps = T.players, S = p => p.base || p.stats, mean = ps.reduce((a, p) => a + core.reduce((b, k) => b + S(p)[k], 0), 0) / (ps.length * core.length);   // (p.base: a masjid player's ratings before its quick play tier, src/data/team-tiers.js)
   const d = Math.round(target - mean);
-  return Object.assign({}, T, { players: ps.map(p => { const st = Object.assign({}, p.stats); for (const k of core) st[k] = clamp(st[k] + d, 2, 10); return Object.assign({}, p, { stats: st }); }) });
+  return Object.assign({}, T, { players: ps.map(p => { const st = Object.assign({}, S(p)); for (const k of core) st[k] = clamp(st[k] + d, 2, 10); return Object.assign({}, p, { stats: st, base: undefined }); }) });
 }
 {
   const _st = stageTeams;

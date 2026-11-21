@@ -3,6 +3,7 @@
   "files": [
     "core/config.js",
     "data/teams.js",
+    "data/team-tiers.js",
     "data/cast.js",
     "data/trivia.js",
     "core/utils-audio.js",
@@ -147,6 +148,7 @@
     "online/v930-rb-minis.js",
     "online/v930-rb-brun.js",
     "online/v930-rb-kotc.js",
+    "screens/shot-chart.js",
     "boot.js"
   ]
 }
