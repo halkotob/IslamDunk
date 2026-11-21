@@ -94,7 +94,7 @@ const RBN = {
     const firstMine = Math.max(this.peerAck == null ? 0 : this.peerAck + 1, 0);   // every input they haven't confirmed, oldest first
     for (let k = firstMine; k <= to && d.length < 48; k++) { const I = this.ins[me].get(k); if (!I) break; d.push(rbPackIn(I)); }   // (never a gap: 0 is not "no input"; 48 at most a packet)
     const last = [...this.hashes.entries()].pop();
-    const pkt = { i: this.id, s: firstMine, d: rbRunsOut(d), a: this.conf, F: this.f, v: this.peerF >= 0 ? this.f - this.peerF : 0, t: Math.round(nowMs() * 10) / 10 };   // v: how far ahead of them we are, as we see it
+    const pkt = { i: this.id, s: firstMine, d: rbRunsOut(d), a: this.conf, F: this.f, v: this.peerF >= 0 ? this.f - this.peerF : 0, t: Math.round(nowMs() * 10) / 10, y: this.lastSync | 0 };   // y: the host's last state we put in (v9.32.4)   // v: how far ahead of them we are, as we see it
     if (this.lastPkt) { pkt.et = this.lastPkt.t; pkt.ed = Math.round((nowMs() - this.gotAt) * 10) / 10; }
     if (last) pkt.h = last;
     Net.setP({ rb: pkt }); this.stats.sent++;
@@ -114,7 +114,7 @@ const RBN = {
       if (f < this.f) { const u = this.used.get(f); if (!u || !rbSameIn(u, v)) { this.rollTo = Math.min(this.rollTo, f); this.stats.mispredicted++; } }
     }
     while (I.has(this.conf + 1)) this.conf++;
-    this.peerAck = pkt.a; this.peerF = pkt.F; this.peerV = pkt.v;
+    this.peerAck = pkt.a; this.peerF = pkt.F; this.peerV = pkt.v; this.peerSync = pkt.y | 0;
     if (pkt.h) { this.theirHash = pkt.h; this.checkHash(); }
   },
   checkHash() {

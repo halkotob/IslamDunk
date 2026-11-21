@@ -1,5 +1,15 @@
 # Changelog
 
+## 9.32.4: a bad connection no longer snowballs after a desync
+On a slow, lossy link, one desync could turn into many. The host puts the guest right by sending its whole game state
+(about 32 KB), and it sent it again for every checksum that still differed, four a second, while the first copy was still
+on its way. On a link that carries 32 KB a second each way, that held the link for seconds: the host's frames reached the
+guest late, so the time sync ran the host fast and the guest slow (80 against 50 frames a second), more inputs came too
+late to use, and more desyncs followed. The host now sends one state at a time: the next only once the guest says it put
+the last one in, or 3 s later in case it was lost. The guest's packets carry the number of the last state it put in.
+- Found by `rb-lag` (its Bad mobile profile, 400 ms and 10% loss: the two phones ended in different games in about one
+  run in three, and on both tries in one).
+
 ## 9.32.3: a friend on an older version can't take over a game in progress
 When your friend dropped out mid-game and someone rejoined with the code, the host checked the newcomer's version only
 once it was known. Joining sends who you are and the code first and your version a moment later, so a host that

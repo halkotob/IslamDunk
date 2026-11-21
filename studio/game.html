@@ -107,7 +107,7 @@ addEventListener('unhandledrejection', e => { window.__studioErrors.push('unhand
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.32.3';
+const VERSION = '9.32.4';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -24078,7 +24078,7 @@ const RBN = {
     const firstMine = Math.max(this.peerAck == null ? 0 : this.peerAck + 1, 0);   // every input they haven't confirmed, oldest first
     for (let k = firstMine; k <= to && d.length < 48; k++) { const I = this.ins[me].get(k); if (!I) break; d.push(rbPackIn(I)); }   // (never a gap: 0 is not "no input"; 48 at most a packet)
     const last = [...this.hashes.entries()].pop();
-    const pkt = { i: this.id, s: firstMine, d: rbRunsOut(d), a: this.conf, F: this.f, v: this.peerF >= 0 ? this.f - this.peerF : 0, t: Math.round(nowMs() * 10) / 10 };   // v: how far ahead of them we are, as we see it
+    const pkt = { i: this.id, s: firstMine, d: rbRunsOut(d), a: this.conf, F: this.f, v: this.peerF >= 0 ? this.f - this.peerF : 0, t: Math.round(nowMs() * 10) / 10, y: this.lastSync | 0 };   // y: the host's last state we put in (v9.32.4)   // v: how far ahead of them we are, as we see it
     if (this.lastPkt) { pkt.et = this.lastPkt.t; pkt.ed = Math.round((nowMs() - this.gotAt) * 10) / 10; }
     if (last) pkt.h = last;
     Net.setP({ rb: pkt }); this.stats.sent++;
@@ -24098,7 +24098,7 @@ const RBN = {
       if (f < this.f) { const u = this.used.get(f); if (!u || !rbSameIn(u, v)) { this.rollTo = Math.min(this.rollTo, f); this.stats.mispredicted++; } }
     }
     while (I.has(this.conf + 1)) this.conf++;
-    this.peerAck = pkt.a; this.peerF = pkt.F; this.peerV = pkt.v;
+    this.peerAck = pkt.a; this.peerF = pkt.F; this.peerV = pkt.v; this.peerSync = pkt.y | 0;
     if (pkt.h) { this.theirHash = pkt.h; this.checkHash(); }
   },
   checkHash() {
@@ -24404,7 +24404,7 @@ function rbDeserialize(D) {
 function rbSendState() {
   const k = Math.min(RBN.conf, RBN.f - 1);
   const S = k + 1 === RBN.f ? rbSave() : RBN.states.get(k + 1); if (!S) return false;
-  Net.setP({ rbstate: { i: RBN.id, k: k + 1, d: rbSerialize(S), n: (RBN.syncs = (RBN.syncs || 0) + 1) } });
+  Net.setP({ rbstate: { i: RBN.id, k: k + 1, d: rbSerialize(S), n: (RBN.syncs = (RBN.syncs || 0) + 1) } }); RBN.syncAt = nowMs();
   RBN.stats.syncsSent = (RBN.stats.syncsSent || 0) + 1;
   return true;
 }
@@ -24434,9 +24434,17 @@ function rbSerialLines(D) {
     if (n.t === 'o') { for (const k in n.v) out.push(p + '.' + k + '=' + v(n.v[k])); } else n.v.forEach((x, j) => out.push(p + '[' + j + ']=' + (Array.isArray(x) ? x.map(v).join(':') : v(x)))); });
   return out;
 }
+// (v9.32.4) one state on its way at a time: until the guest says it put the last one in (its packets carry the number,
+// y), or 3 s pass (it may have been lost), a desync is the same one again, seen in checksums from before the state
+// arrived. A state is ~32 KB. On a slow link (32 KB/s in rb-lag's Bad mobile, where a match without desyncs uses 19 KB/s
+// each way) each one holds the link for a second, so the host's frames reach the guest late, the time sync runs the host
+// fast and the guest slow (80 against 50 frames a second on CI), more inputs come too late to use, and more desyncs
+// follow: 8-15 states in rb-lag's failing tries, up to 50 on a slower machine
+const RB_SYNC_WAIT = 3000;
 function rbOnDesync(f) {
   RBN.stats.desyncs = (RBN.stats.desyncs || 0) + 1;
-  if (Net.role === 'host') RBN.needSync = true;                        // (sent after this update's going back: the saved frames are final then)
+  const onItsWay = (RBN.syncs || 0) > (RBN.peerSync || 0) && nowMs() - (RBN.syncAt || 0) < RB_SYNC_WAIT;
+  if (Net.role === 'host' && !onItsWay) RBN.needSync = true;           // (sent after this update's going back: the saved frames are final then)
 }
 {
   const _nu = Net.update;

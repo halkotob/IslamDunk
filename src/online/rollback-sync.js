@@ -75,7 +75,7 @@ function rbDeserialize(D) {
 function rbSendState() {
   const k = Math.min(RBN.conf, RBN.f - 1);
   const S = k + 1 === RBN.f ? rbSave() : RBN.states.get(k + 1); if (!S) return false;
-  Net.setP({ rbstate: { i: RBN.id, k: k + 1, d: rbSerialize(S), n: (RBN.syncs = (RBN.syncs || 0) + 1) } });
+  Net.setP({ rbstate: { i: RBN.id, k: k + 1, d: rbSerialize(S), n: (RBN.syncs = (RBN.syncs || 0) + 1) } }); RBN.syncAt = nowMs();
   RBN.stats.syncsSent = (RBN.stats.syncsSent || 0) + 1;
   return true;
 }
@@ -105,9 +105,17 @@ function rbSerialLines(D) {
     if (n.t === 'o') { for (const k in n.v) out.push(p + '.' + k + '=' + v(n.v[k])); } else n.v.forEach((x, j) => out.push(p + '[' + j + ']=' + (Array.isArray(x) ? x.map(v).join(':') : v(x)))); });
   return out;
 }
+// (v9.32.4) one state on its way at a time: until the guest says it put the last one in (its packets carry the number,
+// y), or 3 s pass (it may have been lost), a desync is the same one again, seen in checksums from before the state
+// arrived. A state is ~32 KB. On a slow link (32 KB/s in rb-lag's Bad mobile, where a match without desyncs uses 19 KB/s
+// each way) each one holds the link for a second, so the host's frames reach the guest late, the time sync runs the host
+// fast and the guest slow (80 against 50 frames a second on CI), more inputs come too late to use, and more desyncs
+// follow: 8-15 states in rb-lag's failing tries, up to 50 on a slower machine
+const RB_SYNC_WAIT = 3000;
 function rbOnDesync(f) {
   RBN.stats.desyncs = (RBN.stats.desyncs || 0) + 1;
-  if (Net.role === 'host') RBN.needSync = true;                        // (sent after this update's going back: the saved frames are final then)
+  const onItsWay = (RBN.syncs || 0) > (RBN.peerSync || 0) && nowMs() - (RBN.syncAt || 0) < RB_SYNC_WAIT;
+  if (Net.role === 'host' && !onItsWay) RBN.needSync = true;           // (sent after this update's going back: the saved frames are final then)
 }
 {
   const _nu = Net.update;
