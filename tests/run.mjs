@@ -1077,7 +1077,11 @@ async function onlineFlow(browser, base, { query = '', room = false, games = ['v
     const coN = games.slice(0, gi + 1).filter(x => x === 'co').length;   // v8.6.7: 1st co game on NOOR (hafiz on slot 0), 2nd on TAQWA (hafiz on slot 1)
     await H.evaluate(([g, coN, fixTeam]) => { const o = Lobby.opts(); o.game = g; if (g === 'horse') { o.word = 'HAQ'; o.timer = 6; } if (g === 'co' && fixTeam) { o.a = coN === 1 ? 0 : 1; o.b = 4; } Net.mode = g; Lobby.changed(); }, [game, coN, noor && !custom]);
     await G.evaluate(() => Lobby.setReady(1)); await sleep(800);
-    await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {}); await H.evaluate(() => Lobby.start());
+    await H.waitForFunction(() => Lobby.canStart(), null, { timeout: 20000 }).catch(() => {});
+    // (ci-health) if the host still can't start, why (run 55: King of the Court stayed in the lobby on both phones)
+    const cant = await H.evaluate(() => Lobby.canStart() ? null : { guest: !!Net.guestPeer, ph: Lobby.ph, ready: Lobby.guestReady(), version: Lobby.versionOK(), pres: (({ v, pv, rdy }) => ({ v, pv, rdy }))(Lobby.guestPres() || {}), picks: typeof Lobby.picksDone === 'function' ? Lobby.picksDone() : null, gScreen: null });
+    if (cant) { cant.gScreen = await G.evaluate(() => [Game.screen, Lobby.ph, Lobby.isIn()].join('/')); log.push(`${game}: the host could not start after 20 s: ${JSON.stringify(cant)}`); }
+    await H.evaluate(() => Lobby.start());
     await G.waitForFunction(() => Game.screen === 'netplay' && M.players && M.players.length > 0, null, { timeout: 10000 }).catch(() => {});
     await sleep(2500);
     const st = await G.evaluate(() => ({ screen: Game.screen, players: M.players.length, snaps: Net.snaps.length }));
