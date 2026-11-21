@@ -38,6 +38,33 @@ saved play's size raw and compressed (D5's 8 KB question) and the memory cost of
 highlight and from an online match (on `?net=loop`) each appears in storage with its frames, the sizes and memory
 cost are written in this file, and an online match with saves on one phone has no desync (`rb-*` tests on CI).
 
+**Measured (step 1, 9.33.0 branch, a 2v2 Quick Play match, 540 frames = 8 s + 1 s; `plays-save` prints these):**
+
+| What | Size |
+|---|---|
+| The 540 frames as JSON | 730–750 KB |
+| Packed (`playPack`: rounded to 1/8 unit and 1/1000 rad, change from the frame before, column by column, varints) | 59 KB |
+| Stored (packed, then deflated with `CompressionStream`) | 15–23 KB a play; 20 plays about 0.3–0.5 MB |
+| The metadata (teams, score, venue, format), deflated | 0.6 KB |
+| A link copy (1/2 unit, 1/160 rad), deflated: every frame / every 2nd (30 fps) / every 3rd (20 fps) | 9.4–10.2 KB / **6.8–7.3 KB** / 5.4–5.9 KB |
+
+So the link fits D5's 8 KB at 30 fps (frames in between blended back when it plays; a jump such as a restart cuts
+instead of sliding), about 10 KB of URL text after base64url: **the link option stays in** (step 3).
+
+Memory: a frame in the buffer is about 1.17 KB on the heap (4 players; measured as 10 x 540 fresh frames after garbage
+collection). The buffer holds 600 frames (the 540 of a play, plus 1 s of slack: a busy frame can record several steps at
+once, and the 1 s after a press then overshoots), about 700 KB against 350 KB for the old 300: **about 350 KB more per
+match** (3 on 3 about 500 KB more), freed when the match ends. Recording costs the same per step as before.
+
+Online: `rb-plays` (the guest saves by key, the pause menu and the touch pill while both phones mash buttons on a 40 ms,
+2% loss link): 3 saves on the guest, none on the host, the match ran on through the saves, 0 desyncs, ~1,000 checksums.
+
+Decisions taken with the owner before step 1 (beyond the table above): the link copy may drop to 30 or 20 fps to fit;
+a save that isn't a game-picked highlight is labelled with the last basket, block or steal in its window (else PLAY)
+and features that player (else yours); old My clips videos become permanent entries of My plays; My plays sits on the
+main menu above Options and in the pause menu under Save play; the touch pill sits under the scoreboard; a second press
+within 3 s replaces the first save; saves aren't offered in mini games, demos or practice; the release is 9.33.0.
+
 ### 2. My plays
 
 D3 and D4: the library screen, watching, starring, the 20 limit, and the old My clips moved in.

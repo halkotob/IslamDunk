@@ -139,6 +139,34 @@ export function rollbackTests({ newContext, open }) {
       && rep.every(r => r.desync == null && (r.desyncs || 0) === 0 && r.hashesChecked >= 5 && r.frame > 900 && r.maxRoll <= 20 && r.stepErrors === 0) && !errs.length;
     return { ok, detail: [JSON.stringify(out), ...errs] };
   };
+  // v9.33.0 (tests/replays.mjs): the guest saves plays by key, the pause menu (open while the match runs on) and the touch
+  // pill while both phones mash their own buttons: each save is stored, only the guest saved, and not one desync
+  T['rb-plays'] = async ({ browser, base }) => {
+    const { ctx, H, G, errs } = await rbPair(browser, base, '?net=loop&mode=udp&lat=40&jit=10&loss=2&p2p=0&room=rbplays&nowelcome=1');
+    const started = await Promise.all([H, G].map(p => p.evaluate(() => ({ on: RBN.on, me: RBN.me, screen: Game.screen }))));
+    await H.evaluate(MASH, 13); await G.evaluate(MASH, 29);
+    await sleep(10000);                                        // 9 s in the buffer
+    const f0 = await G.evaluate(() => RBN.f);
+    await G.evaluate(() => { Input.pressed.KeyV = true; });
+    await G.waitForFunction(() => Plays.writes >= 1, null, { timeout: 8000 }).catch(() => {});
+    await sleep(3200);
+    const pause = await G.evaluate(() => { Game.paused = true; Game.idx = 0; const it = pauseItems(), i = it.findIndex(x => /^Save play/.test(x[0])); if (i >= 0) it[i][1](); return i; });
+    await G.waitForFunction(() => Plays.writes >= 2, null, { timeout: 8000 }).catch(() => {});
+    const ranOn = await G.evaluate(f => RBN.f - f, f0);       // the match never stopped for a save
+    await G.evaluate(() => { Game.paused = false; Plays.last = null; Input.touchMode = true; FX.highlight(RBN.me === 1 ? 2 : 0, 2, 'STEAL'); });
+    await sleep(200);
+    await G.evaluate(() => { const r = Game.rects.find(x => Math.abs(x.x + x.w / 2 - W / 2) < 2 && x.y < 20); if (r) r.fn(); });
+    await G.waitForFunction(() => Plays.writes >= 3, null, { timeout: 8000 }).catch(() => {});
+    await sleep(6000);
+    const rep = await Promise.all([H, G].map(p => p.evaluate(() => { clearInterval(window.__mash); return Object.assign(RBN.report() || {}, { stepErrors: RB.errors || 0, writes: Plays.writes, log: RBN.desyncLog || null }); })));
+    const saved = await G.evaluate(() => playsAll().then(a => a.map(r => ({ src: r.src, n: r.n, online: r.meta.online, label: r.label }))));
+    await ctx.close();
+    const out = { started, pause, ranOn, saved, host: rep[0], guest: rep[1] };
+    const ok = started.every(s => s.on && s.screen === 'play') && pause > 0 && ranOn > 60 && rep[0].writes === 0 && rep[1].writes === 3
+      && saved.length === 3 && saved.every(s => s.online && s.n >= 300) && ['key', 'pause', 'touch'].every(k => saved.some(s => s.src === k))
+      && rep.every(r => r.desync == null && (r.desyncs || 0) === 0 && r.hashesChecked >= 5 && r.stepErrors === 0) && !errs.length;
+    return { ok, detail: [JSON.stringify(out), ...errs]};
+  };
   // v9.30.0: Lightning and HORSE on rollback: both phones start the mini from the host's message, play it on the
   // same frames (no desync with latency, jitter and loss), see the same game, and both reach its end
   for (const kind of ['lightning', 'horse']) T['rb-' + kind] = async ({ browser, base }) => {
