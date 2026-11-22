@@ -228,7 +228,7 @@ export function leagueTests({ newContext, open }) {
     for (const [sz, dev] of HUB_SIZES) {
       const ctx = await newContext(browser, { device: dev }); await ctx.addInitScript(HUB_RECORD_INIT);
       const p = await open(ctx, base + '/', errs, 'league-layout ' + sz);
-      await p.evaluate(([a, b, j, touch]) => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} (0, eval)(a); (0, eval)(b); LEAGUE.mode = 'fallback'; Input.touchMode = touch; window.requestAnimationFrame(() => {}); window.__lgLoad(j); }, [CAREER_HELPERS, LEAGUE_HELPERS, json, !!dev.hasTouch]);
+      await p.evaluate(([a, b, j, touch]) => { (0, eval)(a); (0, eval)(b); LEAGUE.mode = 'fallback'; Input.touchMode = touch; window.requestAnimationFrame(() => {}); window.__lgLoad(j); }, [CAREER_HELPERS, LEAGUE_HELPERS, json, !!dev.hasTouch]);
       for (const [name, o] of LEAGUE_CASES) {
         await p.evaluate(o => { const other = (lgBoard('stage', 'ppg').find(x => !lgMinesFor().includes(x.p.pid)) || { p: {} }).p.pid; return window.__lgOpen(o.view, Object.assign({}, o, { pid: o.pid === null ? other : o.pid })); }, o);
         await p.waitForTimeout(300);

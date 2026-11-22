@@ -27,7 +27,7 @@
 //   online-fb    Firebase adapter (fake SDK): lobby -> game -> lobby
 //   noor         v8.6.1 Noor power-ups: choice of 3 (least recently used), each of the 6 applies and expires,
 //                a wrong answer gives nothing, Barakah Run stacking; turnovers by cause and the TOV column
-//   mobile       iPhone landscape/portrait layout, touch controls, the Hikmah challenge (fits; a tap on the right answer gives a power-up), no errors
+//   mobile       iPhone landscape layout (and upright: only the turn-sideways card), touch controls, the Hikmah challenge (fits; a tap on the right answer gives a power-up), no errors
 //                plus the v8.6.2 phone text audit (tests/phone-audit.mjs) at iPhone landscape and 667x300
 //   v867         v8.6.7: seeded inbounds never go back to the inbounder; turbo colour and card fade flip at most once a
 //                second while sprinting; Sh. Saleem's 2-line limit and Leave buttons; who can earn Noor offline
@@ -84,6 +84,7 @@ import { CAREER_HELPERS } from './career-setup.js';
 import { FAKE_PAD_INIT } from './fake-pad.js';
 import { STUDIO_TESTS } from './studio.mjs';
 import { STUDIO_PHONE_TESTS } from './studio-phone.mjs';
+import { LANDSCAPE_TESTS } from './landscape.mjs';
 import { leagueTests } from './league.mjs';
 import { netTests } from './net.mjs';
 import { rollbackTests } from './rollback.mjs';
@@ -1537,7 +1538,8 @@ T['mobile'] = async ({ browser, base, tier }) => {
     if (right && !name.includes('portrait')) { await p.touchscreen.tap(right.x, right.y);
       await p.waitForFunction(() => !Game.trivia, null, { timeout: 10000 }).catch(() => {});   // (the reveal closes after 1.8 s of game time)
       r.given = await p.evaluate(() => { const me = M.players[0]; return !Game.trivia && (noorActive(me) || (me.mate && me.mate.boost > 0)); }); }
-    const good = r.fits && r.touch && r.answerFits && (name.includes('portrait') || r.given) && !errs.length && (name.includes('portrait') ? r.rotateCard !== 'none' : r.rotateCard === 'none');
+    // (v9.34.0: landscape only. Upright, only the turn-sideways card: the game holds behind it, so no touch controls)
+    const good = r.fits && r.answerFits && !errs.length && (name.includes('portrait') ? r.rotateCard !== 'none' && !r.touch : r.touch && r.given && r.rotateCard === 'none');
     ok = ok && good; detail.push(`${name}: ${JSON.stringify(r)} ${errs.join('; ')}`);
     await ctx.close();
   }
@@ -2040,6 +2042,7 @@ Object.assign(T, audioTests({ newContext, open }));   // v9.13 sound variants, c
 Object.assign(T, replayTests({ newContext, open }));   // v9.33.0 save any play, My plays, share (tests/replays.mjs)
 Object.assign(T, STUDIO_TESTS);   // the Review Studio (tests/studio.mjs)
 Object.assign(T, STUDIO_PHONE_TESTS);   // v9.21.1 the Studio on a phone (tests/studio-phone.mjs)
+Object.assign(T, LANDSCAPE_TESTS);   // v9.34.0 landscape only: the turn-sideways card holds the game (tests/landscape.mjs)
 
 // ------------------------------------------------------------------ runner
 // v9.17.2: two tiers and parallel workers.

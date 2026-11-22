@@ -143,13 +143,13 @@ function drawTouchStrip(g) {
   TouchUI.layout = function () {
     _lay.apply(this, arguments);
     if (!this.el || !this.btns || !this.btns.shoot) return;
-    const vw = innerWidth, vh = innerHeight, P = this.portrait, I = safeInsets(), k = this.k || 1, R = this.R();
-    const s = (P ? 1.12 : 1) * k * BTN_SIZE[PhonePrefs.size], pad = (P ? 20 : 14) + (PhonePrefs.left ? I.l : I.r), bot = (P ? 30 : 12) + I.b, L = PhonePrefs.left;
+    const vw = innerWidth, I = safeInsets(), k = this.k || 1, R = this.R();
+    const s = k * BTN_SIZE[PhonePrefs.size], pad = 14 + (PhonePrefs.left ? I.l : I.r), bot = 12 + I.b, L = PhonePrefs.left;
     const place = (b, size, side, bottom) => Object.assign(b.style, { width: size * s + 'px', height: size * s + 'px', [L ? 'left' : 'right']: side * s + pad + 'px', [L ? 'right' : 'left']: '', bottom: bottom * s + bot + 'px', fontSize: (size > 80 ? 15 : 12.5) * s + 'px' });
     place(this.btns.shoot, 92, 0, 0); place(this.btns.pass, 76, 104, 4); place(this.btns.cross, 72, 18, 104);
     const zw = parseFloat(this.zone.style.width) || vw * 0.4;
-    if (L) { this.zone.style.left = (vw - zw - I.r) + 'px'; this.homeX = zw - (R + (P ? 22 : 18) * k); }
-    else { this.zone.style.left = I.l + 'px'; this.homeX = R + (P ? 22 : 18) * k; }
+    if (L) { this.zone.style.left = (vw - zw - I.r) + 'px'; this.homeX = zw - (R + 18 * k); }
+    else { this.zone.style.left = I.l + 'px'; this.homeX = R + 18 * k; }
     this.drawStick();
   };
   const _tu = TouchUI.update;

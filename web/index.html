@@ -26,17 +26,16 @@ body{position:fixed;inset:0;box-sizing:border-box;display:flex;flex-direction:co
 canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit-tap-highlight-color:transparent}
 #sa{position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;
   padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
-/* portrait on a phone: a full-screen "turn sideways" card (dismissable) */
+/* portrait on a phone: a full-screen "turn sideways" card. v9.34.0: landscape only, it can't be dismissed (only the review tool's frame skips it) */
 #rotate{display:none;position:fixed;inset:0;z-index:20;background:rgba(6,12,20,0.97);color:#f6ecd2;font:600 16px "Trebuchet MS","Segoe UI",sans-serif;text-align:center;
   flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;box-sizing:border-box}
 #rotate .ic{font-size:64px;line-height:1;animation:rot 2.2s ease-in-out infinite}
 #rotate h2{margin:0;font-size:24px;color:#e8c35a}
 #rotate p{margin:0;max-width:320px;font-weight:400;font-size:14px;line-height:1.45;color:#cfd8e3}
-#rotate button,#ios-sheet button,#ios-tip button{font:600 15px "Trebuchet MS","Segoe UI",sans-serif;border:0;border-radius:22px;padding:11px 22px;touch-action:manipulation;cursor:pointer}
-#rotate .go{background:transparent;color:#9fb3c8;border:1px solid rgba(159,179,200,.45)}
+#ios-sheet button,#ios-tip button{font:600 15px "Trebuchet MS","Segoe UI",sans-serif;border:0;border-radius:22px;padding:11px 22px;touch-action:manipulation;cursor:pointer}
 @keyframes rot{0%,20%{transform:rotate(0)}50%,70%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
 @media (prefers-reduced-motion: reduce){#rotate .ic{animation:none}}
-@media (orientation: portrait) and (pointer: coarse){html:not(.port-ok) #rotate{display:flex}}
+@media (orientation: portrait) and (pointer: coarse){html:not(.studio-frame) #rotate{display:flex}}
 /* iPhone: how to get a fullscreen, app-like game (Add to Home Screen) */
 #ios-sheet{display:none;position:fixed;inset:0;z-index:30;background:rgba(6,12,20,0.88);align-items:center;justify-content:center;padding:16px;box-sizing:border-box;
   font:400 15px "Trebuchet MS","Segoe UI",sans-serif;color:#f6ecd2}
@@ -59,7 +58,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 <body>
 <canvas id="game" tabindex="0" aria-label="Islam Dunk basketball game"></canvas>
 <div id="sa"></div>
-<div id="rotate"><div class="ic">&#x1F4F1;</div><h2>Turn your phone sideways</h2><p>Islam Dunk is made for landscape. If the screen doesn&rsquo;t turn, switch off Rotation Lock in Control Center.</p><button class="go" type="button">Play in portrait anyway</button></div>
+<div id="rotate"><div class="ic">&#x1F4F1;</div><h2>Turn your phone sideways</h2><p>Islam Dunk is made for landscape. If the screen doesn&rsquo;t turn, switch off Rotation Lock in Control Center.</p></div>
 <div id="ios-sheet" role="dialog" aria-label="Play fullscreen"><div class="card"><h2>Play fullscreen</h2>
 <ol><li>Tap <b>Share</b> <span class="sh">&#x2191;</span> in Safari&rsquo;s toolbar.</li><li>Choose <b>Add to Home Screen</b>.</li><li>Open <b>Islam Dunk</b> from your home screen.</li></ol>
 <small>It opens like an app: no browser bars, the whole screen for the game. Progress in the home-screen app is kept separately from Safari&rsquo;s.</small>

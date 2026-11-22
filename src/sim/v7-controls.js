@@ -202,7 +202,7 @@ preStep = function (p, dt) {
   const _lay = TouchUI.layout.bind(TouchUI);
   TouchUI.layout = function () {
     _lay(); if (!this.btns || !this.btns.shoot) return;
-    const s = this.portrait ? 1.18 : 1, pad = this.portrait ? 26 : 18, bot = this.portrait ? 38 : 16;
+    const s = 1, pad = 18, bot = 16;
     const place = (b, size, right, bottom) => Object.assign(b.style, { width: size * s + 'px', height: size * s + 'px', right: right * s + pad + 'px', bottom: bottom * s + bot + 'px', fontSize: (size > 70 ? 15 : 12) * s + 'px' });
     place(this.btns.shoot, 92, 0, 0); place(this.btns.pass, 76, 104, 4); place(this.btns.cross, 72, 18, 104);   // one-hand triangle
     this.btns.turbo.style.display = 'none'; this.btns.skill.style.display = 'none';

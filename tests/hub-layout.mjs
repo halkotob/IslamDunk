@@ -80,7 +80,7 @@ export function hubTests({ newContext, open }) {
       const ctx = await newContext(browser, { device: dev });
       await ctx.addInitScript(HUB_RECORD_INIT);
       const p = await open(ctx, base + '/', errs, 'hub-layout ' + sz);
-      await p.evaluate(([a, touch]) => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} (0, eval)(a); Input.touchMode = touch; window.requestAnimationFrame(() => {}); }, [HUB_HELPERS, !!dev.hasTouch]);
+      await p.evaluate(([a, touch]) => { (0, eval)(a); Input.touchMode = touch; window.requestAnimationFrame(() => {}); }, [HUB_HELPERS, !!dev.hasTouch]);
       for (const [name, o] of HUB_CASES) {
         await p.evaluate(o => window.__hubCase(o), o); await p.waitForTimeout(700);
         const rec = await p.evaluate(`(${RECORD.toString()})()`).catch(e => ({ err: String(e.message || e) }));

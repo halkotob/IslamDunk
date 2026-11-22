@@ -706,7 +706,7 @@ function drawHUD(g) {
   for (const p of M.players) {
     if (p.human < 0 || M.attract || Input.touchMode) continue;   // v8.6.2: touch draws a compact strip instead (phone-pass.js)
     // card rows: name (+ status) / TURBO label + bar / NOOR label + bar: nothing shares a line
-    const noor = canNoor(p), ch = noor ? 66 : 54, tui = TouchUI.shown && !TouchUI.portrait;   // v6: + poise row
+    const noor = canNoor(p), ch = noor ? 66 : 54, tui = TouchUI.shown;   // v6: + poise row
     const x = tui ? W / hk - 236 - 8 : 12 + slot * 236, y = tui ? H - H / hk + 50 + slot * (ch + 6) : H - ch - 8; slot++;   // touch landscape: cards top-right, clear of the stick (in the scaled HUD space)
     g.globalAlpha = cardAlpha(p, x, y, 224, ch, hk);               // v7.9: see-through while someone is behind it (v8.6.7: eased, with hysteresis)
     g.fillStyle = 'rgba(8,14,22,0.82)'; roundRect(g, x, y, 224, ch, 11); g.fill();

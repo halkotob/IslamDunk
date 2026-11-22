@@ -1,6 +1,6 @@
 // ================================================= v3.9: SKILL + TOUCH
 // Crossover move, fatigue, charges, pass-lane risk, contested green windows,
-// and a proper touch-control overlay (landscape and portrait).
+// and a proper touch-control overlay (landscape: v9.34.0 the game is landscape only).
 
 // ------------------------------------------------------------- crossover
 const CROSS_T = 0.34, CROSS_CD = 1.5;
@@ -119,12 +119,12 @@ function contestK(p, x = p.x, z = p.z) {
 }
 
 // ------------------------------------------------------------- touch overlay
-// HTML controls over (landscape) or below (portrait) the canvas: a drag stick
+// HTML controls over the canvas: a drag stick
 // on the left, action buttons on the right. Labels follow the situation
 // (PASS/SHOOT on offense, STEAL/BLOCK on defense). Shown automatically on
 // touch devices during play; hidden as soon as a keyboard or controller is used.
 const TouchUI = {
-  el: null, btns: {}, stickEl: null, knob: null, portrait: false, shown: false, sid: null, ox: 0, oy: 0,
+  el: null, btns: {}, stickEl: null, knob: null, shown: false, sid: null, ox: 0, oy: 0,
   init() {
     if (this.el || typeof document === 'undefined' || !document.body) return;
     const css = document.createElement('style');
@@ -159,7 +159,7 @@ color:#fff;background:rgba(12,20,30,.55);border:2px solid rgba(255,255,255,.55);
     addEventListener('gamepadconnected', () => { Input.touchMode = false; });
     this.layout(); addEventListener('resize', () => this.layout());
   },
-  R() { return this.portrait ? 64 : 56; },
+  R() { return 56; },
   moveStick(e) {
     const R = this.R(); let dx = e.clientX - this.ox, dy = e.clientY - this.oy; const L = Math.hypot(dx, dy);
     if (L > R) { this.ox += dx * (1 - R / L); this.oy += dy * (1 - R / L); dx = e.clientX - this.ox; dy = e.clientY - this.oy; }   // base follows the thumb
@@ -176,14 +176,12 @@ color:#fff;background:rgba(12,20,30,.55);border:2px solid rgba(255,255,255,.55);
   layout() {
     if (!this.el) return;
     const vw = innerWidth, vh = innerHeight;
-    this.portrait = vh > vw;
-    document.body.style.justifyContent = this.portrait && this.shown ? 'flex-start' : 'center';   // portrait: game on top, controls below
-    const cv = canvas.getBoundingClientRect();
-    // portrait: controls live in the space below the game; landscape: bottom corners, clear of the HUD
-    const top = this.portrait ? Math.max(cv.bottom + 8, vh * 0.45) : vh * 0.42, zoneH = vh - top;
-    Object.assign(this.zone.style, { top: top + 'px', height: zoneH + 'px', width: (this.portrait ? vw * 0.5 : vw * 0.42) + 'px' });
-    const R = this.R(); this.homeX = R + (this.portrait ? 34 : 28); this.homeY = zoneH - R - (this.portrait ? 44 : 26);
-    const s = this.portrait ? 1.18 : 1, pad = this.portrait ? 26 : 18, bot = this.portrait ? 38 : 16;
+    document.body.style.justifyContent = 'center';
+    // the bottom corners, clear of the HUD
+    const top = vh * 0.42, zoneH = vh - top;
+    Object.assign(this.zone.style, { top: top + 'px', height: zoneH + 'px', width: vw * 0.42 + 'px' });
+    const R = this.R(); this.homeX = R + 28; this.homeY = zoneH - R - 26;
+    const s = 1, pad = 18, bot = 16;
     const place = (b, size, right, bottom) => Object.assign(b.style, { width: size * s + 'px', height: size * s + 'px', right: right * s + pad + 'px', bottom: bottom * s + bot + 'px', fontSize: (size > 70 ? 15 : 12) * s + 'px' });
     place(this.btns.shoot, 88, 0, 0); place(this.btns.pass, 70, 100, 6); place(this.btns.turbo, 62, 12, 100); place(this.btns.cross, 62, 96, 96); place(this.btns.skill, 56, 186, 70);
     this.drawStick();
@@ -208,7 +206,7 @@ color:#fff;background:rgba(12,20,30,.55);border:2px solid rgba(255,255,255,.55);
       if ((bo && (bo.state === 'windup' || bo.state === 'shoot' || bo.state === 'dunk')) || (ball.state === 'shot' && dxz(ball, me) < 120)) hintS = true;   // contest
     } else if (bo && bo !== me) { pass = 'CALL'; shoot = 'JUMP'; }
     const cross = bo === me ? ((me.cd.cross || 0) > 0 ? 'cd' : 'ok') : 'off';
-    const key = pass + shoot + hintP + hintS + cross + this.portrait;
+    const key = pass + shoot + hintP + hintS + cross;
     if (key !== this.last) {
       this.last = key;
       this.btns.pass.firstChild.textContent = pass; this.btns.shoot.firstChild.textContent = shoot;

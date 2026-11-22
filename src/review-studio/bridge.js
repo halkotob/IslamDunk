@@ -16,7 +16,7 @@ export async function openGame(host) {
   for (let i = 0; i < 400 && !ready(); i++) await new Promise(r => setTimeout(r, 50));
   if (!ready()) throw new Error('the game frame did not start');
   G.eval(AGENT); G.eval(AGENT2); G.eval(AGENT3);
-  G.eval('SETTINGS.sound = false; try { localStorage.setItem("islamdunk.portraitOK", "1"); } catch (e) {}');
+  G.eval('SETTINGS.sound = false;');   // (v9.34.0: the turn-sideways card is skipped by the frame's sandbox, html.studio-frame)
   const api = {
     frame: f, win: G, rs: G.__RS,
     eval: s => G.eval(s),

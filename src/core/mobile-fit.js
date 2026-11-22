@@ -3,8 +3,10 @@
 //    rounded corners, home bar), and re-fit as iPhone Safari's toolbars come and go or the phone turns.
 // 2. Touch: no browser zoom or page gestures (iOS ignores user-scalable=no): quick second taps,
 //    pinches and long-press menus are swallowed, so double-taps reach the game.
-// 3. Touch controls scale with the screen and stay clear of the safe area; portrait no longer overlaps.
-// 4. Portrait on a phone: full-screen "turn sideways" card (with "play in portrait anyway").
+// 3. Touch controls scale with the screen and stay clear of the safe area.
+// 4. Portrait on a phone: a full-screen "turn sideways" card. v9.34.0: the game is landscape only. The card can't be
+//    skipped (it was: "play in portrait anyway"), and while it shows an offline game holds (online play runs on, so
+//    nothing times out). Only the review tool's frame skips it (the class studio-frame, set by its sandbox).
 // 5. iPhone has no fullscreen for web pages: the fullscreen button explains Add to Home Screen, which
 //    opens the game like an app (manifest.webmanifest). A small tip offers it on the title screen.
 // 6. Desktop: the canvas keeps keyboard focus; right-click menus are off.
@@ -54,27 +56,37 @@ function refit() { resize(); for (const t of [80, 250, 600, 1200]) setTimeout(re
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refit(); });
 
   // ---- touch controls: size from the screen, keep out of the safe area
-  TouchUI.R = function () { return Math.round((this.portrait ? 54 : 56) * (this.k || 1)); };
+  TouchUI.R = function () { return Math.round(56 * (this.k || 1)); };
   const _lay = TouchUI.layout.bind(TouchUI);
   TouchUI.layout = function () {
     if (!this.el) return;
-    const vw = innerWidth, vh = innerHeight, P = vh > vw, I = safeInsets();
-    this.portrait = P; this.k = P ? clamp(vw / 430, 0.78, 1.05) : clamp(vh / 400, 0.76, 1.15);
+    const vw = innerWidth, vh = innerHeight, I = safeInsets();
+    this.k = clamp(vh / 400, 0.76, 1.15);
     _lay(); if (!this.btns || !this.btns.shoot) return;
     const k = this.k, cv = canvas.getBoundingClientRect(), R = this.R();
-    const top = P ? Math.max(cv.bottom + 8, vh * 0.45) : vh * 0.4, zoneH = vh - top;
-    Object.assign(this.zone.style, { left: I.l + 'px', top: top + 'px', height: zoneH + 'px', width: (P ? vw * 0.48 : vw * 0.4) + 'px' });
-    this.homeX = R + (P ? 22 : 18) * k; this.homeY = zoneH - R - I.b - (P ? 34 : 16) * k;
-    const s = (P ? 1.12 : 1) * k, pad = (P ? 20 : 14) + I.r, bot = (P ? 30 : 12) + I.b;
+    const top = vh * 0.4, zoneH = vh - top;
+    Object.assign(this.zone.style, { left: I.l + 'px', top: top + 'px', height: zoneH + 'px', width: vw * 0.4 + 'px' });
+    this.homeX = R + 18 * k; this.homeY = zoneH - R - I.b - 16 * k;
+    const s = k, pad = 14 + I.r, bot = 12 + I.b;
     const place = (b, size, right, bottom) => Object.assign(b.style, { width: size * s + 'px', height: size * s + 'px', right: right * s + pad + 'px', bottom: bottom * s + bot + 'px', fontSize: (size > 80 ? 15 : 12.5) * s + 'px' });
     place(this.btns.shoot, 92, 0, 0); place(this.btns.pass, 76, 104, 4); place(this.btns.cross, 72, 18, 104);
     this.drawStick();
   };
 
-  // ---- portrait card
-  const rot = document.getElementById('rotate');
-  try { if (sessionStorage.getItem('islamdunk.portraitOK')) document.documentElement.classList.add('port-ok'); } catch (e) {}
-  if (rot) rot.querySelector('.go').addEventListener('click', () => { document.documentElement.classList.add('port-ok'); try { sessionStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} refit(); });
+  // ---- the "turn your phone sideways" card (web/index.html shows it: a coarse pointer, held upright). While it shows,
+  // an offline game holds: nothing updates (the clock, the CPU, the menus) and no input reaches it. Online play runs
+  // on underneath (the other phone is still playing, and stopping would time out), with the card over the controls.
+  // It goes by itself when the phone turns. The review tool's frame never shows it (html.studio-frame).
+  const ROT_Q = matchMedia('(orientation: portrait) and (pointer: coarse)');
+  window.rotateCardOn = () => ROT_Q.matches && !document.documentElement.classList.contains('studio-frame');
+  const _gu = gameUpdate;
+  gameUpdate = function () {
+    if (rotateCardOn()) {
+      if (typeof blurPause === 'function') blurPause();          // an offline match comes back to the pause menu
+      if (!Net.role) { Input.endFrame(false); return; }          // offline: hold (and drop the presses)
+    }
+    return _gu.apply(this, arguments);
+  };
 
   // ---- iPhone: Add to Home Screen instead of fullscreen
   const sheet = document.getElementById('ios-sheet'), tip = document.getElementById('ios-tip');

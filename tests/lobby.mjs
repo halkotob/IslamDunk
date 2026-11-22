@@ -47,7 +47,6 @@ export function lobbyTests({ newContext, open }) {
     for (const [dn, dev] of [['667x300', PHONE], ['1280x720', DESK]]) {
       const ctx = await newContext(browser, { device: dev });
       await ctx.addInitScript(REC_INIT);
-      await ctx.addInitScript(() => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} });
       const p = await open(ctx, base + '/?nowelcome=1', errs, 'layout ' + dn);
       await p.waitForTimeout(600);
       // a masjid with the longest masjid name and the two longest player names in the data, and the career team's name

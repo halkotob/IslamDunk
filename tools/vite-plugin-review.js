@@ -18,6 +18,7 @@ import { AUDIT_INIT, SCREENS } from '../tests/phone-audit.mjs';
 import { soundCalls } from './sound-list.mjs';
 
 export const STUDIO_SANDBOX = `window.__STUDIO__ = true; window.__studioErrors = [];
+document.documentElement.classList.add('studio-frame');   // (v9.34.0: the game is landscape only; the Studio's frame skips the turn-sideways card)
 addEventListener('error', e => { window.__studioErrors.push(String(e.message || e.error || e)); });
 addEventListener('unhandledrejection', e => { window.__studioErrors.push('unhandled: ' + String(e.reason && e.reason.message || e.reason)); });
 (() => {

@@ -30,7 +30,7 @@ async function boot(browser, base, dev, { pad = false, touch = false } = {}) {
   const ctx = await browser.newContext(dev);
   await ctx.route(/fonts\.(googleapis|gstatic)\.com|gstatic\.com\/firebasejs|islamdunk-ice\.[^/]*workers\.dev/, r => r.abort());
   await ctx.addInitScript(AUDIT_INIT); if (pad) await ctx.addInitScript(FAKE_PAD_INIT);
-  await ctx.addInitScript(() => { try { localStorage.setItem('islamdunk.portraitOK', '1'); localStorage.setItem('islamdunk.persistNote', '1'); } catch (e) {} });
+  await ctx.addInitScript(() => { try { localStorage.setItem('islamdunk.persistNote', '1'); } catch (e) {} });
   const p = await ctx.newPage(), errs = []; p.on('pageerror', e => errs.push(`${p.__screen || 'load'}: ${e.message}` + (process.env.STACK ? ' ' + String(e.stack).split('\n').slice(1, 4).join(' ') : '')));
   await p.goto(base + '/?net=loop&lat=0&room=census&nowelcome=1');
   await p.waitForFunction(() => typeof Game !== 'undefined' && Game.screen !== undefined && typeof Net !== 'undefined' && Net.avail !== 'checking', null, { timeout: 20000 });

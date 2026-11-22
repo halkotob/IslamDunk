@@ -32,7 +32,7 @@ const out = { version: null, rows: [] };
 for (const where of ['desktop', 'phone']) {
   const ctxB = await browser.newContext(where === 'phone' ? { viewport: { width: 667, height: 300 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { viewport: { width: 1280, height: 720 } });
   await ctxB.route(/fonts\.(googleapis|gstatic)\.com|gstatic\.com\/firebasejs/, r => r.abort());
-  await ctxB.addInitScript(`(() => { let s = 1; Math.random = () => { s |= 0; s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; window.__seed = n => { s = n | 0; }; try { localStorage.setItem('islamdunk.welcomed', '1'); localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} })();`);
+  await ctxB.addInitScript(`(() => { let s = 1; Math.random = () => { s |= 0; s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; window.__seed = n => { s = n | 0; }; try { localStorage.setItem('islamdunk.welcomed', '1'); } catch (e) {} })();`);
   const errs = [];
   // a fresh page for each part (the CPU games, then the scripted plays): nothing carries over from one to the other
   const fresh = async () => { const pg = await ctxB.newPage(); pg.on('pageerror', e => errs.push(e.message));

@@ -226,7 +226,7 @@ export async function auditPhone(browser, base, device, { query = '?net=loop&lat
   p.on('pageerror', e => errs.push(`${p.__screen || 'load'}: ${e.message}`));
   await p.goto(base + '/' + query);
   await p.waitForFunction(() => typeof Game !== 'undefined' && Game.screen !== undefined && typeof Net !== 'undefined' && Net.avail !== 'checking', null, { timeout: 20000 });
-  await p.evaluate(() => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} Input.touchMode = true; Input.lastDev = 'touch'; });
+  await p.evaluate(() => { Input.touchMode = true; Input.lastDev = 'touch'; });
   if (textSize) await p.evaluate(n => { SETTINGS.textSize = n; }, textSize);
   const out = [];
   const only = (process.env.ONLY || '').split(',').map(x => x.trim()).filter(Boolean);

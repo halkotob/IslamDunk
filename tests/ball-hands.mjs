@@ -51,7 +51,7 @@ export function ballHandsTests({ newContext, open }) {
   const runIn = async (browser, base, device, args, errs) => {
     const ctx = await browser.newContext(device || { viewport: { width: 1280, height: 720 } });
     await ctx.route(/fonts\.(googleapis|gstatic)\.com|gstatic\.com\/firebasejs/, r => r.abort());
-    await ctx.addInitScript(`(() => { let s = 1; Math.random = () => { s |= 0; s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; window.__seed = n => { s = n | 0; }; try { localStorage.setItem('islamdunk.welcomed', '1'); localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} })();`);
+    await ctx.addInitScript(`(() => { let s = 1; Math.random = () => { s |= 0; s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; window.__seed = n => { s = n | 0; }; try { localStorage.setItem('islamdunk.welcomed', '1'); } catch (e) {} })();`);
     const p = await ctx.newPage(); p.on('pageerror', e => errs.push(args.tag + ': ' + e.message));
     await p.goto(base + '/?nowelcome=1'); await p.waitForFunction(() => typeof Game !== 'undefined' && Game.screen === 'title', null, { timeout: 30000 }); await p.waitForTimeout(600);
     await p.evaluate(BALL_HANDS_JS);

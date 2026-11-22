@@ -316,7 +316,7 @@ export function storyTests({ newContext, open }) {
       const ctx = await newContext(browser, { device: dev }), p = await open(ctx, base + '/', errs, 'story-hub ' + dn);
       await prep(p);
       const r = await p.evaluate(touch => {
-        Input.touchMode = touch; try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {}
+        Input.touchMode = touch; 
         window.__sNew('Hub'); window.__sRun('C1.1'); careerHub();
         const labels = HUB_MENU().map(e => e.label), seen = [];
         const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540; const g = cv.getContext('2d'), ft = g.fillText.bind(g);

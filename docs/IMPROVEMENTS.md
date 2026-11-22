@@ -164,6 +164,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | T3 | Fold the 34 versioned patch files (`v6-…` to `v9161-…`) into their feature files | tech debt | 4 | 3 | 5 | **7** | open (gets easier after A1, A6) |
 | X5 | Announce menus to screen readers (the game is one canvas) | accessibility | 2 | 1 | 4 | **6** | open |
 | AN2 | Between the legs read as three poses (the pose switched at 30% and 56% of the dunk, the far shoulder jumping up to 1.07 radians in a frame) and was the longest dunk (1.17 s) | play test, Nov 2026 | 3 | 2 | 2 | **20** | done in 9.34.0 (one smooth path, every joint within the windmill's step, 1.03 s; `dunk-btl-smooth`, `tools/dunk-record.mjs`) |
+| P1 | Portrait was a half-supported second layout (touch controls below the game, other sizes) behind a "play in portrait anyway" button | play, Nov 2026 | 2 | 2 | 1 | **20** | done in 9.34.0 (landscape only: the turn-sideways card can't be skipped and holds an offline game; `landscape`) |
 
 ## Details
 

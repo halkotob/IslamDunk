@@ -1,6 +1,41 @@
 # Changelog
 
-## 9.34.0: between the legs is smoother and quicker
+## 9.34.0: between the legs is smoother and quicker, and portrait is gone: turn your phone sideways to play
+**Part 2: landscape only.** The game is played sideways. A phone held upright now sees only the "Turn your phone
+sideways" card, the same card as before, and nothing else.
+- **The card can't be skipped.** The "Play in portrait anyway" button and the flag it set are gone. The card goes away
+  by itself when the phone turns. (iPhone Safari in a browser tab can't lock the screen sideways; the card is the
+  lock. The manifest's landscape lock is unchanged.)
+- **The game holds behind it.**
+  - Offline, nothing moves while the card shows: the clock, the CPU and the menus all stop, and presses are dropped.
+    A match comes back to the pause menu, so turning the phone gives you Resume.
+  - Online, the match runs on underneath, because the other phone is still playing and stopping would time out.
+    The card covers the controls.
+  - A phone opened upright waits on the splash until it turns.
+- **Where the card shows:** only for a touch screen held upright, as before. So an iPad held upright shows it too;
+  turned sideways, it plays. A tall desktop window never sees it.
+- **The portrait layout is deleted.** Its touch-control sizes and positions are gone from `skill-touch.js`,
+  `v7-controls.js`, `mobile-fit.js` and `phone-pass.js`, along with the HUD row in `renderer.js`. Every landscape
+  number is the same as before.
+  - Story and menu screens had no portrait paths of their own. Their "portrait" mentions are about the people drawn
+    in them.
+  - **Kept, because it's character art, not layout:** `drawPortrait` and every caller (menus, career, story,
+    profile, creator, office, match extras, the Studio), `v920-headshots.js`, and the Studio's "portrait scale" note.
+  - The code is 38 lines lighter, and 48 lines were added for the hold and its notes.
+- **Tests:**
+  - The portrait cases were mostly a dead line in nine tests: a `portraitOK` flag set in localStorage that the game
+    only ever read from sessionStorage. They're removed. None of those tests ran a portrait size.
+  - `mobile` now expects only the card upright, with no touch controls behind it.
+  - `landscape` (new): upright, only the card shows, it has no button, and a tap lands on it. A match behind it
+    holds (the game time stays at 0.00 through Esc and a tap) and comes back to pause. Turned sideways, the card
+    goes and Resume plays on. A 700×1000 desktop window never sees it.
+  - The Review Studio's frame still skips the card (its sandbox adds `studio-frame`), so the Studio works upright on
+    a phone (`studio-phone`).
+- **Measured:** `node tests/phone-audit.mjs` gives 0 overflows, 0 small text and 0 errors at the iPhone 13 landscape
+  and 667×300 sizes, the same as before. Startup (to a running game on an emulated phone) is about 0.26 s, also
+  the same.
+
+**Part 1: between the legs.**
 Between the legs was slow and moved "step by step". Its pose was three fixed poses switched at 30% and 56% of the
 dunk, and the springy joints jumped to each one and settled there. It now moves through the same poses along one
 smooth path. The legs split while the ball is still coming down, and the far arm starts up as the ball reaches the

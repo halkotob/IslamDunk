@@ -23,7 +23,7 @@ async function openGame(host) {
   G.eval(AGENT);
   G.eval(AGENT2);
   G.eval(AGENT3);
-  G.eval('SETTINGS.sound = false; try { localStorage.setItem("islamdunk.portraitOK", "1"); } catch (e) {}');
+  G.eval("SETTINGS.sound = false;");
   const api = {
     frame: f,
     win: G,

@@ -18,7 +18,6 @@ export function phoneTapTextTests({ newContext, open }) {
   const setup = name => SCREENS.find(s => s[0] === name)[1];
   T['tap-targets'] = async ({ browser, base }) => {
     const errs = [], detail = [], ctx = await newContext(browser, { device: PHONE }), p = await open(ctx, base + '/?nowelcome=1', errs, 'tap');
-    await p.evaluate(() => { try { localStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} });
     // a real touch at a point in game coordinates
     const tapAt = async (x, y) => { const c = await p.evaluate(([x, y]) => { const r = canvas.getBoundingClientRect(); return [r.left + x * r.width / W, r.top + y * r.height / H]; }, [x, y]); await p.touchscreen.tap(c[0], c[1]); await sleep(250); };
     const go = async name => { await p.evaluate(js => { Input.touchMode = true; Input.lastDev = 'touch'; (0, eval)(js); }, setup(name)); await sleep(500); };
@@ -70,7 +69,7 @@ export function phoneTapTextTests({ newContext, open }) {
     const errs = [], detail = [], out = {};
     // saves: an old value (9.5: no change on phones), one with no text size, one out of range
     const ctx = await newContext(browser, { device: PHONE });
-    await ctx.addInitScript(() => { try { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('islamdunk.portraitOK', '1'); localStorage.setItem('islamdunk.access', '{"cb":1,"ts":0,"as":1}'); } } catch (e) {} });
+    await ctx.addInitScript(() => { try { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('islamdunk.access', '{"cb":1,"ts":0,"as":1}'); } } catch (e) {} });
     let p = await open(ctx, base + '/?nowelcome=1', errs, 'text');
     out.oldLoads = await p.evaluate(() => [SETTINGS.cbSafe, SETTINGS.textSize, SETTINGS.autoShot].join());
     // the row on a phone: the three sizes, and it steps

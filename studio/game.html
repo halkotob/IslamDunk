@@ -27,17 +27,16 @@ body{position:fixed;inset:0;box-sizing:border-box;display:flex;flex-direction:co
 canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit-tap-highlight-color:transparent}
 #sa{position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;
   padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
-/* portrait on a phone: a full-screen "turn sideways" card (dismissable) */
+/* portrait on a phone: a full-screen "turn sideways" card. v9.34.0: landscape only, it can't be dismissed (only the review tool's frame skips it) */
 #rotate{display:none;position:fixed;inset:0;z-index:20;background:rgba(6,12,20,0.97);color:#f6ecd2;font:600 16px "Trebuchet MS","Segoe UI",sans-serif;text-align:center;
   flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;box-sizing:border-box}
 #rotate .ic{font-size:64px;line-height:1;animation:rot 2.2s ease-in-out infinite}
 #rotate h2{margin:0;font-size:24px;color:#e8c35a}
 #rotate p{margin:0;max-width:320px;font-weight:400;font-size:14px;line-height:1.45;color:#cfd8e3}
-#rotate button,#ios-sheet button,#ios-tip button{font:600 15px "Trebuchet MS","Segoe UI",sans-serif;border:0;border-radius:22px;padding:11px 22px;touch-action:manipulation;cursor:pointer}
-#rotate .go{background:transparent;color:#9fb3c8;border:1px solid rgba(159,179,200,.45)}
+#ios-sheet button,#ios-tip button{font:600 15px "Trebuchet MS","Segoe UI",sans-serif;border:0;border-radius:22px;padding:11px 22px;touch-action:manipulation;cursor:pointer}
 @keyframes rot{0%,20%{transform:rotate(0)}50%,70%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
 @media (prefers-reduced-motion: reduce){#rotate .ic{animation:none}}
-@media (orientation: portrait) and (pointer: coarse){html:not(.port-ok) #rotate{display:flex}}
+@media (orientation: portrait) and (pointer: coarse){html:not(.studio-frame) #rotate{display:flex}}
 /* iPhone: how to get a fullscreen, app-like game (Add to Home Screen) */
 #ios-sheet{display:none;position:fixed;inset:0;z-index:30;background:rgba(6,12,20,0.88);align-items:center;justify-content:center;padding:16px;box-sizing:border-box;
   font:400 15px "Trebuchet MS","Segoe UI",sans-serif;color:#f6ecd2}
@@ -60,7 +59,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 <body>
 <canvas id="game" tabindex="0" aria-label="Islam Dunk basketball game"></canvas>
 <div id="sa"></div>
-<div id="rotate"><div class="ic">&#x1F4F1;</div><h2>Turn your phone sideways</h2><p>Islam Dunk is made for landscape. If the screen doesn&rsquo;t turn, switch off Rotation Lock in Control Center.</p><button class="go" type="button">Play in portrait anyway</button></div>
+<div id="rotate"><div class="ic">&#x1F4F1;</div><h2>Turn your phone sideways</h2><p>Islam Dunk is made for landscape. If the screen doesn&rsquo;t turn, switch off Rotation Lock in Control Center.</p></div>
 <div id="ios-sheet" role="dialog" aria-label="Play fullscreen"><div class="card"><h2>Play fullscreen</h2>
 <ol><li>Tap <b>Share</b> <span class="sh">&#x2191;</span> in Safari&rsquo;s toolbar.</li><li>Choose <b>Add to Home Screen</b>.</li><li>Open <b>Islam Dunk</b> from your home screen.</li></ol>
 <small>It opens like an app: no browser bars, the whole screen for the game. Progress in the home-screen app is kept separately from Safari&rsquo;s.</small>
@@ -68,6 +67,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 <div id="ios-tip"><span>Play fullscreen</span><button type="button" class="how">How</button><button type="button" class="x" aria-label="Dismiss">&#x2715;</button></div>
 <script>
 window.__STUDIO__ = true; window.__studioErrors = [];
+document.documentElement.classList.add('studio-frame');   // (v9.34.0: the game is landscape only; the Studio's frame skips the turn-sideways card)
 addEventListener('error', e => { window.__studioErrors.push(String(e.message || e.error || e)); });
 addEventListener('unhandledrejection', e => { window.__studioErrors.push('unhandled: ' + String(e.reason && e.reason.message || e.reason)); });
 (() => {
@@ -3077,7 +3077,7 @@ function drawHUD(g) {
   for (const p of M.players) {
     if (p.human < 0 || M.attract || Input.touchMode) continue;   // v8.6.2: touch draws a compact strip instead (phone-pass.js)
     // card rows: name (+ status) / TURBO label + bar / NOOR label + bar: nothing shares a line
-    const noor = canNoor(p), ch = noor ? 66 : 54, tui = TouchUI.shown && !TouchUI.portrait;   // v6: + poise row
+    const noor = canNoor(p), ch = noor ? 66 : 54, tui = TouchUI.shown;   // v6: + poise row
     const x = tui ? W / hk - 236 - 8 : 12 + slot * 236, y = tui ? H - H / hk + 50 + slot * (ch + 6) : H - ch - 8; slot++;   // touch landscape: cards top-right, clear of the stick (in the scaled HUD space)
     g.globalAlpha = cardAlpha(p, x, y, 224, ch, hk);               // v7.9: see-through while someone is behind it (v8.6.7: eased, with hysteresis)
     g.fillStyle = 'rgba(8,14,22,0.82)'; roundRect(g, x, y, 224, ch, 11); g.fill();
@@ -8872,7 +8872,7 @@ function drawTextSprite(g, s, x, y) { g.drawImage(s.c, x - s.w / 2, y - s.by, s.
 
 // ================================================= v3.9: SKILL + TOUCH
 // Crossover move, fatigue, charges, pass-lane risk, contested green windows,
-// and a proper touch-control overlay (landscape and portrait).
+// and a proper touch-control overlay (landscape: v9.34.0 the game is landscape only).
 
 // ------------------------------------------------------------- crossover
 const CROSS_T = 0.34, CROSS_CD = 1.5;
@@ -8991,12 +8991,12 @@ function contestK(p, x = p.x, z = p.z) {
 }
 
 // ------------------------------------------------------------- touch overlay
-// HTML controls over (landscape) or below (portrait) the canvas: a drag stick
+// HTML controls over the canvas: a drag stick
 // on the left, action buttons on the right. Labels follow the situation
 // (PASS/SHOOT on offense, STEAL/BLOCK on defense). Shown automatically on
 // touch devices during play; hidden as soon as a keyboard or controller is used.
 const TouchUI = {
-  el: null, btns: {}, stickEl: null, knob: null, portrait: false, shown: false, sid: null, ox: 0, oy: 0,
+  el: null, btns: {}, stickEl: null, knob: null, shown: false, sid: null, ox: 0, oy: 0,
   init() {
     if (this.el || typeof document === 'undefined' || !document.body) return;
     const css = document.createElement('style');
@@ -9031,7 +9031,7 @@ color:#fff;background:rgba(12,20,30,.55);border:2px solid rgba(255,255,255,.55);
     addEventListener('gamepadconnected', () => { Input.touchMode = false; });
     this.layout(); addEventListener('resize', () => this.layout());
   },
-  R() { return this.portrait ? 64 : 56; },
+  R() { return 56; },
   moveStick(e) {
     const R = this.R(); let dx = e.clientX - this.ox, dy = e.clientY - this.oy; const L = Math.hypot(dx, dy);
     if (L > R) { this.ox += dx * (1 - R / L); this.oy += dy * (1 - R / L); dx = e.clientX - this.ox; dy = e.clientY - this.oy; }   // base follows the thumb
@@ -9048,14 +9048,12 @@ color:#fff;background:rgba(12,20,30,.55);border:2px solid rgba(255,255,255,.55);
   layout() {
     if (!this.el) return;
     const vw = innerWidth, vh = innerHeight;
-    this.portrait = vh > vw;
-    document.body.style.justifyContent = this.portrait && this.shown ? 'flex-start' : 'center';   // portrait: game on top, controls below
-    const cv = canvas.getBoundingClientRect();
-    // portrait: controls live in the space below the game; landscape: bottom corners, clear of the HUD
-    const top = this.portrait ? Math.max(cv.bottom + 8, vh * 0.45) : vh * 0.42, zoneH = vh - top;
-    Object.assign(this.zone.style, { top: top + 'px', height: zoneH + 'px', width: (this.portrait ? vw * 0.5 : vw * 0.42) + 'px' });
-    const R = this.R(); this.homeX = R + (this.portrait ? 34 : 28); this.homeY = zoneH - R - (this.portrait ? 44 : 26);
-    const s = this.portrait ? 1.18 : 1, pad = this.portrait ? 26 : 18, bot = this.portrait ? 38 : 16;
+    document.body.style.justifyContent = 'center';
+    // the bottom corners, clear of the HUD
+    const top = vh * 0.42, zoneH = vh - top;
+    Object.assign(this.zone.style, { top: top + 'px', height: zoneH + 'px', width: vw * 0.42 + 'px' });
+    const R = this.R(); this.homeX = R + 28; this.homeY = zoneH - R - 26;
+    const s = 1, pad = 18, bot = 16;
     const place = (b, size, right, bottom) => Object.assign(b.style, { width: size * s + 'px', height: size * s + 'px', right: right * s + pad + 'px', bottom: bottom * s + bot + 'px', fontSize: (size > 70 ? 15 : 12) * s + 'px' });
     place(this.btns.shoot, 88, 0, 0); place(this.btns.pass, 70, 100, 6); place(this.btns.turbo, 62, 12, 100); place(this.btns.cross, 62, 96, 96); place(this.btns.skill, 56, 186, 70);
     this.drawStick();
@@ -9080,7 +9078,7 @@ color:#fff;background:rgba(12,20,30,.55);border:2px solid rgba(255,255,255,.55);
       if ((bo && (bo.state === 'windup' || bo.state === 'shoot' || bo.state === 'dunk')) || (ball.state === 'shot' && dxz(ball, me) < 120)) hintS = true;   // contest
     } else if (bo && bo !== me) { pass = 'CALL'; shoot = 'JUMP'; }
     const cross = bo === me ? ((me.cd.cross || 0) > 0 ? 'cd' : 'ok') : 'off';
-    const key = pass + shoot + hintP + hintS + cross + this.portrait;
+    const key = pass + shoot + hintP + hintS + cross;
     if (key !== this.last) {
       this.last = key;
       this.btns.pass.firstChild.textContent = pass; this.btns.shoot.firstChild.textContent = shoot;
@@ -12911,7 +12909,7 @@ preStep = function (p, dt) {
   const _lay = TouchUI.layout.bind(TouchUI);
   TouchUI.layout = function () {
     _lay(); if (!this.btns || !this.btns.shoot) return;
-    const s = this.portrait ? 1.18 : 1, pad = this.portrait ? 26 : 18, bot = this.portrait ? 38 : 16;
+    const s = 1, pad = 18, bot = 16;
     const place = (b, size, right, bottom) => Object.assign(b.style, { width: size * s + 'px', height: size * s + 'px', right: right * s + pad + 'px', bottom: bottom * s + bot + 'px', fontSize: (size > 70 ? 15 : 12) * s + 'px' });
     place(this.btns.shoot, 92, 0, 0); place(this.btns.pass, 76, 104, 4); place(this.btns.cross, 72, 18, 104);   // one-hand triangle
     this.btns.turbo.style.display = 'none'; this.btns.skill.style.display = 'none';
@@ -13791,8 +13789,10 @@ function magnetCmd(p, mx, mz, px = p.x, pz = p.z) {
 //    rounded corners, home bar), and re-fit as iPhone Safari's toolbars come and go or the phone turns.
 // 2. Touch: no browser zoom or page gestures (iOS ignores user-scalable=no): quick second taps,
 //    pinches and long-press menus are swallowed, so double-taps reach the game.
-// 3. Touch controls scale with the screen and stay clear of the safe area; portrait no longer overlaps.
-// 4. Portrait on a phone: full-screen "turn sideways" card (with "play in portrait anyway").
+// 3. Touch controls scale with the screen and stay clear of the safe area.
+// 4. Portrait on a phone: a full-screen "turn sideways" card. v9.34.0: the game is landscape only. The card can't be
+//    skipped (it was: "play in portrait anyway"), and while it shows an offline game holds (online play runs on, so
+//    nothing times out). Only the review tool's frame skips it (the class studio-frame, set by its sandbox).
 // 5. iPhone has no fullscreen for web pages: the fullscreen button explains Add to Home Screen, which
 //    opens the game like an app (manifest.webmanifest). A small tip offers it on the title screen.
 // 6. Desktop: the canvas keeps keyboard focus; right-click menus are off.
@@ -13842,27 +13842,37 @@ function refit() { resize(); for (const t of [80, 250, 600, 1200]) setTimeout(re
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refit(); });
 
   // ---- touch controls: size from the screen, keep out of the safe area
-  TouchUI.R = function () { return Math.round((this.portrait ? 54 : 56) * (this.k || 1)); };
+  TouchUI.R = function () { return Math.round(56 * (this.k || 1)); };
   const _lay = TouchUI.layout.bind(TouchUI);
   TouchUI.layout = function () {
     if (!this.el) return;
-    const vw = innerWidth, vh = innerHeight, P = vh > vw, I = safeInsets();
-    this.portrait = P; this.k = P ? clamp(vw / 430, 0.78, 1.05) : clamp(vh / 400, 0.76, 1.15);
+    const vw = innerWidth, vh = innerHeight, I = safeInsets();
+    this.k = clamp(vh / 400, 0.76, 1.15);
     _lay(); if (!this.btns || !this.btns.shoot) return;
     const k = this.k, cv = canvas.getBoundingClientRect(), R = this.R();
-    const top = P ? Math.max(cv.bottom + 8, vh * 0.45) : vh * 0.4, zoneH = vh - top;
-    Object.assign(this.zone.style, { left: I.l + 'px', top: top + 'px', height: zoneH + 'px', width: (P ? vw * 0.48 : vw * 0.4) + 'px' });
-    this.homeX = R + (P ? 22 : 18) * k; this.homeY = zoneH - R - I.b - (P ? 34 : 16) * k;
-    const s = (P ? 1.12 : 1) * k, pad = (P ? 20 : 14) + I.r, bot = (P ? 30 : 12) + I.b;
+    const top = vh * 0.4, zoneH = vh - top;
+    Object.assign(this.zone.style, { left: I.l + 'px', top: top + 'px', height: zoneH + 'px', width: vw * 0.4 + 'px' });
+    this.homeX = R + 18 * k; this.homeY = zoneH - R - I.b - 16 * k;
+    const s = k, pad = 14 + I.r, bot = 12 + I.b;
     const place = (b, size, right, bottom) => Object.assign(b.style, { width: size * s + 'px', height: size * s + 'px', right: right * s + pad + 'px', bottom: bottom * s + bot + 'px', fontSize: (size > 80 ? 15 : 12.5) * s + 'px' });
     place(this.btns.shoot, 92, 0, 0); place(this.btns.pass, 76, 104, 4); place(this.btns.cross, 72, 18, 104);
     this.drawStick();
   };
 
-  // ---- portrait card
-  const rot = document.getElementById('rotate');
-  try { if (sessionStorage.getItem('islamdunk.portraitOK')) document.documentElement.classList.add('port-ok'); } catch (e) {}
-  if (rot) rot.querySelector('.go').addEventListener('click', () => { document.documentElement.classList.add('port-ok'); try { sessionStorage.setItem('islamdunk.portraitOK', '1'); } catch (e) {} refit(); });
+  // ---- the "turn your phone sideways" card (web/index.html shows it: a coarse pointer, held upright). While it shows,
+  // an offline game holds: nothing updates (the clock, the CPU, the menus) and no input reaches it. Online play runs
+  // on underneath (the other phone is still playing, and stopping would time out), with the card over the controls.
+  // It goes by itself when the phone turns. The review tool's frame never shows it (html.studio-frame).
+  const ROT_Q = matchMedia('(orientation: portrait) and (pointer: coarse)');
+  window.rotateCardOn = () => ROT_Q.matches && !document.documentElement.classList.contains('studio-frame');
+  const _gu = gameUpdate;
+  gameUpdate = function () {
+    if (rotateCardOn()) {
+      if (typeof blurPause === 'function') blurPause();          // an offline match comes back to the pause menu
+      if (!Net.role) { Input.endFrame(false); return; }          // offline: hold (and drop the presses)
+    }
+    return _gu.apply(this, arguments);
+  };
 
   // ---- iPhone: Add to Home Screen instead of fullscreen
   const sheet = document.getElementById('ios-sheet'), tip = document.getElementById('ios-tip');
@@ -18830,13 +18840,13 @@ function drawTouchStrip(g) {
   TouchUI.layout = function () {
     _lay.apply(this, arguments);
     if (!this.el || !this.btns || !this.btns.shoot) return;
-    const vw = innerWidth, vh = innerHeight, P = this.portrait, I = safeInsets(), k = this.k || 1, R = this.R();
-    const s = (P ? 1.12 : 1) * k * BTN_SIZE[PhonePrefs.size], pad = (P ? 20 : 14) + (PhonePrefs.left ? I.l : I.r), bot = (P ? 30 : 12) + I.b, L = PhonePrefs.left;
+    const vw = innerWidth, I = safeInsets(), k = this.k || 1, R = this.R();
+    const s = k * BTN_SIZE[PhonePrefs.size], pad = 14 + (PhonePrefs.left ? I.l : I.r), bot = 12 + I.b, L = PhonePrefs.left;
     const place = (b, size, side, bottom) => Object.assign(b.style, { width: size * s + 'px', height: size * s + 'px', [L ? 'left' : 'right']: side * s + pad + 'px', [L ? 'right' : 'left']: '', bottom: bottom * s + bot + 'px', fontSize: (size > 80 ? 15 : 12.5) * s + 'px' });
     place(this.btns.shoot, 92, 0, 0); place(this.btns.pass, 76, 104, 4); place(this.btns.cross, 72, 18, 104);
     const zw = parseFloat(this.zone.style.width) || vw * 0.4;
-    if (L) { this.zone.style.left = (vw - zw - I.r) + 'px'; this.homeX = zw - (R + (P ? 22 : 18) * k); }
-    else { this.zone.style.left = I.l + 'px'; this.homeX = R + (P ? 22 : 18) * k; }
+    if (L) { this.zone.style.left = (vw - zw - I.r) + 'px'; this.homeX = zw - (R + 18 * k); }
+    else { this.zone.style.left = I.l + 'px'; this.homeX = R + 18 * k; }
     this.drawStick();
   };
   const _tu = TouchUI.update;
