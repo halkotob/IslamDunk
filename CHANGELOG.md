@@ -67,6 +67,15 @@ far hand. It's also shorter.
   checks that no joint steps further than the windmill's, the length is within 10% of it, the ball stays within 20
   of a hand, the dunk scores 2, and nothing is left stuck.
 - Filmstrips for review: `docs/review/img/btl-before.png`, `btl-after.png`.
+- **The league fallback is re-fit to it.** The shorter dunk fits a few more shots into a game: about 0.16 more shots
+  per player, at the same accuracy. So real league games now score 32.8 a team, up from 31.7 on 9.33. The fallback
+  model for the games you don't play gave 30.0 (fitted in 9.21), 9.4% off; the limit is 8%. Its points a minute go
+  ×1.094 and every per-point rate ÷1.094, so the counting stats stay the same. It now gives 32.8.
+- **Test fix:** `fouls-kept`'s scripted player never pressed shoot at the free-throw line, so once the shorter dunk
+  changed the game's random stream, game 5 put him on the line and waited for him forever. He now takes his free
+  throws.
+- **Not fixed: `rb-lag`.** In CI it still fails on its "bad mobile" link (400 ms, 10% loss: 26 desyncs, both tries).
+  This is the open netcode limit recorded after 9.32.4, not something this release changed.
 
 ## 9.33.0: save any play, share it in two taps
 A play could be shared only if the game picked it as a highlight, only from the final screen, and only through Share →

@@ -64,6 +64,7 @@ export function noShoveTests({ newContext, open }) {
       const kd0 = knockDown; knockDown = function (t) { if (t && M.players && M.players.some(q => q.team !== t.team && q.state === 'steal' && dxz(q, t) < 60)) downs++; return kd0.apply(this, arguments); };
       const _hc = humanCmd; let mash = false;
       humanCmd = function (pad, c) { _hc.apply(this, arguments); if (!mash || pad !== 0) return; const me = M.players.find(q => q.human === 0); if (!me) return; c.a = false; c.turbo = false; c.mx = c.mz = 0;
+        if (M.phase === 'ft' && M.ft && M.ft.shooter === me) { c.b = ball.owner === me && me.state === 'free'; return; }   // (v9.34.0: at the line he shoots: a human's free throw waits for the press)
         if (ball.owner && ball.owner.team !== me.team) { const o = ball.owner, d = Math.hypot(o.x - me.x, o.z - me.z); c.mx = (o.x - me.x) / (d || 1); c.mz = (o.z - me.z) / (d || 1); c.turbo = true; if (d < 60 && Math.random() < 0.25) c.a = true; } };
       const games = [];
       for (const d of ['veryeasy', 'easy', 'medium', 'hard']) for (let g = 0; g < 6; g++) {   // (v9.19.2: 4 -> 6 games each; shooting fouls are rare, 2 in 16 games on 9.19.0 and none on 9.19.1)
