@@ -163,6 +163,7 @@ Score: **Priority = (Impact + Risk) × (6 − Effort)**, each from 1 to 5. Highe
 | CD2 | A signature for each main character: a celebration, posture or accessory | character design | 2 | 1 | 3 | **9** | done in 9.17.0 |
 | T3 | Fold the 34 versioned patch files (`v6-…` to `v9161-…`) into their feature files | tech debt | 4 | 3 | 5 | **7** | open (gets easier after A1, A6) |
 | X5 | Announce menus to screen readers (the game is one canvas) | accessibility | 2 | 1 | 4 | **6** | open |
+| AN2 | Between the legs read as three poses (the pose switched at 30% and 56% of the dunk, the far shoulder jumping up to 1.07 radians in a frame) and was the longest dunk (1.17 s) | play test, Nov 2026 | 3 | 2 | 2 | **20** | done in 9.34.0 (one smooth path, every joint within the windmill's step, 1.03 s; `dunk-btl-smooth`, `tools/dunk-record.mjs`) |
 
 ## Details
 

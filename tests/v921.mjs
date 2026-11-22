@@ -4,6 +4,8 @@
 //                   reverse finishes with his back to the rim (his facing flips); a Dunking 5 player can't do either
 //                   (the same dunk becomes a tomahawk or a two-hander), a 6 can do the reverse, an 8 both; the CPU picks
 //                   them (a good dunker over 200 dunk starts); the names
+//   dunk-btl-smooth (fast, v9.34.0) between the legs is one motion: every joint's largest step in a frame within the
+//                   windmill's, the length within 10% of it, the ball in a hand, it scores, nothing stuck
 //   dunk-new-online (full tier) a rollback game in which every dunk is one of the two: no desync, and both were dunked
 //   backcourt-steal (fast) after a basket the CPU inbounds; a human defender crosses half court at once (nothing stops
 //                   him at the line) and takes the ball from the handler in the CPU's backcourt (a steal there counts)
@@ -72,6 +74,46 @@ export function v921Tests({ newContext, open }) {
     const ok = !bad.length && gateOK && (r.cpu.reverse || 0) > 0 && (r.cpu.betweenlegs || 0) > 0 && r.names[0] === 'REVERSE JAM' && r.names[1] === 'THROUGH-THE-LEGS' && !errs.length;
     return { ok, detail: [...r.runs.map(x => `${x.type} (team ${x.team}): ${x.frames} frames, slammed ${x.slam}, +${x.scored}, held ${x.held} frames, farthest from a drawn hand ${x.worst}${x.type === 'reverse' ? ', back to the rim at the end ' + x.turned : ''}`),
       `the gate: Dunking 5 ${r.gate[5].join('/')}; 6 ${r.gate[6].join('/')}; 8 ${r.gate[8].join('/')}`, `the CPU (Dunking 9) over 240 starts: ${JSON.stringify(r.cpu)}`, `names: ${r.names.join(', ')}`, ...errs] };
+  };
+  // v9.34.0 dunk-btl-smooth (fast): between the legs is one motion. Played for real (team 0 and 1, from 200), next to a
+  // windmill from the same spot: no joint moves more in one frame than the windmill's same joint does (angles taken
+  // round a full turn), the dunk is within 10% of the windmill's length, the ball is within 20 units of a drawn hand on
+  // every held frame, it slams and scores 2, and afterwards the ball is loose or in play, not stuck in his hands
+  T['dunk-btl-smooth'] = async ({ browser, base }) => {
+    const errs = [], { ctx, p } = await plain(browser, base, errs, 'dunk-btl-smooth');
+    await p.evaluate(BALL_HANDS_JS); await p.evaluate(SOLO);
+    const r = await p.evaluate(() => {
+      const da = (x, y) => { const d = x - y; return d - Math.round(d / (2 * Math.PI)) * 2 * Math.PI; };
+      const run = (type, team) => {
+        const me = window.__solo(team), h = attackHoop(me.team), B = window.__bh;
+        giveBall(me); place(me, h.x + h.dir * 200, h.z + 30); me.state = 'free'; me.st = Object.assign({}, me.st, { dnk: 9 }); M.phase = 'live'; M.shotClock = 14;
+        const s0 = M.teams[me.team].score;
+        startDunk(me, {}); const a = me.act; a.type = type; a.D = clamp(0.6 + 200 / 450, 0.62, 1.15) * dunkLenK(type); a.peak = 64 + (a.D - 0.7) * 30 + dunkPeakAdd(type);
+        const step = {}, prev = {}; let f = 0, held = 0, worst = 0, slam = false, after = 0;
+        while (f < 200 && (me.state === 'dunk' || f < 2 || after < 6)) {
+          if (me.state !== 'dunk' && f > 2) after++;
+          snapPrev(); updateMatch(STEP); updateCamera(STEP); B.frame++; f++;
+          if (a.didSlam) slam = true;
+          for (const k of JOINTS) { const v = me.j[k].a; if (prev[k] != null) step[k] = Math.max(step[k] || 0, Math.abs(da(v, prev[k]))); prev[k] = v; }
+          if (ball.owner === me) { const m = B.measure(type); if (m) { held++; worst = Math.max(worst, m.gap); } }
+        }
+        const frames = f - after;
+        for (let i = 0; i < 120; i++) { snapPrev(); updateMatch(STEP); }
+        return { type, team, frames, slam, scored: M.teams[me.team].score - s0, held, worst: Math.round(worst * 10) / 10, step, stuck: ball.owner === me && me.state !== 'free' };
+      };
+      return [0, 1].map(t => [run('betweenlegs', t), run('windmill', t)]);
+    });
+    await ctx.close();
+    const bad = [], detail = [];
+    for (const [b, w] of r) {
+      const over = Object.keys(b.step).filter(k => b.step[k] > w.step[k] + 1e-6);
+      if (over.length) bad.push(`team ${b.team}: ${over.map(k => `${k} ${b.step[k].toFixed(3)} > windmill ${w.step[k].toFixed(3)}`).join(', ')}`);
+      if (Math.abs(b.frames - w.frames) > w.frames * 0.1) bad.push(`team ${b.team}: ${b.frames} frames, the windmill ${w.frames}`);
+      if (!b.slam || b.scored !== 2 || b.held < 20 || b.worst > 20 || b.stuck) bad.push(`team ${b.team}: slam ${b.slam}, +${b.scored}, held ${b.held}, farthest ${b.worst}, stuck ${b.stuck}`);
+      const big = k => Math.max(...Object.values(k.step));
+      detail.push(`team ${b.team}: between the legs ${b.frames} frames (the windmill ${w.frames}); largest step per joint ${Object.entries(b.step).map(([k, v]) => k + ' ' + v.toFixed(2) + '/' + w.step[k].toFixed(2)).join(' ')} (/ the windmill's); held ${b.held} frames, at most ${b.worst} from a hand; +${b.scored}; ${big(b).toFixed(2)} vs ${big(w).toFixed(2)} overall`);
+    }
+    return { ok: !bad.length && !errs.length, detail: [...detail, ...bad, ...errs] };
   };
   T['backcourt-steal'] = async ({ browser, base }) => {
     const errs = [], { ctx, p } = await plain(browser, base, errs, 'backcourt-steal');

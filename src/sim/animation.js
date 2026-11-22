@@ -70,16 +70,46 @@ function poseTargets(p, sp) {
       // v9.21.0 the reverse: back to the rim, both arms reach up and back over his head, the ball in the near hand (backhand)
       else if (a.type === 'reverse') Object.assign(t, u < 0.4 ? { ns: 2.5, fs: 2.3, ne: 1.3, fe: 1.4, lean: 0.05 } : { ns: 3.75, fs: 3.55, ne: 0.35, fe: 0.5, lean: -0.16, nh: 0.8, fh: -0.1 });
       // v9.21.0 between the legs: the ball down to his waist, legs split and tucked at the top while it goes under the near
-      // thigh from the near hand to the far hand, then the far arm swings it up to the rim
-      else if (a.type === 'betweenlegs') {
-        if (u < 0.3) Object.assign(t, { ns: 1.35, fs: 1.25, ne: 1.25, fe: 1.3, nk: 1.3, fk: 1.0, nh: 0.9, fh: 0.2 });
-        else if (u < 0.56) Object.assign(t, { ns: 0.55, fs: 0.45, ne: 0.75, fe: 0.8, nk: 1.7, fk: 1.5, nh: 1.45, fh: -0.35, lean: 0.12 });
-        else Object.assign(t, { ns: 2.2, fs: 3.55, ne: 1.2, fe: 0.35, nk: 1.2, fk: 0.7, nh: 0.7, fh: 0.0 });
-      }
+      // thigh from the near hand to the far hand, then the far arm swings it up to the rim. v9.34.0: one smooth path
+      // through those poses (btlPose), not three poses switched at 30% and 56%
+      else if (a.type === 'betweenlegs') Object.assign(t, btlPose(u));
       else Object.assign(t, { ns: 3.3, fs: 3.3, ne: 1.1, fe: 1.1 });
-    } else Object.assign(t, { ns: 2.2, fs: a.type === 'tomahawk' || a.type === 'windmill' ? 2.0 : 2.2, ne: 0.15, fe: 0.15, nk: 0.8, fk: 0.8, nh: 0.3, fh: 0.2 });
+    } else if (a.type === 'betweenlegs') Object.assign(t, btlPose(u));   // (it holds the slam pose through the slam at 0.8, then lands)
+    else Object.assign(t, { ns: 2.2, fs: a.type === 'tomahawk' || a.type === 'windmill' ? 2.0 : 2.2, ne: 0.15, fe: 0.15, nk: 0.8, fk: 0.8, nh: 0.3, fh: 0.2 });
   }
   return t;
+}
+// ---- v9.34.0 between the legs as one motion ----
+// Key poses at points of the dunk (a.s), joined by a smooth curve (Hermite, with the slope at each key from its
+// neighbours, so a joint never stops at a key and never changes speed in one frame). Times per joint can lead or lag:
+// the legs split while the ball is still coming down, and the far arm starts up as the ball reaches the far hand.
+//   gather 0.12 (the take-off pose) | waist 0.24 (ball at the waist, knees coming up) | under 0.40 (legs split, the ball
+//   under the near thigh) | up 0.62 (far arm high, the ball at the rim) | slam held to 0.82 | landing 0.96
+const BTL_KEYS = [
+  [0.12, { ns: 1.0, fs: 1.0, ne: 1.4, fe: 1.4, nk: 1.1, fk: 1.1, nh: 0.6, fh: 0.6, lean: 0.3 }],
+  [0.24, { ns: 1.3, fs: 1.2, ne: 1.25, fe: 1.3, nk: 1.35, fk: 1.05, nh: 0.95, fh: 0.15, lean: 0.14 }],
+  [0.40, { ns: 0.6, fs: 0.5, ne: 0.8, fe: 0.8, nk: 1.7, fk: 1.5, nh: 1.45, fh: -0.35, lean: 0.12 }],
+  [0.62, { ns: 2.2, fs: 3.55, ne: 1.2, fe: 0.35, nk: 1.2, fk: 0.7, nh: 0.7, fh: 0.0, lean: 0.1 }],
+  [0.82, { ns: 2.2, fs: 3.55, ne: 1.2, fe: 0.35, nk: 1.2, fk: 0.7, nh: 0.7, fh: 0.0, lean: 0.1 }],
+  [0.96, { ns: 2.2, fs: 2.2, ne: 0.15, fe: 0.15, nk: 0.8, fk: 0.8, nh: 0.3, fh: 0.2, lean: 0.1 }],
+];
+const BTL_LEAD = { nk: 0.03, fk: 0.03, nh: 0.03, fh: 0.03, fs: 0.03, fe: 0.03 };   // these joints run this much ahead
+// the ball: from both hands to the near hand (BTL_BALL.near), under the thigh to the far hand (BTL_BALL.under), then the
+// far hand. The swipe sound plays when it's halfway under (v921-dunks.js reads the same numbers)
+const BTL_BALL = { near: [0.16, 0.26], under: [0.26, 0.44] };
+const btlUnderAt = () => (BTL_BALL.under[0] + BTL_BALL.under[1]) / 2;
+function btlPose(u) {
+  const out = {};
+  for (const k of Object.keys(BTL_KEYS[0][1])) {
+    const x = clamp(u + (BTL_LEAD[k] || 0), BTL_KEYS[0][0], BTL_KEYS[BTL_KEYS.length - 1][0]);
+    let i = 0; while (i < BTL_KEYS.length - 2 && x > BTL_KEYS[i + 1][0]) i++;
+    const [t0, p0] = BTL_KEYS[i], [t1, p1] = BTL_KEYS[i + 1], h = t1 - t0, w = (x - t0) / h;
+    // the slope at a key: from its neighbours (0 at the first and last keys, and where the pose holds still)
+    const slope = j => { if (j <= 0 || j >= BTL_KEYS.length - 1) return 0; const [ta, pa] = BTL_KEYS[j - 1], [tb, pb] = BTL_KEYS[j + 1]; if (pa[k] === BTL_KEYS[j][1][k] || pb[k] === BTL_KEYS[j][1][k]) return 0; return (pb[k] - pa[k]) / (tb - ta); };
+    const m0 = slope(i) * h, m1 = slope(i + 1) * h, w2 = w * w, w3 = w2 * w;
+    out[k] = (2 * w3 - 3 * w2 + 1) * p0[k] + (w3 - 2 * w2 + w) * m0 + (-2 * w3 + 3 * w2) * p1[k] + (w3 - w2) * m1;
+  }
+  return out;
 }
 // The joints are springs (stiffness T.K, damping T.D), stepped explicitly. That is stable only in short steps: the
 // running pose (K 1500, D 65) holds at 1/60 s but blows up at 1/40 s and longer (the damping overshoots and the joint
@@ -186,11 +216,14 @@ function attachBall(p) {
     }
   } else if (p.state === 'dunk' && (p.act.type === 'tomahawk' || p.act.type === 'windmill' || p.act.type === 'reverse') && p.act.s > 0.12) {
     const hd = p.hands.n; bx = hd.x; by = hd.y + 4; bz = hd.z;
-  } else if (p.state === 'dunk' && p.act.type === 'betweenlegs' && p.act.s > 0.3) {
-    // (v9.21.0) under the near thigh from the near hand to the far hand, then in the far hand up to the rim
-    const u = p.act.s, k = clamp((u - 0.33) / 0.19, 0, 1), e = k * k * (3 - 2 * k), n = p.hands.n, f = p.hands.f;
-    if (u < 0.56) { bx = lerp(n.x, f.x, e); by = lerp(n.y, f.y, e) - Math.sin(e * Math.PI) * 3; bz = lerp(n.z + 3, f.z - 3, e); behind = e > 0.5; }
-    else { bx = f.x; by = f.y + 4; bz = f.z; }
+  } else if (p.state === 'dunk' && p.act.type === 'betweenlegs' && p.act.s > BTL_BALL.near[0]) {
+    // (v9.21.0) under the near thigh from the near hand to the far hand, then in the far hand up to the rim. v9.34.0: it
+    // eases from both hands into the near one and from the near one into where the far hand holds it, with no jump
+    // between (it was 3 to 4 units at 30% and 56%)
+    const u = p.act.s, sm = (u0, u1) => { const k = clamp((u - u0) / (u1 - u0), 0, 1); return k * k * (3 - 2 * k); };
+    const wa = sm(BTL_BALL.near[0], BTL_BALL.near[1]), e = sm(BTL_BALL.under[0], BTL_BALL.under[1]), n = p.hands.n, f = p.hands.f, m = handsMid(p);
+    const sx = lerp(m.x + p.face * 3, n.x, wa), sy = lerp(m.y + 2, n.y, wa), sz = lerp(m.z + 3, n.z + 3, wa);
+    bx = lerp(sx, f.x, e); by = lerp(sy, f.y + 4, e) - Math.sin(e * Math.PI) * 3; bz = lerp(sz, f.z, e); behind = e > 0.5;
   } else {
     const m = handsMid(p); bx = m.x + p.face * 3; by = m.y + (p.state === 'shoot' ? 7 : 2); bz = m.z + 3;
   }

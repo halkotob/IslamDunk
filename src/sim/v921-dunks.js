@@ -12,7 +12,7 @@
     const a = p.act, s0 = a ? a.s : 0;
     const r = _du.apply(this, arguments);
     if (a && (a.type === 'betweenlegs' || a.type === 'reverse')) {
-      const at = a.type === 'betweenlegs' ? 0.38 : 0.26;
+      const at = a.type === 'betweenlegs' ? btlUnderAt() : 0.26;   // (v9.34.0: the moment the ball is halfway under, animation.js)
       if (s0 < at && a.s >= at && ball.owner === p && onScreen(p.x)) SFX.swipe && SFX.swipe();
     }
     return r;

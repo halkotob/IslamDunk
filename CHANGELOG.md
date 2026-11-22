@@ -1,5 +1,38 @@
 # Changelog
 
+## 9.34.0: between the legs is smoother and quicker
+Between the legs was slow and moved "step by step". Its pose was three fixed poses switched at 30% and 56% of the
+dunk, and the springy joints jumped to each one and settled there. It now moves through the same poses along one
+smooth path. The legs split while the ball is still coming down, and the far arm starts up as the ball reaches the
+far hand. It's also shorter.
+- **Recorded before and after** in the Studio's Animations tab (`tools/dunk-record.mjs`, new: every joint and the
+  ball, frame by frame), with the windmill as the yardstick:
+
+  | | Before | After | Windmill |
+  |---|---|---|---|
+  | Whole dunk | 1.17 s (70 frames) | 1.03 s (62 frames) | 1.00 s |
+  | Take-off to the ball under the leg | 0.48 s | 0.35 s | |
+  | Take-off to the slam | 0.93 s | 0.83 s | 0.80 s |
+  | Largest step in one frame, far shoulder | 1.07 rad | 0.32 rad | 0.44 rad |
+  | Largest step, near shoulder | 0.57 rad | 0.29 rad | 1.88 rad |
+  | Sharpest change of speed (any joint) | 0.95 rad | 0.23 rad | 1.99 rad |
+
+  Every joint's largest step is now at or under the windmill's same joint. The old steps were at the switches, at
+  30% and 56%.
+- **The path:** key poses at 12%, 24%, 40% and 62% of the dunk, joined by a smooth curve that never stops at a key.
+  The slam pose holds through the slam (at 80%), then eases into the landing by 96%. Before, every dunk dropped the
+  arm at 78%, just before its own slam; the other dunks are unchanged. (`btlPose` in `src/sim/animation.js`.)
+- **The ball** eases from both hands into the near hand, then under the thigh into the far hand, with no jump. It
+  jumped 3–4 units at 30% and at 56% (the f.y + 4 snap). It stays within 6 units of a drawn hand (the limit is 20).
+- **Length:** `DUNK_LEN.betweenlegs` 1.12 → 1.0. The height is unchanged (`DUNK_PEAK` +8), the slam is still at 80%
+  with the ball at the rim, and the swipe sound plays when the ball is halfway under the leg (from the same numbers).
+- **Online:** the length is part of the game, so `NET_PROTO` goes from 8 to 9. A 9.33 phone won't play a 9.34 one.
+  `dunk-new-online` (a rollback game where every dunk is the reverse or between the legs) has 0 desyncs.
+- **Tests:** `dunk-btl-smooth` (new). It plays between the legs and a windmill from the same spot for each team, and
+  checks that no joint steps further than the windmill's, the length is within 10% of it, the ball stays within 20
+  of a hand, the dunk scores 2, and nothing is left stuck.
+- Filmstrips for review: `docs/review/img/btl-before.png`, `btl-after.png`.
+
 ## 9.33.0: save any play, share it in two taps
 A play could be shared only if the game picked it as a highlight, only from the final screen, and only through Share →
 Make video → Keep in My clips, with My clips under Settings → Extras. Now any play can be saved the moment it happens

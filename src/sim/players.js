@@ -303,7 +303,7 @@ function dunkPath(a, s) {
 // the dunk types by take-off distance (v9.21.0: + the reverse and between the legs), how long each takes, and how much
 // higher it goes. One table for the game, the online prediction and the review tools.
 function dunkTypesFor(d) { return d > 180 ? ['360', 'windmill', 'tomahawk', 'betweenlegs'] : d > 100 ? ['tomahawk', 'windmill', 'twohand', 'reverse'] : ['twohand', 'tomahawk', 'reverse']; }
-const DUNK_LEN = { windmill: 1.08, '360': 1.12, twohand: 0.94, reverse: 1.04, betweenlegs: 1.12 }, DUNK_PEAK = { '360': 8, betweenlegs: 8 };
+const DUNK_LEN = { windmill: 1.08, '360': 1.12, twohand: 0.94, reverse: 1.04, betweenlegs: 1.0 }, DUNK_PEAK = { '360': 8, betweenlegs: 8 };
 function dunkLenK(t) { return DUNK_LEN[t] || 1; }
 function dunkPeakAdd(t) { return DUNK_PEAK[t] || 0; }
 function startDunk(p, opts) {
