@@ -105,6 +105,7 @@
     "career/league.js",
     "career/hub-layout.js",
     "sim/v98-review.js",
+    "sim/v933-block-reach.js",
     "online/v98-net.js",
     "sim/v99-layups.js",
     "sim/v911-cpu-style.js",

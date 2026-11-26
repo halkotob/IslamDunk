@@ -1,6 +1,20 @@
 # Changelog
 
 ## Unreleased (career refine, collected for one release)
+### Blocks reach for the ball, in every mode (refine 6)
+- **The reach:** a block jump against a shot in the air, or a shooter rising, lunges toward the ball. The lunge is
+  short (about a body width, in under a fifth of a second), works from any side (in front, beside, behind), and
+  never carries you into the shooter's body, which would be a foul. The CPU blocks the same way.
+- **The chance:** your hand reaches toward the ball, not just the way you face.
+  - It rises with how close the hand gets and how early the jump meets the ball.
+  - In front of the shooter and early is still the best block (about 66% at Defense 7, at its closest).
+  - Beside or behind with a close hand now has a real chance (about 32%).
+  - Far off it rarely lands (about 14%).
+  - A near miss says FINGERTIPS.
+- **Lockdown's perk** now reaches farther for blocks as well as steals.
+- **CPU games:** the block rate in seeded CPU-only games is about the same as before (12.6% of shots against 13.1%,
+  within noise). The reach mostly helps a player who times the jump.
+
 ### Chapter 2's opening (refine 5)
 - **C2.1 First practice:** Sh. Saleem explains the loop in four lines.
   - Between every game you come back here and practise.

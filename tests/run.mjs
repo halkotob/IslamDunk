@@ -106,6 +106,7 @@ import { audioTests } from './audio.mjs';
 import { cpuStyleTests } from './cpu-style.mjs';
 import { animFixTests } from './anim-fix.mjs';
 import { storyTests } from './story.mjs';
+import { blockReachTests } from './block-reach.mjs';
 import { hubTests } from './hub-layout.mjs';
 import { replayTests } from './replays.mjs';
 
@@ -2034,6 +2035,7 @@ Object.assign(T, ballHandsTests({ newContext, open }));   // v9.19.1 the ball st
 Object.assign(T, difficultyTests({ newContext, open }));
 Object.assign(T, lobbyTests({ newContext, open }));
 Object.assign(T, v921Tests({ newContext, open }));   // v9.21.0 two dunks, the CPU's defense, no wall at half court (tests/v921.mjs)   // v9.20.0 the online lobby: the gym, team select, the post-game menu (tests/lobby.mjs)   // v9.19.2 career difficulty: starting stats, the first three games, the ladder (tests/difficulty.mjs)
+Object.assign(T, blockReachTests({ newContext, open }));   // v9.33 blocks reach for the ball (tests/block-reach.mjs)
 Object.assign(T, storyTests({ newContext, open }));   // v9.22 the career story (tests/story.mjs)
 Object.assign(T, hubTests({ newContext, open }));   // v9.6.2 the career hub's layout (v9.22: the story hub; tests/hub-layout.mjs)
 Object.assign(T, animFixTests({ newContext, open }));   // v9.16.1 animation fixes and retirements (tests/anim-fix.mjs)

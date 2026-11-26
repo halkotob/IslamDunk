@@ -93,7 +93,7 @@ const ARCH_INFO = {
   sharpshooter: { name: 'Sharpshooter', col: '#57b8ff', icon: 'target', perk: 'Perk: a wider green window on your jump shots.' },
   playmaker: { name: 'Playmaker', col: '#f2cf6b', icon: 'arrow', perk: 'Perk: your passes travel faster.' },
   rimrunner: { name: 'Rim Runner', col: '#ff8a4a', icon: 'up', perk: 'Perk: you can dunk from a step further out.' },
-  lockdown: { name: 'Lockdown', col: '#57e389', icon: 'shield', perk: 'Perk: a longer reach when you go for a steal.' },
+  lockdown: { name: 'Lockdown', col: '#57e389', icon: 'shield', perk: 'Perk: a longer reach for steals and blocks.' },
   glue: { name: 'Glue Guy', col: '#c58cff', icon: 'knot', perk: 'Perk: you win more loose balls and rebounds.' }
 };
 function drawArchIcon(g, kind, x, y, r, col) {
