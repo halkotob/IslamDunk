@@ -77,7 +77,7 @@ function gameUpdate(rdt) {
   Game.t += rdt; FX.updateReal(rdt); Game.keepInput = false; Game.interp = false;
   if (Game.toastT > 0) Game.toastT -= rdt;
   clutchTick(rdt);
-  if (Input.pressed.KeyF && !['namekeys', 'joincode'].includes(Game.screen)) toggleFullscreen();
+  if (Input.pressed.KeyF && !['namekeys', 'joincode', 'swelcome'].includes(Game.screen)) toggleFullscreen();
   Net.update(rdt);
   const tap = Input.taps[0];
   if (tap) for (const r of Game.rects.slice().reverse()) if (tap.x >= r.x && tap.x <= r.x + r.w && tap.y >= r.y && tap.y <= r.y + r.h) { SFX.blip(); r.fn(); break; }

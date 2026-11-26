@@ -37,7 +37,6 @@ function storyTitleOf(S) { const ch = CHAPTERS[Math.min(S.ch, CHAPTERS.length - 
   };
   // a new career: the creator, then Chapter 0 straight away
   creatorDone = function () {
-    if (!C.name.trim()) C.name = 'Brother';
     if (Game.creator.isNew) { C.story = storyFresh(); saveCareer(); storyRun(); }
     else careerHub();
   };

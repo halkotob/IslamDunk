@@ -215,7 +215,7 @@ function storyCredits(S) { Game.credits = { t: 0, S }; Game.screen = 'scredits';
 function creditsDone() { const c = Game.credits; if (!c) return; Game.credits = null; C.story.done = true; storyDone(c.S, 'next'); }
 function creditsLines() {
   const f = '$' + (C.story.fund || 0).toLocaleString('en-US');
-  return [['h', 'ISLAM DUNK'], ['s', 'The story of Masjid Al-Amanah'], ['', ''], ['h', C.name || 'The Brother'], ['s', 'New in town. Now home.'], ['', ''],
+  return [['h', 'ISLAM DUNK'], ['s', 'The story of Masjid Al-Amanah'], ['', ''], ['h', C.name || 'You'], ['s', 'New in town. Now home.'], ['', ''],
     ['h', 'Sh. Saleem'], ['s', 'Floor general, mentor, builder of a school'], ['h', 'Ammo Jamil'], ['s', 'Enforcer, and a proud father'], ['h', 'Ilyas'], ['s', 'Quick guard, his own man'],
     ['h', 'Ustath Karim'], ['s', 'Shooter, teacher, finally in a classroom with a window'], ['h', 'Qari Anas'], ['s', 'Big man, gentle giant'], ['h', 'Imam Dawud'], ['s', 'Old-head playmaker, keeper of the chai'],
     ['h', 'Musa'], ['s', 'High-flyer, newest of the brothers'], ['h', 'Rayyan'], ['s', 'Captain of Al-Furqan, rival, friend'], ['', ''],

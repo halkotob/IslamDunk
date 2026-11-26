@@ -1,5 +1,36 @@
 # Changelog
 
+## 9.30.0: Career refine 1: welcome, creator sections, distinct archetypes, your name
+From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 1):
+- **A welcome screen.** New career no longer drops you straight into the creator. It opens a short welcome: what
+  the career is, what the next screen does, and your name. On a computer you type it (Enter goes on); on a phone,
+  tap the box for the on-screen keys. You can't go on without a name.
+- **The creator in two sections.** **Look** (skin, hair, beard, cap, thobe, sneakers, number) is cosmetic only and
+  says so. **Game** (height, build and play style) changes your stats. It shows your play style's card: its icon,
+  its strengths and weaknesses, its perk, and your starting stats. Q and E (or a tap) switch sections. In a new
+  career, the button reads "Next: how he plays" on Look and "Start career" on Game.
+- **Five distinct archetypes.** No two play styles share a strength any more:
+  - Sharpshooter: shooting and clutch
+  - Playmaker: passing and speed
+  - Rim Runner: dunking and stamina
+  - Lockdown: defense and steals
+  - Glue Guy: hustle
+
+  Each has one small perk, in career games, for your player only:
+  - Sharpshooter: a wider green window
+  - Playmaker: faster passes
+  - Rim Runner: dunks from a step further out
+  - Lockdown: a longer reach on steals
+  - Glue Guy: more loose balls and rebounds
+- **Your name everywhere.** "Brother" is gone as a stand-in, including from the credits. Sh. Saleem uses your
+  name at the team invite and at the titles.
+- F no longer toggles fullscreen while you type your name.
+
+How it was checked: **new test** `story-welcome`. It types a name, checks an empty name can't go on, checks the
+phone's keys come back, checks the two sections, the five distinct archetypes, each perk on your player only (and
+not in Quick Play), the wider timing window, and the name in the credits. Also `story-*`, `studio-coverage`,
+`studio-phone`, the phone audit, `build-stats` and `first-three`.
+
 ## 9.34.0: between the legs is smoother and quicker, and portrait is gone: turn your phone sideways to play
 **Part 2: landscape only.** The game is played sideways. A phone held upright now sees only the "Turn your phone
 sideways" card, the same card as before, and nothing else.

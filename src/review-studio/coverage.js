@@ -29,6 +29,7 @@ export const OVERLAYS = [
   ['storywalk', 'A story walk: people to talk to, the checklist, speech bubbles (C0.3, C0.4)', /function storyWalkStart\(/, ['story: walk', 'story: walk bubble', 'story: tutorial']],
   ['storypick', 'The teammate pick before a league game (C2.5)', /function storyPick\(/, ['story: teammate pick'], ['Game.spick']],
   ['credits', 'The End: the credits (C5.11)', /function storyCredits\(/, ['story: credits'], ['Game.credits']],
+  ['welcome', 'The career’s welcome screen and name (v9.30)', /function openWelcome\(/, ['story: welcome'], ['Game.welcome']],
   ['story', 'Story scene', /function playStory\(/, ['story'], ['Game.story']],
   ['leaguewait', 'Around the league (waiting)', /Game\.lgWait = /, ['career around the league (waiting)'], ['Game.lgWait']],
   ['creator', 'Player creator', /Game\.creator = \{/, ['creator'], ['Game.creator']],

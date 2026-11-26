@@ -16,6 +16,8 @@
 //                  semifinal (back to C5.1), the Cup, the credits, the hub after The End, and Continue into P.1
 //   story-post     after The End: P.1, the replays (a title won again, a run lost, the all-star game, CHAI), all 21
 //                  milestones with their moments, P.4, every prize used in the world, econSelfCheck() empty
+//   story-welcome  New career: the welcome screen and a typed name (and the phone's keys), the creator's Look and
+//                  Game sections, five distinct archetypes and their perks (career games, your player only)
 //   story-reload   a save at every Chapter 0 and Chapter 1 scene, a reload, Continue: the same scene starts again
 //   story-hub      the hub has exactly its four entries (Continue, Gym, Masjid, My Player), the chapter's name and the
 //                  next event; every entry opens its screen; desktop and phone draw without errors
@@ -285,6 +287,55 @@ export function storyTests({ newContext, open }) {
     return { ok, detail: ['covered: ' + JSON.stringify(covered), 'replays: ' + JSON.stringify(R), 'milestones: ' + JSON.stringify(MS_), ...out.draws, ...errs] };
   };
 
+  T['story-welcome'] = async ({ browser, base }) => {
+    const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-welcome');
+    await prep(p);
+    const out = { draws: [] };
+    // New career: the welcome screen comes first; the name is typed on the keyboard
+    await p.evaluate(() => { localStorage.removeItem(SAVE_AUTO); C = null; Input.touchMode = false; goTitle(); Game.screen = 'cmenu'; cmenuSelect(cmenuItems().map(x => x[1]).indexOf('new')); });
+    await sleep(200);
+    out.first = await p.evaluate(() => Game.screen);
+    { const d = await draw(p); if (d !== true) out.draws.push('welcome: ' + d); }
+    await p.keyboard.press('Enter'); await sleep(100);
+    out.empty = await p.evaluate(() => Game.screen);                     // no name: stays on the welcome
+    await p.keyboard.type('yusuf ali', { delay: 30 }); await sleep(100);
+    out.typed = await p.evaluate(() => Game.welcome && Game.welcome.name);
+    await p.keyboard.press('Enter'); await sleep(200);
+    out.creator = await p.evaluate(() => ({ screen: Game.screen, name: C.name, tab: Game.creator.tab, look: creatorRowsOf('look').map(x => x.r.key), game: creatorRowsOf('game').map(x => x.r.key) }));
+    { const d = await draw(p); if (d !== true) out.draws.push('look: ' + d); }
+    await p.keyboard.press('KeyE'); await sleep(100);
+    out.tab = await p.evaluate(() => Game.creator.tab);
+    { const d = await draw(p); if (d !== true) out.draws.push('game: ' + d); }
+    // the archetypes: no two share a strength; each perk works in a career game, for your player only
+    out.arch = await p.evaluate(() => {
+      const plus = {}; let shared = 0;
+      for (const [k, m] of Object.entries(STYLE_MOD)) for (const [s, v] of Object.entries(m)) if (v > 0) { if (plus[s]) shared++; plus[s] = k; }
+      const perk = {};
+      for (const st of ['sharpshooter', 'playmaker', 'rimrunner', 'lockdown', 'glue']) {
+        C.look.style = PLAY_STYLES.indexOf(st);
+        newMatch(amanahTeam(), TEAMS[1], { humans: [{ team: 0, slot: 1, pad: 0 }], career: true });
+        const me = M.players.find(q => q.human === 0), cpu = M.players.find(q => q.human < 0 && q.team === 1);
+        perk[st] = { me: me.perk, cpu: cpu.perk || null };
+      }
+      C.look.style = PLAY_STYLES.indexOf('sharpshooter'); newMatch(amanahTeam(), TEAMS[1], { humans: [{ team: 0, slot: 1, pad: 0 }], career: true });
+      const me = M.players.find(q => q.human === 0), h = attackHoop(me.team), sx = h.x - h.dir * 220, sz = h.z + 40, w1 = shotWindow(me, sx, sz); me.perk = null; const w0 = shotWindow(me, sx, sz);
+      newMatch(amanahTeam(), TEAMS[1], { humans: [{ team: 0, slot: 1, pad: 0 }] });             // not a career game: no perk
+      const qp = M.players.find(q => q.human === 0).perk || null;
+      return { shared, perk, wider: w1 > w0, quickPlay: qp };
+    });
+    // your name: in the credits and the journal, never "Brother"
+    out.name = await p.evaluate(() => { creatorDone(); const cr = creditsLines().some(l => l[1] === C.name); return { name: C.name, credits: cr, brother: JSON.stringify(C).includes('"Brother"') }; });
+    // a phone: tapping the box opens the on-screen keys, which come back to the welcome
+    out.phone = await p.evaluate(() => { C = freshCareer(); openWelcome(); Input.touchMode = true; csAskName('Your name', '', 14, v => { if (Game.welcome) Game.welcome.name = v; }); const keys = Game.screen; for (const ch of 'AMIR') nameType(ch); nameDone(); return { keys, back: Game.screen, name: Game.welcome && Game.welcome.name }; });
+    await ctx.close();
+    const A = out.arch, P = A.perk, cr = out.creator;
+    const ok = out.first === 'swelcome' && out.empty === 'swelcome' && out.typed === 'Yusuf Ali' && cr.screen === 'creator' && cr.name === 'Yusuf Ali' && cr.tab === 'look'
+      && !cr.look.includes('name') && !cr.look.includes('height') && cr.game.join() === 'height,build,style' && out.tab === 'game'
+      && A.shared === 0 && Object.entries(P).every(([k, v]) => v.me === k && v.cpu === null) && A.wider && A.quickPlay === null
+      && out.name.credits && !out.name.brother && out.phone.keys === 'namekeys' && out.phone.back === 'swelcome' && out.phone.name === 'Amir' && !out.draws.length && !errs.length;
+    return { ok, detail: [JSON.stringify(out), ...errs] };
+  };
+
   T['story-reload'] = async ({ browser, base }) => {
     const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-reload');
     const want = { 'C0.1': 'ssalams', 'C0.2': 'musalla', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'play', 'C0.6': 'gym',
@@ -370,7 +421,7 @@ export function storyTests({ newContext, open }) {
       return { items, fresh, profKept: localStorage.getItem('islamdunk.profile') === prof, loads: loadCareer(SAVE_AUTO) };
     });
     await ctx.close();
-    const ok = !r.items.includes('continue') && !r.items.includes('load') && r.items.includes('new') && r.fresh.screen === 'creator' && r.fresh.bp === 0 && r.fresh.wins === 0 && r.fresh.sv >= 10 && r.fresh.at === 'C0.1' && r.fresh.lv === 4 && r.profKept && r.loads === false && !errs.length;
+    const ok = !r.items.includes('continue') && !r.items.includes('load') && r.items.includes('new') && ['creator', 'swelcome'].includes(r.fresh.screen) && r.fresh.bp === 0 && r.fresh.wins === 0 && r.fresh.sv >= 10 && r.fresh.at === 'C0.1' && r.fresh.lv === 4 && r.profKept && r.loads === false && !errs.length;
     return { ok, detail: [JSON.stringify(r), ...errs] };
   };
   return T;

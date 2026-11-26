@@ -78,7 +78,7 @@ scn('C0.1', { kind: 'scene', custom: 'salams', name: 'After Isha', next: 'C0.2',
 scn('C0.2', { kind: 'scene', talk: { at: 'musalla', who: 'dawud' }, name: 'The musalla', next: 'C0.3', lines: [
   ['narr', 'Masjid Al-Amanah, Eastside. Your first week in town, your first Isha here.'],
   ['dawud', 'Astaghfirullah, astaghfirullah, astaghfirullah.'],
-  ['dawud', 'Brother, I don’t know your face yet. Welcome. You’re new in Eastside?'],
+  ['dawud', 'As-salamu alaykum, akhi. I don’t know your face yet. Welcome. You’re new in Eastside?'],
   ['you', 'Wa alaykum as-salam. I moved here last week.'],
   ['dawud', 'Then you found the right door. The young ones play ball in the gym after Isha. Through there, past the shoe racks.'],
   ['you', 'JazakAllahu khayran.'],
@@ -147,7 +147,7 @@ scn('C1.9', { kind: 'scene', name: 'The team', next: 'C2.1', hub: true, lines: [
   ['anas', 'He said salaam to the uncles before the ball. Yes.'],
   ['musa', 'Two new guys on the team? We should get matching headbands.'],
   ['ilyas', 'We are not getting matching headbands.'],
-  ['saleem', 'Then it’s settled. Welcome to the Al-Amanah team, akhi. You’re here to help us win the masjid league.'],
+  ['saleem', 'Then it’s settled. Welcome to the Al-Amanah team, {name}. You’re here to help us win the masjid league.'],
   ['dawud', 'May Allah put barakah in it. And may the chai never run out.'],
   ['narr', 'The career begins.']] });
 
@@ -343,12 +343,12 @@ const STORY_PICK_LINES = {
 // the title scenes ({built}: the projects the title paid for, {fund}: the fundraiser's total)
 const STORY_TITLE_TEXT = [
   [['narr', 'Masjid Al-Amanah: champions of the Metro Masjid League.'], ['jamil', 'NINETEEN YEARS!'], ['jamil', 'Nineteen years, and now… now… somebody give me a tissue.'],
-    ['ilyas', 'Dad. Are you crying?'], ['jamil', 'It’s the chai. Too much cardamom.'], ['saleem', 'Alhamdulillah. First trophy in the history of this masjid. Thank Allah first, then your brothers.'],
+    ['ilyas', 'Dad. Are you crying?'], ['jamil', 'It’s the chai. Too much cardamom.'], ['saleem', 'Alhamdulillah. First trophy in the history of this masjid. Thank Allah first, then your brothers. You too, {name}.'],
     ['rayyan', 'Congratulations, Al-Amanah. You earned it. See you at State.'],
     ['karim', 'The fundraiser stands at {fund}. The kids are already arguing about whose name goes on the classroom door.'],
     ['saleem', 'And the title money builds something right away: {built}. No more flickering tubes. Sorry, lights-out game.'],
     ['dawud', 'Tonight, chai for everyone. Even Al-Furqan.']],
-  [['narr', 'Masjid Al-Amanah: state champions.'], ['saleem', 'From a gym with a bent rim to the best in the state. Alhamdulillah.'], ['jamil', 'Two trophies. TWO.'],
+  [['narr', 'Masjid Al-Amanah: state champions.'], ['saleem', 'From a gym with a bent rim to the best in the state. Alhamdulillah. Masha’Allah, {name}.'], ['jamil', 'Two trophies. TWO.'],
     ['ilyas', 'Dad, you said “good game” to me after the final. I heard you.'], ['jamil', '…I said it to everybody.'], ['ilyas', 'You looked at me when you said it.'],
     ['anas', 'I want to thank the uncles who drove us to every away game. All forty minutes of complaining about traffic.'],
     ['karim', 'The fundraiser stands at {fund}. My students drew a picture of the school wing. It has a pool. We are not building a pool.'],
@@ -371,7 +371,7 @@ const STORY_TITLE_TEXT = [
   [['narr', 'The Ummah Cup final is over. Masjid Al-Amanah, from Eastside, are champions of the world.'],
     ['saleem', 'Allahu akbar. Allahu akbar. Brothers… sujood of thanks, right here, then we lift it.'],
     ['narr', 'The team kneels on the court in sujood of thanks. Then Sh. Saleem hands the Cup to you.'],
-    ['saleem', 'You lift it first, akhi. You walked into our gym a stranger. Lift it as our brother.'],
+    ['saleem', 'You lift it first, {name}. You walked into our gym a stranger. Lift it as our brother.'],
     ['jamil', 'Twenty years ago I lost a final by one point. Tonight I have a world cup. My knees don’t hurt. Nothing hurts.'],
     ['ilyas', 'Dad. Proud of you.'], ['jamil', 'That is my line! …Proud of you too, son.'],
     ['karim', 'I am going to put a picture of this in every classroom of the new wing.'],

@@ -117,6 +117,8 @@ export const SCREENS = [
   ['story: credits', STORY_HELPERS + ` window.__sNew('Abdullah'); storyCredits(SC['C5.11']); Game.credits.t = 9;`],
   ['story: replay', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('P.R', { max: 1500 }); careerHub(); openReplay();`],
   ['story: milestones', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('P.R', { max: 1500 }); careerHub(); C.chem.jamil = 100; storyMsCheck(); openMilestones();`],
+  ['story: welcome', STORY_HELPERS + ` C = freshCareer(); openWelcome(); Game.welcome.name = 'Abdullah';`],
+  ['story: creator game', STORY_HELPERS + ` C = freshCareer(); C.name = 'Abdullah'; Game.creator = { idx: creatorFirstRow('game'), isNew: true, tab: 'game', welcomed: true }; Game.screen = 'creator';`],
   ['story: hub', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C1.1'); careerHub();`],
   ['cstats', CAREER + ` careerHub(); openStats();`],
   ['crecords', CAREER + ` careerHub(); openRecords();`],

@@ -90,6 +90,8 @@ export const META = {
   'story: credits': ['rare', 'C5.11: The End. The credits roll on black: the cast, the school wing, a closing du’a.', 'After the Ummah Cup.', null, null, 'v9.28'],
   'story: replay': ['hub loop', 'P.R: after The End, replay any tournament, the all-star game or CHAI.', 'Continue, after The End.', null, T('Continue'), 'v9.29'],
   'story: milestones': ['hub loop', 'P.2: the 21 milestones, progress, the next prize; tap an earned one to watch its moment.', 'My Player > Milestones.', null, T('My Player', 'Milestones'), 'v9.29'],
+  'story: welcome': ['first-run', 'New career: the welcome, what the career is, and your name (typed, or the phone’s keys).', 'Career → New career.', T('Career', 'New career'), null, 'v9.30'],
+  'story: creator game': ['first-run', 'The creator’s Game section: height, build and play style, the archetype card with its perk, your stats.', 'After the welcome, the second section.', T('Career', 'New career'), null, 'v9.30', [NEAR('creator')]],
   'story: hub': ['hub loop', 'The story hub at Chapter 1: Continue, Gym, Masjid, My Player.', 'After Chapter 0.', T('Career', 'Continue career'), T(), 'v9.22', [NEAR('hub')]],
   'hub: My Player menu': ['hub loop', 'My Player: stats, look, Journal, league and stats.', 'Hub → My Player.', T('Career', 'Continue career', 'My Player'), T('My Player'), 'v9.22'],
   'hub': ['hub loop', 'The career hub: Continue, Gym, Masjid, My Player; the chapter, the next event, the fundraiser.', 'Career → Continue; after every career game.', T('Career', 'Continue career'), T(), 'v5.0', [], { v: 'keep' }],
