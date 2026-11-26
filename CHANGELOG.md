@@ -1,7 +1,8 @@
 # Changelog
 
-## 9.33.0: Career refine 4 to 7: Chapters 1 to 5, and blocks that reach
-From the first playtest (docs/career-overhaul/REFINE-PLAN.md, releases 4 to 7), released together.
+## 9.35.0: The career refined, from the first playtest
+From the first playtest (docs/career-overhaul/REFINE-PLAN.md, releases 1 to 7), released together: the welcome and
+the creator, the practice gym as home, Chapters 0 to 5 rebuilt under the new rules, and blocks that reach for the ball.
 ### Chapters 3 to 5 under the new rules (refine 7)
 These changes apply the notes on Chapters 0 to 2 to the rest of the story:
 - **Every teammate pick is a walk:** the brothers stand around the gym and you talk to the one you want.
@@ -74,7 +75,7 @@ Chapter 1 now runs in the order from your notes, in seven scenes (C1.1 to C1.7):
   the next match.
 - **Saves:** a Chapter 1 save from before this layout starts again at C1.1.
 
-## 9.32.0: Career refine 3: Chapter 0 rebuilt
+### Chapter 0 rebuilt (refine 3)
 From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 3). Chapter 0 now runs in the order from your
 notes:
 - **C0.1** The closing salams on black, as before.
@@ -107,7 +108,7 @@ How it was checked:
   at C2.6 (it keeps its place).
 - Also `story-*`, `studio-coverage`, `studio-phone`, the phone audit and `first-three`.
 
-## 9.31.0: Career refine 2: the practice gym is home
+### The practice gym is home (refine 2)
 From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 2; the rules are in SCENES.md):
 - **Home is the practice gym.** Before and after every game, in every chapter, you're in the practice gym with the
   ball. Whoever has the next game or scene stands on the court with a gold marker: your teammate before a league
@@ -143,7 +144,7 @@ How it was checked:
 - Every story test now plays through home, Next and the ready panel.
 - Also `studio-coverage`, `studio-phone` and the phone audit.
 
-## 9.30.0: Career refine 1: welcome, creator sections, distinct archetypes, your name
+### Welcome, creator sections, distinct archetypes, your name (refine 1)
 From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 1):
 - **A welcome screen.** New career no longer drops you straight into the creator. It opens a short welcome: what
   the career is, what the next screen does, and your name. On a computer you type it (Enter goes on); on a phone,
