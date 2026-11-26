@@ -77,30 +77,18 @@ scn('C0.1', { kind: 'scene', custom: 'salams', name: 'After Isha', next: 'C0.2',
   lines: [['narr', 'As-salamu alaykum wa rahmatullah.'], ['narr', 'As-salamu alaykum wa rahmatullah.']] });
 scn('C0.2', { kind: 'scene', talk: { at: 'musalla', who: 'dawud' }, name: 'The musalla', next: 'C0.3', lines: [
   ['narr', 'Masjid Al-Amanah, Eastside. Your first week in town, your first Isha here.'],
-  ['dawud', 'Astaghfirullah, astaghfirullah, astaghfirullah.'],
-  ['dawud', 'As-salamu alaykum, akhi. I don’t know your face yet. Welcome. You’re new in Eastside?'],
+  ['dawud', 'As-salamu alaykum, akhi. I don’t know your face yet. Welcome.'],
   ['you', 'Wa alaykum as-salam. I moved here last week.'],
-  ['dawud', 'Then you found the right door. The young ones play ball in the gym after Isha. Through there, past the shoe racks.'],
-  ['you', 'JazakAllahu khayran.'],
-  ['dawud', 'Wa iyyak. Go on. Tell Saleem the imam sent you.']] });
-scn('C0.3', { kind: 'walk', name: 'The gym', next: 'C0.4', walk: 'C0.3' });
-scn('C0.4', { kind: 'drill', name: 'Shoot around', next: 'C0.5', walk: 'C0.4' });
-scn('C0.5', { kind: 'play', name: 'Pickup game', mode: 'pickup', stakes: 'opener', win: 'C0.6', loss: 'C0.5',
-  winLines: [['saleem', 'Game! Alhamdulillah.'], ['jamil', 'Again. Tomorrow. Same teams.']],
-  lossLines: [['jamil', 'Ha! The old man still has it.'], ['saleem', 'Good effort. Get a drink, catch your breath, and we run it back.'], ['ilyas', 'Dad, don’t celebrate yet. One more.']] });
-scn('C0.6', { kind: 'scene', name: 'Come back tomorrow', next: 'C1.1', hub: true, lines: [
-  ['ilyas', 'Okay, okay. You can play. Where did you learn that move?'],
-  ['jamil', 'Good hands. Good feet. You box out, too. Nobody here boxes out.'],
-  ['jamil', 'Come back tomorrow. Same time. We need a fourth who doesn’t complain.'],
-  ['saleem', 'He’s right. And you passed when you were open, and passed when I was more open. That’s rare.'],
-  ['ilyas', 'You let them score on you twice, Dad.'],
-  ['jamil', 'I let them? You missed four layups. Four!'],
-  ['ilyas', 'Three. The fourth one was blocked. That’s not missing.'],
-  ['jamil', 'Yalla, it’s still a miss. A miss is a miss.'],
-  ['saleem', 'Brothers, brothers. The Prophet ﷺ said the strong one isn’t the one who wins the wrestle; it’s the one who holds himself when he’s angry.'],
-  ['saleem', 'We lost a pickup game. We didn’t lose anything else. Come, let’s stack the chairs.'],
-  ['you', 'In sha Allah, I’ll be here tomorrow.'],
-  ['saleem', 'In sha Allah. Welcome to Al-Amanah, akhi.']] });
+  ['dawud', 'The young ones play ball in the gym after Isha. Through there. Go on.']] });
+scn('C0.3', { kind: 'walk', name: 'The gym', next: 'C0.4', walk: 'C0.3', direct: true });
+scn('C0.4', { kind: 'play', name: 'Pickup game', mode: 'pickup', stakes: 'opener', tutorial: true, noRewards: true, win: 'C0.5', loss: 'C0.4',
+  winLines: [['saleem', 'Game! Alhamdulillah.'], ['jamil', 'Hmph. Beginner’s luck.']],
+  lossLines: [['jamil', 'Ha! The old man still has it.'], ['saleem', 'Catch your breath. We run it back.']] });
+scn('C0.5', { kind: 'scene', name: 'Come back tomorrow', next: 'C1.1', hub: true, lines: [
+  ['saleem', 'Good game! I’m Saleem. This is Ammo Jamil, and his son Ilyas.'],
+  ['jamil', 'Nineteen years I play here. Nineteen years we never win the league. You box out, so: come back tomorrow.'],
+  ['ilyas', 'Practice is after Isha. Don’t be late, he makes you run.'],
+  ['saleem', 'We’ll show you the gym properly. See you tomorrow, {name}.']] });
 
 // ---------------------------------------------------------------- Chapter 1: Making the team
 scn('C1.1', { kind: 'scene', name: 'A full gym', next: 'C1.2', lines: [
@@ -155,28 +143,13 @@ scn('C1.9', { kind: 'scene', name: 'The team', next: 'C2.1', hub: true, lines: [
 // npcs: id, where (gym world x, z), what he's doing (act), which way he faces, what he says; need: must be met.
 // closer: who ends the walk once everyone needed is met (and every goal is done).
 const STORY_WALKS = {
+  // C0.3: Sh. Saleem, Ammo Jamil and Ilyas shoot at one hoop. You have no ball; you ask to play.
   'C0.3': {
-    title: 'Say salaam', npcs: [
-      { id: 'ilyas', x: 1120, z: 430, act: 'shoot', face: 1, need: true, lines: [['ilyas', 'Salaam! You play? Good. Dad says I shoot too much.'], ['you', 'Wa alaykum as-salam. Is there such a thing?'], ['ilyas', 'That’s what I keep telling him!']] },
-      { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, need: true, lines: [['jamil', 'Ilyas! Bend your knees! …Oh. Wa alaykum as-salam. You’re new.'], ['you', 'I just moved here. The imam sent me.'], ['jamil', 'Ammo Jamil. That one shooting is my son. He thinks defense is optional.']] },
-      { id: 'saleem', x: 860, z: 300, act: 'host', face: -1, closer: true,
-        early: [['saleem', 'Say salaam to the brothers first, then come see me.']],
-        lines: [['saleem', 'Assalamu alaykum. I saw you at Isha. I’m Saleem.'], ['you', 'Wa alaykum as-salam. The imam said to find you. Can I join in?'], ['saleem', 'Of course. Warm up first. Shoot around, get a feel for the floor.']] }],
-    start: [['saleem', 'There he is. Go say salaam, brother.']]
-  },
-  'C0.4': {
-    title: 'Shoot around', tutorial: true, npcs: [
-      { id: 'ilyas', x: 1180, z: 600, act: 'host', face: -1 },
-      { id: 'jamil', x: 720, z: 140, act: 'sit', face: 1 },
-      { id: 'saleem', x: 860, z: 260, act: 'host', face: 1, closer: true,
-        early: [['saleem', 'Take your time. Finish your warm-up first.']],
-        lines: [['saleem', 'Good. You’ve got a feel for it.'], ['saleem', 'Two on two. You and me against Ammo Jamil and Ilyas. First to 11.'], ['jamil', 'Finally. My knees are getting cold.']] }],
-    goals: [
-      { id: 'walk', label: 'Move around the floor', touch: 'Move: the left stick', key: 'Move: W A S D or the arrows' },
-      { id: 'sprint', label: 'Sprint', touch: 'Sprint: hold TURBO', key: 'Sprint: hold L' },
-      { id: 'shoot', label: 'Take a jump shot', touch: 'Shoot: hold SHOOT, let go at the top', key: 'Shoot: hold J, let go at the top of the jump' },
-      { id: 'score', label: 'Make two baskets', n: 2, touch: 'Green on the meter is money', key: 'Green on the meter is money' }],
-    start: [['saleem', 'Shoot around. Move, sprint, get some shots up. Make a couple, then come find me.']]
+    title: 'The gym', noBall: true, npcs: [
+      { id: 'ilyas', x: 1130, z: 420, act: 'shoot', face: 1 },
+      { id: 'jamil', x: 1060, z: 560, act: 'host', face: 1 },
+      { id: 'saleem', x: 960, z: 330, act: 'host', face: -1, closer: true,
+        lines: [['you', 'As-salamu alaykum. Can I play?'], ['saleem', 'Wa alaykum as-salam! We need a fourth. You’re with me against those two.'], ['jamil', 'Yalla. First to 11.']] }]
   },
   // Chapter 1: the full gym. Ammo Jamil and Ilyas have scenes of their own (C1.3, C1.4); around them, the gym's corners
   // show what the career has: a shot, a drill, the stats on the whiteboard, chai with Imam Dawud, the water cooler
@@ -190,8 +163,7 @@ const STORY_WALKS = {
       { id: 'score', label: 'Shoot around: make a basket', n: 1, touch: 'Make a basket at the hoop', key: 'Make a basket at the hoop' },
       { id: 'drill', label: 'Finish a drill', touch: 'Tap Drills, pick one', key: 'Q opens the drills: finish one' },
       { id: 'upgrade', label: 'Your stats, on the whiteboard', touch: 'Walk to the whiteboard and tap it', key: 'Walk to the whiteboard, press F' },
-      { id: 'chai', label: 'Chai with Imam Dawud', touch: 'Imam Dawud is at the chai table', key: 'Imam Dawud is at the chai table' },
-      { id: 'cooler', label: 'Water at the cooler', touch: 'Walk to the water cooler and tap it', key: 'Walk to the water cooler, press F' }],
+      { id: 'chai', label: 'Chai with Imam Dawud', touch: 'Imam Dawud is at the chai table', key: 'Imam Dawud is at the chai table' }],
     start: [['saleem', 'Meet everyone, try the gym out. When you’re done here, the musalla is through the partition.']],
     end: [['narr', 'Everyone in the gym met. Through the partition to the musalla.']]
   }

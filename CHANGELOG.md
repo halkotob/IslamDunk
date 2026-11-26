@@ -1,5 +1,38 @@
 # Changelog
 
+## 9.32.0: Career refine 3: Chapter 0 rebuilt
+From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 3). Chapter 0 now runs in the order from your
+notes:
+- **C0.1** The closing salams on black, as before.
+- **C0.2** The musalla: walk up to Imam Dawud for a short welcome (three lines), and he points you to the gym.
+- **C0.3** The gym: Sh. Saleem, Ammo Jamil and Ilyas are shooting at one hoop. You have no ball. Walk up to Sh.
+  Saleem and ask if you can play: "We need a fourth. You’re with me against those two." Straight on to the ready
+  prompt.
+- **C0.4 The tutorial game.** You and Sh. Saleem against Ammo Jamil and Ilyas, first to 11.
+  - **The prompts:** a box on the left teaches the basics as you play, each ticked off when you do it: move, pass,
+    shoot, sprint, defend, contest a shot. The keys are the right ones for what you're using (keyboard, touch or
+    gamepad), for example "hold Shift" to sprint on a keyboard.
+  - **Easy to win:** the easiest CPU there is, easier still when you're behind. Your green window opens up, theirs
+    closes, and they reach for fewer steals and blocks.
+  - **No rewards card:** points and bucks are explained in Chapter 1. A loss replays the game.
+- **C0.5** Back on the court, the three introduce themselves (Ammo Jamil: nineteen years without the league) and
+  invite you to practice tomorrow. Four lines.
+- **Cut:** the separate shoot-around tutorial (its goals move to Chapter 1's Meet the gym in the next release), and
+  the long post-game argument.
+- **The gym starts bare.** Nothing is built at the start of a career: the water cooler is a project now (Masjid >
+  Projects). Chapter 1's walk no longer asks for a drink at the cooler.
+- **In Chapter 0,** the gym's left bar shows only Next and Menu.
+- **Old saves:** a Chapter 0 save from before this layout starts again at C0.1. Saves in later chapters keep their
+  place.
+
+How it was checked:
+- `story-ch0` checks there's no ball for you at C0.3, nothing built, the tutorial game's six prompts, first to 11,
+  and that the catch-up opens your window and closes theirs. It also checks there's no rewards card, and loses the
+  game once before winning.
+- `story-reload` covers the new Chapter 0, and a check loads an old-layout save at C0.6 (it lands on C0.1) and one
+  at C2.6 (it keeps its place).
+- Also `story-*`, `studio-coverage`, `studio-phone`, the phone audit and `first-three`.
+
 ## 9.31.0: Career refine 2: the practice gym is home
 From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 2; the rules are in SCENES.md):
 - **Home is the practice gym.** Before and after every game, in every chapter, you're in the practice gym with the

@@ -71,7 +71,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.31.0';
+const VERSION = '9.32.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -26710,30 +26710,18 @@ scn('C0.1', { kind: 'scene', custom: 'salams', name: 'After Isha', next: 'C0.2',
   lines: [['narr', 'As-salamu alaykum wa rahmatullah.'], ['narr', 'As-salamu alaykum wa rahmatullah.']] });
 scn('C0.2', { kind: 'scene', talk: { at: 'musalla', who: 'dawud' }, name: 'The musalla', next: 'C0.3', lines: [
   ['narr', 'Masjid Al-Amanah, Eastside. Your first week in town, your first Isha here.'],
-  ['dawud', 'Astaghfirullah, astaghfirullah, astaghfirullah.'],
-  ['dawud', 'As-salamu alaykum, akhi. I don’t know your face yet. Welcome. You’re new in Eastside?'],
+  ['dawud', 'As-salamu alaykum, akhi. I don’t know your face yet. Welcome.'],
   ['you', 'Wa alaykum as-salam. I moved here last week.'],
-  ['dawud', 'Then you found the right door. The young ones play ball in the gym after Isha. Through there, past the shoe racks.'],
-  ['you', 'JazakAllahu khayran.'],
-  ['dawud', 'Wa iyyak. Go on. Tell Saleem the imam sent you.']] });
-scn('C0.3', { kind: 'walk', name: 'The gym', next: 'C0.4', walk: 'C0.3' });
-scn('C0.4', { kind: 'drill', name: 'Shoot around', next: 'C0.5', walk: 'C0.4' });
-scn('C0.5', { kind: 'play', name: 'Pickup game', mode: 'pickup', stakes: 'opener', win: 'C0.6', loss: 'C0.5',
-  winLines: [['saleem', 'Game! Alhamdulillah.'], ['jamil', 'Again. Tomorrow. Same teams.']],
-  lossLines: [['jamil', 'Ha! The old man still has it.'], ['saleem', 'Good effort. Get a drink, catch your breath, and we run it back.'], ['ilyas', 'Dad, don’t celebrate yet. One more.']] });
-scn('C0.6', { kind: 'scene', name: 'Come back tomorrow', next: 'C1.1', hub: true, lines: [
-  ['ilyas', 'Okay, okay. You can play. Where did you learn that move?'],
-  ['jamil', 'Good hands. Good feet. You box out, too. Nobody here boxes out.'],
-  ['jamil', 'Come back tomorrow. Same time. We need a fourth who doesn’t complain.'],
-  ['saleem', 'He’s right. And you passed when you were open, and passed when I was more open. That’s rare.'],
-  ['ilyas', 'You let them score on you twice, Dad.'],
-  ['jamil', 'I let them? You missed four layups. Four!'],
-  ['ilyas', 'Three. The fourth one was blocked. That’s not missing.'],
-  ['jamil', 'Yalla, it’s still a miss. A miss is a miss.'],
-  ['saleem', 'Brothers, brothers. The Prophet ﷺ said the strong one isn’t the one who wins the wrestle; it’s the one who holds himself when he’s angry.'],
-  ['saleem', 'We lost a pickup game. We didn’t lose anything else. Come, let’s stack the chairs.'],
-  ['you', 'In sha Allah, I’ll be here tomorrow.'],
-  ['saleem', 'In sha Allah. Welcome to Al-Amanah, akhi.']] });
+  ['dawud', 'The young ones play ball in the gym after Isha. Through there. Go on.']] });
+scn('C0.3', { kind: 'walk', name: 'The gym', next: 'C0.4', walk: 'C0.3', direct: true });
+scn('C0.4', { kind: 'play', name: 'Pickup game', mode: 'pickup', stakes: 'opener', tutorial: true, noRewards: true, win: 'C0.5', loss: 'C0.4',
+  winLines: [['saleem', 'Game! Alhamdulillah.'], ['jamil', 'Hmph. Beginner’s luck.']],
+  lossLines: [['jamil', 'Ha! The old man still has it.'], ['saleem', 'Catch your breath. We run it back.']] });
+scn('C0.5', { kind: 'scene', name: 'Come back tomorrow', next: 'C1.1', hub: true, lines: [
+  ['saleem', 'Good game! I’m Saleem. This is Ammo Jamil, and his son Ilyas.'],
+  ['jamil', 'Nineteen years I play here. Nineteen years we never win the league. You box out, so: come back tomorrow.'],
+  ['ilyas', 'Practice is after Isha. Don’t be late, he makes you run.'],
+  ['saleem', 'We’ll show you the gym properly. See you tomorrow, {name}.']] });
 
 // ---------------------------------------------------------------- Chapter 1: Making the team
 scn('C1.1', { kind: 'scene', name: 'A full gym', next: 'C1.2', lines: [
@@ -26788,28 +26776,13 @@ scn('C1.9', { kind: 'scene', name: 'The team', next: 'C2.1', hub: true, lines: [
 // npcs: id, where (gym world x, z), what he's doing (act), which way he faces, what he says; need: must be met.
 // closer: who ends the walk once everyone needed is met (and every goal is done).
 const STORY_WALKS = {
+  // C0.3: Sh. Saleem, Ammo Jamil and Ilyas shoot at one hoop. You have no ball; you ask to play.
   'C0.3': {
-    title: 'Say salaam', npcs: [
-      { id: 'ilyas', x: 1120, z: 430, act: 'shoot', face: 1, need: true, lines: [['ilyas', 'Salaam! You play? Good. Dad says I shoot too much.'], ['you', 'Wa alaykum as-salam. Is there such a thing?'], ['ilyas', 'That’s what I keep telling him!']] },
-      { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, need: true, lines: [['jamil', 'Ilyas! Bend your knees! …Oh. Wa alaykum as-salam. You’re new.'], ['you', 'I just moved here. The imam sent me.'], ['jamil', 'Ammo Jamil. That one shooting is my son. He thinks defense is optional.']] },
-      { id: 'saleem', x: 860, z: 300, act: 'host', face: -1, closer: true,
-        early: [['saleem', 'Say salaam to the brothers first, then come see me.']],
-        lines: [['saleem', 'Assalamu alaykum. I saw you at Isha. I’m Saleem.'], ['you', 'Wa alaykum as-salam. The imam said to find you. Can I join in?'], ['saleem', 'Of course. Warm up first. Shoot around, get a feel for the floor.']] }],
-    start: [['saleem', 'There he is. Go say salaam, brother.']]
-  },
-  'C0.4': {
-    title: 'Shoot around', tutorial: true, npcs: [
-      { id: 'ilyas', x: 1180, z: 600, act: 'host', face: -1 },
-      { id: 'jamil', x: 720, z: 140, act: 'sit', face: 1 },
-      { id: 'saleem', x: 860, z: 260, act: 'host', face: 1, closer: true,
-        early: [['saleem', 'Take your time. Finish your warm-up first.']],
-        lines: [['saleem', 'Good. You’ve got a feel for it.'], ['saleem', 'Two on two. You and me against Ammo Jamil and Ilyas. First to 11.'], ['jamil', 'Finally. My knees are getting cold.']] }],
-    goals: [
-      { id: 'walk', label: 'Move around the floor', touch: 'Move: the left stick', key: 'Move: W A S D or the arrows' },
-      { id: 'sprint', label: 'Sprint', touch: 'Sprint: hold TURBO', key: 'Sprint: hold L' },
-      { id: 'shoot', label: 'Take a jump shot', touch: 'Shoot: hold SHOOT, let go at the top', key: 'Shoot: hold J, let go at the top of the jump' },
-      { id: 'score', label: 'Make two baskets', n: 2, touch: 'Green on the meter is money', key: 'Green on the meter is money' }],
-    start: [['saleem', 'Shoot around. Move, sprint, get some shots up. Make a couple, then come find me.']]
+    title: 'The gym', noBall: true, npcs: [
+      { id: 'ilyas', x: 1130, z: 420, act: 'shoot', face: 1 },
+      { id: 'jamil', x: 1060, z: 560, act: 'host', face: 1 },
+      { id: 'saleem', x: 960, z: 330, act: 'host', face: -1, closer: true,
+        lines: [['you', 'As-salamu alaykum. Can I play?'], ['saleem', 'Wa alaykum as-salam! We need a fourth. You’re with me against those two.'], ['jamil', 'Yalla. First to 11.']] }]
   },
   // Chapter 1: the full gym. Ammo Jamil and Ilyas have scenes of their own (C1.3, C1.4); around them, the gym's corners
   // show what the career has: a shot, a drill, the stats on the whiteboard, chai with Imam Dawud, the water cooler
@@ -26823,8 +26796,7 @@ const STORY_WALKS = {
       { id: 'score', label: 'Shoot around: make a basket', n: 1, touch: 'Make a basket at the hoop', key: 'Make a basket at the hoop' },
       { id: 'drill', label: 'Finish a drill', touch: 'Tap Drills, pick one', key: 'Q opens the drills: finish one' },
       { id: 'upgrade', label: 'Your stats, on the whiteboard', touch: 'Walk to the whiteboard and tap it', key: 'Walk to the whiteboard, press F' },
-      { id: 'chai', label: 'Chai with Imam Dawud', touch: 'Imam Dawud is at the chai table', key: 'Imam Dawud is at the chai table' },
-      { id: 'cooler', label: 'Water at the cooler', touch: 'Walk to the water cooler and tap it', key: 'Walk to the water cooler, press F' }],
+      { id: 'chai', label: 'Chai with Imam Dawud', touch: 'Imam Dawud is at the chai table', key: 'Imam Dawud is at the chai table' }],
     start: [['saleem', 'Meet everyone, try the gym out. When you’re done here, the musalla is through the partition.']],
     end: [['narr', 'Everyone in the gym met. Through the partition to the musalla.']]
   }
@@ -29600,6 +29572,131 @@ function gymBarShown() { return storyOn() && Game.screen === 'gym' && !Gym.drill
     g.textAlign = 'center'; g.fillStyle = '#cfd8e3'; g.font = `13px ${BODY}`; wrapText(g, 'Spend them in the gym: Upgrade for your stats, Masjid for projects. Your saved plays are in Menu, My plays.', W / 2, 372, 520, 18);
     g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(Input.touchMode ? 'Tap to go back to the gym' : 'Enter or tap: back to the gym', W / 2, 428);
     addRect(0, 0, W, H, postgameContinue);
+  };
+}
+// ================================================= v9.32: CAREER REFINE 3 — Chapter 0 rebuilt
+// (docs/career-overhaul/REFINE-PLAN.md, release 3; SCENES.md, Chapter 0)
+// The first night: the salams, Imam Dawud in the musalla (a walk-up talk), the gym where Sh. Saleem, Ammo Jamil and
+// Ilyas shoot at one hoop and you ask to play (no ball for you until then), the tutorial game, and on the court the
+// three introduce themselves and invite you to practice.
+// - The tutorial game: first to 11, the easiest CPU, easier still when you're behind (your green window opens up,
+//   theirs closes, and they reach for fewer steals and blocks). The controls are taught by prompts in the left box,
+//   each ticked off when you do it. There's no rewards card after it: points and bucks are explained in Chapter 1.
+// - The gym starts bare: nothing is built (the water cooler is a project now).
+// - A Chapter 0 save from before this layout starts again at C0.1.
+
+// ---------------------------------------------------------------- the tutorial game's prompts (the left box)
+const TUT0_STEPS = [
+  { id: 'move', title: 'Move', text: () => tk('W A S D or the arrow keys', 'the stick on the left', 'the left stick'), done: s => s.dist > 220 },
+  { id: 'pass', title: 'Pass', text: () => tk('tap J to pass to Sh. Saleem', 'tap PASS', 'tap X'), done: s => s.passed },
+  { id: 'shoot', title: 'Shoot', text: () => tk('hold K, let go at the top of the jump', 'hold SHOOT, let go at the top', 'hold A, let go at the top'), done: s => s.shotDone },
+  { id: 'sprint', title: 'Sprint', text: () => tk('hold Shift while you move', 'push the stick past the dashed ring', 'hold B while you move'), done: s => s.sprint > 0.6 },
+  { id: 'defend', title: 'Defend', text: () => tk('hold L on defense to stay with your man', 'hold DEFEND on defense', 'hold Y on defense'), done: s => s.guard > 1.2 },
+  { id: 'contest', title: 'Contest a shot', text: () => tk('press K to jump when he shoots', 'press BLOCK when he shoots', 'press A when he shoots'), done: s => s.contested }
+];
+function tut0() { return M && M.story && M.story.tut; }
+{
+  const _um = updateMatch;
+  updateMatch = function (dt) {
+    const r = _um.apply(this, arguments), T = tut0();
+    if (!T || !M.players) return r;
+    const me = M.players.find(q => q.human === 0), s = T.s; if (!me) return r;
+    const sp = Math.hypot(me.vx || 0, me.vz || 0);
+    if (s.last) s.dist += Math.hypot(me.x - s.last.x, me.z - s.last.z); s.last = { x: me.x, z: me.z };
+    if (me.cmd && me.cmd.turbo && sp > 200) s.sprint += dt;
+    if (ball.state === 'shot' && ball.shot && ball.shot.shooter === me && !ball.shot.dunk) s.shot = true;
+    if (s.shot && ball.state !== 'shot') s.shotDone = true;
+    if (ball.owner === me) s.hadBall = true;
+    if (s.hadBall && (ball.owner === me.mate || (ball.pass && ball.pass.from === me))) s.passed = true;
+    if (me.v8 && me.v8.held && me.v8.inPos) s.guard += dt;
+    if (me.state === 'jump' && me.opps.some(o => o.state === 'windup' || o.state === 'shoot') ) s.contested = true;
+    for (const st of TUT0_STEPS) if (!T.done[st.id] && st.done(s)) { T.done[st.id] = true; T.flash = { id: st.id, t: 1 }; SFX.good && SFX.good(); }
+    if (T.flash) { T.flash.t -= dt; if (T.flash.t <= 0) T.flash = null; }
+    return r;
+  };
+  // the catch-up: when you're behind, your shots open up and theirs close
+  const _sw = shotWindow;
+  shotWindow = function (p) {
+    const w = _sw.apply(this, arguments), T = tut0(); if (!T || !(w > 0) || !M.teams) return w;
+    const behind = M.teams[0].score < M.teams[1].score;
+    return p.team === 0 ? w * (behind ? 1.6 : 1.2) : w * (behind ? 0.45 : 0.75);
+  };
+  const _dk = defK;
+  defK = function (p) { const k = _dk.apply(this, arguments), T = tut0(); if (!T || !p || p.team !== 1 || !M.teams) return k; return k * (M.teams[0].score < M.teams[1].score ? 0.3 : 0.6); };
+  // the box, on the left
+  const _dh = drawHUD;
+  drawHUD = function (g) {
+    const r = _dh.apply(this, arguments), T = tut0();
+    if (!T || Game.screen !== 'play') return r;
+    const TT = Input.touchMode && g === ctx, x = 12, y = TT ? 112 : 88, w = TT ? 250 : 300;
+    g.font = `12px ${BODY}`; const rh = Math.max(20, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 12) + 8), cur = TUT0_STEPS.find(st => !T.done[st.id]);
+    const h = 30 + TUT0_STEPS.length * rh + (cur ? rh + 6 : 0);
+    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x, y, w, h, 12); g.fill();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('The basics', x + 14, y + 20);
+    TUT0_STEPS.forEach((st, i) => {
+      const ok = !!T.done[st.id], on = st === cur, yy = y + 20 + (i + 1) * rh;
+      g.fillStyle = ok ? '#9dffb0' : on ? '#fff' : '#9fb3c8'; g.font = `12px ${on ? FONT : BODY}`;
+      g.fillText((ok ? '✓ ' : on ? '› ' : '• ') + st.title, x + 16, yy);
+    });
+    if (cur) { g.fillStyle = '#f2cf6b'; g.font = `12px ${BODY}`; g.fillText(fitText(g, cur.text(), w - 28), x + 16, y + 26 + (TUT0_STEPS.length + 1) * rh); }
+    return r;
+  };
+}
+{
+  // the tutorial game is set up as the pickup game, plus its prompts
+  const _ex = storyExhibition;
+  storyExhibition = function (S) { const r = _ex.apply(this, arguments); if (S && S.tutorial && M.story) M.story.tut = { s: { dist: 0, sprint: 0, guard: 0 }, done: {} }; return r; };
+  // no rewards card after it: its lines play in the gym, and on
+  const _ae = storyAfterExhib;
+  storyAfterExhib = function () {
+    const S = M.story && SC[M.story.id];
+    if (!S || !S.noRewards) return _ae.apply(this, arguments);
+    const won = M.winner === 0;
+    C.gamesPlayed = (C.gamesPlayed || 0) + 1; saveCareer();
+    setupPractice('free'); Game.post = null;
+    const lines = storyLinesOf(S, won ? 'winLines' : 'lossLines');
+    if (!lines.length) { storyJournal(S, [['narr', S.name + ': ' + (won ? 'won' : 'lost')]]); return storyDone(S, won ? 'win' : 'loss'); }
+    playStory(lines, () => storyDone(S, won ? 'win' : 'loss'), storyTitleOf(S)); storyTagJournal(S);
+  };
+}
+
+// ---------------------------------------------------------------- walks: no ball until a scene gives you one
+{
+  const _ws = storyWalkStart;
+  storyWalkStart = function (S, D0) {
+    const r = _ws.apply(this, arguments), D = SW && SW.D;
+    if (D && D.noBall && M.players) { ball.owner = null; ball.state = 'loose'; ball.shot = null; ball.pass = null; ball.x = -3000; ball.z = 300; ball.y = 0; ball.vx = ball.vy = ball.vz = 0; ball.grabLock = 1e9; }
+    return r;
+  };
+  // a scene marked direct goes straight on (asking to play leads straight to the ready prompt, not home)
+  const _sd = storyDone;
+  storyDone = function (S, outcome) {
+    if (!S.direct) return _sd.apply(this, arguments);
+    const st = C.story; st.seen[S.id] = (st.seen[S.id] || 0) + 1;
+    const next = typeof S.next === 'function' ? S.next(outcome) : S.next;
+    storyGo(next); storyRun();
+  };
+  // in Chapter 0 the bar is only Next and Menu: nothing else has been shown to you yet
+  const _bi = gymBarItems;
+  gymBarItems = function () { const L = _bi.apply(this, arguments); return storyChapter() === 0 ? L.filter(it => it.k === 'next' || it.k === 'menu') : L; };
+}
+
+// ---------------------------------------------------------------- the gym starts bare; old Chapter 0 saves start over
+const STORY_LAYOUT = 2;                                                // 2: Chapter 0 in the v9.32 order
+{
+  const _fc = freshCareer;
+  freshCareer = function () { const c = _fc.apply(this, arguments); if (c.story) c.up = {}; return c; };
+  const _sf = storyFresh;
+  storyFresh = function () { return Object.assign(_sf.apply(this, arguments), { lay: STORY_LAYOUT }); };
+  const _lc = loadCareer;
+  loadCareer = function (key) {
+    const raw = readSave(key), lay = (raw && raw.story && raw.story.lay) || 0;   // (the saved layout, before the fresh defaults fill in)
+    const r = _lc.apply(this, arguments);
+    if (r && C && C.story && lay < STORY_LAYOUT) {
+      if (/^C0\./.test(C.story.at || '')) { C.story.at = 'C0.1'; C.story.wp = null; }
+      C.story.lay = STORY_LAYOUT;
+    }
+    return r;
   };
 }
 // ================================================= v9.30.0: LIGHTNING AND HORSE ONLINE WITH ROLLBACK

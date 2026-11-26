@@ -1,5 +1,6 @@
 // v9.22: the career story (src/career/story/, docs/career-overhaul/). Page-side helpers: tests/story-setup.js.
-//   story-ch0      a new career by bot: the creator, C0.1 to C0.6 (the pickup game lost once, then won), lands in
+//   story-ch0      a new career by bot: C0.1 to C0.5 (no ball until you ask to play; the tutorial game: its prompts, the
+//                  catch-up, lost once then won, no rewards card; nothing built), lands in
 //                  Chapter 1 at the hub; every scene in the Journal by ID; each screen drawn on the way; no page errors
 //   story-ch1      Chapter 1 by bot (C1.1 to C1.9, King of the Court lost once, then won), lands at C2.1; the gym walk's corners
 //                  done the real way: the whiteboard opens Upgrade stats and Back returns to the walk, the cooler, the cone
@@ -44,6 +45,14 @@ export function storyTests({ newContext, open }) {
       const st = await p.evaluate(() => window.__sState());
       if (st.at === 'C1.1' && st.screen === 'hub') break;
       const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d);
+      if (st.at === 'C0.3' && st.screen === 'gym' && !out.noBall) out.noBall = await p.evaluate(() => ({ owner: ball.owner ? ball.owner.def.name : null, x: ball.x, up: Object.keys(C.up).length }));
+      if (st.at === 'C0.4' && st.screen === 'play' && !out.tut) out.tut = await p.evaluate(() => {
+        const T = M.story && M.story.tut, me = M.players.find(q => q.human === 0), cpu = M.players.find(q => q.team === 1), h = attackHoop(0), x = h.x - h.dir * 220, z = h.z;
+        M.teams[0].score = 0; M.teams[1].score = 5; const meB = shotWindow(me, x, z), cpuB = shotWindow(cpu, attackHoop(1).x - attackHoop(1).dir * 220, z);
+        M.teams[0].score = 5; M.teams[1].score = 0; const meA = shotWindow(me, x, z), cpuA = shotWindow(cpu, attackHoop(1).x - attackHoop(1).dir * 220, z);
+        M.teams[0].score = 0; M.teams[1].score = 0;
+        return { on: !!T, steps: TUT0_STEPS.length, target: M.fmt.target, catchUp: meB > meA && cpuB < cpuA };
+      });
       const r = await p.evaluate(lose => window.__sStep({ lose }), !lostOnce);
       if (r === 'lost') lostOnce = true;
       out.steps.push(st.at + ':' + r);
@@ -51,12 +60,14 @@ export function storyTests({ newContext, open }) {
     }
     out.end = await p.evaluate(() => ({ s: window.__sState(), journal: (C.journal || []).map(e => e.id), hub: HUB_MENU().map(e => e.label), ch: storyChapter(), saved: (readSave(SAVE_AUTO) || {}).story }));
     await ctx.close();
-    const ids = ['C0.1', 'C0.2', 'C0.3', 'C0.4', 'C0.5', 'C0.6'], at = out.steps.map(x => x.split(':')[0]);
-    const pickups = out.steps.filter(x => x.startsWith('C0.5:') && /won|lost/.test(x)).map(x => x.split(':')[1]);
+    const ids = ['C0.1', 'C0.2', 'C0.3', 'C0.4', 'C0.5'], at = out.steps.map(x => x.split(':')[0]);
+    const pickups = out.steps.filter(x => x.startsWith('C0.4:') && /won|lost/.test(x)).map(x => x.split(':')[1]);
+    const T0 = out.tut || {}, NB = out.noBall || {};
     const ok = out.start === 'C0.1' && ids.every(id => at.includes(id)) && pickups.join(',') === 'lost,won'
+      && T0.on && T0.steps === 6 && T0.target === 11 && T0.catchUp && !out.steps.some(x => x === 'C0.4:post') && NB.owner === null && NB.x < 200 && NB.up === 0
       && out.end.s.at === 'C1.1' && out.end.s.screen === 'hub' && out.end.ch === 1 && ids.every(id => out.end.journal.includes(id))
       && out.end.hub[0] === 'Back to the gym' && out.end.saved && out.end.saved.at === 'C1.1' && !out.draws.length && !errs.length;
-    return { ok, detail: [out.steps.join(' '), 'pickup: ' + pickups.join(','), 'end: ' + JSON.stringify(out.end), ...out.draws, ...errs] };
+    return { ok, detail: [out.steps.join(' '), 'pickup: ' + pickups.join(',') + ' tutorial: ' + JSON.stringify(out.tut) + ' no ball: ' + JSON.stringify(out.noBall), 'end: ' + JSON.stringify(out.end), ...out.draws, ...errs] };
   };
 
   // Chapter 1 by bot, and the walk's corners done the real way: the whiteboard opens Upgrade stats (Back returns to the
@@ -72,7 +83,6 @@ export function storyTests({ newContext, open }) {
       let k = 0; while (SW.talk && k++ < 20) { SW.talk.t = 1; swAdvance(); }
       const me = M.players[0];
       place(me, 1064, 60); const wb = gymPropNear(); r.wb = wb && wb.id; useGymProp(wb); r.train = Game.screen; BACK.train(); r.back = Game.screen; r.upgrade = !!SW.goals.upgrade;
-      place(me, 1150, 60); const co = gymPropNear(); r.co = co && co.id; useGymProp(co); r.cooler = !!SW.goals.cooler;
       for (let n = 0; n < 60 * 3; n++) gymUpdate(1 / 60);
       startDrill('cones'); for (const c of CONES) { place(M.players[0], c.x, c.z); drillUpdate(1 / 60); } r.drill = !!SW.goals.drill; r.result = !!Gym.result;
       Gym.result = null; setupPractice('free');
@@ -92,7 +102,7 @@ export function storyTests({ newContext, open }) {
     await ctx.close();
     const ids = ['C1.1', 'C1.2', 'C1.3', 'C1.4', 'C1.5', 'C1.6', 'C1.7', 'C1.8', 'C1.9'], W = out.walk;
     const kotc = out.steps.filter(x => x.startsWith('C1.8:') && /won|lost/.test(x)).map(x => x.split(':')[1]);
-    const ok = W.free && W.wb === 'wb' && W.train === 'train' && W.back === 'gym' && W.upgrade && W.co === 'cooler' && W.cooler && W.drill && W.chai && W.parts.every(Boolean)
+    const ok = W.free && W.wb === 'wb' && W.train === 'train' && W.back === 'gym' && W.upgrade  && W.drill && W.chai && W.parts.every(Boolean)
       && ids.every(id => out.end.s.seen.includes(id) && out.end.journal.includes(id)) && kotc.join(',') === 'lost,won'
       && out.end.s.at === 'C2.1' && out.end.s.screen === 'hub' && out.end.ch === 2 && !out.draws.length && !errs.length;
     return { ok, detail: ['walk: ' + JSON.stringify(W), (out.steps || []).join(' '), 'King of the Court: ' + kotc.join(','), 'end: ' + JSON.stringify(out.end), ...out.draws, ...errs] };
@@ -362,7 +372,7 @@ export function storyTests({ newContext, open }) {
 
   T['story-reload'] = async ({ browser, base }) => {
     const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-reload');
-    const want = { 'C0.1': 'ssalams', 'C0.2': 'musalla', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'gym', 'C0.6': 'gym',
+    const want = { 'C0.1': 'ssalams', 'C0.2': 'musalla', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'gym',
       'C1.1': 'gym', 'C1.2': 'gym', 'C1.5': 'musalla', 'C1.6': 'gym', 'C1.7': 'office', 'C1.8': 'gym', 'C1.9': 'gym',
       'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'gym', 'C2.5': 'spick', 'C2.6': 'gym', 'C2.9': 'gym', 'C2.10': 'gym',
       'C3.1': 'gym', 'C3.2': 'gym', 'C3.4': 'gym', 'C3.6': 'gym', 'C3.9': 'office', 'C3.10': 'gym', 'C3.14': 'gym', 'C3.20': 'office' }, ids = Object.keys(want), res = [];
