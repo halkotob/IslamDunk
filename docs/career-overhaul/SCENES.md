@@ -46,39 +46,55 @@ lines in the scenes he is in.
   Wins and events raise money (the fundraiser meter on the hub). The masjid visibly grows (masjid projects) after
   each title; the school wing opens at the National title.
 
+## Rules (v9.30, after the first playtest: see REFINE-PLAN.md)
+
+1. **Speakers on screen.** Every line is said by someone standing in the scene, in the game's normal view (court,
+   musalla, office). No text over a backdrop, no faceless cutscene. A narration line with no speaker only sets a
+   scene ("The next night...").
+2. **Short dialogue.** An introduction: at most 2 lines from the person and 1 from you. A conversation: at most 4
+   lines. A big scene (the team invite, a title): at most 6. No dialogue choices for now.
+3. **UI on the left only.** In the career, menus, buttons, objective boxes and prompts sit on the left; the
+   objective box is under the Back button. The scoreboard and team names, the callouts and the clip button stay
+   where they are. No "this person vs that person" banners in mini games.
+4. **The practice gym is home.** Before and after every game, in every chapter, you are in the practice gym with
+   the ball. The lines after a game play when you are back, with the speakers standing near you.
+5. **A ready prompt before every game.** League games: the pregame card, Start and Back to the gym. The tutorial
+   game and mini games: a small panel on the left in that game's look, 1-2 lines of how to play, Start and Not yet.
+6. **Only the people who belong on court.** In a walk, at most two others on the court, playing ball. In a
+   drill, only that drill's people.
+7. **Your name everywhere.** Never "Brother" as a stand-in.
+8. **Nothing until it is built.** The gym and masjid start bare.
+
 ## Checkpoints
 
 Each tournament starts at a **checkpoint**: C2.4, C3.2, C4.1, C5.1. A loss that ends a run (out of the group,
 out of the playoffs, out of a knockout) plays a short **next season** scene and returns to that chapter's
 checkpoint. Earned stats, cosmetics, Halal Bucks and the fundraiser total carry over. One-time scenes before the
-checkpoint (such as C3.1) don't replay. Retry scenes (C0.5, C1.8) replay the game until it is won.
+checkpoint (such as C3.1) don't replay. Retry scenes (C0.4, C1.6) replay the game until it is won.
 
 ---
 
-## Chapter 0: Introduction
+## Chapter 0: Introduction (the first night)
 
 | ID | Kind | Beat |
 |---|---|---|
 | C0.1 | scene | Black screen. Text fades in and out: "As-salamu alaykum wa rahmatullah" (right), then again (left): the closing salams of Isha. |
-| C0.2 | scene | Fade into the musalla just after Isha: people seated in rows, Imam Dawud at the front. The Brother stands up. (The prayer itself is never shown.) |
-| C0.3 | walk | He finds the gym; Ilyas, Ammo Jamil and Sh. Saleem are shooting around. He asks to join. |
-| C0.4 | drill | **Tutorial:** shoot around and learn the controls on the real gym floor. |
-| C0.5 | play | **Pickup game:** the Brother and Sh. Saleem vs Ammo Jamil and Ilyas, on the easiest difficulty. Retry until won. |
-| C0.6 | scene | Ammo Jamil and Ilyas compliment his game and invite him back tomorrow; Sh. Saleem agrees and praises his teamwork. Father and son bicker, frustrated by the loss. Sh. Saleem shares a short piece of wisdom. |
+| C0.2 | walk | The musalla just after Isha. Walk up to Imam Dawud: a short welcome, and the young ones play in the gym. (The prayer itself is never shown.) |
+| C0.3 | walk | The gym: Sh. Saleem, Ammo Jamil and Ilyas are shooting at one hoop. You ask Sh. Saleem if you can play; he says yes. |
+| C0.4 | play | **The tutorial game:** you and Sh. Saleem vs Ammo Jamil and Ilyas, first to 11, the easiest CPU, easier still when you're behind. The controls are taught by prompts in the left box. Retry until won. No rewards card. |
+| C0.5 | scene | On the court: the three introduce themselves (Ammo Jamil: nineteen years without the league) and invite you to practice tomorrow. |
 
-## Chapter 1: Making the team
+## Chapter 1: Making the team (the next day)
 
 | ID | Kind | Beat |
 |---|---|---|
-| C1.1 | scene | Next day, the gym is full of faces old and new. Sh. Saleem welcomes him: meet everyone, then come to the office. |
-| C1.2 | walk | Meet people around the gym; short side activities introduce career features: shoot around, a drill station, the stat upgrades, chai with Imam Dawud, the water cooler. |
-| C1.3 | walk | Ammo Jamil: he hates losing and needs to win the league this year. |
-| C1.4 | walk | Ilyas: he wants to impress his dad with a win. |
-| C1.5 | walk | The musalla: meet Qari Anas, the Mufti, the Hafiz, Ustath Karim and Musa. The walk ends once everyone in the gym and musalla has been met. |
-| C1.6 | play | Called outside for **Lightning** with everyone (existing mini game). |
-| C1.7 | scene | Sh. Saleem's office: he introduces himself and the community properly. |
-| C1.8 | play | Outside, he sets up **King of the Court** to earn a starting spot (existing KOTC mode). Retry until won. |
-| C1.9 | scene | Everyone agrees: he joins the team to help win the league. **The career begins.** |
+| C1.1 | walk | **Meet the gym.** Your objectives: make 3 shots, a layup, grab a rebound, sprint. Ilyas has you do the cone dribble and explains Barakah Points and stats; Ammo Jamil has you shoot free throws and explains Halal Bucks and masjid projects (cosmetic). Sh. Saleem, by the office door, explains drills and practising every day. Done: "Go to the musalla"; walk through the door. |
+| C1.2 | walk | **The musalla.** Short introductions: Ustath Karim (bucks build things here: a carpet, a chandelier, calligraphy), Imam Dawud (pray two rak'ahs at the mihrab), Qari Anas (read from the mushaf), the Mufti, the Hafiz. Objectives: meet them, pray, read. Then Musa: "Lightning, in the gym, now!" |
+| C1.3 | play | **Lightning** in the practice gym. After it, Sh. Saleem walks on and asks you to his office. |
+| C1.4 | scene | **The office**, four lines with heart: the masjid is small, the gym is the overflow musalla, the weekend school turns families away. "We need you. Help us win, and help this masjid and this community grow." Then: "Come outside with me." |
+| C1.5 | scene | On the court, Sh. Saleem tells everyone to play King of the Court for their spots. |
+| C1.6 | play | **King of the Court** in the practice gym: Musa, then Hafiz Zubair, then Qari Anas, each a little harder, all easy. Only a streak counter, on the left. Retry until won. |
+| C1.7 | scene | On the court, everyone congratulates you and Sh. Saleem invites you to the team. **The career begins.** |
 
 ## Chapter 2: Masjid league (stage: Local)
 
