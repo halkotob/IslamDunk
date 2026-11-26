@@ -20682,7 +20682,9 @@ const LG_CAL = {
   // threes 0.343 -> 0.30, dunks 0.92 -> 0.87 of the twos)
   ppm: { 30: 9.78, 45: 8.75, 60: 8.45, 120: 8.23 }, rel: { 30: 0.3, 45: 0.29, 60: 0.22, 120: 0.19 }, quartersK: 0.98,
   first21: { lose: 0.77, loseSd: 0.17, over: 0.3 }, share: 0.5, shareSd: 0.14, dunkShare: 0.87,
-  rate: { fga: 0.6906, tpa: 0.2085, fta: 0.02275, reb: 0.1099, ast: 0.1583, stl: 0.07637, blk: 0.09854, tov: 0.07537, dnk: 0.3478, chg: 0.00441 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more; v9.16: ast 0.1456 -> 0.184, real games 3.29 a player, 500 games; v9.21.0: re-fit to the new CPU defense, which sags and fouls less: real games
+  rate: { fga: 0.6906, tpa: 0.2085, fta: 0.02275, reb: 0.1099, ast: 0.1583, stl: 0.1004, blk: 0.09854, tov: 0.0973, dnk: 0.3478, chg: 0.00441 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more; v9.16: ast 0.1456 -> 0.184, real games 3.29 a player, 500 games; v9.21.0: re-fit to the new CPU defense, which sags and fouls less: real games
+  // (v9.35.0: re-fit stl 0.07637 -> 0.1004 and tov 0.07537 -> 0.0973: real games 1.63 steals and 1.64 turnovers a
+  // player (500 games), the fallback 1.24 and 1.27; a block that reaches the ball knocks it loose more often)
   // (v9.34.0: real league games score 32.8 a team (31.7 on 9.33; between the legs got 0.14 s shorter, so a game fits a
   // few more shots): points a minute x 1.094 and every per-point rate / 1.094, so the counting stats' totals stay)
   // per player ast 2.55, fta 0.38, chg 0.07 (were 3.27, 1.07, 0.34 in the fallback): ast 0.203 -> 0.158, fta 0.064 -> 0.0227, chg 0.0212 -> 0.0044;
@@ -27503,7 +27505,7 @@ function swTrackGoals(dt) {
     if (I.talk) I.talk.t += dt;
     if (I.fade > 0 && !I.fadeDir) I.fade = Math.max(0, I.fade - dt * 1.5);
     if (I.fadeDir) { I.fade = Math.min(1, I.fade + dt * 1.4); if (I.fade >= 1) { swEnd(); return; } }
-    if (menuHit('back') && !I.fadeDir) { careerHub(); return; }
+    if (menuHit('back') && !I.fadeDir) { careerMenu(); return; }        // (v9.35: Esc opens the menu, as it does at home; the walk keeps its place)
     const me = M.players[0];
     if (!I.talk) I.with = null;
     I.lb += ((I.talk ? 1 : 0) - I.lb) * Math.min(1, dt * 6);
@@ -27750,6 +27752,9 @@ function swPropFront(g, p) {
     if (Game.screen === 'train' && Game.trainBack && menuHit('back')) { Game.trainBack = null; Game.screen = 'gym'; return; }
     return _cu.apply(this, arguments);
   };
+  // the corner Back in a story walk opens the menu too (v9.35: careerHub() would only come back here)
+  const _bg = BACK.gym;
+  BACK.gym = function () { if (Gym.story && Gym.story === SW && !SW.D.home && !Gym.drill && !Gym.overlay && storyOn()) return careerMenu(); return _bg.apply(this, arguments); };
   const _bt = BACK.train;
   BACK.train = function () { if (Game.trainBack) { Game.trainBack = null; Game.screen = 'gym'; return; } return _bt ? _bt.apply(this, arguments) : careerHub(); };
 }
@@ -29285,13 +29290,13 @@ function styleSummary(st) {
     if (Input.hit(['ArrowDown', 'KeyS'])) { const j = (at + 1) % seq.length; cr.onTabs = seq[j] === -1; if (!cr.onTabs) cr.idx = seq[j]; SFX.blip && SFX.blip(); return; }
     if (cr.onTabs) {
       if (menuHit('left') || menuHit('right') || menuHit('ok')) creatorSetTab(tab === 'look' ? 'game' : 'look');
-      else if (menuHit('back') && !cr.isNew) careerHub();
+      else if (menuHit('back')) { if (!cr.isNew) careerHub(); else if (cr.welcomed) openWelcome(); }   // (v9.35: a new career steps back to the name)
       return;
     }
     if (menuHit('left')) creatorStep(cr.idx, -1);
     if (menuHit('right')) creatorStep(cr.idx, 1);
     if (menuHit('ok')) creatorEnter(cr.idx);
-    if (menuHit('back') && !cr.isNew) careerHub();
+    if (menuHit('back')) { if (!cr.isNew) careerHub(); else if (cr.welcomed) openWelcome(); }
   };
   const _dc = drawCreator;
   drawCreator = function (g) {
@@ -29645,7 +29650,7 @@ function gymBarShown() { return storyOn() && Game.screen === 'gym' && !Gym.drill
         { label: 'League & stats', act: () => openStats() }] },
       { label: 'My plays', act: () => { openMyPlays(); PlayLib.back = { screen: 'hub' }; } },
       { label: 'Settings', act: () => { Game.setRet = 'hub'; Game.screen = 'settings'; Game.idx = 0; Game.setGroup = null; } },
-      { label: 'Quit to title', act: () => { saveCareer(); goTitle(); } }
+      { label: 'Title', act: () => { saveCareer(); goTitle(); } }          // (one word, as every way out: Back, Quit, Title)
     ];
   };
   const _bs = BACK.settings;

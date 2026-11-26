@@ -441,7 +441,7 @@ export function storyTests({ newContext, open }) {
       }, touch);
       await sleep(300);
       const good = r.home.screen === 'gym' && r.home.atHome && r.home.bar.join() === 'next,drills,musalla,office,upgrade,menu' && r.home.starter.includes('saleem')
-        && r.menu === 'hub' && r.labels.join('|') === 'Back to the gym|Masjid|My Player|My plays|Settings|Quit to title' && r.chapter
+        && r.menu === 'hub' && r.labels.join('|') === 'Back to the gym|Masjid|My Player|My plays|Settings|Title' && r.chapter
         && r.opened.Gym === 'home' && r.opened.Musalla === 'musalla' && r.opened.Office === 'office' && r.opened.Outside === 'masjid' && r.opened.Projects === 'shop'
         && r.opened.Upgrade === 'train' && r.opened.Look === 'creator' && r.opened.Journal === 'journal' && r.opened.Stats === 'cstats' && r.opened.Plays === 'myplays'
         && r.opened.Settings === 'settings' && r.opened.SettingsBack === 'hub' && r.bar.drills === 'gym:drills' && r.bar.upgrade === 'train' && r.bar.menu === 'hub';

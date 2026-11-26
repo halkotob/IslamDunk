@@ -3,6 +3,19 @@
 ## 9.35.0: The career refined, from the first playtest
 From the first playtest (docs/career-overhaul/REFINE-PLAN.md, releases 1 to 7), released together: the welcome and
 the creator, the practice gym as home, Chapters 0 to 5 rebuilt under the new rules, and blocks that reach for the ball.
+### Fixed before the release (the full test tier)
+- **Esc in a story walk,** and the walk's corner Back, open the career menu, as they do at home. Before, they went
+  home, which was the same gym screen, so nothing seemed to happen.
+- **In a new career's creator,** Esc steps back to the welcome screen where you typed your name. Before, it did
+  nothing.
+- **The career menu's way out** is one word, **Title**, like every other screen's way out.
+- **The league fallback** (the quick estimate of league games you don't play) is re-fitted to real games: blocks
+  that reach the ball knock it loose more often, so steals and turnovers went from 1.24 and 1.27 a player to 1.59 and
+  1.63 (real games: 1.63 and 1.64).
+- **Tests and the Review Studio** open the career menu where they meant the hub screen (`careerHub()` now goes home
+  to the gym). The story text box is shown with a narration line, the tutorial is listed as a match, and the
+  teammate pick is reached through its walk.
+
 ### Chapters 3 to 5 under the new rules (refine 7)
 These changes apply the notes on Chapters 0 to 2 to the rest of the story:
 - **Every teammate pick is a walk:** the brothers stand around the gym and you talk to the one you want.

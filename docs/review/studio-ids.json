@@ -2356,7 +2356,6 @@
   "text/career/story/story-home/office-80h26p": "9.31.0",
   "text/career/story/story-home/one-on-one-against-the-ffh5pv": "9.31.0",
   "text/career/story/story-home/one-on-one-first-to-tqr9f0": "9.31.0",
-  "text/career/story/story-home/quit-to-title-gbpe0p": "9.31.0",
   "text/career/story/story-home/spend-them-in-the-gym-vw3ntw": "9.31.0",
   "text/career/story/story-home/tap-to-go-back-to-6wqpkr": "9.31.0",
   "text/career/story/story-home/two-balls-one-line-make-y6bg4t": "9.31.0",
@@ -10518,6 +10517,11 @@
   "text/career/story/story-home/for-the-masjid-eripnb": {
    "reason": "9.33.0: career refine 5-7 (Chapter 2 opening, the pick walk, lean mini-game HUDs, the block perk text)",
    "version": "9.33.0",
+   "was": "9.31.0"
+  },
+  "text/career/story/story-home/quit-to-title-gbpe0p": {
+   "reason": "9.35.0: the career menu's way out is one word, Title",
+   "version": "9.35.0",
    "was": "9.31.0"
   },
   "text/career/story/story-league/al-furqan-is-in-our-9z2oow": {

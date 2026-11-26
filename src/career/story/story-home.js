@@ -232,7 +232,7 @@ function gymBarShown() { return storyOn() && Game.screen === 'gym' && !Gym.drill
         { label: 'League & stats', act: () => openStats() }] },
       { label: 'My plays', act: () => { openMyPlays(); PlayLib.back = { screen: 'hub' }; } },
       { label: 'Settings', act: () => { Game.setRet = 'hub'; Game.screen = 'settings'; Game.idx = 0; Game.setGroup = null; } },
-      { label: 'Quit to title', act: () => { saveCareer(); goTitle(); } }
+      { label: 'Title', act: () => { saveCareer(); goTitle(); } }          // (one word, as every way out: Back, Quit, Title)
     ];
   };
   const _bs = BACK.settings;

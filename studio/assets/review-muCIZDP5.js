@@ -647,8 +647,8 @@ const STUDIO_SCREENS = [
   ["match: leave? (confirm)", MATCH + ` Game.paused = true; Game.idx = 0; const it = pauseItems(); it[it.length - 1][1]();`],
   ["barakah run: abandon? (confirm)", RUN + ` runPickVow(0); runAskAbandon();`],
   ["online: network report", `lobbyPreview('gym'); NetReport.open('lobby');`],
-  ["hub: corner menu", `if (!C) { C = freshCareer(); C.name = 'Reviewer'; C.bracket = makeBracket(0); } careerHub(); Game.hubMenu = { open: true, idx: 0 };`],
-  ["hub: My Player menu", `if (!C) { C = freshCareer(); C.name = 'Reviewer'; } if (Game.menus) Game.menus.hub = null; careerHub(); const it = HUB_MENU(); menuActivate('hub', it, it.findIndex(e => e.label === 'My Player'));`]
+  ["hub: corner menu", `if (!C) { C = freshCareer(); C.name = 'Reviewer'; C.bracket = makeBracket(0); } careerMenu(); Game.hubMenu = { open: true, idx: 0 };`],
+  ["hub: My Player menu", `if (!C) { C = freshCareer(); C.name = 'Reviewer'; } if (Game.menus) Game.menus.hub = null; careerMenu(); const it = HUB_MENU(); menuActivate('hub', it, it.findIndex(e => e.label === 'My Player'));`]
 ];
 const SCREEN_OF = {
   "title": "title",
@@ -754,7 +754,7 @@ const SCREEN_OF = {
   "story: musalla": "musalla",
   "story: walk": "gym",
   "story: walk bubble": "gym",
-  "story: tutorial": "gym",
+  "story: tutorial": "play",
   "story: hub": "hub",
   "story: welcome": "swelcome",
   "story: creator game": "creator",
@@ -851,8 +851,8 @@ const META = {
   "story: musalla": ["first-run", "C0.2: the musalla after Isha: walk up to Imam Dawud (the gold marker) and talk.", "Straight after the salams.", null, null, "v9.22"],
   "story: walk": ["first-run", "C0.3: the gym, Ilyas, Ammo Jamil and Sh. Saleem to meet, with the checklist.", "After the musalla scene.", null, T("Continue"), "v9.22"],
   "story: walk bubble": ["first-run", "A speech bubble in a story walk.", "Talking to someone on the gym floor.", null, null, "v9.22", [NEAR("story: walk")]],
-  "story: tutorial": ["first-run", "C0.4: shoot around, the controls checklist.", "After meeting the brothers.", null, T("Continue"), "v9.22"],
-  "story: teammate pick": ["hub loop", "C2.5: pick your partner for a league game (seven brothers, chemistry, who is hurt).", "Before a Chapter 2 league game.", null, T("Continue"), "v9.24"],
+  "story: tutorial": ["first-run", "C0.4: the tutorial game, first to 11, with the basics box on the left (move, pass, shoot, sprint, defend, contest).", "After asking to play in the gym.", null, T("Continue"), "v9.22"],
+  "story: teammate pick": ["hub loop", "C2.5: talk to a brother in the gym and the pick opens: the seven on the left, his nine stats next to yours and your chemistry on the right.", "Before a Chapter 2 league game.", null, T("Continue"), "v9.24"],
   "story: credits": ["rare", "C5.11: The End. The credits roll on black: the cast, the school wing, a closing du’a.", "After the Ummah Cup.", null, null, "v9.28"],
   "story: replay": ["hub loop", "P.R: after The End, replay any tournament, the all-star game or CHAI.", "Continue, after The End.", null, T("Continue"), "v9.29"],
   "story: milestones": ["hub loop", "P.2: the 21 milestones, progress, the next prize; tap an earned one to watch its moment.", "My Player > Milestones.", null, T("My Player", "Milestones"), "v9.29"],

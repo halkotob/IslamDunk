@@ -87,7 +87,7 @@ function swTrackGoals(dt) {
     if (I.talk) I.talk.t += dt;
     if (I.fade > 0 && !I.fadeDir) I.fade = Math.max(0, I.fade - dt * 1.5);
     if (I.fadeDir) { I.fade = Math.min(1, I.fade + dt * 1.4); if (I.fade >= 1) { swEnd(); return; } }
-    if (menuHit('back') && !I.fadeDir) { careerHub(); return; }
+    if (menuHit('back') && !I.fadeDir) { careerMenu(); return; }        // (v9.35: Esc opens the menu, as it does at home; the walk keeps its place)
     const me = M.players[0];
     if (!I.talk) I.with = null;
     I.lb += ((I.talk ? 1 : 0) - I.lb) * Math.min(1, dt * 6);
@@ -334,6 +334,9 @@ function swPropFront(g, p) {
     if (Game.screen === 'train' && Game.trainBack && menuHit('back')) { Game.trainBack = null; Game.screen = 'gym'; return; }
     return _cu.apply(this, arguments);
   };
+  // the corner Back in a story walk opens the menu too (v9.35: careerHub() would only come back here)
+  const _bg = BACK.gym;
+  BACK.gym = function () { if (Gym.story && Gym.story === SW && !SW.D.home && !Gym.drill && !Gym.overlay && storyOn()) return careerMenu(); return _bg.apply(this, arguments); };
   const _bt = BACK.train;
   BACK.train = function () { if (Game.trainBack) { Game.trainBack = null; Game.screen = 'gym'; return; } return _bt ? _bt.apply(this, arguments) : careerHub(); };
 }

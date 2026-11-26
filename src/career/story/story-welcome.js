@@ -126,13 +126,13 @@ function styleSummary(st) {
     if (Input.hit(['ArrowDown', 'KeyS'])) { const j = (at + 1) % seq.length; cr.onTabs = seq[j] === -1; if (!cr.onTabs) cr.idx = seq[j]; SFX.blip && SFX.blip(); return; }
     if (cr.onTabs) {
       if (menuHit('left') || menuHit('right') || menuHit('ok')) creatorSetTab(tab === 'look' ? 'game' : 'look');
-      else if (menuHit('back') && !cr.isNew) careerHub();
+      else if (menuHit('back')) { if (!cr.isNew) careerHub(); else if (cr.welcomed) openWelcome(); }   // (v9.35: a new career steps back to the name)
       return;
     }
     if (menuHit('left')) creatorStep(cr.idx, -1);
     if (menuHit('right')) creatorStep(cr.idx, 1);
     if (menuHit('ok')) creatorEnter(cr.idx);
-    if (menuHit('back') && !cr.isNew) careerHub();
+    if (menuHit('back')) { if (!cr.isNew) careerHub(); else if (cr.welcomed) openWelcome(); }
   };
   const _dc = drawCreator;
   drawCreator = function (g) {
