@@ -1,6 +1,18 @@
 # Changelog
 
 ## Unreleased (career refine, collected for one release)
+### Chapters 3 to 5 under the new rules (refine 7)
+These changes apply the notes on Chapters 0 to 2 to the rest of the story:
+- **Every teammate pick is a walk:** the brothers stand around the gym and you talk to the one you want.
+  - This covers the State league, Nationals and the Ummah Cup draw.
+  - When your teammate leaves for Hajj, the re-pick happens without him.
+  - The new teammate's last line: "Come talk to me when you're ready for the next game."
+- **CHAI:** the centred letters banner and the long rules toast are gone. A small box on the left shows both players'
+  letters, who leads, the match timer and the current message. The rules are on the ready panel.
+- **The all-star game:** the crowd meter moves to the left, under the scoreboard.
+- **King of the Court, the draw:** the banner and the standings card are gone. It has the same streak counter on the
+  left as Chapter 1, and goes straight on when it ends.
+
 ### Blocks reach for the ball, in every mode (refine 6)
 - **The reach:** a block jump against a shot in the air, or a shooter rising, lunges toward the ball. The lunge is
   short (about a body width, in under a fifth of a second), works from any side (in front, beside, behind), and

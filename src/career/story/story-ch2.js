@@ -22,9 +22,9 @@ function storyPickWalkOpen(id) {
     const P = Game.spick; if (!P || !P.walk) return _sp.apply(this, arguments);
     const id = STORY_MATES[i]; if (!storyPickable(id)) { SFX.bad && SFX.bad(); return; }
     C.partner = id; Game.spick = null; Game.screen = 'gym'; saveCareer(); SFX.good && SFX.good();
-    const I = SW; if (!I) return storyDone(P.S, 'next');
+    const I = SW; if (!I) return storyDone(P.S, 'next');   // (swEnd: D.after, or the next scene)
     I.with = id; I.goals.pick = true;
-    const L = storyPickLines(id).slice(0, 3).concat([[id, PICK_READY]]);
+    const L = storyPickLines(id).slice(0, 3).concat([[id, I.D.ready || PICK_READY]]);
     I.D = Object.assign({}, I.D, { journal: L });
     swSay(L, () => swEnd());
   };

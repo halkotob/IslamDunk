@@ -169,7 +169,7 @@ Object.assign(STORY_EFFECTS, {
 STORY_MODES.kotcDraw = function (S) {
   storyCupCaptains();
   startKotc({ roster: ['you', ...CUP_CAPS], humans: { you: 0 } });
-  KOTC.gym = true; KOTC.story = S.id;
+  KOTC.gym = true; KOTC.story = S.id; KOTC.hud = true;               // (v9.33: the streak counter on the left, no banner)
 };
 {
   const _kl = kotcLeave;

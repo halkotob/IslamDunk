@@ -119,7 +119,7 @@ const READY_LOOK = {
   lightning: { title: 'Lightning', col: '#e8c35a', how: 'Two balls, one line. Make your shot before the player behind you makes his, or you’re out.' },
   kotc: { title: 'King of the Court', col: '#c9a24a', how: 'One on one, first to 3. Hold the court three games in a row to be crowned.' },
   kotcDraw: { title: 'King of the Court: the draw', col: '#c9a24a', how: 'One on one against the other teams’ captains. Every game you win makes the draw easier.' },
-  chai: { title: 'CHAI', col: '#7a4a2a', how: 'Make a shot; your opponent has to match it from the same spot. Spell CHAI and you make the chai.' },
+  chai: { title: 'CHAI', col: '#7a4a2a', how: 'Make a shot, and he has a few seconds to match it from the same spot. Miss one you have to match and you take a letter. Spell CHAI and you make the chai.' },
   allstar: { title: 'All-star game', col: '#ff8a4a', how: 'Dunks only: a jumper or a layup counts nothing. Every dunk fills the crowd meter.' },
   lightsout: { title: 'Lights out', col: '#3b3b3b', how: 'Two on two in the dark. Watch the glow around the players and the ball.' }
 };

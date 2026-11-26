@@ -103,7 +103,7 @@ function kotcLeave() {
     _r(g);
     if (!KOTC.on || !M.kotc || (Game.screen !== 'play' && Game.screen !== 'netplay')) return;
     const K = KOTC, o = Math.round((W - 960) / 2);
-    if (K.lean && typeof drawKotcLean === 'function') {                   // v9.33: the story's King of the Court: a streak counter on the left
+    if ((K.lean || K.hud) && typeof drawKotcLean === 'function') {                   // v9.33: the story's King of the Court: a streak counter on the left
       drawKotcLean(g);
       if (K.spect && !K.done && K.overT <= 0) uiButton(g, 12, Input.touchMode ? 188 : 160, 140, 32, 'Skip game', kotcSkip);
       return;

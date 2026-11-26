@@ -30,7 +30,7 @@ export const STORY_HELPERS = `(() => {
     if (s === 'story' && Game.story) { const st = Game.story; if (o.choice != null && st.lines[st.i] && st.lines[st.i][0] === 'choice') storyChoose(st, o.choice); storySkip(st); return 'scene'; }
     if (s === 'gym' && Gym.story && SW) {
       const W0 = SW; flush(); if (SW !== W0) return 'walk';             // (the talk ended the walk: one thing at a time)
-      if (SW.D.pickWalk) { const id = (typeof o.pick === 'function' ? o.pick(C.story.at) : o.pick) || C.partner || 'saleem'; swTalkTo(id); return 'walk'; }   // (v9.33: talk to a brother, the pick opens)
+      if (SW.D.pickWalk) { const want = (typeof o.pick === 'function' ? o.pick(C.story.at) : o.pick) || C.partner || 'saleem', ids = Object.keys(SW.npcs); swTalkTo(ids.includes(want) ? want : ids[0]); return 'walk'; }   // (v9.33: talk to a brother, the pick opens)
       for (const g of (SW.D.goals || [])) for (let k = 0; k < (g.n || 1) && !SW.goals[g.id]; k++) swGoal(g.id);
       for (const d of SW.D.npcs) if (d.need && !SW.met[d.id]) window.__sTalk(d.id);
       const cl = swCloser(); if (cl && !SW.done) window.__sTalk(cl);

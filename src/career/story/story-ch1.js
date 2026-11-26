@@ -105,9 +105,9 @@ const KOTC_STORY_L = { musa: -0.85, hafiz: -0.6, anas: -0.35 };     // each a li
   };
   // the crown goes straight back to the story: no standings card
   const _um = updateMatch;
-  updateMatch = function (dt) { const r = _um.apply(this, arguments); if (KOTC.on && KOTC.lean && KOTC.done && KOTC.doneT > 2.4) kotcLeave(); return r; };
+  updateMatch = function (dt) { const r = _um.apply(this, arguments); if (KOTC.on && (KOTC.lean || KOTC.hud) && KOTC.done && KOTC.doneT > 2.4) kotcLeave(); return r; };
   const _kl = kotcLeave;
-  kotcLeave = function () { const r = _kl.apply(this, arguments); KOTC.lean = false; return r; };
+  kotcLeave = function () { const r = _kl.apply(this, arguments); KOTC.lean = false; KOTC.hud = false; return r; };
 }
 // the streak counter (v8-kotc.js draws it instead of the banner when KOTC.lean)
 function drawKotcLean(g) {
