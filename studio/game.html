@@ -15359,7 +15359,7 @@ function kotcLeave() {
     _r(g);
     if (!KOTC.on || !M.kotc || (Game.screen !== 'play' && Game.screen !== 'netplay')) return;
     const K = KOTC, o = Math.round((W - 960) / 2);
-    if (K.lean && typeof drawKotcLean === 'function') {                   // v9.33: the story's King of the Court: a streak counter on the left
+    if ((K.lean || K.hud) && typeof drawKotcLean === 'function') {                   // v9.33: the story's King of the Court: a streak counter on the left
       drawKotcLean(g);
       if (K.spect && !K.done && K.overT <= 0) uiButton(g, 12, Input.touchMode ? 188 : 160, 140, 32, 'Skip game', kotcSkip);
       return;
@@ -21344,6 +21344,88 @@ function layVariant(p) {
     return _rs.apply(this, arguments);
   };
 }
+// ================================================= v9.33 (refine 6): BLOCKS REACH FOR THE BALL, in every mode
+// (docs/career-overhaul/REFINE-PLAN.md, release 6)
+// - The reach: a block jump against a shot in the air (or a shooter rising) lunges toward the ball: a short sideways
+//   move in the first part of the jump, capped, from any side (in front, beside, behind). The CPU's blocks use the
+//   same rule. Lockdown (the career's archetype perk) reaches a little farther.
+// - The chance (replaces v98-review.js's): the hand reaches toward the ball, not just the way you face. It rises with how
+//   close the hand gets and how early the jump meets the ball. In front of the shooter, early, is still the good
+//   block; from the side or behind, a close hand now has a real (small) chance; far off rarely lands. A near miss says
+//   FINGERTIPS.
+const BLOCK_REACH = {
+  t: 0.18,            // how long the lunge lasts (s)
+  v: 150,             // lunge speed at Defense 0 (px/s)...
+  vDef: 7,            // ...plus this per point of Defense
+  lockV: 30,          // Lockdown's extra speed
+  lockR: 6,           // and extra hand reach (px)
+  range: 230,         // the ball (or the shooter) must be this close to start a lunge
+  stop: 14,           // stop short of the ball: the hand, not the body, goes to it
+  body: 30            // and stay this far from the shooter
+};
+function blockLockdown(o) { return typeof perkOf === 'function' && perkOf(o) === 'lockdown'; }
+// where to reach: the ball in flight, or the shooter's release point while he rises
+function blockTarget(o) {
+  if (ball.state === 'shot' && ball.shot && !ball.shot.dunk && ball.shot.team !== o.team && ball.shot.t <= 0.45) return { x: ball.x, z: ball.z };
+  const sh = (o.opps || []).find(q => q.state === 'windup' || q.state === 'shoot');
+  if (sh) { const h = attackHoop(sh.team), d = dxz(sh, h) || 1; return { x: sh.x + (h.x - sh.x) / d * 10, z: sh.z + (h.z - sh.z) / d * 10 }; }
+  return null;
+}
+{
+  const _sj = startJump;
+  startJump = function (p) {
+    const was = p.state; const r = _sj.apply(this, arguments);
+    if (p.state !== 'jump' || was === 'jump') return r;
+    const T = blockTarget(p); if (!T) return r;
+    const dx = T.x - p.x, dz = T.z - p.z, d = Math.hypot(dx, dz);
+    if (d > BLOCK_REACH.range || d < BLOCK_REACH.stop + 1) return r;
+    const v = Math.min((d - BLOCK_REACH.stop) / BLOCK_REACH.t, BLOCK_REACH.v + (p.st.def || 5) * BLOCK_REACH.vDef + (blockLockdown(p) ? BLOCK_REACH.lockV : 0));
+    let k = 1; const sh = ball.shot && ball.shot.shooter || (p.opps || []).find(q => q.state === 'windup' || q.state === 'shoot');
+    if (sh) for (; k > 0.05; k -= 0.1) { const ex = p.x + dx / d * v * k * BLOCK_REACH.t, ez = p.z + dz / d * v * k * BLOCK_REACH.t; if (Math.hypot(ex - sh.x, ez - sh.z) >= BLOCK_REACH.body || Math.hypot(p.x - sh.x, p.z - sh.z) < BLOCK_REACH.body) break; }
+    p.reach = { vx: dx / d * v * k, vz: dz / d * v * k, t: BLOCK_REACH.t };          // (never into the shooter's body: that's a foul, not a block)
+    if (Math.abs(dx) > 4) p.face = sgn(dx);
+    return r;
+  };
+  const _um = updateMatch;
+  updateMatch = function (dt) {
+    const r = _um.apply(this, arguments);
+    for (const p of M.players || []) {
+      const R = p.reach; if (!R) continue;
+      if (p.state !== 'jump' || R.t <= 0) { p.reach = null; continue; }
+      const k = Math.min(dt, R.t); R.t -= dt;
+      p.x += R.vx * k; p.z += R.vz * k;
+    }
+    return r;
+  };
+}
+checkBlockJump = function (o) {
+  if (ball.state !== 'shot' || !ball.shot || ball.shot.dunk || ball.shot.team === o.team || ball.shot.t > 0.45 || ball.shot.tried.has(o)) return;
+  const C0 = blockChance(o); if (!C0) return;
+  ball.shot.tried.add(o);
+  const sh = ball.shot.shooter, h = ball.shot.hoop;
+  if (o.swipe && sh && dxz(o, sh) < 22 && !C0.chase && foulsOn() && chance(0.3)) {     // swiped through the body: shooting foul
+    if (!ball.shot.foul) { ball.shot.foul = { by: o, pts: ball.shot.pts }; if (humanIn(o, sh)) popOnce(sh, 'contact', 'CONTACT', '#ffd76a'); }
+    return;
+  }
+  if (chance(C0.p)) { if (C0.chase) pinBlock(o, sh, h); else blockBall(o, sh); return; }
+  if (o.human >= 0) popOnce(o, 'blk', C0.close > 0.55 ? 'FINGERTIPS' : !C0.early ? 'LATE' : C0.lane < 0.5 ? 'NO ANGLE' : 'JUST MISSED', C0.close > 0.55 ? '#ffd76a' : '#9fb3c8', 0.8);
+};
+// the block chance for o's hand against the ball right now (null: out of reach)
+function blockChance(o) {
+  if (!ball.shot) return null;
+  const def = o.st.def || 5, R = (o.swipe ? 38 : 26) + def * 1.0 + (blockLockdown(o) ? BLOCK_REACH.lockR : 0);
+  const hx = o.x + (sgn(ball.x - o.x) || o.face) * 6;                          // the hand reaches toward the ball
+  const d = Math.hypot(ball.x - hx, ball.y - (o.y + 104), ball.z - o.z);
+  if (d >= R) return null;
+  const sh = ball.shot.shooter, h = ball.shot.hoop, close = clamp(1 - d / R, 0, 1);
+  const lane = sh ? clamp((dxz(sh, h) - dxz(o, h) + 20) / 100, 0, 1) : 0;
+  const height = sh ? clamp((o.y - sh.y) / 140, -0.08, 0.12) : 0;
+  const chase = !!(o.swipe && (o.chaseOK || chaseGeom(o, sh, h)));
+  const early = ball.shot.t <= 0.3, good = lane >= 0.5 && early;
+  const pr = good ? clamp(0.12 + def * 0.045 + height, 0.15, 0.7)      // (in front, early: as v9.8, Defense decides)
+    : clamp((0.02 + def * 0.012 + lane * 0.06 + height + (o.swipe ? 0.04 : 0)) * (0.5 + 0.5 * close) + close * (early ? 0.24 : 0.12), 0.02, 0.32);   // (a far-off hand rarely lands)
+  return { p: clamp((pr + (chase ? 0.18 : 0)) * defK(o), 0.03, 0.95), close, lane, early, chase };
+}
 // ================================================= v9.8: ONLINE LAG (play-test: "so much latency for the guest")
 // Players on different networks rarely got the direct (peer-to-peer) link: it only tries STUN, which fails behind
 // most mobile, carrier and strict NATs. Everything then went through the Firebase server, which queued every
@@ -26853,13 +26935,12 @@ const STORY_GYM_TALK = {
 scn('C2.1', { kind: 'drill', name: 'First practice', walk: 'C2.1', next: 'C2.2' });
 scn('C2.2', { kind: 'walk', name: 'Father and son', walk: 'C2.2', next: 'C2.3' });
 scn('C2.3', { kind: 'scene', name: 'Why we play', salah: true, talk: { at: 'office', who: 'saleem' }, next: 'C2.4', effect: 'fundOn', lines: [
-  ['saleem', 'Before the league starts, I want you to know why we play. Forty-three kids come to the weekend school, in two rooms. One of them is the coat closet.'],
-  ['saleem', 'Last month we turned eleven families away. The board approved a school wing: four classrooms, one hundred thousand dollars.'],
-  ['saleem', 'Every game we win, people come to watch. People who watch, give. Every win builds a little of a classroom.'],
+  ['saleem', 'Forty-three kids come to our weekend school, in two rooms. Last month we turned eleven families away.'],
+  ['saleem', 'The board approved a school wing: four classrooms, one hundred thousand dollars. When we win, people come to watch, and people who watch give.'],
   ['you', 'Then we win.'],
   ['narr', 'The school wing fundraiser has begun. Its meter is on the left bar in the gym.']] });
 scn('C2.4', { kind: 'scene', name: 'The Masjid League', checkpoint: true, effect: 'bracket', stage: 0, next: 'C2.5', lines: () => storyLeagueIntro(0) });
-scn('C2.5', { kind: 'choice', name: 'Pick your teammate', pick: true, next: 'C2.6' });
+scn('C2.5', { kind: 'walk', name: 'Pick your teammate', walk: 'C2.5', next: 'C2.6' });
 scn('C2.6', { kind: 'play', name: 'Group game 1', bracket: true, stakes: 'opener', win: 'C2.7', loss: 'C2.7', out: 'C2.NS',
   winLines: [['saleem', 'Alhamdulillah. One down. Thank Allah, then thank the brother who set your screens.'], ['jamil', 'Good. Again on Thursday.']],
   lossLines: [['saleem', 'A loss in the group stage is not the end. Win the next one and we’re still alive.'], ['jamil', 'I hate losing. I REALLY hate losing.'], ['ilyas', 'We know, Dad.']] });
@@ -26893,18 +26974,28 @@ scn('C2.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: (
 
 // the C2.1, C2.2 and C2.9 walks
 STORY_WALKS['C2.1'] = { title: 'First practice', free: true, npcs: [
-    { id: 'saleem', x: 860, z: 300, act: 'host', face: -1, closer: true, early: [['saleem', 'Three drills, then we talk. Q for the drill menu.']],
-      lines: [['saleem', 'Good work. That’s the habit: a little every day, even when nobody’s watching.'], ['saleem', 'Now go and find Ammo Jamil and Ilyas. I think they’re arguing again.']] }],
-  goals: [{ id: 'drill', label: 'Finish three drills', n: 3, touch: 'Tap Drills, pick one', key: 'Q opens the drills' }],
-  start: [['saleem', 'First real practice. Three drills, any three. Then come and see me.']] };
+    { id: 'saleem', x: 860, z: 300, act: 'host', face: -1, closer: true, early: [['saleem', 'Three drills, then we talk. Drills are on the left bar.']],
+      lines: [['saleem', 'Good work. A little every day, even when nobody’s watching.'], ['saleem', 'Ammo Jamil and Ilyas are by the far hoop. Go say salaam.']] }],
+  goals: [{ id: 'drill', label: 'Finish three drills', n: 3, touch: 'Tap Drills, pick one', key: 'Drills on the left bar, or Q' }],
+  start: [
+    ['saleem', 'Here’s how the season goes, {name}. Between every game, you come back here and practise.'],
+    ['saleem', 'Drills earn Barakah Points for your stats. Games earn Halal Bucks, for your look and for the masjid’s projects.'],
+    ['saleem', 'And when the adhan calls, pray. It gives you a boost for the next game.'],
+    ['saleem', 'Three drills tonight, any three. Let’s start the season off right.']] };
+// C2.2: father and son, a gym apart; each sees it his own way
 STORY_WALKS['C2.2'] = { title: 'Father and son', npcs: [
     { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, need: true, lines: [
-      ['jamil', 'You see my son? Twenty points last week in pickup. And still he doesn’t box out.'], ['you', 'He’s the quickest guard in the gym, Ammo.'],
-      ['jamil', 'Quick, yes. But quick doesn’t win leagues. Defense wins leagues.'], ['jamil', 'I push him because I don’t want him to lose a final by one point. Like me.']] },
+      ['jamil', 'My son scores twenty in pickup and still doesn’t box out. Defense wins leagues.'],
+      ['jamil', 'I push him so he never loses a final by one point. Like I did.']] },
     { id: 'ilyas', x: 1120, z: 430, act: 'shoot', face: 1, need: true, lines: [
-      ['ilyas', 'Did he tell you about the one-point final? He tells everyone.'], ['ilyas', 'I play defense. I do. He only sees what I don’t do.'],
-      ['you', 'Maybe tell him what you just told me.'], ['ilyas', 'Maybe. After we win something.']] }],
-  end: [['narr', 'Father and son, a gym apart. Each of them said the same thing about the other.']] };
+      ['ilyas', 'He only sees what I don’t do. I want to run, not stand in his zone.'],
+      ['you', 'Maybe tell him that.'], ['ilyas', 'After we win something.']] }] };
+// C2.5: the seven stand around the gym; talk to any of them and the pick screen opens with him selected
+STORY_WALKS['C2.5'] = { title: 'Pick your teammate', pickWalk: true, npcs: STORY_MATES.map((id, i) => {
+    const [x, z, face] = [[900, 320, -1], [980, 600, -1], [1120, 430, -1], [1180, 220, -1], [720, 600, 1], [600, 250, 1], [760, 170, 1]][i];
+    return { id, x, z, face, act: id === 'ilyas' ? 'shoot' : id === 'dawud' ? 'chai' : 'host', onTalk: () => storyPickWalkOpen(id) }; }),
+  goals: [{ id: 'pick', label: 'Pick your teammate', touch: 'Walk up to a brother and tap Talk', key: 'Walk up to a brother, press E' }],
+  start: [['saleem', 'Two on two, {name}: you and one of us. Talk to whoever you want to play with.']] };
 STORY_WALKS['C2.9'] = { title: 'Practice day', free: true, npcs: [
     { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, need: true, lines: [['jamil', 'Two group games down. Every possession matters now. EVERY possession.'], ['you', 'In sha Allah, we’re ready.']] },
     { id: 'ilyas', x: 1120, z: 430, act: 'shoot', face: 1, need: true, lines: [['ilyas', 'My dad clapped once last game. Once. I counted.'], ['you', 'That’s a start.']] },
@@ -28490,7 +28581,7 @@ STORY_MODES.chai = function (S) {
   M.mini.word = 'CHAI';
   Gym.drill = { kind: 'horse', mini: true, story: S.id };
   C.story.chaiOpp = opp;
-  gymToast('CHAI: make a shot, then ' + castDef(opp).name + ' has ' + M.mini.timerLen + ' seconds to match it. Miss a shot you have to match and you get a letter. Spell CHAI and you make the chai.', 5);
+  // (v9.33: the rules are on the ready panel; no toast across the screen)
 };
 {
   const _fm = finishMini;
@@ -28542,15 +28633,15 @@ STORY_MODES.allstar = function (S) {
   };
   const _um = updateMatch;
   updateMatch = function (dt) { const r = _um.apply(this, arguments); const D = M.story && M.story.dunks; if (D && D.t > 0) D.t -= dt; return r; };
-  const _ds = drawScene;
-  drawScene = function (g) {
+  const _ds = drawHUD;
+  drawHUD = function (g) {                                          // (v9.33: screen space, on the left)
     const r = _ds.apply(this, arguments);
     const D = M.story && M.story.dunks;
-    if (D && Game.screen === 'play') {                                 // the crowd meter (the ticket sales), top centre
-      const w = 240, x = W / 2 - w / 2, y = 108, k = D.crowd, pop = D.t > 0 ? 1 + 0.06 * Math.sin(D.t * 20) : 1;
-      g.save(); g.translate(W / 2, y + 14); g.scale(pop, pop); g.translate(-W / 2, -(y + 14));
+    if (D && Game.screen === 'play') {                                 // the crowd meter (the ticket sales), on the left under the scoreboard (v9.33)
+      const TT = Input.touchMode && g === ctx, w = 196, x = 22, y = TT ? 122 : 98, k = D.crowd, pop = D.t > 0 ? 1 + 0.06 * Math.sin(D.t * 20) : 1;
+      g.save(); g.translate(x + w / 2, y + 14); g.scale(pop, pop); g.translate(-(x + w / 2), -(y + 14));
       g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x - 10, y - 16, w + 20, 44, 12); g.fill();
-      g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.fillText('CROWD  •  DUNKS ONLY  •  ' + D.n + ' DUNK' + (D.n === 1 ? '' : 'S'), W / 2, y - 2);
+      g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.fillText('CROWD  •  DUNKS ONLY  •  ' + D.n + ' DUNK' + (D.n === 1 ? '' : 'S'), x, y - 2);
       meter(g, x, y + 6, w, 12, k, k > 0.75 ? '#ffd76a' : '#57e389');
       g.restore();
     }
@@ -28741,7 +28832,7 @@ Object.assign(STORY_EFFECTS, {
 STORY_MODES.kotcDraw = function (S) {
   storyCupCaptains();
   startKotc({ roster: ['you', ...CUP_CAPS], humans: { you: 0 } });
-  KOTC.gym = true; KOTC.story = S.id;
+  KOTC.gym = true; KOTC.story = S.id; KOTC.hud = true;               // (v9.33: the streak counter on the left, no banner)
 };
 {
   const _kl = kotcLeave;
@@ -29197,7 +29288,7 @@ const ARCH_INFO = {
   sharpshooter: { name: 'Sharpshooter', col: '#57b8ff', icon: 'target', perk: 'Perk: a wider green window on your jump shots.' },
   playmaker: { name: 'Playmaker', col: '#f2cf6b', icon: 'arrow', perk: 'Perk: your passes travel faster.' },
   rimrunner: { name: 'Rim Runner', col: '#ff8a4a', icon: 'up', perk: 'Perk: you can dunk from a step further out.' },
-  lockdown: { name: 'Lockdown', col: '#57e389', icon: 'shield', perk: 'Perk: a longer reach when you go for a steal.' },
+  lockdown: { name: 'Lockdown', col: '#57e389', icon: 'shield', perk: 'Perk: a longer reach for steals and blocks.' },
   glue: { name: 'Glue Guy', col: '#c58cff', icon: 'knot', perk: 'Perk: you win more loose balls and rebounds.' }
 };
 function drawArchIcon(g, kind, x, y, r, col) {
@@ -29477,7 +29568,7 @@ const READY_LOOK = {
   lightning: { title: 'Lightning', col: '#e8c35a', how: 'Two balls, one line. Make your shot before the player behind you makes his, or you’re out.' },
   kotc: { title: 'King of the Court', col: '#c9a24a', how: 'One on one, first to 3. Hold the court three games in a row to be crowned.' },
   kotcDraw: { title: 'King of the Court: the draw', col: '#c9a24a', how: 'One on one against the other teams’ captains. Every game you win makes the draw easier.' },
-  chai: { title: 'CHAI', col: '#7a4a2a', how: 'Make a shot; your opponent has to match it from the same spot. Spell CHAI and you make the chai.' },
+  chai: { title: 'CHAI', col: '#7a4a2a', how: 'Make a shot, and he has a few seconds to match it from the same spot. Miss one you have to match and you take a letter. Spell CHAI and you make the chai.' },
   allstar: { title: 'All-star game', col: '#ff8a4a', how: 'Dunks only: a jumper or a layup counts nothing. Every dunk fills the crowd meter.' },
   lightsout: { title: 'Lights out', col: '#3b3b3b', how: 'Two on two in the dark. Watch the glow around the players and the ball.' }
 };
@@ -29607,7 +29698,12 @@ function gymBarShown() { return storyOn() && Game.screen === 'gym' && !Gym.drill
     g.fillText(p.res === 'champ' ? p.stage.name.toUpperCase() + ' CHAMPIONS' : p.won ? 'WIN' : 'LOSS', W / 2, 124);
     g.fillStyle = '#fff'; g.font = `17px ${BODY}`; g.fillText(fitText(g, 'Al-Amanah ' + p.us + ', ' + p.opp.name.replace('Masjid ', '') + ' ' + p.them + '  (' + p.roundName + ')', 540), W / 2, 156);
     if (p.unlocked) { g.fillStyle = '#9dffb0'; g.font = `15px ${FONT}`; g.fillText(fitText(g, p.unlocked, 540), W / 2, 184); }
-    [['BARAKAH POINTS', p.rw.bpTotal, '#f2cf6b', 'for your stats'], ['HALAL BUCKS', p.rw.hbTotal, '#9dffb0', 'for the masjid']].forEach(([t, v, col, sub], i) => {
+    // the totals count up, one line of the rewards at a time, a soft tick each (sfx-moments-hooks.js)
+    const items = [...(p.rw.bp || []).map(x => [0, +x[1] || 0]), ...(p.rw.hb || []).map(x => [1, +x[1] || 0])];
+    const n = typeof earnShown === 'function' && items.length ? earnShown(p, items.length) : items.length;
+    const shown = [0, 1].map(k => items.slice(0, n).filter(x => x[0] === k).reduce((a, x) => a + x[1], 0));
+    const tot = [p.rw.bpTotal, p.rw.hbTotal].map((v, k) => n >= items.length || !items.length ? v : Math.min(v, shown[k]));
+    [['BARAKAH POINTS', tot[0], '#f2cf6b', 'for your stats'], ['HALAL BUCKS', tot[1], '#9dffb0', 'for your look and the masjid']].forEach(([t, v, col, sub], i) => {
       const x = W / 2 - 250 + i * 260;
       g.fillStyle = 'rgba(255,255,255,0.06)'; roundRect(g, x, 212, 240, 130, 14); g.fill();
       g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText(t, x + 120, 240);
@@ -29851,9 +29947,9 @@ const KOTC_STORY_L = { musa: -0.85, hafiz: -0.6, anas: -0.35 };     // each a li
   };
   // the crown goes straight back to the story: no standings card
   const _um = updateMatch;
-  updateMatch = function (dt) { const r = _um.apply(this, arguments); if (KOTC.on && KOTC.lean && KOTC.done && KOTC.doneT > 2.4) kotcLeave(); return r; };
+  updateMatch = function (dt) { const r = _um.apply(this, arguments); if (KOTC.on && (KOTC.lean || KOTC.hud) && KOTC.done && KOTC.doneT > 2.4) kotcLeave(); return r; };
   const _kl = kotcLeave;
-  kotcLeave = function () { const r = _kl.apply(this, arguments); KOTC.lean = false; return r; };
+  kotcLeave = function () { const r = _kl.apply(this, arguments); KOTC.lean = false; KOTC.hud = false; return r; };
 }
 // the streak counter (v8-kotc.js draws it instead of the banner when KOTC.lean)
 function drawKotcLean(g) {
@@ -29879,6 +29975,162 @@ function drawKotcLean(g) {
       C.story.lay = STORY_LAYOUT;
     }
     return r;
+  };
+}
+// ================================================= v9.33 (refine 5): Chapter 2's opening
+// (docs/career-overhaul/REFINE-PLAN.md, release 5; SCENES.md, Chapter 2)
+// - C2.1 Sh. Saleem explains the loop at the first practice (practise between games, points, bucks, the prayer boost).
+// - C2.2 and C2.3 shorter; "Why we play" is Sh. Saleem alone in his office.
+// - C2.5 the seven stand around the gym: talk to any of them and the pick screen opens with him selected. The pick
+//   screen (here and in every later pick) lists the seven on the left; on the right, his nine stats next to yours,
+//   and your chemistry. Your teammate's last line: "Come talk to me when you're ready for the first game."
+
+const PICK_STATS = [['sht', 'Shooting'], ['spd', 'Speed'], ['dnk', 'Dunking'], ['def', 'Defense'], ['stl', 'Stealing'], ['sta', 'Stamina'], ['pas', 'Passing'], ['hus', 'Hustle'], ['clu', 'Clutch']];
+const PICK_READY = 'Come talk to me when you’re ready for the first game.';
+
+// ---------------------------------------------------------------- C2.5: talk to a brother, and the pick opens
+function storyPickWalkOpen(id) {
+  const I = SW; if (!I || I.talk || I.fadeDir) return;
+  const p = I.npcs[id], me = M.players[0]; if (p && me) { p.face = sgn(me.x - p.x) || 1; me.face = -p.face; }
+  let i = STORY_MATES.indexOf(id); if (i < 0 || !storyPickable(id)) i = Math.max(0, STORY_MATES.findIndex(storyPickable));
+  Game.spick = { S: I.S, sel: i, walk: true }; Game.screen = 'spick'; SFX.blip && SFX.blip();
+}
+{
+  const _sp = storyPick;
+  storyPick = function (i) {
+    const P = Game.spick; if (!P || !P.walk) return _sp.apply(this, arguments);
+    const id = STORY_MATES[i]; if (!storyPickable(id)) { SFX.bad && SFX.bad(); return; }
+    C.partner = id; Game.spick = null; Game.screen = 'gym'; saveCareer(); SFX.good && SFX.good();
+    const I = SW; if (!I) return storyDone(P.S, 'next');   // (swEnd: D.after, or the next scene)
+    I.with = id; I.goals.pick = true;
+    const L = storyPickLines(id).slice(0, 3).concat([[id, I.D.ready || PICK_READY]]);
+    I.D = Object.assign({}, I.D, { journal: L });
+    swSay(L, () => swEnd());
+  };
+  // Back from the pick screen in the walk: back to the walk, not the menu
+  const _bs = BACK.spick;
+  BACK.spick = function () { const P = Game.spick; if (P && P.walk) { Game.spick = null; Game.screen = 'gym'; return; } return _bs.apply(this, arguments); };
+  const _cu = careerUpdate;
+  careerUpdate = function (rdt) {
+    if (Game.screen !== 'spick') return _cu.apply(this, arguments);
+    const P = Game.spick; if (!P) return _cu.apply(this, arguments);
+    const n = STORY_MATES.length;
+    if (menuHit('up') || menuHit('left')) { P.sel = (P.sel + n - 1) % n; SFX.blip(); }
+    else if (menuHit('down') || menuHit('right')) { P.sel = (P.sel + 1) % n; SFX.blip(); }
+    else if (menuHit('ok')) storyPick(P.sel);
+    else if (menuHit('back')) BACK.spick();
+  };
+}
+
+// ---------------------------------------------------------------- the pick screen: the list on the left, him and you on the right
+function spickLayout() {
+  const TT = Input.touchMode, x0 = Math.round((W - 880) / 2), y0 = 66, rh = TT ? 54 : 52;
+  return { x0, y0, lw: 300, rh, rx: x0 + 316, rw: 564, rows: STORY_MATES.map((id, i) => ({ id, x: x0, y: y0 + i * rh, w: 300, h: rh - 6 })) };
+}
+function spickRects() { return spickLayout().rows; }
+function drawStoryPick(g) {
+  const P = Game.spick; if (!P) return;
+  dim(g, 0.84);
+  const Lo = spickLayout(), T = amanahTeam(), id = STORY_MATES[P.sel], TT = Input.touchMode;
+  g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText(P.S && P.S.keep ? 'Your teammate for the next game' : 'Pick your teammate', Math.max(Lo.x0, 136), 46);   // (clear of the Back button)
+  // the seven
+  Lo.rows.forEach((r, i) => {
+    const on = P.sel === i, ok = storyPickable(r.id), cur = C.partner === r.id;
+    g.globalAlpha = ok ? 1 : 0.45;
+    g.fillStyle = on ? 'rgba(232,195,90,0.24)' : 'rgba(8,16,24,0.88)'; roundRect(g, r.x, r.y, r.w, r.h, 10); g.fill();
+    if (on) { g.strokeStyle = GOLD; g.lineWidth = 2; roundRect(g, r.x, r.y, r.w, r.h, 10); g.stroke(); }
+    g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText(fitText(g, castDef(r.id).name, r.w - 80), r.x + 16, r.y + 20);
+    g.fillStyle = HUB_GOLD_DIM; g.font = `12px ${BODY}`; g.fillText(fitText(g, ok ? MATE_ROLE[r.id] : 'Away for Hajj', r.w - 80), r.x + 16, r.y + 38);
+    if (cur) { g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.textAlign = 'right'; g.fillText('NOW', r.x + r.w - 12, r.y + 20); g.textAlign = 'left'; }
+    g.globalAlpha = 1;
+    addRect(r.x, r.y, r.w, r.h, () => { if (P.sel === i) storyPick(i); else { P.sel = i; SFX.blip(); } });
+  });
+  // him and you
+  const x = Lo.rx, y = Lo.y0, w = Lo.rw, h = Lo.rows.length * Lo.rh - 6;
+  g.fillStyle = 'rgba(8,16,24,0.9)'; roundRect(g, x, y, w, h, 14); g.fill();
+  g.save(); roundRect(g, x + 2, y + 2, 150, h - 4, 12); g.clip(); drawPortrait(g, x + 78, y + h - 12, castDef(id), T, 1.5, 'thobe'); g.restore();
+  const cx = x + 168, cw = w - 184;
+  g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.fillText(fitText(g, castDef(id).name, cw), cx, y + 30);
+  g.fillStyle = HUB_GOLD_DIM; g.font = `12px ${BODY}`; g.fillText(fitText(g, storyPickable(id) ? MATE_ROLE[id] : 'Away for Hajj', cw), cx, y + 50);
+  const his = storyMateStats(id, C.stage), mine = playerDef().stats, top = MATE_STANDOUT[id] || [];
+  const colY = y + 76, bw = Math.round((cw - 104) / 2), rh = TT ? 28 : 27, ax = cx + 96, bx = ax + bw + 8;
+  g.font = `11px ${FONT}`; g.fillStyle = '#f2cf6b'; g.fillText((C.name || 'You').toUpperCase(), ax, colY); g.fillStyle = '#8fe3ff'; g.fillText(fitText(g, castDef(id).name.toUpperCase(), bw), bx, colY);
+  PICK_STATS.forEach(([k, lab], j) => {
+    const yy = colY + 12 + j * rh, a = clamp(+mine[k] || 0, 0, 10), b = clamp(+his[k] || 0, 0, 10), hot = top.includes(k);
+    g.fillStyle = hot ? '#fff' : IVORY; g.font = `12px ${hot ? FONT : BODY}`; g.fillText(lab, cx, yy + 13);
+    [[ax, a, '#f2cf6b'], [bx, b, '#8fe3ff']].forEach(([px, v, col]) => {
+      g.fillStyle = 'rgba(255,255,255,0.08)'; roundRect(g, px, yy + 4, bw - 26, 10, 5); g.fill();
+      g.fillStyle = col; roundRect(g, px, yy + 4, Math.max(4, (bw - 26) * v / 10), 10, 5); g.fill();
+      g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.textAlign = 'right'; g.fillText(String(v), px + bw - 4, yy + 14); g.textAlign = 'left';
+    });
+  });
+  const v = chemOf(id), my = colY + 12 + PICK_STATS.length * rh + 14;
+  g.fillStyle = HUB_GOLD_DIM; g.font = `11px ${FONT}`; g.fillText('CHEMISTRY ' + Math.round(v), cx, my + 8);
+  meter(g, ax, my, cw - 96, 9, v / 100, v >= 75 ? '#57e389' : v >= 25 ? '#f2cf6b' : '#9fb3c8');
+  // play with him
+  const bh = TT ? 44 : 38, bwid = 300, by = y + h + 12;
+  g.fillStyle = storyPickable(id) ? GOLD : 'rgba(255,255,255,0.2)'; roundRect(g, x + w - bwid, by, bwid, bh, bh / 2); g.fill();
+  g.textAlign = 'center'; g.fillStyle = NIGHT; g.font = `15px ${FONT}`; g.fillText(fitText(g, 'Play with ' + castDef(id).name, bwid - 24), x + w - bwid / 2, by + bh / 2 + 5);
+  addRect(x + w - bwid, by, bwid, bh, () => storyPick(P.sel));
+  if (!TT) { g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('↑ ↓ to choose  •  Enter to pick  •  Esc to go back', Lo.x0, by + bh / 2 + 5); }
+}
+// ================================================= v9.33 (refine 7): Chapters 3 to 5 under the new rules
+// (docs/career-overhaul/REFINE-PLAN.md, release 7) The owner's notes on Chapters 0 to 2, applied to the rest:
+// - Mini game screens: CHAI's centred letters banner, the all-star game's crowd meter and the King of the Court
+//   draw's banner move into small boxes on the left. The scoreboard, the callouts and the bubbles stay.
+// - Every teammate pick is a walk: the brothers stand around the gym and you talk to the one you want (the State
+//   league, Nationals, the Ummah Cup draw, and the re-pick when your teammate leaves for Hajj, without him).
+
+// ---------------------------------------------------------------- the pick is a walk, every time
+function storyPickWalk(S, then, o = {}) {
+  const spots = [[900, 320, -1], [980, 600, -1], [1120, 430, -1], [1180, 220, -1], [720, 600, 1], [600, 250, 1], [760, 170, 1]];
+  const npcs = STORY_MATES.filter(storyPickable).map((id, i) => {
+    const [x, z, face] = spots[i];
+    return { id, x, z, face, act: id === 'ilyas' ? 'shoot' : id === 'dawud' ? 'chai' : 'host', onTalk: () => storyPickWalkOpen(id) };
+  });
+  storyWalkStart(S, { title: 'Pick your teammate', pickWalk: true, npcs, after: then, ready: o.ready,
+    goals: [{ id: 'pick', label: 'Pick your teammate', touch: 'Walk up to a brother and tap Talk', key: 'Walk up to a brother, press E' }] });
+}
+const PICK_NEXT = 'Come talk to me when you’re ready for the next game.';
+{
+  // after a checkpoint's talk (C3.2, C4.1, C5.3)
+  storyPickThen = function (S, then) { storyPickWalk(S, then, { ready: PICK_NEXT }); };
+  // C3.14: his news, then the pick without him
+  const _cs = storyChoiceStart;
+  storyChoiceStart = function (S) {
+    if (!S.injure) return _cs.apply(this, arguments);
+    if (!C.story.injured) { C.story.injured = C.partner || 'saleem'; saveCareer(); }
+    playStory(storyLinesOf(S), () => storyPickWalk(S, () => storyDone(S, 'next'), { ready: PICK_NEXT }), storyTitleOf(S));
+    storyTagJournal(S);
+  };
+}
+
+// ---------------------------------------------------------------- CHAI: a small box on the left
+{
+  const _dm = drawMiniHUD;
+  drawMiniHUD = function (g) {
+    const mg = M.mini;
+    if (!(storyOn() && Gym.drill && Gym.drill.story && mg && mg.kind === 'horse')) return _dm.apply(this, arguments);
+    const TT = Input.touchMode && g === ctx, x = 12, y = TT ? 72 : 60, w = 236, rows = [0, 1], tm = mg.phase === 'follow' && !mg.done;
+    const h = 40 + rows.length * 28 + (tm ? 14 : 0) + (mg.msg && !mg.done ? 20 : 0);
+    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x, y, w, h, 12); g.fill();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(mg.word, x + 14, y + 20);
+    rows.forEach(i => {
+      const yy = y + 30 + i * 28, lead = mg.leader === i;
+      g.fillStyle = lead ? '#f2cf6b' : '#fff'; g.font = `12px ${FONT}`; g.fillText(fitText(g, (lead ? '▶ ' : '') + miniName(i), 96), x + 14, yy + 14);
+      mg.word.split('').forEach((ch, k) => {
+        const on = k < mg.letters[i], bx = x + 116 + k * 26;
+        g.fillStyle = on ? '#e05a5a' : 'rgba(255,255,255,0.1)'; roundRect(g, bx, yy, 22, 18, 5); g.fill();
+        g.fillStyle = on ? '#fff' : '#6d7a8c'; g.textAlign = 'center'; g.fillText(ch, bx + 11, yy + 14); g.textAlign = 'left';
+      });
+    });
+    let yy = y + 30 + rows.length * 28 + 4;
+    if (tm) { g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, x + 14, yy, w - 28, 6, 3); g.fill(); g.fillStyle = mg.timer < 3 ? '#e05a5a' : '#ffcf6a'; roundRect(g, x + 14, yy, (w - 28) * clamp(mg.timer / (mg.timerLen || 10), 0, 1), 6, 3); g.fill(); yy += 14; }
+    if (mg.msg && !mg.done) { g.fillStyle = '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText(fitText(g, mg.msg, w - 28), x + 14, yy + 10); }
+    if (mg.said) {                                                     // what he says stays a bubble over his head
+      const p = M.players[mg.said.who]; if (p) { const [px, py] = P(p.x, p.y + 132, p.z); g.font = `12px ${BODY}`; const bw = g.measureText(mg.said.text).width + 20;
+        g.fillStyle = 'rgba(255,255,255,0.95)'; roundRect(g, px - bw / 2, py - 24, bw, 24, 12); g.fill(); g.fillStyle = NIGHT; g.textAlign = 'center'; g.fillText(mg.said.text, px, py - 8); }
+    }
   };
 }
 // ================================================= v9.30.0: LIGHTNING AND HORSE ONLINE WITH ROLLBACK

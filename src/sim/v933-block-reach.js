@@ -76,7 +76,7 @@ function blockChance(o) {
   const height = sh ? clamp((o.y - sh.y) / 140, -0.08, 0.12) : 0;
   const chase = !!(o.swipe && (o.chaseOK || chaseGeom(o, sh, h)));
   const early = ball.shot.t <= 0.3, good = lane >= 0.5 && early;
-  const pr = good ? clamp(0.12 + def * 0.045 + height + close * 0.12, 0.15, 0.74)
+  const pr = good ? clamp(0.12 + def * 0.045 + height, 0.15, 0.7)      // (in front, early: as v9.8, Defense decides)
     : clamp((0.02 + def * 0.012 + lane * 0.06 + height + (o.swipe ? 0.04 : 0)) * (0.5 + 0.5 * close) + close * (early ? 0.24 : 0.12), 0.02, 0.32);   // (a far-off hand rarely lands)
   return { p: clamp((pr + (chase ? 0.18 : 0)) * defK(o), 0.03, 0.95), close, lane, early, chase };
 }

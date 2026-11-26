@@ -120,7 +120,6 @@
   "dialogue/scene/C2.3/1": "9.23.0",
   "dialogue/scene/C2.3/2": "9.23.0",
   "dialogue/scene/C2.3/3": "9.23.0",
-  "dialogue/scene/C2.3/4": "9.23.0",
   "dialogue/scene/C2.4/0": "9.23.0",
   "dialogue/scene/C2.4/1": "9.23.0",
   "dialogue/scene/C2.4/2": "9.23.0",
@@ -572,11 +571,8 @@
   "dialogue/walk/C2.2/ilyas/0": "9.23.0",
   "dialogue/walk/C2.2/ilyas/1": "9.23.0",
   "dialogue/walk/C2.2/ilyas/2": "9.23.0",
-  "dialogue/walk/C2.2/ilyas/3": "9.23.0",
   "dialogue/walk/C2.2/jamil/0": "9.23.0",
   "dialogue/walk/C2.2/jamil/1": "9.23.0",
-  "dialogue/walk/C2.2/jamil/2": "9.23.0",
-  "dialogue/walk/C2.2/jamil/3": "9.23.0",
   "dialogue/walk/C2.9/anas/0": "9.23.0",
   "dialogue/walk/C2.9/anas/1": "9.23.0",
   "dialogue/walk/C2.9/dawud/0": "9.23.0",
@@ -2090,6 +2086,9 @@
   "text/career/story/story-ch1/you-re-on-the-spot-br9j4o": "9.33.0",
   "text/career/story/story-ch1/you-re-out-nitgis": "9.33.0",
   "text/career/story/story-ch1/you-won-b3fdtr": "9.33.0",
+  "text/career/story/story-ch2/come-talk-to-me-when-gf22hi": "9.33.0",
+  "text/career/story/story-ch2/to-choose-enter-to-pick-63ryne": "9.33.0",
+  "text/career/story/story-ch35/come-talk-to-me-when-wd6t75": "9.33.0",
   "text/career/story/story-data/a-new-season-the-gym-axx9xd": "9.29.2",
   "text/career/story/story-data/a-new-state-season-same-1n5d8k": "9.29.2",
   "text/career/story/story-data/after-isha-3lalgs": "9.22.0",
@@ -2106,6 +2105,7 @@
   "text/career/story/story-data/and-the-chai-is-ready-5hvejx": "9.23.0",
   "text/career/story/story-data/and-we-box-out-ki1jgq": "9.23.0",
   "text/career/story/story-data/and-we-box-out-xgq3rb": "9.23.0",
+  "text/career/story/story-data/and-when-the-adhan-calls-l7qm73": "9.33.0",
   "text/career/story/story-data/anything-near-the-rim-is-ejjplk": "9.23.0",
   "text/career/story/story-data/anywhere-ax3m6l": "9.23.0",
   "text/career/story/story-data/as-salamu-alaykum-i-m-kqemk9": "9.33.0",
@@ -2130,6 +2130,8 @@
   "text/career/story/story-data/dad-next-year-i-promise-yryqq8": "9.23.0",
   "text/career/story/story-data/dad-that-s-amazing-mum-ldlz9s": "9.29.2",
   "text/career/story/story-data/don-t-make-me-yell-lxfvfq": "9.23.0",
+  "text/career/story/story-data/drills-earn-barakah-points-for-dcp8p0": "9.33.0",
+  "text/career/story/story-data/drills-on-the-left-bar-pqc4bb": "9.33.0",
   "text/career/story/story-data/drive-to-the-rim-and-hxnp2t": "9.33.0",
   "text/career/story/story-data/drive-to-the-rim-then-l8m9l1": "9.33.0",
   "text/career/story/story-data/dunks-only-you-sure-you-td2xf0": "9.29.2",
@@ -2137,14 +2139,12 @@
   "text/career/story/story-data/elbow-in-follow-through-and-xxm0pb": "9.23.0",
   "text/career/story/story-data/enforcer-a0qsu1": "9.22.0",
   "text/career/story/story-data/exactly-c4lclj": "9.23.0",
-  "text/career/story/story-data/father-and-son-a-gym-sf1mbo": "9.23.0",
   "text/career/story/story-data/father-and-son-db347e": "9.23.0",
   "text/career/story/story-data/find-me-in-the-corner-ahuo7h": "9.23.0",
   "text/career/story/story-data/finish-a-drill-hzl9s8": "9.23.0",
   "text/career/story/story-data/finish-three-drills-nds688": "9.23.0",
   "text/career/story/story-data/first-game-bismillah-whatever-ha-v2pucy": "9.23.0",
   "text/career/story/story-data/first-practice-vbajje": "9.23.0",
-  "text/career/story/story-data/first-real-practice-three-drills-4gjvrb": "9.23.0",
   "text/career/story/story-data/first-up-tb3shg": "9.29.2",
   "text/career/story/story-data/floor-general-pr1e3x": "9.22.0",
   "text/career/story/story-data/four-letters-a-long-night-5visak": "9.29.2",
@@ -2304,6 +2304,7 @@
   "text/career/story/story-data/the-uncles-are-on-the-exupoe": "9.31.0",
   "text/career/story/story-data/then-we-settle-it-the-s5uhzf": "9.29.2",
   "text/career/story/story-data/this-is-a-must-win-8dgorp": "9.23.0",
+  "text/career/story/story-data/three-drills-tonight-any-three-gai678": "9.33.0",
   "text/career/story/story-data/throw-it-up-anywhere-near-cuit5a": "9.23.0",
   "text/career/story/story-data/tickets-4kxade": "9.29.2",
   "text/career/story/story-data/tomorrow-it-s-90fyv7": "9.29.2",
@@ -2316,6 +2317,8 @@
   "text/career/story/story-data/wa-alaykum-as-salam-i-1szxza": "9.33.0",
   "text/career/story/story-data/walk-to-the-musalla-door-e8achx": "9.33.0",
   "text/career/story/story-data/walk-to-the-musalla-door-ej87c8": "9.33.0",
+  "text/career/story/story-data/walk-up-to-a-brother-3jw1jj": "9.33.0",
+  "text/career/story/story-data/walk-up-to-a-brother-j7gjud": "9.33.0",
   "text/career/story/story-data/walks-in-back-from-hajj-uc7gdm": "9.29.2",
   "text/career/story/story-data/we-didn-t-get-out-rvoavj": "9.23.0",
   "text/career/story/story-data/we-learn-we-practice-and-32qtzv": "9.23.0",
@@ -2344,8 +2347,9 @@
   "text/career/story/story-home/back-to-the-gym-7p4ct7": "9.31.0",
   "text/career/story/story-home/dunks-only-a-jumper-or-wbu0ku": "9.31.0",
   "text/career/story/story-home/enter-or-tap-back-to-bjpuqn": "9.31.0",
-  "text/career/story/story-home/for-the-masjid-eripnb": "9.31.0",
+  "text/career/story/story-home/for-your-look-and-the-omxnuy": "9.33.0",
   "text/career/story/story-home/for-your-stats-odgvsw": "9.31.0",
+  "text/career/story/story-home/make-a-shot-and-he-8hv3h4": "9.33.0",
   "text/career/story/story-home/menu-07q5wa": "9.31.0",
   "text/career/story/story-home/my-plays-8cl5k4": "9.31.0",
   "text/career/story/story-home/not-yet-jar724": "9.31.0",
@@ -2572,7 +2576,6 @@
   "text/career/story/story-state/al-furqan-again-rayyan-has-bwlndr": "9.29.2",
   "text/career/story/story-state/al-furqan-all-stars-kpa6sb": "9.29.2",
   "text/career/story/story-state/all-star-game-320dif": "9.29.2",
-  "text/career/story/story-state/chai-make-a-shot-then-zsxwmq": "9.29.2",
   "text/career/story/story-state/clapped-politely-ejqdmk": "9.29.2",
   "text/career/story/story-state/crowd-dunks-only-5z8gub": "9.29.2",
   "text/career/story/story-state/did-you-see-the-crowd-bd7r9b": "9.29.2",
@@ -2589,7 +2592,6 @@
   "text/career/story/story-state/nine-teams-everyone-plays-everyo-7q1woq": "9.29.2",
   "text/career/story/story-state/no-points-kpzsjt": "9.29.2",
   "text/career/story/story-state/out-not-in-the-top-lqnn43": "9.29.2",
-  "text/career/story/story-state/seconds-to-match-it-miss-f54l17": "9.29.2",
   "text/career/story/story-state/single-elimination-now-5186vm": "9.29.2",
   "text/career/story/story-state/the-all-star-game-is-ob0exw": "9.29.2",
   "text/career/story/story-state/the-fundraiser-stands-at-wtw9if": "9.29.2",
@@ -2618,7 +2620,7 @@
   "text/career/story/story-welcome/next-you-make-your-player-pecmj8": "9.30.0",
   "text/career/story/story-welcome/no-perk-no-strengths-or-kic8x9": "9.30.0",
   "text/career/story/story-welcome/nothing-here-changes-your-stats-jkx6ae": "9.30.0",
-  "text/career/story/story-welcome/perk-a-longer-reach-when-j9kpxi": "9.30.0",
+  "text/career/story/story-welcome/perk-a-longer-reach-for-k2dnn8": "9.33.0",
   "text/career/story/story-welcome/perk-a-wider-green-window-uopvov": "9.30.0",
   "text/career/story/story-welcome/perk-you-can-dunk-from-ypys9d": "9.30.0",
   "text/career/story/story-welcome/perk-you-win-more-loose-98wl5u": "9.30.0",
@@ -6123,6 +6125,11 @@
    "version": "9.31.0",
    "was": "9.23.0"
   },
+  "dialogue/scene/C2.3/4": {
+   "reason": "9.33.0: career refine 5-7 (Chapter 2 opening, the pick walk, lean mini-game HUDs, the block perk text)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "dialogue/scene/C2.3/5": {
    "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
    "version": "9.31.0",
@@ -7380,6 +7387,21 @@
   },
   "dialogue/walk/C1.2/uncle/0": {
    "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/walk/C2.2/ilyas/3": {
+   "reason": "9.33.0: career refine 5-7 (Chapter 2 opening, the pick walk, lean mini-game HUDs, the block perk text)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/walk/C2.2/jamil/2": {
+   "reason": "9.33.0: career refine 5-7 (Chapter 2 opening, the pick walk, lean mini-game HUDs, the block perk text)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/walk/C2.2/jamil/3": {
+   "reason": "9.33.0: career refine 5-7 (Chapter 2 opening, the pick walk, lean mini-game HUDs, the block perk text)",
    "version": "9.33.0",
    "was": "9.23.0"
   },
@@ -10188,6 +10210,16 @@
    "version": "9.33.0",
    "was": "9.23.0"
   },
+  "text/career/story/story-data/father-and-son-a-gym-sf1mbo": {
+   "reason": "9.33.0: career refine 5-7 (Chapter 2 opening, the pick walk, lean mini-game HUDs, the block perk text)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/first-real-practice-three-drills-4gjvrb": {
+   "reason": "9.33.0: career refine 5-7 (Chapter 2 opening, the pick walk, lean mini-game HUDs, the block perk text)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "text/career/story/story-data/five-of-us-two-balls-twlcgj": {
    "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
    "version": "9.33.0",
@@ -10483,6 +10515,11 @@
    "version": "9.33.0",
    "was": "9.23.0"
   },
+  "text/career/story/story-home/for-the-masjid-eripnb": {
+   "reason": "9.33.0: career refine 5-7 (Chapter 2 opening, the pick walk, lean mini-game HUDs, the block perk text)",
+   "version": "9.33.0",
+   "was": "9.31.0"
+  },
   "text/career/story/story-league/al-furqan-is-in-our-9z2oow": {
    "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
    "version": "9.31.0",
@@ -10568,10 +10605,25 @@
    "version": "9.31.0",
    "was": "9.29.2"
   },
+  "text/career/story/story-state/chai-make-a-shot-then-zsxwmq": {
+   "reason": "9.33.0: career refine 5-7 (Chapter 2 opening, the pick walk, lean mini-game HUDs, the block perk text)",
+   "version": "9.33.0",
+   "was": "9.29.2"
+  },
+  "text/career/story/story-state/seconds-to-match-it-miss-f54l17": {
+   "reason": "9.33.0: career refine 5-7 (Chapter 2 opening, the pick walk, lean mini-game HUDs, the block perk text)",
+   "version": "9.33.0",
+   "was": "9.29.2"
+  },
   "text/career/story/story-walk/meet-the-musalla-trt4fk": {
    "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
    "version": "9.33.0",
    "was": "9.23.0"
+  },
+  "text/career/story/story-welcome/perk-a-longer-reach-when-j9kpxi": {
+   "reason": "9.33.0: career refine 5-7 (Chapter 2 opening, the pick walk, lean mini-game HUDs, the block perk text)",
+   "version": "9.33.0",
+   "was": "9.30.0"
   },
   "text/career/v918-hub-first/play-next-game-kq2lpi": {
    "reason": "9.22.0: the career story replaced the calendar, the neighbourhood, Jumu'ah, the old intro, the story threads, goals and badges, and the old cast in career",

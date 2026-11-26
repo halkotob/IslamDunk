@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased (career refine, collected for one release)
+## 9.33.0: Career refine 4 to 7: Chapters 1 to 5, and blocks that reach
+From the first playtest (docs/career-overhaul/REFINE-PLAN.md, releases 4 to 7), released together.
 ### Chapters 3 to 5 under the new rules (refine 7)
 These changes apply the notes on Chapters 0 to 2 to the rest of the story:
 - **Every teammate pick is a walk:** the brothers stand around the gym and you talk to the one you want.
@@ -13,13 +14,17 @@ These changes apply the notes on Chapters 0 to 2 to the rest of the story:
 - **King of the Court, the draw:** the banner and the standings card are gone. It has the same streak counter on the
   left as Chapter 1, and goes straight on when it ends.
 
+- **The rewards card after a story game** counts its two totals up, a soft tick for each line, as the classic
+  summary does.
+
 ### Blocks reach for the ball, in every mode (refine 6)
 - **The reach:** a block jump against a shot in the air, or a shooter rising, lunges toward the ball. The lunge is
   short (about a body width, in under a fifth of a second), works from any side (in front, beside, behind), and
   never carries you into the shooter's body, which would be a foul. The CPU blocks the same way.
 - **The chance:** your hand reaches toward the ball, not just the way you face.
   - It rises with how close the hand gets and how early the jump meets the ball.
-  - In front of the shooter and early is still the best block (about 66% at Defense 7, at its closest).
+  - In front of the shooter and early is still the best block, with Defense deciding it as before (about 55% at
+    Defense 7).
   - Beside or behind with a close hand now has a real chance (about 32%).
   - Far off it rarely lands (about 14%).
   - A near miss says FINGERTIPS.
@@ -43,9 +48,8 @@ These changes apply the notes on Chapters 0 to 2 to the rest of the story:
     chemistry.
   - Up and down to choose, Enter to pick.
 
-## 9.33.0: Career refine 4: Chapter 1 rebuilt
-From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 4). Chapter 1 now runs in the order from your
-notes, in seven scenes (C1.1 to C1.7):
+### Chapter 1 rebuilt (refine 4)
+Chapter 1 now runs in the order from your notes, in seven scenes (C1.1 to C1.7):
 - **C1.1 Meet the gym.** A free walk with a checklist on the left: sprint, make 3 baskets, a layup, a rebound.
   - **Ilyas** explains Barakah Points and your stats, then runs you through the cone dribble.
   - **Ammo Jamil** explains Halal Bucks and cosmetics, then has you shoot ten free throws.

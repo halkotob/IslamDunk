@@ -223,7 +223,7 @@ STORY_WALKS['C2.1'] = { title: 'First practice', free: true, npcs: [
   goals: [{ id: 'drill', label: 'Finish three drills', n: 3, touch: 'Tap Drills, pick one', key: 'Drills on the left bar, or Q' }],
   start: [
     ['saleem', 'Here’s how the season goes, {name}. Between every game, you come back here and practise.'],
-    ['saleem', 'Drills earn Barakah Points for your stats. Games earn Halal Bucks for your look, and every win helps the masjid.'],
+    ['saleem', 'Drills earn Barakah Points for your stats. Games earn Halal Bucks, for your look and for the masjid’s projects.'],
     ['saleem', 'And when the adhan calls, pray. It gives you a boost for the next game.'],
     ['saleem', 'Three drills tonight, any three. Let’s start the season off right.']] };
 // C2.2: father and son, a gym apart; each sees it his own way

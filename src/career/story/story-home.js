@@ -249,7 +249,12 @@ function gymBarShown() { return storyOn() && Game.screen === 'gym' && !Gym.drill
     g.fillText(p.res === 'champ' ? p.stage.name.toUpperCase() + ' CHAMPIONS' : p.won ? 'WIN' : 'LOSS', W / 2, 124);
     g.fillStyle = '#fff'; g.font = `17px ${BODY}`; g.fillText(fitText(g, 'Al-Amanah ' + p.us + ', ' + p.opp.name.replace('Masjid ', '') + ' ' + p.them + '  (' + p.roundName + ')', 540), W / 2, 156);
     if (p.unlocked) { g.fillStyle = '#9dffb0'; g.font = `15px ${FONT}`; g.fillText(fitText(g, p.unlocked, 540), W / 2, 184); }
-    [['BARAKAH POINTS', p.rw.bpTotal, '#f2cf6b', 'for your stats'], ['HALAL BUCKS', p.rw.hbTotal, '#9dffb0', 'for the masjid']].forEach(([t, v, col, sub], i) => {
+    // the totals count up, one line of the rewards at a time, a soft tick each (sfx-moments-hooks.js)
+    const items = [...(p.rw.bp || []).map(x => [0, +x[1] || 0]), ...(p.rw.hb || []).map(x => [1, +x[1] || 0])];
+    const n = typeof earnShown === 'function' && items.length ? earnShown(p, items.length) : items.length;
+    const shown = [0, 1].map(k => items.slice(0, n).filter(x => x[0] === k).reduce((a, x) => a + x[1], 0));
+    const tot = [p.rw.bpTotal, p.rw.hbTotal].map((v, k) => n >= items.length || !items.length ? v : Math.min(v, shown[k]));
+    [['BARAKAH POINTS', tot[0], '#f2cf6b', 'for your stats'], ['HALAL BUCKS', tot[1], '#9dffb0', 'for your look and the masjid']].forEach(([t, v, col, sub], i) => {
       const x = W / 2 - 250 + i * 260;
       g.fillStyle = 'rgba(255,255,255,0.06)'; roundRect(g, x, 212, 240, 130, 14); g.fill();
       g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText(t, x + 120, 240);

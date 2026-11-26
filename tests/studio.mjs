@@ -106,7 +106,7 @@ STUDIO_TESTS['studio-csv'] = async ({ browser }) => {
   out.afterUndo = { m1: (await mk('trivia/1') || {}).suggested || '', m2: (await mk('trivia/2') || {}).verdict || '' };
   await ev(() => { window.__studio.select('trivia/2'); }); await p.locator('#list').focus(); await key('d');
   // more marks by a second reviewer, across categories
-  await ev(() => { const s = window.__studio.store; s.set('dialogue/scene/C0.6/0', { verdict: 'fix', comment: 'too long, the "intention" line', suggested: 'Before you go out: what is your intention?' });
+  await ev(() => { const s = window.__studio.store; s.set('dialogue/scene/C0.5/0', { verdict: 'fix', comment: 'too long, the "intention" line', suggested: 'Before you go out: what is your intention?' });
     s.setReviewer('Yusuf', 'Art'); s.set('sprite/cast/saleem', { verdict: 'keep' }); s.set('sprite/ball/night', { verdict: 'delete', comment: 'hard to see, on dark courts' }); s.set('trivia/0', { verdict: 'fix', comment: 'second opinion' });
     s.set('sound/bounce', { verdict: 'fix', pick: 'B', comment: 'the real one' }); s.set('sound/cheer', { pick: 'none' }); s.set('screen/about/desktop', { verdict: 'merge', merge: 'screen/howto/desktop', comment: 'one help screen' }); });
   const csv1 = await ev(() => window.__studio.exportCsv());
