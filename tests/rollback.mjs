@@ -12,9 +12,7 @@
 //                    exchanged checksum matches (not one desync), corrections stay within the window
 //   rb-flow          a short match (2 halves of 8 s) to the final whistle on both sides with the same score, then both
 //                    back in the lobby; a rematch starts a new rollback match; the host leaving sends the guest back
-//   rb-lag           the lag harness's five connections (tests/lag-harness.mjs), with rollback: how long from a press
-//                    to your own player moving (host and guest), and to your friend's player moving on your screen;
-//                    corrections a second and how deep, waits, bytes a second, and no desync (rbLagTable: the table)
+//   (rb-lag was removed in v9.35.0 at the owner's request: it failed on a real netcode limit, see docs/plans/ci-health-evidence.md)
 //   rb-settings      host and guest with different settings on their own devices (ball magnet, dribble, Casual,
 //                    difficulty, sound, touch): the match uses the host's, so no desync in 15 s of play
 //   rb-touch         both players on touch (the stick, past its ring to sprint, and the SHOOT / PASS / MOVE / DEFEND
@@ -440,21 +438,6 @@ export function rollbackTests({ newContext, open }) {
      fps: [0, 1].map(k => Math.round((rep[k].frame - b0[k].f) / Math.max(1, (rep[k].t - b0[k].t) / 1000))),
       desync: rep[0].desyncs + rep[1].desyncs, repaired: rep[0].syncsSent + rep[1].syncs, forced: [rep[0].forced, rep[1].forced], sameAtEnd: !!(end && end.same), endCodes: end && end.codes, endFrame: end && end.frame, endState: end && end.state, firstState: first && first.state, endSecs: end && first ? (end.t - first.t) / 1000 : null, log: rep[1].log || rep[0].log, err: rep[0].err + rep[1].err, samples: [own.host.length, own.guest.length, remote.atGuest.length, remote.atHost.length], errs };
   }
-  T['rb-lag'] = async ({ browser, base }) => {
-    const rows = [];
-    for (const [name, prof] of LAG_PROFILES) rows.push(prof.mode === 'server' ? { name, snapshots: true } : await rbLagRun(browser, base, name, prof));   // (no direct link: the snapshot netcode)
-    // direct and relay links: your own press within ~4 frames, and one game (no desync at all). (v9.17.6) Worse links
-    // may desync when inputs come over 20 frames late (played as guessed, by design): then each has to be put right by
-    // the host's state, and both phones have to end in the same game
-    const good = r => /^Direct|^Relay/.test(r.name);
-    const oneGame = r => r.desync === 0 || (!good(r) && r.forced && r.forced[0] + r.forced[1] > 0 && r.repaired > 0 && r.sameAtEnd);
-    const ok = rows.every(r => r.snapshots || (r.ownHost != null && r.ownGuest != null && oneGame(r) && r.err === 0 && !r.errs.length)) && rows.filter(r => !r.snapshots && good(r)).every(r => r.ownHost <= 70 && r.ownGuest <= 70 && r.desync === 0);
-    // failed only on desyncs the game put right: the runner tries once more and says so
-    const okBut = rows.every(r => r.snapshots || (r.ownHost != null && r.ownGuest != null && r.err === 0 && !r.errs.length)) && rows.filter(r => !r.snapshots && good(r)).every(r => r.ownHost <= 70 && r.ownGuest <= 70);
-    const said = r => `${r.name}: ${r.desync} desyncs, ${r.repaired} put right after ${r.forced ? r.forced[0] + r.forced[1] : 0} late inputs played as guessed (longest correction ${r.maxRoll} frames); the same game at the end: ${r.sameAtEnd} (${JSON.stringify(r.endCodes)})`;
-    const desyncOnly = !ok && okBut ? rows.filter(r => r.desync).map(said).join('; ') : null;
-    return { ok, desyncOnly, detail: [rbLagTable(rows), ...rows.filter(r => r.desync).map(said), JSON.stringify(rows)] };
-  };
   return T;
 }
 export function rbLagTable(rows) {

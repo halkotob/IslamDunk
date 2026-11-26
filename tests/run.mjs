@@ -2067,11 +2067,11 @@ const HEAVY = new Set([
   'league-formats', 'league-determinism', 'league-layout', 'league-time', 'cpu-handle', 'v863', 'career-intro', 'v867',
   'gamepad', 'phase5', 'career', 'v95', 'v99', 'plays-share',   // (v9.33.0: plays-share records two videos in real time and opens four pages)
   // the online tests that have to run alone (SERIAL), except rb-one, rb-fun and rb-freeze
-  'rb-lag', 'rb-same', 'rb-determinism', 'rb-flow', 'rb-rollback', 'rb-taunt', 'rb-online', 'rb-resync', 'rb-settings',
+  'rb-same', 'rb-determinism', 'rb-flow', 'rb-rollback', 'rb-taunt', 'rb-online', 'rb-resync', 'rb-settings',
   'rb-touch', 'rb-plays', 'rb-slow', 'rb-lightning', 'rb-horse', 'rb-brun', 'rb-kotc', 'rb-sounds', 'rb-linkdrop', 'rb-hostile', 'phone-text-size', 'rb-holdtap', 'nav-census', 'fouls-kept', 'net-rate', 'net-modes', 'net-version', 'net-report', 'online-fb', 'online-room', 'online-custom']);
 // alone, after the parallel batch: frame-rate and speed checks, and the rollback and real-time online tests, which a
 // busy CPU makes desync (9.17.2 on 2 workers: rb-settings, rb-touch and rb-one each repaired 1-3 desyncs they don't alone)
-const SERIAL = new Set(['rb-slow', 'rb-lag', 'rb-freeze', 'lag-profiles', 'online-lag', 'league-time', 'net-rate',
+const SERIAL = new Set(['rb-slow', 'rb-freeze', 'lag-profiles', 'online-lag', 'league-time', 'net-rate',
   'online-loop', 'online-server', 'online-fb', 'online-room', 'online-custom', 'net-modes', 'net-version', 'net-report', 'lobby-flow', 'dunk-new-online']);
 const isSerial = n => SERIAL.has(n) || n.startsWith('rb-');
 // v9.17.6: run by hand before a release (--only, or --release), not by test:full on every push. online-lag counts exact
