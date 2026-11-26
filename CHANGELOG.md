@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased (career refine, collected for one release)
+### Chapter 2's opening (refine 5)
+- **C2.1 First practice:** Sh. Saleem explains the loop in four lines.
+  - Between every game you come back here and practise.
+  - Drills earn Barakah Points for your stats, and games earn Halal Bucks.
+  - Pray when the adhan calls for a boost in the next game.
+  - "Let's start the season off right."
+- **C2.2 Father and son:** shorter, and each of them sees it his own way (the closing narration is gone).
+- **C2.3 Why we play:** three lines with Sh. Saleem alone in his office, plus the fundraiser note.
+- **C2.5 Pick your teammate:** the seven stand around the gym. Talk to any of them and the pick screen opens with
+  him selected. Your teammate's last line: "Come talk to me when you're ready for the first game."
+- **The pick screen** (here and in every later pick):
+  - The seven are listed on the left.
+  - On the right: the selected brother's nine stats as bars next to yours, his standout stats in bold, and your
+    chemistry.
+  - Up and down to choose, Enter to pick.
+
 ## 9.33.0: Career refine 4: Chapter 1 rebuilt
 From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 4). Chapter 1 now runs in the order from your
 notes, in seven scenes (C1.1 to C1.7):

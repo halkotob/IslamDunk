@@ -140,7 +140,9 @@ export function storyTests({ newContext, open }) {
       }
       if (st.at === 'C2.4' && st.screen === 'gym' && !out.field) out.field = await p.evaluate(() => ({ teams: stageTeams(0).slice(1).map(t => t.name), rival: teamOf(0, 1).name, rayyan: teamOf(0, 1).players.some(q => q.name === 'Rayyan'), fmt: C.bracket && C.bracket.fmt, att: C.story.att, cp: C.story.cp }));
       const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d);
+      if (st.at === 'C2.5' && st.screen === 'spick' && !out.pick) out.pick = await p.evaluate(() => ({ sel: STORY_MATES[Game.spick.sel], walk: !!Game.spick.walk, inWalk: !!(SW && SW.D.pickWalk) }));
       const r = await p.evaluate(lose => window.__sStep({ lose: at => at === 'C2.14' && lose, pick: at => at === 'C2.5' ? 'ilyas' : null }), !lostSemi);
+      if (st.at === 'C2.5' && !out.ready) out.ready = await p.evaluate(() => SW && SW.talk ? SW.talk.lines[SW.talk.lines.length - 1].join(': ') : null);
       if (st.at === 'C2.14' && r === 'lost') lostSemi = true;
       steps.push(st.at + ':' + r);
     }
@@ -154,8 +156,9 @@ export function storyTests({ newContext, open }) {
     const ok = F.rival === 'Masjid Al-Furqan' && F.rayyan && F.fmt === 'pool' && F.teams.length === 7 && F.teams.every(n => /^Masjid /.test(n)) && F.cp === 'C2.4'
       && darkSeen && darkSeen.on0 && darkSeen.off && lostSemi && out.afterLoss && ids.every(id => E.s.seen.includes(id) && E.journal.includes(id))
       && E.s.at === 'C3.1' && E.s.screen === 'hub' && E.fundOn && E.fund >= 5000 && E.lights === 1 && E.trophy && E.titles >= 1 && E.att === 1 && E.season === 2 && E.chem > 0 && E.ch === 3
+      && out.pick && out.pick.sel === 'ilyas' && out.pick.walk && out.pick.inWalk && /ready for the first game/.test(out.ready || '')
       && out.group.path.includes('C2.13') && out.group.path.includes('C2.NS') && out.group.at === 'C2.4' && out.group.att === 1 && !out.draws.length && !errs.length;
-    return { ok, detail: ['field: ' + JSON.stringify(F), 'lights out: ' + JSON.stringify(darkSeen), steps.join(' '), 'end: ' + JSON.stringify(E), 'out in the group: ' + JSON.stringify(out.group), ...out.draws, ...errs] };
+    return { ok, detail: ['pick: ' + JSON.stringify(out.pick) + ' ' + out.ready, 'field: ' + JSON.stringify(F), 'lights out: ' + JSON.stringify(darkSeen), steps.join(' '), 'end: ' + JSON.stringify(E), 'out in the group: ' + JSON.stringify(out.group), ...out.draws, ...errs] };
   };
 
   T['story-ch3'] = async ({ browser, base }) => {
@@ -388,7 +391,7 @@ export function storyTests({ newContext, open }) {
     const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-reload');
     const want = { 'C0.1': 'ssalams', 'C0.2': 'musalla', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'gym',
       'C1.1': 'gym', 'C1.2': 'musalla', 'C1.3': 'gym', 'C1.4': 'office', 'C1.5': 'gym', 'C1.6': 'gym', 'C1.7': 'gym',
-      'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'gym', 'C2.5': 'spick', 'C2.6': 'gym', 'C2.9': 'gym', 'C2.10': 'gym',
+      'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'gym', 'C2.5': 'gym', 'C2.6': 'gym', 'C2.9': 'gym', 'C2.10': 'gym',
       'C3.1': 'gym', 'C3.2': 'gym', 'C3.4': 'gym', 'C3.6': 'gym', 'C3.9': 'office', 'C3.10': 'gym', 'C3.14': 'gym', 'C3.20': 'office' }, ids = Object.keys(want), res = [];
     for (const id of ids) {
       await prep(p);
@@ -417,7 +420,7 @@ export function storyTests({ newContext, open }) {
       await prep(p);
       const r = await p.evaluate(touch => {
         Input.touchMode = touch;
-        window.__sNew('Hub'); window.__sRun('C2.5'); careerHub();
+        window.__sNew('Hub'); window.__sRun('C2.7'); careerHub();
         const home = { screen: Game.screen, atHome: storyAtHome(), bar: gymBarItems().map(x => x.k), starter: Object.keys(SW.npcs) };
         render(ctx);
         careerMenu();

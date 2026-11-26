@@ -179,13 +179,12 @@ const STORY_GYM_TALK = {
 scn('C2.1', { kind: 'drill', name: 'First practice', walk: 'C2.1', next: 'C2.2' });
 scn('C2.2', { kind: 'walk', name: 'Father and son', walk: 'C2.2', next: 'C2.3' });
 scn('C2.3', { kind: 'scene', name: 'Why we play', salah: true, talk: { at: 'office', who: 'saleem' }, next: 'C2.4', effect: 'fundOn', lines: [
-  ['saleem', 'Before the league starts, I want you to know why we play. Forty-three kids come to the weekend school, in two rooms. One of them is the coat closet.'],
-  ['saleem', 'Last month we turned eleven families away. The board approved a school wing: four classrooms, one hundred thousand dollars.'],
-  ['saleem', 'Every game we win, people come to watch. People who watch, give. Every win builds a little of a classroom.'],
+  ['saleem', 'Forty-three kids come to our weekend school, in two rooms. Last month we turned eleven families away.'],
+  ['saleem', 'The board approved a school wing: four classrooms, one hundred thousand dollars. When we win, people come to watch, and people who watch give.'],
   ['you', 'Then we win.'],
   ['narr', 'The school wing fundraiser has begun. Its meter is on the left bar in the gym.']] });
 scn('C2.4', { kind: 'scene', name: 'The Masjid League', checkpoint: true, effect: 'bracket', stage: 0, next: 'C2.5', lines: () => storyLeagueIntro(0) });
-scn('C2.5', { kind: 'choice', name: 'Pick your teammate', pick: true, next: 'C2.6' });
+scn('C2.5', { kind: 'walk', name: 'Pick your teammate', walk: 'C2.5', next: 'C2.6' });
 scn('C2.6', { kind: 'play', name: 'Group game 1', bracket: true, stakes: 'opener', win: 'C2.7', loss: 'C2.7', out: 'C2.NS',
   winLines: [['saleem', 'Alhamdulillah. One down. Thank Allah, then thank the brother who set your screens.'], ['jamil', 'Good. Again on Thursday.']],
   lossLines: [['saleem', 'A loss in the group stage is not the end. Win the next one and we’re still alive.'], ['jamil', 'I hate losing. I REALLY hate losing.'], ['ilyas', 'We know, Dad.']] });
@@ -219,18 +218,28 @@ scn('C2.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: (
 
 // the C2.1, C2.2 and C2.9 walks
 STORY_WALKS['C2.1'] = { title: 'First practice', free: true, npcs: [
-    { id: 'saleem', x: 860, z: 300, act: 'host', face: -1, closer: true, early: [['saleem', 'Three drills, then we talk. Q for the drill menu.']],
-      lines: [['saleem', 'Good work. That’s the habit: a little every day, even when nobody’s watching.'], ['saleem', 'Now go and find Ammo Jamil and Ilyas. I think they’re arguing again.']] }],
-  goals: [{ id: 'drill', label: 'Finish three drills', n: 3, touch: 'Tap Drills, pick one', key: 'Q opens the drills' }],
-  start: [['saleem', 'First real practice. Three drills, any three. Then come and see me.']] };
+    { id: 'saleem', x: 860, z: 300, act: 'host', face: -1, closer: true, early: [['saleem', 'Three drills, then we talk. Drills are on the left bar.']],
+      lines: [['saleem', 'Good work. A little every day, even when nobody’s watching.'], ['saleem', 'Ammo Jamil and Ilyas are by the far hoop. Go say salaam.']] }],
+  goals: [{ id: 'drill', label: 'Finish three drills', n: 3, touch: 'Tap Drills, pick one', key: 'Drills on the left bar, or Q' }],
+  start: [
+    ['saleem', 'Here’s how the season goes, {name}. Between every game, you come back here and practise.'],
+    ['saleem', 'Drills earn Barakah Points for your stats. Games earn Halal Bucks for your look, and every win helps the masjid.'],
+    ['saleem', 'And when the adhan calls, pray. It gives you a boost for the next game.'],
+    ['saleem', 'Three drills tonight, any three. Let’s start the season off right.']] };
+// C2.2: father and son, a gym apart; each sees it his own way
 STORY_WALKS['C2.2'] = { title: 'Father and son', npcs: [
     { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, need: true, lines: [
-      ['jamil', 'You see my son? Twenty points last week in pickup. And still he doesn’t box out.'], ['you', 'He’s the quickest guard in the gym, Ammo.'],
-      ['jamil', 'Quick, yes. But quick doesn’t win leagues. Defense wins leagues.'], ['jamil', 'I push him because I don’t want him to lose a final by one point. Like me.']] },
+      ['jamil', 'My son scores twenty in pickup and still doesn’t box out. Defense wins leagues.'],
+      ['jamil', 'I push him so he never loses a final by one point. Like I did.']] },
     { id: 'ilyas', x: 1120, z: 430, act: 'shoot', face: 1, need: true, lines: [
-      ['ilyas', 'Did he tell you about the one-point final? He tells everyone.'], ['ilyas', 'I play defense. I do. He only sees what I don’t do.'],
-      ['you', 'Maybe tell him what you just told me.'], ['ilyas', 'Maybe. After we win something.']] }],
-  end: [['narr', 'Father and son, a gym apart. Each of them said the same thing about the other.']] };
+      ['ilyas', 'He only sees what I don’t do. I want to run, not stand in his zone.'],
+      ['you', 'Maybe tell him that.'], ['ilyas', 'After we win something.']] }] };
+// C2.5: the seven stand around the gym; talk to any of them and the pick screen opens with him selected
+STORY_WALKS['C2.5'] = { title: 'Pick your teammate', pickWalk: true, npcs: STORY_MATES.map((id, i) => {
+    const [x, z, face] = [[900, 320, -1], [980, 600, -1], [1120, 430, -1], [1180, 220, -1], [720, 600, 1], [600, 250, 1], [760, 170, 1]][i];
+    return { id, x, z, face, act: id === 'ilyas' ? 'shoot' : id === 'dawud' ? 'chai' : 'host', onTalk: () => storyPickWalkOpen(id) }; }),
+  goals: [{ id: 'pick', label: 'Pick your teammate', touch: 'Walk up to a brother and tap Talk', key: 'Walk up to a brother, press E' }],
+  start: [['saleem', 'Two on two, {name}: you and one of us. Talk to whoever you want to play with.']] };
 STORY_WALKS['C2.9'] = { title: 'Practice day', free: true, npcs: [
     { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, need: true, lines: [['jamil', 'Two group games down. Every possession matters now. EVERY possession.'], ['you', 'In sha Allah, we’re ready.']] },
     { id: 'ilyas', x: 1120, z: 430, act: 'shoot', face: 1, need: true, lines: [['ilyas', 'My dad clapped once last game. Once. I counted.'], ['you', 'That’s a start.']] },
