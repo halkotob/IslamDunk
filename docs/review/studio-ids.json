@@ -149,33 +149,16 @@
   "dialogue/scene/C2.16/4": "9.23.0",
   "dialogue/scene/C2.16/5": "9.23.0",
   "dialogue/scene/C2.16/6": "9.23.0",
-  "dialogue/scene/C2.16/7": "9.23.0",
-  "dialogue/scene/C2.16/8": "9.23.0",
-  "dialogue/scene/C2.16/9": "9.23.0",
   "dialogue/scene/C2.3/0": "9.23.0",
   "dialogue/scene/C2.3/1": "9.23.0",
-  "dialogue/scene/C2.3/10": "9.23.0",
-  "dialogue/scene/C2.3/11": "9.23.0",
-  "dialogue/scene/C2.3/12": "9.23.0",
   "dialogue/scene/C2.3/2": "9.23.0",
   "dialogue/scene/C2.3/3": "9.23.0",
   "dialogue/scene/C2.3/4": "9.23.0",
-  "dialogue/scene/C2.3/5": "9.23.0",
-  "dialogue/scene/C2.3/6": "9.23.0",
-  "dialogue/scene/C2.3/7": "9.23.0",
-  "dialogue/scene/C2.3/8": "9.23.0",
-  "dialogue/scene/C2.3/9": "9.23.0",
   "dialogue/scene/C2.4/0": "9.23.0",
   "dialogue/scene/C2.4/1": "9.23.0",
-  "dialogue/scene/C2.4/10": "9.23.0",
   "dialogue/scene/C2.4/2": "9.23.0",
   "dialogue/scene/C2.4/3": "9.23.0",
   "dialogue/scene/C2.4/4": "9.23.0",
-  "dialogue/scene/C2.4/5": "9.23.0",
-  "dialogue/scene/C2.4/6": "9.23.0",
-  "dialogue/scene/C2.4/7": "9.23.0",
-  "dialogue/scene/C2.4/8": "9.23.0",
-  "dialogue/scene/C2.4/9": "9.23.0",
   "dialogue/scene/C2.6/lossLines/0": "9.23.0",
   "dialogue/scene/C2.6/lossLines/1": "9.23.0",
   "dialogue/scene/C2.6/lossLines/2": "9.23.0",
@@ -226,40 +209,26 @@
   "dialogue/scene/C3.2/1": "9.29.2",
   "dialogue/scene/C3.2/2": "9.29.2",
   "dialogue/scene/C3.2/3": "9.29.2",
-  "dialogue/scene/C3.2/4": "9.29.2",
-  "dialogue/scene/C3.2/5": "9.29.2",
-  "dialogue/scene/C3.2/6": "9.29.2",
-  "dialogue/scene/C3.2/7": "9.29.2",
-  "dialogue/scene/C3.2/8": "9.29.2",
   "dialogue/scene/C3.20/0": "9.29.2",
   "dialogue/scene/C3.20/1": "9.29.2",
   "dialogue/scene/C3.20/2": "9.29.2",
   "dialogue/scene/C3.20/3": "9.29.2",
   "dialogue/scene/C3.20/4": "9.29.2",
-  "dialogue/scene/C3.20/5": "9.29.2",
-  "dialogue/scene/C3.20/6": "9.29.2",
   "dialogue/scene/C3.21/lossLines/0": "9.29.2",
   "dialogue/scene/C3.21/lossLines/1": "9.29.2",
   "dialogue/scene/C3.21/winLines/0": "9.29.2",
   "dialogue/scene/C3.22/0": "9.29.2",
   "dialogue/scene/C3.22/1": "9.29.2",
-  "dialogue/scene/C3.22/10": "9.29.2",
   "dialogue/scene/C3.22/2": "9.29.2",
   "dialogue/scene/C3.22/3": "9.29.2",
   "dialogue/scene/C3.22/4": "9.29.2",
   "dialogue/scene/C3.22/5": "9.29.2",
   "dialogue/scene/C3.22/6": "9.29.2",
-  "dialogue/scene/C3.22/7": "9.29.2",
-  "dialogue/scene/C3.22/8": "9.29.2",
-  "dialogue/scene/C3.22/9": "9.29.2",
   "dialogue/scene/C3.23/0": "9.29.2",
   "dialogue/scene/C3.23/1": "9.29.2",
   "dialogue/scene/C3.23/2": "9.29.2",
   "dialogue/scene/C3.23/3": "9.29.2",
   "dialogue/scene/C3.23/4": "9.29.2",
-  "dialogue/scene/C3.23/5": "9.29.2",
-  "dialogue/scene/C3.23/6": "9.29.2",
-  "dialogue/scene/C3.23/7": "9.29.2",
   "dialogue/scene/C3.3/lossLines/0": "9.29.2",
   "dialogue/scene/C3.3/lossLines/1": "9.29.2",
   "dialogue/scene/C3.3/winLines/0": "9.29.2",
@@ -287,9 +256,6 @@
   "dialogue/scene/C3.9/2": "9.29.2",
   "dialogue/scene/C3.9/3": "9.29.2",
   "dialogue/scene/C3.9/4": "9.29.2",
-  "dialogue/scene/C3.9/5": "9.29.2",
-  "dialogue/scene/C3.9/6": "9.29.2",
-  "dialogue/scene/C3.9/7": "9.29.2",
   "dialogue/scene/C3.NS/0": "9.29.2",
   "dialogue/scene/C3.NS/1": "9.29.2",
   "dialogue/scene/C3.NS/2": "9.29.2",
@@ -299,16 +265,11 @@
   "dialogue/scene/C4.1/2": "9.29.2",
   "dialogue/scene/C4.1/3": "9.29.2",
   "dialogue/scene/C4.1/4": "9.29.2",
-  "dialogue/scene/C4.1/5": "9.29.2",
-  "dialogue/scene/C4.1/6": "9.29.2",
-  "dialogue/scene/C4.1/7": "9.29.2",
-  "dialogue/scene/C4.1/8": "9.29.2",
   "dialogue/scene/C4.10/0": "9.29.2",
   "dialogue/scene/C4.10/1": "9.29.2",
   "dialogue/scene/C4.10/2": "9.29.2",
   "dialogue/scene/C4.10/3": "9.29.2",
   "dialogue/scene/C4.10/4": "9.29.2",
-  "dialogue/scene/C4.10/5": "9.29.2",
   "dialogue/scene/C4.2/lossLines/0": "9.29.2",
   "dialogue/scene/C4.2/lossLines/1": "9.29.2",
   "dialogue/scene/C4.2/winLines/0": "9.29.2",
@@ -322,29 +283,16 @@
   "dialogue/scene/C4.7/2": "9.29.2",
   "dialogue/scene/C4.7/3": "9.29.2",
   "dialogue/scene/C4.7/4": "9.29.2",
-  "dialogue/scene/C4.7/5": "9.29.2",
-  "dialogue/scene/C4.7/6": "9.29.2",
   "dialogue/scene/C4.8/lossLines/0": "9.29.2",
   "dialogue/scene/C4.8/lossLines/1": "9.29.2",
   "dialogue/scene/C4.8/winLines/0": "9.29.2",
   "dialogue/scene/C4.9/0": "9.29.2",
   "dialogue/scene/C4.9/1": "9.29.2",
-  "dialogue/scene/C4.9/10": "9.29.2",
-  "dialogue/scene/C4.9/11": "9.29.2",
-  "dialogue/scene/C4.9/12": "9.29.2",
-  "dialogue/scene/C4.9/13": "9.29.2",
-  "dialogue/scene/C4.9/14": "9.29.2",
-  "dialogue/scene/C4.9/15": "9.29.2",
-  "dialogue/scene/C4.9/16": "9.29.2",
-  "dialogue/scene/C4.9/17": "9.29.2",
   "dialogue/scene/C4.9/2": "9.29.2",
   "dialogue/scene/C4.9/3": "9.29.2",
   "dialogue/scene/C4.9/4": "9.29.2",
   "dialogue/scene/C4.9/5": "9.29.2",
   "dialogue/scene/C4.9/6": "9.29.2",
-  "dialogue/scene/C4.9/7": "9.29.2",
-  "dialogue/scene/C4.9/8": "9.29.2",
-  "dialogue/scene/C4.9/9": "9.29.2",
   "dialogue/scene/C4.NS/0": "9.29.2",
   "dialogue/scene/C4.NS/1": "9.29.2",
   "dialogue/scene/C4.NS/2": "9.29.2",
@@ -354,9 +302,6 @@
   "dialogue/scene/C5.1/2": "9.29.2",
   "dialogue/scene/C5.1/3": "9.29.2",
   "dialogue/scene/C5.1/4": "9.29.2",
-  "dialogue/scene/C5.1/5": "9.29.2",
-  "dialogue/scene/C5.1/6": "9.29.2",
-  "dialogue/scene/C5.1/7": "9.29.2",
   "dialogue/scene/C5.10/0": "9.29.2",
   "dialogue/scene/C5.10/1": "9.29.2",
   "dialogue/scene/C5.10/2": "9.29.2",
@@ -365,8 +310,6 @@
   "dialogue/scene/C5.10/5": "9.29.2",
   "dialogue/scene/C5.10/6": "9.29.2",
   "dialogue/scene/C5.10/7": "9.29.2",
-  "dialogue/scene/C5.10/8": "9.29.2",
-  "dialogue/scene/C5.10/9": "9.29.2",
   "dialogue/scene/C5.2/lossLines/0": "9.29.2",
   "dialogue/scene/C5.2/winLines/0": "9.29.2",
   "dialogue/scene/C5.3/0": "9.29.2",
@@ -385,22 +328,17 @@
   "dialogue/scene/C5.7/2": "9.29.2",
   "dialogue/scene/C5.7/3": "9.29.2",
   "dialogue/scene/C5.7/4": "9.29.2",
-  "dialogue/scene/C5.7/5": "9.29.2",
   "dialogue/scene/C5.8/lossLines/0": "9.29.2",
   "dialogue/scene/C5.8/lossLines/1": "9.29.2",
   "dialogue/scene/C5.8/winLines/0": "9.29.2",
   "dialogue/scene/C5.9/0": "9.29.2",
   "dialogue/scene/C5.9/1": "9.29.2",
-  "dialogue/scene/C5.9/10": "9.29.2",
-  "dialogue/scene/C5.9/11": "9.29.2",
   "dialogue/scene/C5.9/2": "9.29.2",
   "dialogue/scene/C5.9/3": "9.29.2",
   "dialogue/scene/C5.9/4": "9.29.2",
   "dialogue/scene/C5.9/5": "9.29.2",
   "dialogue/scene/C5.9/6": "9.29.2",
   "dialogue/scene/C5.9/7": "9.29.2",
-  "dialogue/scene/C5.9/8": "9.29.2",
-  "dialogue/scene/C5.9/9": "9.29.2",
   "dialogue/scene/C5.NS/0": "9.29.2",
   "dialogue/scene/C5.NS/1": "9.29.2",
   "dialogue/scene/C5.NS/2": "9.29.2",
@@ -2176,7 +2114,6 @@
   "text/career/story/story-data/an-old-man-you-are-8rrd51": "9.23.0",
   "text/career/story/story-data/an-uncle-9oq2s1": "9.23.0",
   "text/career/story/story-data/and-al-furqan-is-on-jzrw6k": "9.29.2",
-  "text/career/story/story-data/and-al-furqan-r2ajul": "9.29.2",
   "text/career/story/story-data/and-i-throw-it-up-qcu8xi": "9.23.0",
   "text/career/story/story-data/and-if-my-dad-yells-h64j68": "9.23.0",
   "text/career/story/story-data/and-into-the-semifinals-g52j1w": "9.29.2",
@@ -2211,7 +2148,6 @@
   "text/career/story/story-data/dunks-only-you-sure-you-td2xf0": "9.29.2",
   "text/career/story/story-data/elbow-in-follow-through-and-xxm0pb": "9.23.0",
   "text/career/story/story-data/enforcer-a0qsu1": "9.22.0",
-  "text/career/story/story-data/every-masjid-in-the-table-h86g5u": "9.29.2",
   "text/career/story/story-data/everybody-here-taught-me-how-8e5emf": "9.23.0",
   "text/career/story/story-data/everybody-up-lightning-five-of-w7d1u1": "9.23.0",
   "text/career/story/story-data/everyone-in-the-gym-met-ukz6he": "9.23.0",
@@ -2242,7 +2178,6 @@
   "text/career/story/story-data/hajj-mabroor-and-just-in-aqzldi": "9.29.2",
   "text/career/story/story-data/hajj-mabroor-in-advance-ustath-9eb06o": "9.29.2",
   "text/career/story/story-data/hajj-mabroor-to-me-and-0vdz3d": "9.29.2",
-  "text/career/story/story-data/how-do-we-see-the-yq218k": "9.23.0",
   "text/career/story/story-data/i-also-play-center-tall-a8y0tq": "9.23.0",
   "text/career/story/story-data/i-am-slow-so-i-7oav2c": "9.23.0",
   "text/career/story/story-data/i-can-t-run-like-5c9777": "9.23.0",
@@ -2274,7 +2209,6 @@
   "text/career/story/story-data/league-game-nqxitu": "9.29.2",
   "text/career/story/story-data/lights-out-thhnfk": "9.23.0",
   "text/career/story/story-data/like-the-first-night-cg3ohp": "9.23.0",
-  "text/career/story/story-data/listen-for-it-and-watch-g6qcxs": "9.23.0",
   "text/career/story/story-data/listen-to-me-you-play-ukxft1": "9.23.0",
   "text/career/story/story-data/listen-we-defend-first-points-r1h2xc": "9.23.0",
   "text/career/story/story-data/make-a-basket-at-the-g9vef2": "9.23.0",
@@ -2311,7 +2245,6 @@
   "text/career/story/story-data/nineteen-years-mni5fr": "9.23.0",
   "text/career/story/story-data/nobody-holds-the-court-on-9itrca": "9.23.0",
   "text/career/story/story-data/nobody-in-this-gym-was-opnphr": "9.29.2",
-  "text/career/story/story-data/nobody-move-to-the-switch-plwwc5": "9.23.0",
   "text/career/story/story-data/of-course-it-is-lv3e8k": "9.29.2",
   "text/career/story/story-data/off-to-hajj-kvu3vu": "9.29.2",
   "text/career/story/story-data/old-head-playmaker-tu278h": "9.22.0",
@@ -2385,11 +2318,11 @@
   "text/career/story/story-data/the-two-man-game-like-yjzr35": "9.23.0",
   "text/career/story/story-data/the-two-new-guys-let-v504or": "9.23.0",
   "text/career/story/story-data/the-ummah-cup-h6h4q8": "9.29.2",
+  "text/career/story/story-data/the-uncles-are-on-the-exupoe": "9.31.0",
   "text/career/story/story-data/then-we-settle-it-the-s5uhzf": "9.29.2",
   "text/career/story/story-data/then-you-know-everything-bismill-wh5fk6": "9.23.0",
   "text/career/story/story-data/there-he-is-go-say-u6hxsg": "9.22.0",
   "text/career/story/story-data/this-is-a-must-win-8dgorp": "9.23.0",
-  "text/career/story/story-data/this-year-the-top-four-mlqt8g": "9.29.2",
   "text/career/story/story-data/throw-it-up-anywhere-near-cuit5a": "9.23.0",
   "text/career/story/story-data/tickets-4kxade": "9.29.2",
   "text/career/story/story-data/tomorrow-it-s-90fyv7": "9.29.2",
@@ -2413,6 +2346,7 @@
   "text/career/story/story-data/we-think-about-the-next-d5zagg": "9.23.0",
   "text/career/story/story-data/we-were-born-for-this-c7to40": "9.29.2",
   "text/career/story/story-data/we-were-close-close-is-t5tv4p": "9.29.2",
+  "text/career/story/story-data/we-would-in-sha-allah-2g1j01": "9.31.0",
   "text/career/story/story-data/whatever-happens-tonight-maghrib-kniel6": "9.23.0",
   "text/career/story/story-data/whatever-happens-we-already-won-euns6s": "9.23.0",
   "text/career/story/story-data/who-s-going-to-make-kvwuzh": "9.29.2",
@@ -2429,6 +2363,24 @@
   "text/career/story/story-data/your-mum-is-already-crying-wmh283": "9.29.2",
   "text/career/story/story-data/your-stats-on-the-whiteboard-cn3j26": "9.23.0",
   "text/career/story/story-data/zubair-i-memorised-the-quran-3rmuuk": "9.23.0",
+  "text/career/story/story-home/back-to-the-gym-7p4ct7": "9.31.0",
+  "text/career/story/story-home/dunks-only-a-jumper-or-wbu0ku": "9.31.0",
+  "text/career/story/story-home/enter-or-tap-back-to-bjpuqn": "9.31.0",
+  "text/career/story/story-home/for-the-masjid-eripnb": "9.31.0",
+  "text/career/story/story-home/for-your-stats-odgvsw": "9.31.0",
+  "text/career/story/story-home/menu-07q5wa": "9.31.0",
+  "text/career/story/story-home/my-plays-8cl5k4": "9.31.0",
+  "text/career/story/story-home/not-yet-jar724": "9.31.0",
+  "text/career/story/story-home/office-80h26p": "9.31.0",
+  "text/career/story/story-home/one-on-one-against-the-ffh5pv": "9.31.0",
+  "text/career/story/story-home/one-on-one-first-to-tqr9f0": "9.31.0",
+  "text/career/story/story-home/quit-to-title-gbpe0p": "9.31.0",
+  "text/career/story/story-home/spend-them-in-the-gym-vw3ntw": "9.31.0",
+  "text/career/story/story-home/tap-to-go-back-to-6wqpkr": "9.31.0",
+  "text/career/story/story-home/two-balls-one-line-make-y6bg4t": "9.31.0",
+  "text/career/story/story-home/two-on-two-in-the-6upu22": "9.31.0",
+  "text/career/story/story-home/upgrade-3ofr4n": "9.31.0",
+  "text/career/story/story-home/you-and-sh-saleem-against-7ze353": "9.31.0",
   "text/career/story/story-hub/arrives-in-the-next-update-gu4ehf": "9.22.0",
   "text/career/story/story-hub/continue-next-update-nlzndx": "9.22.0",
   "text/career/story/story-hub/continue-to-play-it-55juh8": "9.22.0",
@@ -2442,8 +2394,8 @@
   "text/career/story/story-hub/story-ovcwgi": "9.22.0",
   "text/career/story/story-hub/your-choice-rf6ta5": "9.22.0",
   "text/career/story/story-league/a-new-season-brothers-same-a86vwm": "9.23.0",
-  "text/career/story/story-league/al-furqan-is-in-our-9z2oow": "9.23.0",
-  "text/career/story/story-league/and-this-year-we-win-o4ace2": "9.23.0",
+  "text/career/story/story-league/al-furqan-is-in-ours-c62yxk": "9.31.0",
+  "text/career/story/story-league/al-furqan-is-in-the-qkxwnd": "9.31.0",
   "text/career/story/story-league/away-for-hajj-ojhul3": "9.29.2",
   "text/career/story/story-league/choose-your-teammate-for-the-u833uu": "9.23.0",
   "text/career/story/story-league/for-the-school-wing-fjjjvs": "9.23.0",
@@ -2464,13 +2416,12 @@
   "text/career/story/story-league/the-day-of-the-last-w14i06": "9.23.0",
   "text/career/story/story-league/two-wins-we-re-close-wxnjoh": "9.23.0",
   "text/career/story/story-league/your-teammate-for-the-next-g5nasj": "9.23.0",
+  "text/career/story/story-nat/a-final-a-national-final-r7vbh9": "9.31.0",
   "text/career/story/story-nat/al-amanah-weekend-school-vp7196": "9.29.2",
   "text/career/story/story-nat/al-furqan-is-out-rayyan-pltvyy": "9.29.2",
   "text/career/story/story-nat/al-furqan-won-again-too-07xoqt": "9.29.2",
   "text/career/story/story-nat/and-a-lot-of-dunks-nipm5i": "9.29.2",
   "text/career/story/story-nat/and-the-close-of-our-bttwz1": "9.29.2",
-  "text/career/story/story-nat/and-the-food-i-know-obty9u": "9.29.2",
-  "text/career/story/story-nat/and-this-time-we-walk-dwyro3": "9.29.2",
   "text/career/story/story-nat/big-man-gentle-giant-5k05r5": "9.29.2",
   "text/career/story/story-nat/captain-of-al-furqan-rival-4e6dl5": "9.29.2",
   "text/career/story/story-nat/enforcer-and-a-proud-father-fk1m7r": "9.29.2",
@@ -2480,13 +2431,13 @@
   "text/career/story/story-nat/from-qln955": "9.29.2",
   "text/career/story/story-nat/good-draw-don-t-waste-4tk6u3": "9.29.2",
   "text/career/story/story-nat/high-flyer-newest-of-the-nmf1q5": "9.29.2",
-  "text/career/story/story-nat/king-of-the-court-first-ddg87x": "9.29.2",
   "text/career/story/story-nat/my-mum-watched-the-stream-jjh4w1": "9.29.2",
   "text/career/story/story-nat/nationals-again-sixteen-teams-on-24yxz9": "9.29.2",
   "text/career/story/story-nat/new-in-town-now-home-us7gat": "9.29.2",
   "text/career/story/story-nat/next-padbm0": "9.29.2",
   "text/career/story/story-nat/old-head-playmaker-keeper-of-cbtz5k": "9.29.2",
   "text/career/story/story-nat/on-the-court-a-fair-m9vj99": "9.29.2",
+  "text/career/story/story-nat/one-of-the-top-two-6nd0yn": "9.31.0",
   "text/career/story/story-nat/quarterfinal-py7zv9": "9.29.2",
   "text/career/story/story-nat/quick-guard-his-own-man-imn8q3": "9.29.2",
   "text/career/story/story-nat/round-of-16-ou6h17": "9.29.2",
@@ -2499,9 +2450,10 @@
   "text/career/story/story-nat/the-community-the-night-of-9qxozo": "9.29.2",
   "text/career/story/story-nat/the-end-na2go5": "9.29.2",
   "text/career/story/story-nat/the-final-x6vj64": "9.29.2",
+  "text/career/story/story-nat/the-national-final-yqwzj8": "9.31.0",
   "text/career/story/story-nat/the-school-wing-0cu4qr": "9.29.2",
   "text/career/story/story-nat/the-story-of-masjid-al-1ikvt8": "9.29.2",
-  "text/career/story/story-nat/the-ummah-cup-again-we-slhnn8": "9.29.2",
+  "text/career/story/story-nat/the-ummah-cup-again-king-vw7hnw": "9.31.0",
   "text/career/story/story-nat/the-weekend-school-is-watching-9xpdxk": "9.29.2",
   "text/career/story/story-nat/the-weekend-school-s1j4b7": "9.29.2",
   "text/career/story/story-nat/through-to-the-quarterfinals-eig-xy4k58": "9.29.2",
@@ -2515,19 +2467,16 @@
   "text/career/story/story-play/of-5-x7jyxq": "9.23.0",
   "text/career/story/story-play/this-choice-arrives-in-the-hcboec": "9.22.0",
   "text/career/story/story-play/this-game-arrives-in-the-3i634x": "9.22.0",
-  "text/career/story/story-post/a-basketball-painted-gold-the-qwyrwd": "9.29.2",
   "text/career/story/story-post/a-brother-from-sarajevo-wrote-p19jgq": "9.29.2",
   "text/career/story/story-post/a-new-season-of-any-8nl75z": "9.29.2",
   "text/career/story/story-post/a-ten-ht4rv7": "9.29.2",
   "text/career/story/story-post/a-ten-masha-allah-do-el1wql": "9.29.2",
   "text/career/story/story-post/a-week-after-the-cup-xezd2f": "9.29.2",
-  "text/career/story/story-post/akhi-come-here-everyone-wanted-xanpa5": "9.29.2",
   "text/career/story/story-post/al-furqan-and-al-amanah-eke4fu": "9.29.2",
   "text/career/story/story-post/all-of-them-djqta6": "9.29.2",
   "text/career/story/story-post/all-star-game-dunks-only-xhvoal": "9.29.2",
   "text/career/story/story-post/also-it-was-your-box-duj7eb": "9.29.2",
   "text/career/story/story-post/and-then-we-will-make-6hhuls": "9.29.2",
-  "text/career/story/story-post/and-we-will-tell-him-ikjh2h": "9.29.2",
   "text/career/story/story-post/another-season-of-the-aagrkh": "9.29.2",
   "text/career/story/story-post/any-tournament-any-time-mileston-0pyzo4": "9.29.2",
   "text/career/story/story-post/at-my-age-a-good-xuaort": "9.29.2",
@@ -2566,9 +2515,8 @@
   "text/career/story/story-post/i-tell-them-discipline-elbow-yaanrj": "9.29.2",
   "text/career/story/story-post/imam-dawud-s-chai-urn-qnulha": "9.29.2",
   "text/career/story/story-post/istanbul-the-whole-team-the-j730ed": "9.29.2",
-  "text/career/story/story-post/it-goes-on-a-stand-7eqbdh": "9.29.2",
+  "text/career/story/story-post/it-goes-on-a-stand-zhfcav": "9.31.0",
   "text/career/story/story-post/it-was-terrible-thank-you-x62ip0": "9.29.2",
-  "text/career/story/story-post/jazakallahu-khayran-akhi-for-eve-s2k6ry": "9.29.2",
   "text/career/story/story-post/land-five-dunks-in-one-nakyf6": "9.29.2",
   "text/career/story/story-post/lights-out-a-photo-of-90xbdl": "9.29.2",
   "text/career/story/story-post/lights-out-chai-the-all-iblcep": "9.29.2",
@@ -2585,7 +2533,7 @@
   "text/career/story/story-post/next-prize-wg8246": "9.29.2",
   "text/career/story/story-post/nineteen-years-and-you-were-mfn67j": "9.29.2",
   "text/career/story/story-post/not-now-c9wfke": "9.29.2",
-  "text/career/story/story-post/one-day-a-new-brother-c9wn9e": "9.29.2",
+  "text/career/story/story-post/one-day-a-new-brother-o4vhxw": "9.31.0",
   "text/career/story/story-post/one-hundred-and-fifty-thousand-e7smtw": "9.29.2",
   "text/career/story/story-post/one-of-them-does-every-oq0jz1": "9.29.2",
   "text/career/story/story-post/out-this-time-9riy76": "9.29.2",
@@ -2614,7 +2562,7 @@
   "text/career/story/story-post/the-kids-mural-yqicx5": "9.29.2",
   "text/career/story/story-post/the-masjid-goes-on-qnrk69": "9.29.2",
   "text/career/story/story-post/the-prophet-said-the-believers-18zumf": "9.29.2",
-  "text/career/story/story-post/the-prophet-said-the-most-2ubevj": "9.29.2",
+  "text/career/story/story-post/the-prophet-said-the-most-oxp1xo": "9.31.0",
   "text/career/story/story-post/the-state-all-star-game-vt9ffv": "9.29.2",
   "text/career/story/story-post/the-team-photos-hflc9q": "9.29.2",
   "text/career/story/story-post/the-ummah-is-big-akhi-asov2t": "9.29.2",
@@ -2622,7 +2570,6 @@
   "text/career/story/story-post/this-is-what-it-was-e4kzob": "9.29.2",
   "text/career/story/story-post/title-again-fxslkh": "9.29.2",
   "text/career/story/story-post/we-don-t-even-talk-lazbye": "9.29.2",
-  "text/career/story/story-post/we-have-something-for-you-lsqvia": "9.29.2",
   "text/career/story/story-post/when-i-took-my-shahadah-spyghj": "9.29.2",
   "text/career/story/story-post/when-i-was-a-kid-palofa": "9.29.2",
   "text/career/story/story-post/win-a-game-of-chai-2k0zm8": "9.29.2",
@@ -3548,7 +3495,6 @@
   "text/screens/replays/kept-kxg23c": "9.33.0",
   "text/screens/replays/link-copied-send-it-to-40b36a": "9.33.0",
   "text/screens/replays/making-video-oc7cl7": "9.33.0",
-  "text/screens/replays/my-plays-8cl5k4": "9.33.0",
   "text/screens/replays/my-plays-needs-browser-storage-n1at5x": "9.33.0",
   "text/screens/replays/newer-2740g4": "9.33.0",
   "text/screens/replays/no-saved-plays-yet-in-6nfbn0": "9.33.0",
@@ -5929,6 +5875,316 @@
    "reason": "9.22.0: the career story replaced the calendar, the neighbourhood, Jumu'ah, the old intro, the story threads, goals and badges, and the old cast in career",
    "version": "9.22.0",
    "was": "8.6.0"
+  },
+  "dialogue/scene/C2.16/7": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.16/8": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.16/9": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.3/10": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.3/11": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.3/12": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.3/5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.3/6": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.3/7": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.3/8": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.3/9": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.4/10": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.4/5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.4/6": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.4/7": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.4/8": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C2.4/9": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C3.2/4": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.2/5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.2/6": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.2/7": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.2/8": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.20/5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.20/6": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.22/10": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.22/7": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.22/8": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.22/9": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.23/5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.23/6": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.23/7": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.9/5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.9/6": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C3.9/7": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.1/5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.1/6": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.1/7": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.1/8": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.10/5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.7/5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.7/6": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.9/10": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.9/11": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.9/12": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.9/13": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.9/14": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.9/15": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.9/16": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.9/17": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.9/7": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.9/8": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C4.9/9": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C5.1/5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C5.1/6": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C5.1/7": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C5.10/8": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C5.10/9": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C5.7/5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C5.9/10": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C5.9/11": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C5.9/8": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "dialogue/scene/C5.9/9": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
   },
   "dialogue/sheikh-talk/lesson0/0": {
    "reason": "9.22.0: the career story replaced the calendar, the neighbourhood, Jumu'ah, the old intro, the story threads, goals and badges, and the old cast in career",
@@ -9580,6 +9836,11 @@
    "version": "9.29.2",
    "was": "9.23.0"
   },
+  "text/career/story/story-data/and-al-furqan-r2ajul": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
   "text/career/story/story-data/dad-you-said-good-game-t7tjau": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
@@ -9590,9 +9851,19 @@
    "version": "9.29.2",
    "was": "9.23.0"
   },
+  "text/career/story/story-data/every-masjid-in-the-table-h86g5u": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
   "text/career/story/story-data/from-a-gym-with-a-pah5zk": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/how-do-we-see-the-yq218k": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
    "was": "9.23.0"
   },
   "text/career/story/story-data/i-said-it-to-everybody-ggq4ae": {
@@ -9603,6 +9874,11 @@
   "text/career/story/story-data/i-want-to-thank-the-geatiu": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/listen-for-it-and-watch-g6qcxs": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
    "was": "9.23.0"
   },
   "text/career/story/story-data/masha-allah-and-the-chai-z2xnak": {
@@ -9618,6 +9894,11 @@
   "text/career/story/story-data/next-year-i-say-this-2m30nx": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/nobody-move-to-the-switch-plwwc5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
    "was": "9.23.0"
   },
   "text/career/story/story-data/one-loss-and-we-re-h4uwx2": {
@@ -9650,6 +9931,11 @@
    "version": "9.29.2",
    "was": "9.23.0"
   },
+  "text/career/story/story-data/this-year-the-top-four-mlqt8g": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
   "text/career/story/story-data/two-trophies-two-ujnql7": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
@@ -9665,6 +9951,16 @@
    "version": "9.29.2",
    "was": "9.23.0"
   },
+  "text/career/story/story-league/al-furqan-is-in-our-9z2oow": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-league/and-this-year-we-win-o4ace2": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.23.0"
+  },
   "text/career/story/story-league/first-up-tb3shg": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
@@ -9675,9 +9971,69 @@
    "version": "9.29.2",
    "was": "9.23.0"
   },
+  "text/career/story/story-nat/and-the-food-i-know-obty9u": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "text/career/story/story-nat/and-this-time-we-walk-dwyro3": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "text/career/story/story-nat/king-of-the-court-first-ddg87x": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
   "text/career/story/story-nat/the-brother-axnjc2": {
    "reason": "v9.30: the credits use your name, never The Brother",
    "version": "9.30.0",
+   "was": "9.29.2"
+  },
+  "text/career/story/story-nat/the-ummah-cup-again-we-slhnn8": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "text/career/story/story-post/a-basketball-painted-gold-the-qwyrwd": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "text/career/story/story-post/akhi-come-here-everyone-wanted-xanpa5": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "text/career/story/story-post/and-we-will-tell-him-ikjh2h": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "text/career/story/story-post/it-goes-on-a-stand-7eqbdh": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "text/career/story/story-post/jazakallahu-khayran-akhi-for-eve-s2k6ry": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "text/career/story/story-post/one-day-a-new-brother-c9wn9e": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "text/career/story/story-post/the-prophet-said-the-most-2ubevj": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
+   "was": "9.29.2"
+  },
+  "text/career/story/story-post/we-have-something-for-you-lsqvia": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
    "was": "9.29.2"
   },
   "text/career/v918-hub-first/play-next-game-kq2lpi": {
@@ -10253,6 +10609,11 @@
   "text/screens/replays/choose-enter-press-s-star-zcjua5": {
    "reason": "v9.33.0 (before release): the watch view's key hint is built in parts, so the star and delete keys show only for a saved play",
    "version": "9.33.0",
+   "was": "9.33.0"
+  },
+  "text/screens/replays/my-plays-8cl5k4": {
+   "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
+   "version": "9.31.0",
    "was": "9.33.0"
   },
   "text/screens/review-mode/after-a-loss-5jn86l": {
