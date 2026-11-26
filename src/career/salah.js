@@ -72,7 +72,7 @@ function gymExtras(E, g) {
 
 // -------------------------------------------------------------- GYM HUD
 function drawGymHUD(g) {
-  { const iy = Input.touchMode ? H - 40 : H - 88;                 // compact info pill, clear of the wall
+  if (!(typeof storyOn === 'function' && storyOn())) { const iy = Input.touchMode ? H - 40 : H - 88;                 // compact info pill, clear of the wall (v9.31: not in the story career: the left bar)
     g.fillStyle = 'rgba(8,16,24,0.72)'; roundRect(g, 12, iy, 300, 28, 14); g.fill();
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `11px ${FONT}`; g.fillText('AL-AMANAH GYM', 24, iy + 18);
     // v8.6.2: each item starts after the last one (the phone font is wider); phones say HB
@@ -96,7 +96,7 @@ function drawGymHUD(g) {
     }
     if (d.kind === 'v1' && M.mustClear[0] && ball.owner === M.players[0]) { g.fillStyle = '#ff9a8a'; g.font = `13px ${FONT}`; g.fillText('Take it back past the arc', W / 2, 124); }
     g.fillStyle = 'rgba(255,255,255,0.7)'; g.font = `11px ${BODY}`; g.fillText('Back or Esc stops the drill', W / 2, 140);
-  } else if (!Gym.walk && !Gym.fade) {
+  } else if (!Gym.walk && !Gym.fade && !(typeof storyOn === 'function' && storyOn())) {
     // drills + musalla: bottom bar on desktop, a column at top-right on touch
     // (clear of the joystick and the action buttons)
     const acts = Input.touchMode ? [['Drills', openDrills], ['Musalla', enterMusalla], ['Sheikh\u2019s office', enterOffice]]   // v8.6.2: no key hints on touch

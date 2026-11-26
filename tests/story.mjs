@@ -18,6 +18,8 @@
 //                  milestones with their moments, P.4, every prize used in the world, econSelfCheck() empty
 //   story-welcome  New career: the welcome screen and a typed name (and the phone's keys), the creator's Look and
 //                  Game sections, five distinct archetypes and their perks (career games, your player only)
+//   story-rules    the rules: every scene from Chapter 2 on within its length cap, and a run from C0.1 to C5.1 with no
+//                  line drawn without its speaker on screen
 //   story-reload   a save at every Chapter 0 and Chapter 1 scene, a reload, Continue: the same scene starts again
 //   story-hub      the hub has exactly its four entries (Continue, Gym, Masjid, My Player), the chapter's name and the
 //                  next event; every entry opens its screen; desktop and phone draw without errors
@@ -53,7 +55,7 @@ export function storyTests({ newContext, open }) {
     const pickups = out.steps.filter(x => x.startsWith('C0.5:') && /won|lost/.test(x)).map(x => x.split(':')[1]);
     const ok = out.start === 'C0.1' && ids.every(id => at.includes(id)) && pickups.join(',') === 'lost,won'
       && out.end.s.at === 'C1.1' && out.end.s.screen === 'hub' && out.end.ch === 1 && ids.every(id => out.end.journal.includes(id))
-      && out.end.hub.length === 4 && out.end.saved && out.end.saved.at === 'C1.1' && !out.draws.length && !errs.length;
+      && out.end.hub[0] === 'Back to the gym' && out.end.saved && out.end.saved.at === 'C1.1' && !out.draws.length && !errs.length;
     return { ok, detail: [out.steps.join(' '), 'pickup: ' + pickups.join(','), 'end: ' + JSON.stringify(out.end), ...out.draws, ...errs] };
   };
 
@@ -142,7 +144,7 @@ export function storyTests({ newContext, open }) {
     for (let n = 0; n < 260; n++) {
       const st = await p.evaluate(() => window.__sState());
       if (st.at === 'C4.1' && st.screen === 'hub') break;
-      if (st.at === 'C3.3' && st.screen === 'story' && !out.table) out.table = await p.evaluate(() => { const b = C.bracket; return { table: b.table, n: b.pg[0].length, ours: b.pg[0].filter(g => g.a === 0 || g.b === 0).map(g => g.md), teams: stageTeams(1).length, cp: C.story.cp, label: roundLabel(b) }; });
+      if (st.at === 'C3.3' && (st.screen === 'story' || st.screen === 'gym' || st.screen === 'hub') && !out.table) out.table = await p.evaluate(() => { const b = C.bracket; return { table: b.table, n: b.pg[0].length, ours: b.pg[0].filter(g => g.a === 0 || g.b === 0).map(g => g.md), teams: stageTeams(1).length, cp: C.story.cp, label: roundLabel(b) }; });
       if (st.at === 'C3.6' && st.screen === 'gym' && !out.chai) out.chai = await p.evaluate(() => M.mini && M.mini.word);
       if (st.at === 'C3.10' && st.screen === 'play' && !out.dunks) out.dunks = await p.evaluate(() => {
         const me = M.players.find(q => q.human === 0), h = hoops[1], s0 = M.teams[0].score;
@@ -184,8 +186,8 @@ export function storyTests({ newContext, open }) {
     for (let n = 0; n < 200; n++) {
       const st = await p.evaluate(() => window.__sState());
       if (st.at === 'C5.1' && st.screen === 'hub') break;
-      if (st.at === 'C4.2' && st.screen === 'story' && !out.ko) out.ko = await p.evaluate(() => { const b = C.bracket; return { ko: b.ko, first: b.rounds[0].length, teams: stageTeams(2).length, label: roundLabel(b), cp: C.story.cp, rivalOther: b.rounds[0].findIndex(m => m.a === 1 || m.b === 1) >= 4 }; });
-      if (st.at === 'C4.4' && st.screen === 'story' && !out.qf) out.qf = await p.evaluate(() => roundLabel(C.bracket));
+      if (st.at === 'C4.2' && (st.screen === 'story' || st.screen === 'gym' || st.screen === 'hub') && !out.ko) out.ko = await p.evaluate(() => { const b = C.bracket; return { ko: b.ko, first: b.rounds[0].length, teams: stageTeams(2).length, label: roundLabel(b), cp: C.story.cp, rivalOther: b.rounds[0].findIndex(m => m.a === 1 || m.b === 1) >= 4 }; });
+      if (st.at === 'C4.4' && (st.screen === 'story' || st.screen === 'gym' || st.screen === 'hub') && !out.qf) out.qf = await p.evaluate(() => roundLabel(C.bracket));
       if (st.screen !== 'play' || n % 3 === 0) { const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d); }
       const r = await p.evaluate(lose => window.__sStep({ lose: at => at === 'C4.4' && lose }), !lostQF);
       if (st.at === 'C4.4' && r === 'lost') lostQF = true;
@@ -217,7 +219,7 @@ export function storyTests({ newContext, open }) {
       const st = await p.evaluate(() => window.__sState());
       if (st.at === 'P.1' && st.screen === 'hub') break;
       if (st.at === 'C5.2' && st.screen === 'play' && !out.caps) out.caps = await p.evaluate(() => KOTC.roster.map(id => castPlayer(id).name));
-      if (st.at === 'C5.4' && st.screen === 'story') { const d = await p.evaluate(() => ({ draw: C.story.draw, ko: C.bracket && C.bracket.ko, first: C.bracket.rounds[0].length, opp: storyOpp().id, label: roundLabel(C.bracket) })); if (!out.draw.length || out.draw[out.draw.length - 1].draw !== d.draw) out.draw.push(d); }
+      if (st.at === 'C5.4' && (st.screen === 'story' || st.screen === 'gym' || st.screen === 'hub')) { const d = await p.evaluate(() => ({ draw: C.story.draw, ko: C.bracket && C.bracket.ko, first: C.bracket.rounds[0].length, opp: storyOpp().id, label: roundLabel(C.bracket) })); if (!out.draw.length || out.draw[out.draw.length - 1].draw !== d.draw) out.draw.push(d); }
       if (st.screen === 'scredits' && !out.credits) out.credits = await p.evaluate(() => { Game.credits.t = 20; return true; });
       if (st.screen !== 'play' || n % 3 === 0) { const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d); }
       const r = await p.evaluate(([lose, k]) => window.__sStep({ lose: at => (at === 'C5.6' && lose) || (at === 'C5.2' && k === 0) }), [!lostSF, kotc]);
@@ -336,12 +338,34 @@ export function storyTests({ newContext, open }) {
     return { ok, detail: [JSON.stringify(out), ...errs] };
   };
 
+  // v9.31: the rules (SCENES.md): short dialogue everywhere, and no line drawn without its speaker on screen
+  T['story-rules'] = async ({ browser, base }) => {
+    const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-rules');
+    await prep(p);
+    const r = await p.evaluate(() => {
+      window.__sNew('Rules'); window.__faceless = [];
+      const path = window.__sRun('C5.1', { max: 1300 });
+      const n = L => (L || []).filter(l => Array.isArray(l) && l[0] !== 'narr').length, over = [];
+      const BIG = /^(C2\.16|C3\.22|C4\.9|C5\.9|C5\.10)$/;                     // the big scenes: titles and coming home (6 lines)
+      for (const [id, S] of Object.entries(SC)) {
+        if (S.ch < 2) continue;                                                // (Chapters 0 and 1 are rebuilt in the next releases)
+        for (const k of ['lines', 'pre', 'winLines', 'lossLines']) { let L = S[k]; if (typeof L === 'function') { try { L = L(); } catch (e) { L = null; } } const c = n(L); if (c > (BIG.test(id) ? 6 : 4)) over.push(id + '.' + k + ':' + c); }
+      }
+      for (const [k, v] of Object.entries(STORY_MOMENTS)) if (n(v) > 4) over.push('moment ' + k);
+      if (n(STORY_FINAL) > 6) over.push('P.4');
+      return { reached: C.story.at, faceless: window.__faceless.slice(0, 10), over, steps: path.length };
+    });
+    await ctx.close();
+    const ok = r.reached === 'C5.1' && !r.faceless.length && !r.over.length && !errs.length;
+    return { ok, detail: [JSON.stringify(r), ...errs] };
+  };
+
   T['story-reload'] = async ({ browser, base }) => {
     const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-reload');
-    const want = { 'C0.1': 'ssalams', 'C0.2': 'musalla', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'play', 'C0.6': 'gym',
-      'C1.1': 'gym', 'C1.2': 'gym', 'C1.5': 'musalla', 'C1.6': 'story', 'C1.7': 'office', 'C1.8': 'story', 'C1.9': 'gym',
-      'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'gym', 'C2.5': 'spick', 'C2.6': 'story', 'C2.9': 'gym', 'C2.10': 'story',
-      'C3.1': 'gym', 'C3.2': 'gym', 'C3.4': 'gym', 'C3.6': 'story', 'C3.9': 'office', 'C3.10': 'story', 'C3.14': 'story', 'C3.20': 'office' }, ids = Object.keys(want), res = [];
+    const want = { 'C0.1': 'ssalams', 'C0.2': 'musalla', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'gym', 'C0.6': 'gym',
+      'C1.1': 'gym', 'C1.2': 'gym', 'C1.5': 'musalla', 'C1.6': 'gym', 'C1.7': 'office', 'C1.8': 'gym', 'C1.9': 'gym',
+      'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'gym', 'C2.5': 'spick', 'C2.6': 'gym', 'C2.9': 'gym', 'C2.10': 'gym',
+      'C3.1': 'gym', 'C3.2': 'gym', 'C3.4': 'gym', 'C3.6': 'gym', 'C3.9': 'office', 'C3.10': 'gym', 'C3.14': 'gym', 'C3.20': 'office' }, ids = Object.keys(want), res = [];
     for (const id of ids) {
       await prep(p);
       await p.evaluate(id => { window.__sNew('Reload'); window.__sRun(id); saveCareer(); }, id);
@@ -351,40 +375,49 @@ export function storyTests({ newContext, open }) {
         const items = cmenuItems().map(x => x[1]); if (!items.includes('continue')) return { items };
         cmenuSelect(items.indexOf('continue'));
         const hub = Game.screen; storyRun();
-        return { items, hub, at: C.story.at, screen: Game.screen, walk: !!Gym.story, sid: Game.story && Game.story.sid };
+        return { items, hub, at: C.story.at, screen: Game.screen, walk: !!Gym.story || !!Gym.ready, sid: Game.story && Game.story.sid };
       });
       await sleep(150);
       res.push(Object.assign({ id }, r));
     }
     await ctx.close();
-    const ok = res.every(r => r.hub === 'hub' && r.at === r.id && r.screen === want[r.id] && (r.screen !== 'gym' || r.walk) && (r.screen !== 'story' || r.sid === r.id)) && !errs.length;   // (C1.6 and C1.8 open on their lead-in scene)
+    const ok = res.every(r => r.hub === 'gym' && r.at === r.id && r.screen === want[r.id] && (r.screen !== 'gym' || r.walk) && (r.screen !== 'story' || r.sid === r.id)) && !errs.length;   // (C1.6 and C1.8 open on their lead-in scene)
     return { ok, detail: [...res.map(r => JSON.stringify(r)), ...errs] };
   };
 
+  // v9.31: home is the practice gym (its left bar), and the old hub screen is the full menu
   T['story-hub'] = async ({ browser, base }) => {
     const errs = [], detail = []; let ok = true;
     for (const [dn, dev, touch] of [['desktop', { viewport: { width: 1280, height: 720 } }, false], ['phone', { viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true }, true]]) {
       const ctx = await newContext(browser, { device: dev }), p = await open(ctx, base + '/', errs, 'story-hub ' + dn);
       await prep(p);
       const r = await p.evaluate(touch => {
-        Input.touchMode = touch; 
-        window.__sNew('Hub'); window.__sRun('C1.1'); careerHub();
-        const labels = HUB_MENU().map(e => e.label), seen = [];
+        Input.touchMode = touch;
+        window.__sNew('Hub'); window.__sRun('C2.5'); careerHub();
+        const home = { screen: Game.screen, atHome: storyAtHome(), bar: gymBarItems().map(x => x.k), starter: Object.keys(SW.npcs) };
+        render(ctx);
+        careerMenu();
+        const menu = Game.screen, labels = HUB_MENU().map(e => e.label), seen = [];
         const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540; const g = cv.getContext('2d'), ft = g.fillText.bind(g);
         g.fillText = (t, ...a) => { seen.push(String(t)); return ft(t, ...a); };
         drawHub(g);
-        const opened = {};
-        const subs = { Masjid: HUB_MENU()[2].sub.map(x => x.label), 'My Player': HUB_MENU()[3].sub.map(x => x.label) };
-        for (const [i, k] of [[1, 'Gym']]) { careerHub(); HUB_MENU()[i].act(); opened[k] = Game.screen; }
-        for (const [k, j] of [['Musalla', 0], ['Office', 1], ['Outside', 2], ['Projects', 3]]) { careerHub(); HUB_MENU()[2].sub[j].act(); opened[k] = Game.screen; render(ctx); }
-        for (const [k, j] of [['Upgrade', 0], ['Look', 1], ['Journal', 2], ['Stats', 3]]) { careerHub(); HUB_MENU()[3].sub[j].act(); opened[k] = Game.screen; render(ctx); }
+        const opened = {}, M_ = () => HUB_MENU();
+        careerMenu(); M_()[0].act(); opened.Gym = storyAtHome() ? 'home' : Game.screen;
+        for (const [k, j] of [['Musalla', 0], ['Office', 1], ['Outside', 2], ['Projects', 3]]) { careerMenu(); M_()[1].sub[j].act(); opened[k] = Game.screen; render(ctx); }
+        for (const [k, j] of [['Upgrade', 0], ['Look', 1], ['Journal', 2], ['Stats', 3]]) { careerMenu(); M_()[2].sub[j].act(); opened[k] = Game.screen; render(ctx); }
+        careerMenu(); M_()[3].act(); opened.Plays = Game.screen;
+        careerMenu(); M_()[4].act(); opened.Settings = Game.screen; BACK.settings(); opened.SettingsBack = Game.screen;
+        // the bar opens what it says
+        careerHub(); const bar = {}; for (const it of gymBarItems()) { if (it.k === 'next' || it.k === 'musalla' || it.k === 'office') continue; careerHub(); gymBarItems().find(x => x.k === it.k).act(); bar[it.k] = Game.screen + (Gym.overlay ? ':' + Gym.overlay : ''); }
         careerHub(); render(ctx);
-        return { labels, subs, opened, chapter: seen.some(t => /Chapter 1: Making the team/.test(t)), next: seen.some(t => /^NEXT/.test(t)) };
+        return { home, menu, labels, opened, bar, chapter: seen.some(t => /Chapter 2: Masjid league/.test(t)) };
       }, touch);
       await sleep(300);
-      const good = r.labels.join('|') === 'Continue|Gym|Masjid|My Player' && r.chapter && r.next
-        && r.opened.Gym === 'gym' && r.opened.Musalla === 'musalla' && r.opened.Office === 'office' && r.opened.Outside === 'masjid' && r.opened.Projects === 'shop'
-        && r.opened.Upgrade === 'train' && r.opened.Look === 'creator' && r.opened.Journal === 'journal' && r.opened.Stats === 'cstats';
+      const good = r.home.screen === 'gym' && r.home.atHome && r.home.bar.join() === 'next,drills,musalla,office,upgrade,menu' && r.home.starter.includes('saleem')
+        && r.menu === 'hub' && r.labels.join('|') === 'Back to the gym|Masjid|My Player|My plays|Settings|Quit to title' && r.chapter
+        && r.opened.Gym === 'home' && r.opened.Musalla === 'musalla' && r.opened.Office === 'office' && r.opened.Outside === 'masjid' && r.opened.Projects === 'shop'
+        && r.opened.Upgrade === 'train' && r.opened.Look === 'creator' && r.opened.Journal === 'journal' && r.opened.Stats === 'cstats' && r.opened.Plays === 'myplays'
+        && r.opened.Settings === 'settings' && r.opened.SettingsBack === 'hub' && r.bar.drills === 'gym:drills' && r.bar.upgrade === 'train' && r.bar.menu === 'hub';
       if (!good) ok = false;
       detail.push(dn + ': ' + JSON.stringify(r));
       await ctx.close();

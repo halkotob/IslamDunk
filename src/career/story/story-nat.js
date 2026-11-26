@@ -122,14 +122,11 @@ function drawSchoolWing(g, t) {
 
 // ---------------------------------------------------------------- lines that depend on the knockout
 function storyNatIntro() {
-  const att = C.story.att || 0, o = storyOpp(), L = att ? [['saleem', 'Nationals again. Sixteen teams, one loss and you’re out. We know the road now.'], ['jamil', 'And this time we walk all of it.']] : [
-    ['narr', 'The National Masjid Invitational. A hotel ballroom of team captains, a bracket on a screen, and one uncle from every masjid filming it on his phone.'],
-    ['saleem', 'Before anything, renew your intention. We are not here for our names. We’re here for our masjid, for the kids, and for Allah.'],
-    ['saleem', 'And we represent our whole state now. Every masjid we beat in the State league is cheering for us tonight.'],
-    ['karim', 'Sixteen teams. Single elimination. Four wins and we’re national champions.'],
-    ['jamil', 'Four wins. I have waited nineteen years for one. Four is fine.'],
-    ['anas', 'One game at a time. Bismillah.']];
-  if (!att) L.push(['saleem', 'Al-Furqan is on the other side of the draw. If we meet them, it’s in the final.'], ['rayyan', 'See you in the final, Al-Amanah. Don’t make me wait.']);
+  const att = C.story.att || 0, o = storyOpp(), L = att ? [['saleem', 'Nationals again. Sixteen teams, one loss and you’re out. We know the road now.']] : [
+    ['narr', 'The National Masjid Invitational. A hotel ballroom of team captains, a bracket on a screen, and one uncle from every masjid filming it.'],
+    ['saleem', 'Renew your intention, brothers. We’re here for our masjid, for the kids, and for Allah. And we play for our whole state now.'],
+    ['karim', 'Sixteen teams, single elimination. Four wins and we’re national champions.'],
+    ['rayyan', 'Al-Furqan is on the other side of the draw. See you in the final, Al-Amanah.']];
   if (o) L.push(['saleem', 'Round of 16: ' + o.team.name + (o.team.place ? ', from ' + o.team.place : '') + '. Pick who plays beside you.']);
   return L;
 }
@@ -183,15 +180,13 @@ STORY_MODES.kotcDraw = function (S) {
 }
 function storyCupIntro() {
   const att = C.story.att || 0;
-  if (att) return [['saleem', 'The Ummah Cup again. We know the way now, brothers.'], ['jamil', 'And the food. I know where the good food is.'], ['saleem', 'King of the Court first, for the draw. Then three wins.']];
+  if (att) return [['saleem', 'The Ummah Cup again. King of the Court first, for the draw. Then three wins.']];
   return [
     ['narr', 'Istanbul. A sports hall beside the Bosphorus, the adhan from three masjids at once, and flags from every corner of the world.'],
-    ['saleem', 'Brothers. Renew your intention one more time. We came to meet the ummah, and to play well in front of it.'],
-    ['saleem', 'The rules: eight masjid teams. Tonight, one player from four of the teams plays King of the Court for the draw.'],
-    ['saleem', 'Win it and we play the weakest team in the quarterfinal. Every game you win gets us an easier draw. Losing doesn’t knock us out.'],
-    ['karim', 'Then a quarterfinal, a semifinal and a final. Three wins and the Cup is ours.'],
-    ['musa', 'Bro. The team from Kuala Lumpur has matching headbands.'], ['ilyas', 'We are still not getting matching headbands.'],
-    ['saleem', 'Akhi, you’re our player for the draw. Bismillah.']];
+    ['saleem', 'Renew your intention one more time. We came to meet the ummah, and to play well in front of it.'],
+    ['saleem', 'Eight teams. King of the Court decides the draw: every game you win makes our quarterfinal easier. Losing it doesn’t knock us out.'],
+    ['musa', 'Bro. The team from Kuala Lumpur has matching headbands.'],
+    ['saleem', '{name}, you’re our player for the draw. Bismillah.']];
 }
 function storyCupDrawLines() {
   const d = C.story.draw || 0, o = storyOpp(), L = [];

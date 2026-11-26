@@ -1,5 +1,41 @@
 # Changelog
 
+## 9.31.0: Career refine 2: the practice gym is home
+From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 2; the rules are in SCENES.md):
+- **Home is the practice gym.** Before and after every game, in every chapter, you're in the practice gym with the
+  ball. Whoever has the next game or scene stands on the court with a gold marker: your teammate before a league
+  game, Sh. Saleem before a scene. Walk up and talk, or press **Next** on the left bar (N on a keyboard).
+- **The left bar** replaces the gym's bottom bar: Next (it glows, and names what's next), Drills, Musalla, Office,
+  Upgrade and Menu, with your Barakah Points and Halal Bucks under it. The objective box in walks now sits under
+  the Back button, and the hint ("Go and talk to...") under the bar. Nothing is at the bottom or the right of the
+  screen any more.
+- **Nobody talks off screen.** Every line that used to play over a backdrop with nobody there now plays in the gym,
+  with its speakers walking up to stand near you, in the same text box as the walks. That covers the lines before a
+  league game, after it, before and after the mini games, the teammate pick, and the news before a Hajj. Narration
+  alone (the rows lining up for salah) keeps its plain box.
+- **A ready prompt before every game.** Mini games get a panel on the left, in their own colours, with a line on how
+  to play and **Start** / **Not yet**. League games keep their pregame card, and Back returns to the gym.
+- **The menu.** The old hub screen is now the full menu (Menu on the bar, or Esc in the gym): Back to the gym,
+  Masjid, My Player (now with Milestones), My plays (your saved plays from career games), Settings (Back returns
+  here), and Quit to title.
+- **A short rewards card.** After a league game: the score, then your Barakah Points and Halal Bucks as two totals,
+  with one line on where to spend them. The full list of reasons is gone.
+- **Shorter dialogue, Chapter 2 to the end.** Every scene fits the new caps: a conversation is at most 4 spoken
+  lines, a big scene (a title, coming home with the Cup, the 100% scene) at most 6. That includes the league and
+  tournament intros, the fundraiser scene in the office, the tickets, the invitations, the four titles (the father
+  and son's peace keeps its heart), the night before each final, and P.4.
+- **During a drill,** only the drill's people are on the court.
+- **Fix:** new moments after The End played only when you weren't already in a walk. They now play straight from
+  the gym too.
+
+How it was checked:
+- **New test** `story-rules`: every scene from Chapter 2 on fits its cap, and a run from C0.1 to C5.1 draws no line
+  without its speaker on screen.
+- **Rewritten** `story-hub`: home has the left bar and your teammate with the marker, and the menu has its seven
+  entries, each opening what it says (Settings comes back to the menu). The bar's buttons open what they say.
+- Every story test now plays through home, Next and the ready panel.
+- Also `studio-coverage`, `studio-phone` and the phone audit.
+
 ## 9.30.0: Career refine 1: welcome, creator sections, distinct archetypes, your name
 From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 1):
 - **A welcome screen.** New career no longer drops you straight into the creator. It opens a short welcome: what

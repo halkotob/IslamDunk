@@ -218,19 +218,11 @@ const STORY_GYM_TALK = {
 scn('C2.1', { kind: 'drill', name: 'First practice', walk: 'C2.1', next: 'C2.2' });
 scn('C2.2', { kind: 'walk', name: 'Father and son', walk: 'C2.2', next: 'C2.3' });
 scn('C2.3', { kind: 'scene', name: 'Why we play', salah: true, talk: { at: 'office', who: 'saleem' }, next: 'C2.4', effect: 'fundOn', lines: [
-  ['saleem', 'Come in, all of you. Squeeze in. Musa, sit on the bookshelf if you have to.'],
-  ['saleem', 'Before the league starts, I want you to know why we play. It isn’t for a trophy.'],
-  ['saleem', 'Ustath Karim, tell them.'],
-  ['karim', 'Forty-three kids come to the weekend school. We teach them in two rooms. One of the rooms is the coat closet.'],
-  ['karim', 'Last month we turned eleven families away. No space. Their kids go nowhere on the weekend.'],
-  ['saleem', 'The board approved a school wing on the parking lot side. Four classrooms. It costs one hundred thousand dollars.'],
-  ['jamil', 'One hundred thousand? We can barely pay for the electricity.'],
-  ['saleem', 'Every game we win, people come to watch. People who watch, give. The Masjid League final is the biggest night of our year.'],
-  ['dawud', 'The Prophet ﷺ said: when a person dies, his deeds end except three. One of them is knowledge that benefits.'],
-  ['dawud', 'Those classrooms will teach long after all of us are gone.'],
-  ['ilyas', 'So every win builds a classroom.'],
-  ['saleem', 'Every win builds a little of one. And every bit of adab we show on the court brings the community with us.'],
-  ['narr', 'The school wing fundraiser has begun. Its meter is on the hub.']] });
+  ['saleem', 'Before the league starts, I want you to know why we play. Forty-three kids come to the weekend school, in two rooms. One of them is the coat closet.'],
+  ['saleem', 'Last month we turned eleven families away. The board approved a school wing: four classrooms, one hundred thousand dollars.'],
+  ['saleem', 'Every game we win, people come to watch. People who watch, give. Every win builds a little of a classroom.'],
+  ['you', 'Then we win.'],
+  ['narr', 'The school wing fundraiser has begun. Its meter is on the left bar in the gym.']] });
 scn('C2.4', { kind: 'scene', name: 'The Masjid League', checkpoint: true, effect: 'bracket', stage: 0, next: 'C2.5', lines: () => storyLeagueIntro(0) });
 scn('C2.5', { kind: 'choice', name: 'Pick your teammate', pick: true, next: 'C2.6' });
 scn('C2.6', { kind: 'play', name: 'Group game 1', bracket: true, stakes: 'opener', win: 'C2.7', loss: 'C2.7', out: 'C2.NS',
@@ -243,7 +235,7 @@ scn('C2.8', { kind: 'play', name: 'Group game 2', bracket: true, stakes: 'regula
 scn('C2.9', { kind: 'walk', name: 'Practice day', walk: 'C2.9', next: 'C2.10' });
 scn('C2.10', { kind: 'play', name: 'Lights out', mode: 'lightsout', win: 'C2.11', loss: 'C2.11',
   pre: [['narr', 'Practice, the next night. Halfway through a drill, the old tubes buzz… and go out. The whole gym goes dark.'], ['musa', 'Bro. BRO. I can’t see my own hands.'], ['jamil', 'The breaker again. Nineteen years, same breaker.'],
-    ['saleem', 'Nobody move to the switch, the uncles are on it. In the meantime… two on two. In the dark.'], ['ilyas', 'How do we see the ball?'], ['saleem', 'Listen for it. And watch the glow. Bismillah!']],
+    ['saleem', 'The uncles are on the switch. In the meantime, two on two. In the dark. Watch the glow. Bismillah!']],
   winLines: [['narr', 'The lights flicker back to life.'], ['musa', 'That was the best game of my life and I didn’t see any of it.'], ['saleem', 'You found your teammate without looking. That’s trust.']],
   lossLines: [['narr', 'The lights flicker back to life.'], ['jamil', 'In the dark, the old man is king! Ha!'], ['saleem', 'Win or lose, that was fun. Now: the breaker. Somebody call the electrician.']] });
 scn('C2.11', { kind: 'scene', name: 'The final push', next: 'C2.12', lines: () => storyGroupPush() });
@@ -342,43 +334,28 @@ const STORY_PICK_LINES = {
 };
 // the title scenes ({built}: the projects the title paid for, {fund}: the fundraiser's total)
 const STORY_TITLE_TEXT = [
-  [['narr', 'Masjid Al-Amanah: champions of the Metro Masjid League.'], ['jamil', 'NINETEEN YEARS!'], ['jamil', 'Nineteen years, and now… now… somebody give me a tissue.'],
-    ['ilyas', 'Dad. Are you crying?'], ['jamil', 'It’s the chai. Too much cardamom.'], ['saleem', 'Alhamdulillah. First trophy in the history of this masjid. Thank Allah first, then your brothers. You too, {name}.'],
+  [['narr', 'Masjid Al-Amanah: champions of the Metro Masjid League.'], ['jamil', 'NINETEEN YEARS! Somebody give me a tissue.'],
+    ['ilyas', 'Dad. Are you crying?'], ['jamil', 'It’s the chai. Too much cardamom.'],
+    ['saleem', 'Alhamdulillah. The first trophy in the history of this masjid, and the title builds {built}. You too, {name}.'],
     ['rayyan', 'Congratulations, Al-Amanah. You earned it. See you at State.'],
-    ['karim', 'The fundraiser stands at {fund}. The kids are already arguing about whose name goes on the classroom door.'],
-    ['saleem', 'And the title money builds something right away: {built}. No more flickering tubes. Sorry, lights-out game.'],
-    ['dawud', 'Tonight, chai for everyone. Even Al-Furqan.']],
-  [['narr', 'Masjid Al-Amanah: state champions.'], ['saleem', 'From a gym with a bent rim to the best in the state. Alhamdulillah. Masha’Allah, {name}.'], ['jamil', 'Two trophies. TWO.'],
-    ['ilyas', 'Dad, you said “good game” to me after the final. I heard you.'], ['jamil', '…I said it to everybody.'], ['ilyas', 'You looked at me when you said it.'],
-    ['anas', 'I want to thank the uncles who drove us to every away game. All forty minutes of complaining about traffic.'],
-    ['karim', 'The fundraiser stands at {fund}. My students drew a picture of the school wing. It has a pool. We are not building a pool.'],
+    ['karim', 'The fundraiser stands at {fund}. The kids are already arguing about whose name goes on the classroom door.']],
+  [['narr', 'Masjid Al-Amanah: state champions.'], ['saleem', 'From a gym with a bent rim to the best in the state. Masha’Allah, {name}.'],
+    ['ilyas', 'Dad, you said “good game” to me after the final. I heard you.'], ['jamil', '…I said it to everybody.'],
     ['musa', 'Eight months ago I didn’t know how to pray. Today I’m a state champion with my brothers.'],
-    ['saleem', 'The title brings {built}. And the invitation to the National tournament.'], ['dawud', 'Masha’Allah. And the chai stays the same.']],
-  [['narr', 'Masjid Al-Amanah: national champions.'], ['saleem', 'Alhamdulillah, alhamdulillah. From a gym with one working light to the best masjid team in the country.'],
-    ['narr', 'In the noise, Ammo Jamil walks across the court to his son.'],
-    ['jamil', 'Ilyas. Come here.'], ['ilyas', 'Dad, if this is about my box-outs—'],
-    ['jamil', 'No. Listen. Twenty years I wanted a trophy. Tonight I have one, and it is not the thing I am proudest of.'],
-    ['jamil', 'I am proud of you. Not for the points. For how you play, how you treat people, how you kept going when I was yelling.'],
-    ['jamil', 'I was hard on you because of my one-point final. That was my loss, not yours. I am sorry, my son.'],
+    ['karim', 'The fundraiser stands at {fund}.'], ['saleem', 'The title brings {built}. And the invitation to the National tournament.']],
+  [['narr', 'Masjid Al-Amanah: national champions. In the noise, Ammo Jamil walks across the court to his son.'],
+    ['jamil', 'Ilyas. Twenty years I wanted a trophy. Tonight I have one, and it is not the thing I am proudest of.'],
+    ['jamil', 'I am proud of you. Not for the points: for how you play, and how you kept going when I was yelling. I’m sorry, my son.'],
     ['ilyas', '…Dad. Good game.'], ['jamil', 'Good game, son.'],
-    ['musa', 'Is everyone crying? I’m crying. Anas is crying.'], ['anas', 'I am not crying. I am perspiring from the eyes.'],
-    ['karim', 'Brothers, the fundraiser: {fund}. The rest came in tonight, from the stands, from the stream, from people who never met us.'],
-    ['saleem', 'The school wing is paid for. Four classrooms. No more coat closet. The eleven families we turned away: they all have a place now.'],
-    ['karim', 'Monday morning, I teach in a real classroom. With a window.'],
-    ['dawud', 'Knowledge that benefits, long after us. This is what we played for.'],
-    ['saleem', 'And the title builds {built} as well. Go outside when we get home. Look at the masjid. Look at the new wing.'],
-    ['rayyan', 'National champions. From our street. Al-Furqan is proud of you. Don’t tell my uncle I said that.']],
+    ['karim', 'The fundraiser: {fund}. The rest came in tonight. The school wing is paid for: four classrooms, and every family has a place.'],
+    ['saleem', 'And the title builds {built}. When we get home, go outside and look at the masjid, {name}. Look at the new wing.']],
   [['narr', 'The Ummah Cup final is over. Masjid Al-Amanah, from Eastside, are champions of the world.'],
-    ['saleem', 'Allahu akbar. Allahu akbar. Brothers… sujood of thanks, right here, then we lift it.'],
+    ['saleem', 'Allahu akbar. A sujood of thanks, right here, then we lift it.'],
     ['narr', 'The team kneels on the court in sujood of thanks. Then Sh. Saleem hands the Cup to you.'],
     ['saleem', 'You lift it first, {name}. You walked into our gym a stranger. Lift it as our brother.'],
-    ['jamil', 'Twenty years ago I lost a final by one point. Tonight I have a world cup. My knees don’t hurt. Nothing hurts.'],
-    ['ilyas', 'Dad. Proud of you.'], ['jamil', 'That is my line! …Proud of you too, son.'],
-    ['karim', 'I am going to put a picture of this in every classroom of the new wing.'],
-    ['anas', 'Teams from every corner of the ummah, clapping for each other. This is what I will remember.'],
-    ['musa', 'A year ago I said my shahadah. Today I have a thousand brothers, and a trophy. Allah is generous.'],
-    ['dawud', 'The chai tonight is on Istanbul. They make it in little glasses. I approve.'],
-    ['saleem', 'And at home, the title builds {built}. Al-Amanah will look like a real masjid now, with a dome you can see from the highway.']]
+    ['jamil', 'Twenty years ago I lost a final by one point. Tonight I have a world cup. Nothing hurts.'],
+    ['ilyas', 'Proud of you, Dad.'], ['jamil', 'That is my line! …Proud of you too, son.'],
+    ['saleem', 'And at home, the title builds {built}. A dome you can see from the highway.']]
 ];
 // after a run-ending loss: a new season, back to the chapter's checkpoint
 const STORY_NEXT_SEASON = {
@@ -409,13 +386,10 @@ C3G('C3.7', 3, 'C3.8');
 C3G('C3.8', 4, 'C3.9', { win: [['saleem', 'Halfway. Good. Come to my office tomorrow, all of you. I have an idea.']], loss: [['saleem', 'Halfway, and still in it. Come to my office tomorrow. I have an idea.']] });
 scn('C3.9', { kind: 'scene', name: 'Tickets', talk: { at: 'office', who: 'saleem' }, next: 'C3.10', lines: [
   ['narr', 'Sh. Saleem’s office, the next day. A box of printed tickets sits on the desk.'],
-  ['saleem', 'The school wing needs money, and people want to see this team. So we give them a show.'],
-  ['saleem', 'An all-star game. Saturday night, in our gym. Tickets ten dollars, kids free.'],
-  ['you', 'Who do we play?'],
-  ['saleem', 'Al-Furqan agreed to send their best two. Rayyan said, and I quote, “we’re going to embarrass you.”'],
-  ['saleem', 'One rule: dunks only. A jumper counts nothing. Musa suggested it.'],
-  ['musa', 'I suggested it!'],
-  ['saleem', 'Every dunk brings the crowd up. The louder the crowd, the more the uncles give. Go and practise your dunks.']] });
+  ['saleem', 'The school wing needs money, and people want to see this team. Saturday night: an all-star game in our gym. Al-Furqan sends their best two.'],
+  ['saleem', 'One rule: dunks only. A jumper counts nothing. Every dunk brings the crowd up, and the louder the crowd, the more the uncles give.'],
+  ['you', 'Dunks only. Musa’s idea?'],
+  ['saleem', 'Musa’s idea. Go and practise your dunks.']] });
 scn('C3.10', { kind: 'play', name: 'All-star game', mode: 'allstar', win: 'C3.11', loss: 'C3.11',
   pre: [['narr', 'Saturday night. The bleachers are full. Someone’s auntie has made a banner: DUNK FOR THE KIDS.'], ['rayyan', 'Dunks only. You sure you want this?'], ['musa', 'We were born for this.'], ['jamil', 'Nobody in this gym was born for this. Bend your knees.']],
   winLines: [['narr', 'The final dunk, and the gym explodes.'], ['rayyan', 'Okay. That was a good show. Tell no one I said that.']],
@@ -438,12 +412,9 @@ scn('C3.22', { kind: 'scene', name: 'State champions', effect: 'title', stage: 1
 scn('C3.23', { kind: 'scene', name: 'The invitation', talk: { at: 'office', who: 'saleem' }, next: 'C4.1', hub: true, lines: [
   ['narr', 'A week later. An envelope on Sh. Saleem’s desk, with a gold seal.'],
   ['saleem', '“Masjid Al-Amanah is invited to the National Masjid Tournament. Sixteen teams. Single elimination.”'],
-  ['jamil', 'Single elimination. One bad night and we go home.'],
-  ['ilyas', 'Then we don’t have a bad night.'],
-  ['jamil', '…When did you get so confident?'],
-  ['ilyas', 'I learned it from somebody. He yells a lot.'],
-  ['karim', 'The fundraiser is closer than ever. If we do well at Nationals, the school wing could open this year.'],
-  ['dawud', 'Pack the big thermos. We’re going on a trip.']] });
+  ['saleem', 'One bad night and we go home. And if we do well, the school wing could open this year.'],
+  ['you', 'Then we don’t have a bad night.'],
+  ['saleem', 'In sha Allah. Tell the brothers. And tell Imam Dawud to pack the big thermos.']] });
 scn('C3.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: () => C.story.cp || 'C3.2', hub: true, lines: () => storyNextSeasonLines(3) });
 
 STORY_WALKS['C3.1'] = { title: 'Back at the gym', npcs: [
@@ -461,15 +432,10 @@ STORY_WALKS['C3.4'] = { title: 'Practice', free: true, npcs: [
 
 function storyStateIntro() {
   const b = C.bracket, att = C.story.att || 0, o = storyOpp();
-  const L = att ? [['saleem', 'A new State season. Same table, same intention.'], ['jamil', 'This year, the top four. Then the trophy.']] : [
-    ['saleem', 'Brothers. As masjid league champions, we’re in the State Masjid Championship.'],
-    ['saleem', 'Nine masjids from across the state. We play each of them once. Eight games.'],
-    ['saleem', 'The top four go to the semifinals: first plays fourth, second plays third. Then the final.'],
-    ['anas', 'Eight games is a long season. We look after our bodies.'],
-    ['musa', 'And our hamstrings. Qari Anas told me hamstrings are an amanah.'],
-    ['jamil', 'Al-Furqan is in it too. Rayyan’s uncle called me. To “wish me luck.”'],
-    ['dawud', 'Then we wish them luck back. And beat them.']];
-  if (b && b.pools && !att) L.push(['saleem', 'Every masjid in the table is here: ' + b.pools[0].filter(i => i > 1).map(i => teamOf(1, i).name.replace('Masjid ', '')).join(', ') + ', and Al-Furqan.']);
+  const L = att ? [['saleem', 'A new State season. Same table, same intention.']] : [
+    ['saleem', 'As masjid league champions, we’re in the State Masjid Championship. Nine masjids from across the state.'],
+    ['saleem', 'We play each of them once: eight games. The top four go to the semifinals, then the final.'],
+    ['jamil', 'Al-Furqan is in it too. Rayyan’s uncle called me. To “wish me luck.”']];
   if (o) L.push(['saleem', 'First up: ' + o.team.name + '. Pick who plays beside you.']);
   return L;
 }
@@ -495,14 +461,11 @@ function storyTableResultLines() {
 }
 function storyStateFinalPrep() {
   const b = C.bracket, f = b && b.rounds[1] && b.rounds[1][0], oid = f ? (f.a === 0 ? f.b : f.a) : 1, opp = teamOf(1, oid);
-  const L = [['narr', 'The night before the State final. Sh. Saleem’s office, the door open, the gym dark behind it.'],
-    ['saleem', 'Tomorrow it’s ' + opp.name + '. Sit for a minute.'],
-    ['saleem', 'When I came back from Madinah, this gym had one working light and a rim bent like a banana.'],
-    ['saleem', 'Now look. Lights. Bleachers full every night. Kids who want to be you.'],
-    ['you', 'And a school wing on the way.'],
-    ['saleem', 'In sha Allah. Whatever happens tomorrow, the masjid already won. But I would still like that trophy.']];
-  if (oid === 1) L.push(['saleem', 'And it’s Rayyan. Play him straight. He hates that.']);
-  return L;
+  return [['narr', 'The night before the State final. Sh. Saleem’s office, the door open, the gym dark behind it.'],
+    ['saleem', 'Tomorrow it’s ' + opp.name + '. When I came back from Madinah, this gym had one working light and a rim bent like a banana.'],
+    ['saleem', 'Now look. Lights, bleachers full every night, kids who want to be you. Whatever happens tomorrow, the masjid already won.'],
+    ['you', 'But we’d still like that trophy.'],
+    ['saleem', oid === 1 ? 'We would. And it’s Rayyan: play him straight. He hates that.' : 'We would. In sha Allah.']];
 }
 // C3.14: the teammate who leaves for Hajj (his name came up this year), and his line when he's back for the playoffs.
 // Hajj itself is never shown: he talks about it before he goes, and comes back a hajji.
@@ -529,20 +492,20 @@ scn('C4.4', { kind: 'play', name: 'National quarterfinal', bracket: true, stakes
 scn('C4.5', { kind: 'scene', name: 'The last four', next: 'C4.6', lines: () => storyNatReact(1) });
 scn('C4.6', { kind: 'play', name: 'National semifinal', bracket: true, stakes: 'must-win', win: 'C4.7', out: 'C4.NS', loss: 'C4.NS',
   winLines: [['saleem', 'THE FINAL! Allahu akbar!'], ['jamil', 'I need to sit down.']], lossLines: [['saleem', 'One game from the final. It hurts because we cared. Good.']] });
-scn('C4.7', { kind: 'scene', name: 'The night before the final', next: 'C4.8', lines: () => storyNatReact(2).concat([
-  ['narr', 'Late that night, the team prays Isha together in the hotel’s small prayer room, then sits up talking.'],
+scn('C4.7', { kind: 'scene', name: 'The night before the final', next: 'C4.8', lines: () => [
+  ['narr', 'The night before the National final. After Isha in the hotel’s small prayer room, the team sits up talking.'],
+  ...storyNatReact(2).filter(l => l[0] !== 'narr').slice(-1),
   ['ilyas', 'Dad? Thanks for driving us to every single game. Even the ones with traffic.'], ['jamil', '…Go to sleep. Big game tomorrow.'],
-  ['saleem', 'Tomorrow, play for each other. The rest is written already.']]) });
+  ['saleem', 'Tomorrow, play for each other. The rest is written already.']] });
 scn('C4.8', { kind: 'play', name: 'National final', bracket: true, stakes: 'final', win: 'C4.9', out: 'C4.NS', loss: 'C4.NS',
   winLines: [['narr', 'The final buzzer. Al-Amanah are national champions.']], lossLines: [['narr', 'The final buzzer. Second in the whole country.'], ['saleem', 'Second in the nation, brothers. Hold your heads up. We come back.']] });
 scn('C4.9', { kind: 'scene', name: 'National champions', effect: 'title', stage: 2, next: 'C4.10', lines: () => storyTitleLines(2) });
 scn('C4.10', { kind: 'scene', name: 'The Ummah Cup', talk: { at: 'office', who: 'saleem' }, next: 'C5.1', hub: true, lines: [
   ['narr', 'Home again. A video call is waiting on Sh. Saleem’s laptop.'],
-  ['saleem', 'Come in, come in. This was sent from Istanbul this morning.'],
-  ['saleem', '“Masjid Al-Amanah is invited to the Ummah Cup: the best masjid teams from around the world.”'],
+  ['saleem', 'This came from Istanbul this morning. “Masjid Al-Amanah is invited to the Ummah Cup: the best masjid teams in the world.”'],
   ['you', 'The world?'],
-  ['saleem', 'Teams from Cairo, Kuala Lumpur, Sarajevo, Lagos… Brothers who pray the same prayer in a hundred languages.'],
-  ['saleem', 'The school wing is built. Whatever happens at the Cup is a gift. But let’s go and win it anyway.']] });
+  ['saleem', 'Cairo, Kuala Lumpur, Sarajevo, Lagos. Brothers who pray the same prayer in a hundred languages.'],
+  ['saleem', 'The school wing is built. Whatever happens there is a gift. But let’s go and win it anyway.']] });
 scn('C4.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: () => C.story.cp || 'C4.1', hub: true, lines: () => storyNextSeasonLines(4) });
 
 // ---------------------------------------------------------------- Chapter 5: the Ummah Cup (v9.28)
@@ -557,20 +520,21 @@ scn('C5.4', { kind: 'play', name: 'Ummah Cup quarterfinal', bracket: true, stake
 scn('C5.5', { kind: 'scene', name: 'The last four', next: 'C5.6', lines: () => storyCupReact(0) });
 scn('C5.6', { kind: 'play', name: 'Ummah Cup semifinal', bracket: true, stakes: 'must-win', win: 'C5.7', out: 'C5.NS', loss: 'C5.NS',
   winLines: [['saleem', 'THE FINAL OF THE UMMAH CUP!'], ['jamil', 'Somebody hold me up.']], lossLines: [['saleem', 'One game from the final of the world. That’s further than we dreamed.']] });
-scn('C5.7', { kind: 'scene', name: 'One of the top two', next: 'C5.8', lines: () => storyCupReact(1).concat([
+scn('C5.7', { kind: 'scene', name: 'One of the top two', next: 'C5.8', lines: () => [
   ['narr', 'The night before the final, the brothers walk to the masjid by the water for Isha, then sit on its steps until late.'],
+  ...storyCupReact(1).filter(l => l[0] !== 'narr').slice(-2),
   ['saleem', 'Whatever happens tomorrow, look around. A year ago this team was six brothers and a bent rim.'],
-  ['dawud', 'And chai. There was always chai.']]) });
+  ['dawud', 'And chai. There was always chai.']] });
 scn('C5.8', { kind: 'play', name: 'Ummah Cup final', bracket: true, stakes: 'final', win: 'C5.9', out: 'C5.NS', loss: 'C5.NS',
   winLines: [['narr', 'The final buzzer. The hall stands up.']], lossLines: [['narr', 'The final buzzer. Second in the whole world.'], ['saleem', 'Second in the world, brothers. We come back, in sha Allah.']] });
 scn('C5.9', { kind: 'scene', name: 'Champions of the ummah', effect: 'title', stage: 3, next: 'C5.10', lines: () => storyTitleLines(3) });
 scn('C5.10', { kind: 'scene', name: 'Home', next: 'C5.11', lines: [
-  ['narr', 'Home. The gym is packed: uncles on folding chairs, aunties in the bleachers, and the kids of the weekend school in front, in their new classroom T-shirts.'],
+  ['narr', 'Home. The gym is packed, and the kids of the weekend school are in the front row in their new classroom T-shirts.'],
   ['karim', 'Kids! Say salaam to the champions of the world!'],
   ['narr', 'Forty children shout “AS-SALAMU ALAYKUM!” at once. Ammo Jamil has to sit down.'],
-  ['saleem', 'This Cup goes in the trophy case, next to the others. But the real prize is in the new wing, learning Quran on a Saturday morning.'],
-  ['ilyas', 'One of the kids asked me if he can be on the team one day.'], ['jamil', 'What did you tell him?'], ['ilyas', 'Bend your knees.'],
-  ['musa', 'I’m starting a youth league. Saturdays after school. Matching headbands.'], ['ilyas', '…Fine. For the kids, matching headbands.'],
-  ['saleem', 'Akhi. You found a community here. Now you help us build the next one. That’s how a masjid lasts.']] });
+  ['saleem', 'The Cup goes in the case. The real prize is in the new wing, learning Qur’an on a Saturday morning.'],
+  ['ilyas', 'A kid asked me if he can be on the team one day. I told him: bend your knees.'],
+  ['musa', 'I’m starting a youth league. Saturdays. Matching headbands.'], ['ilyas', '…Fine. For the kids.'],
+  ['saleem', '{name}, you found a community here. Now help us build the next one. That’s how a masjid lasts.']] });
 scn('C5.11', { kind: 'scene', name: 'The End', custom: 'credits', next: 'P.1', hub: true });
 scn('C5.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: () => C.story.cp || 'C5.1', hub: true, lines: () => storyNextSeasonLines(5) });

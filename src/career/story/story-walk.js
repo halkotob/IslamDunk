@@ -141,16 +141,17 @@ function swTrackGoals(dt) {
     if (I.D.free) { if (Gym.drill || Gym.overlay || Gym.result || Gym.walk || Gym.fade) return _hud.apply(this, arguments); if (!I.talk) _hud.apply(this, arguments); }
     if (I.lb > 0.01) { const b = 40 * I.lb; g.fillStyle = 'rgba(4,8,12,0.92)'; g.fillRect(-400, 0, W + 800, b); g.fillRect(-400, H - b, W + 800, b); }
     // the checklist: who to meet, or the tutorial's goals
+    I.listBottom = 0;
     const rows = I.D.goals ? I.D.goals.map(q => [I.goals[q.id], q.label + (q.n && !I.goals[q.id] ? '  ' + Math.min(q.id === 'score' ? I.gp.made : I.gc[q.id] || 0, q.n) + '/' + q.n : '')])
       : I.D.npcs.filter(d => d.need).map(d => [I.met[d.id], castDef(d.id).name]);
     if (rows.length) {
       g.save(); g.globalAlpha = 1 - I.lb; g.font = `12px ${BODY}`;
       const rh = Math.max(20, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 12) + 8), w = Math.max(196, ...rows.map(r => g.measureText('✓ ' + r[1]).width + 44));
-      const x0 = TT ? 12 : 132, y0 = TT ? 72 : 12;                       // (clear of the Back button: beside it on a computer, under it on a phone)
+      const x0 = 12, y0 = TT ? 72 : 60;                                  // (v9.31: under the Back button, the left column)
       g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x0, y0, w, 30 + rows.length * rh, 12); g.fill();
       g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(I.D.title || 'Walk around', x0 + 14, y0 + 20);
       rows.forEach(([ok, label], i) => { g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + label, x0 + 16, y0 + 20 + (i + 1) * rh); });
-      g.restore();
+      g.restore(); I.listBottom = y0 + 30 + rows.length * rh + 8;
     }
     for (const id in I.npcs) {
       const p = I.npcs[id], [x, y] = head(p), d = I.defs[id];
@@ -202,10 +203,8 @@ function swPrompt(g, x, y, label, fn) {
   addRect(x - w / 2, y - h, w, h, fn);
 }
 function swHint(g, text, free) {
-  g.font = `12px ${BODY}`; const w = Math.min(W - 40, g.measureText(text).width + 30), y = Input.touchMode ? 12 : free ? H - 128 : H - 40;   // (free walks: above the gym's own bar)
-  if (Input.touchMode) return;                                   // phones: the touch controls own the bottom; the checklist says it
-  g.fillStyle = 'rgba(8,16,24,0.72)'; roundRect(g, W / 2 - w / 2, y, w, 28, 14); g.fill();
-  g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText(fitText(g, text, w - 20), W / 2, y + 19);
+  if (Input.touchMode || !text) return;                          // phones: the touch controls own the screen; the checklist says it
+  Gym.hintText = text;                                           // (v9.31: drawn on the left, under the bar: story-home.js)
 }
 
 // ---------------------------------------------------------------- what people are doing while you walk in
