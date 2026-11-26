@@ -44,6 +44,7 @@ export const STORY_HELPERS = `(() => {
     const lose = typeof o.lose === 'function' ? o.lose(C.story.at) : !!o.lose;
     if (s === 'musalla' && Game.mus && Game.mus.story) {
       for (const id of STORY_MUS_NEED) if (!Game.mus.story.met[id]) { talkTo(MUS_CAST.indexOf(id)); Game.mus.talk = null; }
+      for (const q of (typeof STORY_MUS_GOALS !== 'undefined' ? STORY_MUS_GOALS : [])) Game.mus.story.goals[q.id] = true;
       musallaUpdate(1 / 60); return 'musalla';
     }
     if (s === 'gym' && Gym.drill && Gym.drill.story && M.mini && M.mini.kind === 'horse') {   // a story HORSE (CHAI): won, or lost with o.lose

@@ -64,48 +64,27 @@
   "dialogue/scene/C0.5/1": "9.32.0",
   "dialogue/scene/C0.5/2": "9.32.0",
   "dialogue/scene/C0.5/3": "9.32.0",
-  "dialogue/scene/C1.1/0": "9.22.0",
-  "dialogue/scene/C1.1/1": "9.23.0",
-  "dialogue/scene/C1.1/2": "9.23.0",
-  "dialogue/scene/C1.1/3": "9.23.0",
-  "dialogue/scene/C1.1/4": "9.23.0",
-  "dialogue/scene/C1.3/0": "9.23.0",
-  "dialogue/scene/C1.3/1": "9.23.0",
-  "dialogue/scene/C1.3/2": "9.23.0",
-  "dialogue/scene/C1.3/3": "9.23.0",
-  "dialogue/scene/C1.3/4": "9.23.0",
+  "dialogue/scene/C1.3/lossLines/0": "9.33.0",
+  "dialogue/scene/C1.3/lossLines/1": "9.33.0",
+  "dialogue/scene/C1.3/winLines/0": "9.33.0",
+  "dialogue/scene/C1.3/winLines/1": "9.33.0",
   "dialogue/scene/C1.4/0": "9.23.0",
   "dialogue/scene/C1.4/1": "9.23.0",
   "dialogue/scene/C1.4/2": "9.23.0",
   "dialogue/scene/C1.4/3": "9.23.0",
+  "dialogue/scene/C1.5/0": "9.33.0",
+  "dialogue/scene/C1.5/1": "9.33.0",
+  "dialogue/scene/C1.5/2": "9.33.0",
   "dialogue/scene/C1.6/lossLines/0": "9.23.0",
   "dialogue/scene/C1.6/lossLines/1": "9.23.0",
   "dialogue/scene/C1.6/winLines/0": "9.23.0",
   "dialogue/scene/C1.6/winLines/1": "9.23.0",
-  "dialogue/scene/C1.6/winLines/2": "9.23.0",
   "dialogue/scene/C1.7/0": "9.23.0",
   "dialogue/scene/C1.7/1": "9.23.0",
   "dialogue/scene/C1.7/2": "9.23.0",
   "dialogue/scene/C1.7/3": "9.23.0",
   "dialogue/scene/C1.7/4": "9.23.0",
   "dialogue/scene/C1.7/5": "9.23.0",
-  "dialogue/scene/C1.7/6": "9.23.0",
-  "dialogue/scene/C1.7/7": "9.23.0",
-  "dialogue/scene/C1.7/8": "9.23.0",
-  "dialogue/scene/C1.8/lossLines/0": "9.23.0",
-  "dialogue/scene/C1.8/lossLines/1": "9.23.0",
-  "dialogue/scene/C1.8/winLines/0": "9.23.0",
-  "dialogue/scene/C1.8/winLines/1": "9.23.0",
-  "dialogue/scene/C1.8/winLines/2": "9.23.0",
-  "dialogue/scene/C1.9/0": "9.23.0",
-  "dialogue/scene/C1.9/1": "9.23.0",
-  "dialogue/scene/C1.9/2": "9.23.0",
-  "dialogue/scene/C1.9/3": "9.23.0",
-  "dialogue/scene/C1.9/4": "9.23.0",
-  "dialogue/scene/C1.9/5": "9.23.0",
-  "dialogue/scene/C1.9/6": "9.23.0",
-  "dialogue/scene/C1.9/7": "9.23.0",
-  "dialogue/scene/C1.9/8": "9.23.0",
   "dialogue/scene/C2.10/lossLines/0": "9.23.0",
   "dialogue/scene/C2.10/lossLines/1": "9.23.0",
   "dialogue/scene/C2.10/lossLines/2": "9.23.0",
@@ -581,10 +560,12 @@
   "dialogue/walk/C0.3/saleem/0": "9.22.0",
   "dialogue/walk/C0.3/saleem/1": "9.22.0",
   "dialogue/walk/C0.3/saleem/2": "9.22.0",
-  "dialogue/walk/C1.2/dawud/0": "9.23.0",
-  "dialogue/walk/C1.2/dawud/1": "9.23.0",
-  "dialogue/walk/C1.2/dawud/2": "9.23.0",
-  "dialogue/walk/C1.2/uncle/0": "9.23.0",
+  "dialogue/walk/C1.1/ilyas/0": "9.33.0",
+  "dialogue/walk/C1.1/ilyas/1": "9.33.0",
+  "dialogue/walk/C1.1/jamil/0": "9.33.0",
+  "dialogue/walk/C1.1/jamil/1": "9.33.0",
+  "dialogue/walk/C1.1/saleem/0": "9.33.0",
+  "dialogue/walk/C1.1/saleem/1": "9.33.0",
   "dialogue/walk/C2.1/saleem/0": "9.23.0",
   "dialogue/walk/C2.1/saleem/1": "9.23.0",
   "dialogue/walk/C2.1/saleem/early/0": "9.23.0",
@@ -2100,7 +2081,15 @@
   "text/career/story/story-ch0/the-left-stick-67byp5": "9.32.0",
   "text/career/story/story-ch0/the-stick-on-the-left-bhore3": "9.32.0",
   "text/career/story/story-ch0/w-a-s-d-or-2wsd5h": "9.32.0",
-  "text/career/story/story-data/a-full-gym-3p643i": "9.22.0",
+  "text/career/story/story-ch1/chase-your-rebound-c87jqr": "9.33.0",
+  "text/career/story/story-ch1/in-line-vly80z": "9.33.0",
+  "text/career/story/story-ch1/king-3tj1no": "9.33.0",
+  "text/career/story/story-ch1/king-of-the-court-gcvy86": "9.33.0",
+  "text/career/story/story-ch1/players-left-tf00uw": "9.33.0",
+  "text/career/story/story-ch1/you-re-on-deck-0n6x1w": "9.33.0",
+  "text/career/story/story-ch1/you-re-on-the-spot-br9j4o": "9.33.0",
+  "text/career/story/story-ch1/you-re-out-nitgis": "9.33.0",
+  "text/career/story/story-ch1/you-won-b3fdtr": "9.33.0",
   "text/career/story/story-data/a-new-season-the-gym-axx9xd": "9.29.2",
   "text/career/story/story-data/a-new-state-season-same-1n5d8k": "9.29.2",
   "text/career/story/story-data/after-isha-3lalgs": "9.22.0",
@@ -2117,10 +2106,9 @@
   "text/career/story/story-data/and-the-chai-is-ready-5hvejx": "9.23.0",
   "text/career/story/story-data/and-we-box-out-ki1jgq": "9.23.0",
   "text/career/story/story-data/and-we-box-out-xgq3rb": "9.23.0",
-  "text/career/story/story-data/another-glass-sip-beta-sip-7351pb": "9.23.0",
   "text/career/story/story-data/anything-near-the-rim-is-ejjplk": "9.23.0",
   "text/career/story/story-data/anywhere-ax3m6l": "9.23.0",
-  "text/career/story/story-data/as-salamu-alaykum-you-re-dvl9qj": "9.23.0",
+  "text/career/story/story-data/as-salamu-alaykum-i-m-kqemk9": "9.33.0",
   "text/career/story/story-data/back-at-the-gym-oar9g3": "9.29.2",
   "text/career/story/story-data/back-from-hajj-alhamdulillah-i-bxnoo2": "9.29.2",
   "text/career/story/story-data/back-from-hajj-my-grandmother-erdt6r": "9.29.2",
@@ -2133,21 +2121,21 @@
   "text/career/story/story-data/bro-bro-i-can-t-kvznus": "9.23.0",
   "text/career/story/story-data/bro-you-got-this-i-g9rl7t": "9.23.0",
   "text/career/story/story-data/brothers-alhamdulillah-i-am-goin-jibe1i": "9.29.2",
-  "text/career/story/story-data/can-i-dunk-on-him-pngpk0": "9.23.0",
-  "text/career/story/story-data/chai-with-imam-dawud-kxz729": "9.23.0",
+  "text/career/story/story-data/bucks-for-the-look-bp-rr8qqg": "9.33.0",
   "text/career/story/story-data/champions-of-the-ummah-dycch7": "9.29.2",
   "text/career/story/story-data/come-back-tomorrow-qhtlhf": "9.22.0",
   "text/career/story/story-data/comfortable-sandals-and-a-lot-2dc3ft": "9.29.2",
+  "text/career/story/story-data/cone-dribble-with-ilyas-slq8p4": "9.33.0",
   "text/career/story/story-data/dad-let-s-win-it-74zxzg": "9.23.0",
   "text/career/story/story-data/dad-next-year-i-promise-yryqq8": "9.23.0",
   "text/career/story/story-data/dad-that-s-amazing-mum-ldlz9s": "9.29.2",
   "text/career/story/story-data/don-t-make-me-yell-lxfvfq": "9.23.0",
+  "text/career/story/story-data/drive-to-the-rim-and-hxnp2t": "9.33.0",
+  "text/career/story/story-data/drive-to-the-rim-then-l8m9l1": "9.33.0",
   "text/career/story/story-data/dunks-only-you-sure-you-td2xf0": "9.29.2",
+  "text/career/story/story-data/earn-your-spot-1pks8u": "9.33.0",
   "text/career/story/story-data/elbow-in-follow-through-and-xxm0pb": "9.23.0",
   "text/career/story/story-data/enforcer-a0qsu1": "9.22.0",
-  "text/career/story/story-data/everybody-here-taught-me-how-8e5emf": "9.23.0",
-  "text/career/story/story-data/everybody-up-lightning-five-of-w7d1u1": "9.23.0",
-  "text/career/story/story-data/everyone-in-the-gym-met-ukz6he": "9.23.0",
   "text/career/story/story-data/exactly-c4lclj": "9.23.0",
   "text/career/story/story-data/father-and-son-a-gym-sf1mbo": "9.23.0",
   "text/career/story/story-data/father-and-son-db347e": "9.23.0",
@@ -2158,14 +2146,15 @@
   "text/career/story/story-data/first-practice-vbajje": "9.23.0",
   "text/career/story/story-data/first-real-practice-three-drills-4gjvrb": "9.23.0",
   "text/career/story/story-data/first-up-tb3shg": "9.29.2",
-  "text/career/story/story-data/five-of-us-two-balls-twlcgj": "9.23.0",
   "text/career/story/story-data/floor-general-pr1e3x": "9.22.0",
   "text/career/story/story-data/four-letters-a-long-night-5visak": "9.29.2",
   "text/career/story/story-data/four-letters-that-s-barely-w32jva": "9.29.2",
+  "text/career/story/story-data/free-throws-with-ammo-jamil-9k639b": "9.33.0",
   "text/career/story/story-data/go-get-em-i-m-0m8v71": "9.23.0",
-  "text/career/story/story-data/go-on-meet-everybody-then-nhlscv": "9.23.0",
+  "text/career/story/story-data/go-to-the-musalla-xi469i": "9.33.0",
   "text/career/story/story-data/good-eyes-up-brothers-ppcxvo": "9.23.0",
   "text/career/story/story-data/good-luck-tonight-you-ll-npdzuc": "9.23.0",
+  "text/career/story/story-data/grab-a-rebound-3mnqpv": "9.33.0",
   "text/career/story/story-data/group-game-1-e03hk1": "9.23.0",
   "text/career/story/story-data/group-game-2-d64oh4": "9.23.0",
   "text/career/story/story-data/group-game-3-dg4a63": "9.23.0",
@@ -2174,7 +2163,9 @@
   "text/career/story/story-data/hajj-mabroor-and-just-in-aqzldi": "9.29.2",
   "text/career/story/story-data/hajj-mabroor-in-advance-ustath-9eb06o": "9.29.2",
   "text/career/story/story-data/hajj-mabroor-to-me-and-0vdz3d": "9.29.2",
-  "text/career/story/story-data/i-also-play-center-tall-a8y0tq": "9.23.0",
+  "text/career/story/story-data/hold-k-let-go-at-4q6ntn": "9.33.0",
+  "text/career/story/story-data/hold-shift-while-you-move-qwq4rv": "9.33.0",
+  "text/career/story/story-data/hold-shoot-let-go-at-oqr4y3": "9.33.0",
   "text/career/story/story-data/i-am-slow-so-i-7oav2c": "9.23.0",
   "text/career/story/story-data/i-can-t-run-like-5c9777": "9.23.0",
   "text/career/story/story-data/i-don-t-know-what-rwfgqm": "9.29.2",
@@ -2194,9 +2185,7 @@
   "text/career/story/story-data/i-will-recite-the-talbiyah-3j0umy": "9.29.2",
   "text/career/story/story-data/if-anyone-gets-past-me-mvuqb7": "9.23.0",
   "text/career/story/story-data/if-i-miss-a-dunk-t5gsgu": "9.23.0",
-  "text/career/story/story-data/if-there-s-an-argument-mb1vfc": "9.23.0",
   "text/career/story/story-data/if-you-dunk-i-m-arfcph": "9.23.0",
-  "text/career/story/story-data/imam-dawud-is-at-the-ipllg7": "9.23.0",
   "text/career/story/story-data/in-sha-allah-mt4uno": "9.23.0",
   "text/career/story/story-data/in-the-table-2ik49v": "9.29.2",
   "text/career/story/story-data/into-the-quarterfinals-gbolp1": "9.29.2",
@@ -2207,18 +2196,19 @@
   "text/career/story/story-data/like-the-first-night-cg3ohp": "9.23.0",
   "text/career/story/story-data/listen-to-me-you-play-ukxft1": "9.23.0",
   "text/career/story/story-data/listen-we-defend-first-points-r1h2xc": "9.23.0",
-  "text/career/story/story-data/make-a-basket-at-the-g9vef2": "9.23.0",
+  "text/career/story/story-data/loser-stacks-the-chairs-42vbpt": "9.33.0",
+  "text/career/story/story-data/make-3-baskets-zttyr9": "9.33.0",
+  "text/career/story/story-data/make-a-layup-olce5f": "9.33.0",
   "text/career/story/story-data/make-du-a-then-make-oqswwl": "9.23.0",
-  "text/career/story/story-data/make-it-before-the-man-3y46hi": "9.23.0",
   "text/career/story/story-data/making-the-team-mho4y0": "9.22.0",
   "text/career/story/story-data/mandatory-practice-everybody-tal-fmircm": "9.23.0",
   "text/career/story/story-data/masjid-league-champions-0kxciw": "9.23.0",
   "text/career/story/story-data/masjid-league-jnooas": "9.22.0",
   "text/career/story/story-data/may-allah-accept-it-from-3npfe3": "9.29.2",
   "text/career/story/story-data/me-good-choice-finally-someone-sfbuxa": "9.23.0",
-  "text/career/story/story-data/meet-everyone-try-the-gym-6nm5u1": "9.23.0",
   "text/career/story/story-data/meet-the-gym-x75lme": "9.23.0",
-  "text/career/story/story-data/mostly-about-inheritance-sometim-95mjxl": "9.23.0",
+  "text/career/story/story-data/miss-a-shot-and-catch-pb1k0s": "9.33.0",
+  "text/career/story/story-data/miss-a-shot-then-get-axy30c": "9.33.0",
   "text/career/story/story-data/mufti-abdullah-qi33wl": "9.22.0",
   "text/career/story/story-data/musa-not-long-ago-you-ubleqg": "9.29.2",
   "text/career/story/story-data/my-son-going-for-hajj-fgu73d": "9.29.2",
@@ -2235,17 +2225,17 @@
   "text/career/story/story-data/next-year-we-go-again-wsgspf": "9.29.2",
   "text/career/story/story-data/nineteen-years-i-wait-one-dh161s": "9.23.0",
   "text/career/story/story-data/nineteen-years-mni5fr": "9.23.0",
-  "text/career/story/story-data/nobody-holds-the-court-on-9itrca": "9.23.0",
+  "text/career/story/story-data/nobody-argues-the-score-with-791rd3": "9.33.0",
   "text/career/story/story-data/nobody-in-this-gym-was-opnphr": "9.29.2",
   "text/career/story/story-data/of-course-it-is-lv3e8k": "9.29.2",
   "text/career/story/story-data/off-to-hajj-kvu3vu": "9.29.2",
   "text/career/story/story-data/old-head-playmaker-tu278h": "9.22.0",
   "text/career/story/story-data/one-more-round-of-shots-mdjt3x": "9.22.0",
   "text/career/story/story-data/one-of-the-top-two-8j4gze": "9.29.2",
-  "text/career/story/story-data/one-on-one-first-to-uysobd": "9.23.0",
   "text/career/story/story-data/our-coach-says-you-re-1ikwp2": "9.23.0",
   "text/career/story/story-data/our-semifinal-06950n": "9.29.2",
   "text/career/story/story-data/pass-first-shoot-second-pray-439zwm": "9.23.0",
+  "text/career/story/story-data/people-bring-me-their-questions-3tpowq": "9.33.0",
   "text/career/story/story-data/pick-someone-else-akhi-elbow-p13vmy": "9.29.2",
   "text/career/story/story-data/pick-someone-else-akhi-i-7mzohz": "9.29.2",
   "text/career/story/story-data/pick-someone-else-akhi-i-azhfml": "9.29.2",
@@ -2256,30 +2246,37 @@
   "text/career/story/story-data/practice-the-next-night-halfway-q3rpeh": "9.23.0",
   "text/career/story/story-data/practice-with-intention-akhi-eve-bn3pj8": "9.22.0",
   "text/career/story/story-data/push-the-pace-their-legs-w5wv5e": "9.23.0",
+  "text/career/story/story-data/push-the-stick-past-the-wxsgek": "9.33.0",
   "text/career/story/story-data/q-opens-the-drills-eeg2ss": "9.23.0",
-  "text/career/story/story-data/q-opens-the-drills-finish-h79xpd": "9.23.0",
   "text/career/story/story-data/quick-guard-tdk5q1": "9.22.0",
+  "text/career/story/story-data/read-from-the-qur-an-jvjlag": "9.33.0",
   "text/career/story/story-data/read-my-eyes-when-i-k6zjs0": "9.23.0",
   "text/career/story/story-data/ready-for-game-2-h0vq7l": "9.23.0",
   "text/career/story/story-data/round-of-16-uwulfn": "9.29.2",
   "text/career/story/story-data/salaam-al-amanah-my-uncle-5i6i6w": "9.23.0",
   "text/career/story/story-data/same-as-always-akhi-bismillah-42r5mm": "9.23.0",
   "text/career/story/story-data/saturday-night-the-bleachers-are-ltmg0w": "9.29.2",
-  "text/career/story/story-data/shoot-around-make-a-basket-rig98w": "9.23.0",
+  "text/career/story/story-data/sh-saleem-at-his-office-abympw": "9.33.0",
   "text/career/story/story-data/shoot-with-confidence-the-kids-q7gclp": "9.23.0",
   "text/career/story/story-data/shooter-4wm82v": "9.22.0",
   "text/career/story/story-data/sit-sit-at-my-age-8l1c9z": "9.29.2",
   "text/career/story/story-data/so-my-grandmother-is-going-2mp4so": "9.29.2",
-  "text/career/story/story-data/sometimes-it-goes-in-mostly-95a4lb": "9.23.0",
+  "text/career/story/story-data/spend-your-bp-on-the-eeagpf": "9.33.0",
+  "text/career/story/story-data/sprint-the-length-of-the-kogoii": "9.33.0",
   "text/career/story/story-data/state-champions-q3x15m": "9.29.2",
   "text/career/story/story-data/state-final-0fzu4e": "9.29.2",
   "text/career/story/story-data/state-league-xcxjvn": "9.22.0",
   "text/career/story/story-data/state-semifinal-ne7f1g": "9.29.2",
+  "text/career/story/story-data/talk-to-ammo-jamil-e-slfsxl": "9.33.0",
+  "text/career/story/story-data/talk-to-ammo-jamil-he10m3": "9.33.0",
+  "text/career/story/story-data/talk-to-ilyas-bahbc8": "9.33.0",
+  "text/career/story/story-data/talk-to-ilyas-e-kv1wuq": "9.33.0",
+  "text/career/story/story-data/talk-to-sh-saleem-6r1fe8": "9.33.0",
+  "text/career/story/story-data/talk-to-sh-saleem-e-dz2b22": "9.33.0",
   "text/career/story/story-data/tap-drills-pick-one-i1vtxd": "9.23.0",
   "text/career/story/story-data/team-bonding-chai-rv11d4": "9.29.2",
   "text/career/story/story-data/the-breaker-again-nineteen-years-ofux7k": "9.23.0",
   "text/career/story/story-data/the-chai-urn-is-empty-r0zs8y": "9.29.2",
-  "text/career/story/story-data/the-cones-are-by-the-nqb5d4": "9.23.0",
   "text/career/story/story-data/the-draw-yrvuvq": "9.29.2",
   "text/career/story/story-data/the-end-ej0dqh": "9.29.2",
   "text/career/story/story-data/the-final-push-ydnutc": "9.23.0",
@@ -2292,6 +2289,8 @@
   "text/career/story/story-data/the-last-league-game-6955uh": "9.29.2",
   "text/career/story/story-data/the-last-league-game-al-uaucvv": "9.29.2",
   "text/career/story/story-data/the-masjid-league-lt270n": "9.23.0",
+  "text/career/story/story-data/the-mihrab-is-at-the-i8k919": "9.33.0",
+  "text/career/story/story-data/the-mushaf-is-on-the-egae69": "9.33.0",
   "text/career/story/story-data/the-night-before-the-final-v9it8m": "9.29.2",
   "text/career/story/story-data/the-office-dg2eo4": "9.23.0",
   "text/career/story/story-data/the-state-league-hivzwq": "9.29.2",
@@ -2304,7 +2303,6 @@
   "text/career/story/story-data/the-ummah-cup-h6h4q8": "9.29.2",
   "text/career/story/story-data/the-uncles-are-on-the-exupoe": "9.31.0",
   "text/career/story/story-data/then-we-settle-it-the-s5uhzf": "9.29.2",
-  "text/career/story/story-data/then-you-know-everything-bismill-wh5fk6": "9.23.0",
   "text/career/story/story-data/this-is-a-must-win-8dgorp": "9.23.0",
   "text/career/story/story-data/throw-it-up-anywhere-near-cuit5a": "9.23.0",
   "text/career/story/story-data/tickets-4kxade": "9.29.2",
@@ -2314,10 +2312,10 @@
   "text/career/story/story-data/ummah-cup-final-onv35j": "9.29.2",
   "text/career/story/story-data/ummah-cup-quarterfinal-2hv419": "9.29.2",
   "text/career/story/story-data/ummah-cup-semifinal-ylquy1": "9.29.2",
-  "text/career/story/story-data/ustath-karim-i-teach-the-h2ipsm": "9.23.0",
-  "text/career/story/story-data/wa-alaykum-as-salam-i-upauia": "9.23.0",
-  "text/career/story/story-data/walk-to-the-whiteboard-and-lzy9t6": "9.23.0",
-  "text/career/story/story-data/walk-to-the-whiteboard-press-ixxvo2": "9.23.0",
+  "text/career/story/story-data/ustath-karim-i-teach-the-tonj1h": "9.33.0",
+  "text/career/story/story-data/wa-alaykum-as-salam-i-1szxza": "9.33.0",
+  "text/career/story/story-data/walk-to-the-musalla-door-e8achx": "9.33.0",
+  "text/career/story/story-data/walk-to-the-musalla-door-ej87c8": "9.33.0",
   "text/career/story/story-data/walks-in-back-from-hajj-uc7gdm": "9.29.2",
   "text/career/story/story-data/we-didn-t-get-out-rvoavj": "9.23.0",
   "text/career/story/story-data/we-learn-we-practice-and-32qtzv": "9.23.0",
@@ -2329,20 +2327,20 @@
   "text/career/story/story-data/we-would-in-sha-allah-2g1j01": "9.31.0",
   "text/career/story/story-data/whatever-happens-tonight-maghrib-kniel6": "9.23.0",
   "text/career/story/story-data/whatever-happens-we-already-won-euns6s": "9.23.0",
+  "text/career/story/story-data/when-you-re-done-here-6cf631": "9.33.0",
   "text/career/story/story-data/who-s-going-to-make-kvwuzh": "9.29.2",
   "text/career/story/story-data/whoever-you-play-beside-tonight-k4oxwx": "9.23.0",
   "text/career/story/story-data/why-we-play-7jncrj": "9.23.0",
+  "text/career/story/story-data/win-and-you-earn-halal-h6hs6a": "9.33.0",
   "text/career/story/story-data/win-or-lose-the-chai-m940d4": "9.23.0",
   "text/career/story/story-data/within-reason-3e42kc": "9.23.0",
   "text/career/story/story-data/won-and-ku460u": "9.29.2",
   "text/career/story/story-data/yes-let-s-run-nobody-ogk8pq": "9.23.0",
-  "text/career/story/story-data/yo-the-other-new-guy-qlczw9": "9.23.0",
   "text/career/story/story-data/you-again-good-rebound-for-k4kose": "9.22.0",
   "text/career/story/story-data/you-and-me-next-game-rw6jzr": "9.23.0",
   "text/career/story/story-data/young-legs-old-head-we-7mh7dm": "9.23.0",
   "text/career/story/story-data/your-mum-is-already-crying-wmh283": "9.29.2",
-  "text/career/story/story-data/your-stats-on-the-whiteboard-cn3j26": "9.23.0",
-  "text/career/story/story-data/zubair-i-memorised-the-quran-3rmuuk": "9.23.0",
+  "text/career/story/story-data/zubair-i-memorised-the-qur-s5oblr": "9.33.0",
   "text/career/story/story-home/back-to-the-gym-7p4ct7": "9.31.0",
   "text/career/story/story-home/dunks-only-a-jumper-or-wbu0ku": "9.31.0",
   "text/career/story/story-home/enter-or-tap-back-to-bjpuqn": "9.31.0",
@@ -2604,7 +2602,6 @@
   "text/career/story/story-walk/as-salamu-alaykum-go-on-eytt1w": "9.29.2",
   "text/career/story/story-walk/come-back-when-you-re-ywwx2t": "9.22.0",
   "text/career/story/story-walk/go-and-talk-to-35z2m9": "9.22.0",
-  "text/career/story/story-walk/meet-the-musalla-trt4fk": "9.23.0",
   "text/career/story/story-walk/w-a-s-d-to-wz7dlq": "9.22.0",
   "text/career/story/story-walk/wa-alaykum-as-salam-akhi-kja1ph": "9.29.2",
   "text/career/story/story-walk/walk-around-ggum6h": "9.22.0",
@@ -5956,6 +5953,146 @@
    "version": "9.32.0",
    "was": "9.22.0"
   },
+  "dialogue/scene/C1.1/0": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.22.0"
+  },
+  "dialogue/scene/C1.1/1": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.1/2": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.1/3": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.1/4": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.3/0": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.3/1": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.3/2": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.3/3": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.3/4": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.6/winLines/2": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.7/6": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.7/7": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.7/8": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.8/lossLines/0": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.8/lossLines/1": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.8/winLines/0": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.8/winLines/1": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.8/winLines/2": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.9/0": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.9/1": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.9/2": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.9/3": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.9/4": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.9/5": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.9/6": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.9/7": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/scene/C1.9/8": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "dialogue/scene/C2.16/7": {
    "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
    "version": "9.31.0",
@@ -7225,6 +7362,26 @@
    "reason": "v9.32: Chapter 0 rebuilt in the new order (REFINE-PLAN.md, release 3)",
    "version": "9.32.0",
    "was": "9.22.0"
+  },
+  "dialogue/walk/C1.2/dawud/0": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/walk/C1.2/dawud/1": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/walk/C1.2/dawud/2": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "dialogue/walk/C1.2/uncle/0": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
   },
   "screen/career-intro-outside-the-masjid/desktop": {
    "reason": "9.22.0: the career story replaced the calendar, the neighbourhood, Jumu'ah, the old intro, the story threads, goals and badges, and the old cast in career",
@@ -9956,6 +10113,11 @@
    "version": "9.22.0",
    "was": "8.6.0"
   },
+  "text/career/story/story-data/a-full-gym-3p643i": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.22.0"
+  },
   "text/career/story/story-data/a-new-season-the-national-y6nyk9": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
@@ -9976,6 +10138,26 @@
    "version": "9.31.0",
    "was": "9.29.2"
   },
+  "text/career/story/story-data/another-glass-sip-beta-sip-7351pb": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/as-salamu-alaykum-you-re-dvl9qj": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/can-i-dunk-on-him-pngpk0": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/chai-with-imam-dawud-kxz729": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "text/career/story/story-data/dad-you-said-good-game-t7tjau": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
@@ -9991,9 +10173,34 @@
    "version": "9.31.0",
    "was": "9.29.2"
   },
+  "text/career/story/story-data/everybody-here-taught-me-how-8e5emf": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/everybody-up-lightning-five-of-w7d1u1": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/everyone-in-the-gym-met-ukz6he": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/five-of-us-two-balls-twlcgj": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "text/career/story/story-data/from-a-gym-with-a-pah5zk": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/go-on-meet-everybody-then-nhlscv": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
    "was": "9.23.0"
   },
   "text/career/story/story-data/green-on-the-meter-is-c7dd99": {
@@ -10006,6 +10213,11 @@
    "version": "9.31.0",
    "was": "9.23.0"
   },
+  "text/career/story/story-data/i-also-play-center-tall-a8y0tq": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "text/career/story/story-data/i-said-it-to-everybody-ggq4ae": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
@@ -10016,9 +10228,29 @@
    "version": "9.29.2",
    "was": "9.23.0"
   },
+  "text/career/story/story-data/if-there-s-an-argument-mb1vfc": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/imam-dawud-is-at-the-ipllg7": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "text/career/story/story-data/listen-for-it-and-watch-g6qcxs": {
    "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
    "version": "9.31.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/make-a-basket-at-the-g9vef2": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/make-it-before-the-man-3y46hi": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
    "was": "9.23.0"
   },
   "text/career/story/story-data/make-two-baskets-kx928q": {
@@ -10034,6 +10266,16 @@
   "text/career/story/story-data/masjid-al-amanah-state-champions-3qcme8": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/meet-everyone-try-the-gym-6nm5u1": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/mostly-about-inheritance-sometim-95mjxl": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
    "was": "9.23.0"
   },
   "text/career/story/story-data/move-around-the-floor-shlpe8": {
@@ -10056,6 +10298,11 @@
    "version": "9.29.2",
    "was": "9.23.0"
   },
+  "text/career/story/story-data/nobody-holds-the-court-on-9itrca": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "text/career/story/story-data/nobody-move-to-the-switch-plwwc5": {
    "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
    "version": "9.31.0",
@@ -10066,9 +10313,19 @@
    "version": "9.29.2",
    "was": "9.23.0"
   },
+  "text/career/story/story-data/one-on-one-first-to-uysobd": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "text/career/story/story-data/out-of-the-national-tournament-6zw3y8": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/q-opens-the-drills-finish-h79xpd": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
    "was": "9.23.0"
   },
   "text/career/story/story-data/say-salaam-dfiobx": {
@@ -10080,6 +10337,11 @@
    "reason": "v9.32: Chapter 0 rebuilt in the new order (REFINE-PLAN.md, release 3)",
    "version": "9.32.0",
    "was": "9.22.0"
+  },
+  "text/career/story/story-data/shoot-around-make-a-basket-rig98w": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
   },
   "text/career/story/story-data/shoot-around-move-sprint-get-4y41j5": {
    "reason": "v9.32: Chapter 0 rebuilt in the new order (REFINE-PLAN.md, release 3)",
@@ -10096,6 +10358,11 @@
    "version": "9.32.0",
    "was": "9.22.0"
   },
+  "text/career/story/story-data/sometimes-it-goes-in-mostly-95a4lb": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "text/career/story/story-data/sprint-hold-l-av59sy": {
    "reason": "v9.32: Chapter 0 rebuilt in the new order (REFINE-PLAN.md, release 3)",
    "version": "9.32.0",
@@ -10110,6 +10377,11 @@
    "reason": "v9.32: Chapter 0 rebuilt in the new order (REFINE-PLAN.md, release 3)",
    "version": "9.32.0",
    "was": "9.22.0"
+  },
+  "text/career/story/story-data/the-cones-are-by-the-nqb5d4": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
   },
   "text/career/story/story-data/the-kids-made-us-a-bse194": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
@@ -10131,6 +10403,11 @@
    "version": "9.29.2",
    "was": "9.23.0"
   },
+  "text/career/story/story-data/then-you-know-everything-bismill-wh5fk6": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "text/career/story/story-data/there-he-is-go-say-u6hxsg": {
    "reason": "v9.32: Chapter 0 rebuilt in the new order (REFINE-PLAN.md, release 3)",
    "version": "9.32.0",
@@ -10146,6 +10423,16 @@
    "version": "9.29.2",
    "was": "9.23.0"
   },
+  "text/career/story/story-data/ustath-karim-i-teach-the-h2ipsm": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/wa-alaykum-as-salam-i-upauia": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "text/career/story/story-data/walk-to-the-water-cooler-hlsnnu": {
    "reason": "v9.32: Chapter 0 rebuilt in the new order (REFINE-PLAN.md, release 3)",
    "version": "9.32.0",
@@ -10154,6 +10441,16 @@
   "text/career/story/story-data/walk-to-the-water-cooler-yiqtpu": {
    "reason": "v9.32: Chapter 0 rebuilt in the new order (REFINE-PLAN.md, release 3)",
    "version": "9.32.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/walk-to-the-whiteboard-and-lzy9t6": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/walk-to-the-whiteboard-press-ixxvo2": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
    "was": "9.23.0"
   },
   "text/career/story/story-data/water-at-the-cooler-m1jlso": {
@@ -10166,9 +10463,24 @@
    "version": "9.29.2",
    "was": "9.23.0"
   },
+  "text/career/story/story-data/yo-the-other-new-guy-qlczw9": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
   "text/career/story/story-data/you-looked-at-me-when-8qy2e2": {
    "reason": "v9.24 to v9.29: career story lines rewritten (Hajj, walk-up talks, the teammate pick)",
    "version": "9.29.2",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/your-stats-on-the-whiteboard-cn3j26": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
+  },
+  "text/career/story/story-data/zubair-i-memorised-the-quran-3rmuuk": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
    "was": "9.23.0"
   },
   "text/career/story/story-league/al-furqan-is-in-our-9z2oow": {
@@ -10255,6 +10567,11 @@
    "reason": "v9.31: dialogue trimmed to the length caps (SCENES.md Rules)",
    "version": "9.31.0",
    "was": "9.29.2"
+  },
+  "text/career/story/story-walk/meet-the-musalla-trt4fk": {
+   "reason": "9.33.0: Chapter 1 rebuilt (new C1.1-C1.7 order, lean mini-game HUDs)",
+   "version": "9.33.0",
+   "was": "9.23.0"
   },
   "text/career/v918-hub-first/play-next-game-kq2lpi": {
    "reason": "9.22.0: the career story replaced the calendar, the neighbourhood, Jumu'ah, the old intro, the story threads, goals and badges, and the old cast in career",

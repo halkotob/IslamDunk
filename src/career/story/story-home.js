@@ -125,7 +125,7 @@ const READY_LOOK = {
 };
 function storyReady(S, go) {
   if (Game.screen !== 'gym') { enterGym(); M.lobbyGym = false; }
-  Gym.story = null; SW = null; Gym.overlay = null; Gym.drill = null;
+  Gym.story = null; SW = null; Gym.overlay = null; Gym.drill = null; Gym.toastT = 0;
   const L = READY_LOOK[S.mode] || { title: S.name, col: GOLD, how: '' };
   Gym.ready = { S, go, look: L, sel: 0 }; SFX.blip && SFX.blip();
 }

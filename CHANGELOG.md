@@ -1,5 +1,32 @@
 # Changelog
 
+## 9.33.0: Career refine 4: Chapter 1 rebuilt
+From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 4). Chapter 1 now runs in the order from your
+notes, in seven scenes (C1.1 to C1.7):
+- **C1.1 Meet the gym.** A free walk with a checklist on the left: sprint, make 3 baskets, a layup, a rebound.
+  - **Ilyas** explains Barakah Points and your stats, then runs you through the cone dribble.
+  - **Ammo Jamil** explains Halal Bucks and cosmetics, then has you shoot ten free throws.
+  - **Sh. Saleem** stands by his office door and explains the drills.
+  - When it's all done the box says "Go to the musalla", a marker floats over the door, and you walk through it.
+- **C1.2 The musalla.**
+  - **Short intros, two lines each:** Ustath Karim mentions cosmetics with examples, Imam Dawud suggests praying, Qari
+    Anas suggests the Qur'an, and the Mufti and Hafiz Zubair say hello.
+  - **Pray and read:** two more checklist items, at the mihrab and the shelf. The checklist is on the left now.
+  - **Musa:** "Lightning, in the gym, now!" Then Lightning's ready prompt.
+- **C1.3 Lightning** in the practice gym. The row of player cards is gone: a small box on the left shows how many
+  players are left and where you are. Afterwards Sh. Saleem asks you to his office.
+- **C1.4 The office.** Four lines with heart: the masjid is small, the community gives when it comes to watch, and
+  every win helps. "We need you to help us win. Come outside with me."
+- **C1.5 On court.** Sh. Saleem tells everyone to play King of the Court for their spots. Straight on to the ready
+  prompt.
+- **C1.6 King of the Court** in the practice gym, against Musa, then Hafiz Zubair, then Qari Anas: all easy, each a
+  little harder than the last. The banner and the standings card are gone; only a streak counter on the left. A loss
+  goes again.
+- **C1.7 The team.** The invite, on court, in six lines.
+- **Fixed:** a story game's settings (the tutorial's prompts, lights out's dark, the dunk counter) no longer carry into
+  the next match.
+- **Saves:** a Chapter 1 save from before this layout starts again at C1.1.
+
 ## 9.32.0: Career refine 3: Chapter 0 rebuilt
 From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 3). Chapter 0 now runs in the order from your
 notes:

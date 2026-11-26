@@ -106,7 +106,7 @@ function tut0() { return M && M.story && M.story.tut; }
 }
 
 // ---------------------------------------------------------------- the gym starts bare; old Chapter 0 saves start over
-const STORY_LAYOUT = 2;                                                // 2: Chapter 0 in the v9.32 order
+const STORY_LAYOUT = 3;                                                // 2: Chapter 0 in the v9.32 order; 3: Chapter 1 in the v9.33 order
 {
   const _fc = freshCareer;
   freshCareer = function () { const c = _fc.apply(this, arguments); if (c.story) c.up = {}; return c; };
@@ -116,7 +116,7 @@ const STORY_LAYOUT = 2;                                                // 2: Cha
   loadCareer = function (key) {
     const raw = readSave(key), lay = (raw && raw.story && raw.story.lay) || 0;   // (the saved layout, before the fresh defaults fill in)
     const r = _lc.apply(this, arguments);
-    if (r && C && C.story && lay < STORY_LAYOUT) {
+    if (r && C && C.story && lay < 2) {
       if (/^C0\./.test(C.story.at || '')) { C.story.at = 'C0.1'; C.story.wp = null; }
       C.story.lay = STORY_LAYOUT;
     }

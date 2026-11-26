@@ -338,32 +338,46 @@ function swPropFront(g, p) {
   BACK.train = function () { if (Game.trainBack) { Game.trainBack = null; Game.screen = 'gym'; return; } return _bt ? _bt.apply(this, arguments) : careerHub(); };
 }
 
-// ---------------------------------------------------------------- C1.5: the musalla walk
-// The musalla's own screen (walk, talk, use things); the five people to meet each introduce themselves first. When
-// everyone is met (and the talk is closed), the story moves on. Esc or the doorway leaves; Continue comes back.
+// ---------------------------------------------------------------- C1.2: the musalla walk
+// The musalla's own screen (walk, talk, use things); the people to meet each introduce themselves first, and you pray
+// and read (v9.33). When it's all done, the scene's closer (Musa) calls everyone out and the story moves on.
 function storyMusallaStart(S) {
   enterGym(); M.lobbyGym = false; openMusalla();
   const wp = C.story.wp && C.story.wp.id === S.id ? C.story.wp : null;
-  Game.mus.story = { S, met: Object.assign({}, wp && wp.met) };
+  Game.mus.story = { S, met: Object.assign({}, wp && wp.met), goals: Object.assign({}, wp && wp.goals) };
 }
 function smusLeft() { const st = Game.mus && Game.mus.story; return st ? STORY_MUS_NEED.filter(id => !st.met[id]) : []; }
+function smusGoalsLeft() { const st = Game.mus && Game.mus.story; return st ? STORY_MUS_GOALS.filter(q => !st.goals[q.id]) : []; }
+function smusSave(st) { C.story.wp = { id: st.S.id, met: Object.assign({}, st.met), goals: Object.assign({}, st.goals) }; saveCareer(); }
 {
   const _tt = talkTo;
   talkTo = function (i) {
     const r = _tt.apply(this, arguments), m = Game.mus, st = m && m.story, id = MUS_CAST[i];
     if (st && STORY_MUS_INTRO[id] && !st.met[id]) {
-      const t = m.talk; t.mode = 'answer'; t.lines = STORY_MUS_INTRO[id].slice(); t.li = 0;
-      st.met[id] = true; C.story.wp = { id: st.S.id, met: Object.assign({}, st.met), goals: {} }; saveCareer();
+      const t = m.talk; t.mode = 'answer'; t.lines = STORY_MUS_INTRO[id].map(storyNameText); t.li = 0;
+      st.met[id] = true; smusSave(st);
     }
+    return r;
+  };
+  const _up = useMusProp;
+  useMusProp = function (m, p) {
+    const r = _up.apply(this, arguments), st = m && m.story, k = p && (p.id === 'mihrab' ? 'pray' : p.id === 'shelf' ? 'read' : null);
+    if (st && k && !st.goals[k]) { st.goals[k] = true; smusSave(st); }
     return r;
   };
   const _mu = musallaUpdate;
   musallaUpdate = function (rdt) {
     const m = Game.mus, st = m && m.story;
     const r = _mu.apply(this, arguments);
-    if (st && Game.mus === m && !m.talk && !smusLeft().length) {
-      const S = st.S, lines = STORY_MUS_NEED.map(id => [id, STORY_MUS_INTRO[id][0]]);
-      Game.mus = null; Game.screen = 'gym'; C.story.wp = null;
+    if (st && Game.mus === m && !m.talk && !m.fx && !m.stalk && !smusLeft().length && !smusGoalsLeft().length) {
+      const S = st.S, lines = STORY_MUS_NEED.map(id => [id, storyNameText(STORY_MUS_INTRO[id][0])]);
+      C.story.wp = null;
+      if (S.closer) {                                                   // he calls everyone out (stalkAdvance moves the story on)
+        const cl = S.closer.map(l => [l[0], storyNameText(l[1])]);
+        m.stalk = { S, who: cl[0][0], at: 'musalla', main: cl, all: lines.concat(cl) }; stalkShow(m.stalk, cl);
+        return r;
+      }
+      Game.mus = null; Game.screen = 'gym';
       storyJournal(S, lines); storyDone(S, 'next');
     }
     return r;
@@ -371,12 +385,13 @@ function smusLeft() { const st = Game.mus && Game.mus.story; return st ? STORY_M
   const _dm = drawMusallaScreen;
   drawMusallaScreen = function (g) {
     _dm.apply(this, arguments);
-    const m = Game.mus, st = m && m.story; if (!st || m.talk) return;
+    const m = Game.mus, st = m && m.story; if (!st || m.talk || m.stalk) return;
+    const rows = STORY_MUS_NEED.map(id => [!!st.met[id], castDef(id).name]).concat(STORY_MUS_GOALS.map(q => [!!st.goals[q.id], q.label]));
     g.font = `12px ${BODY}`; const rh = Math.max(20, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 12) + 8);
-    const w = Math.max(196, ...STORY_MUS_NEED.map(id => g.measureText('✓ ' + castDef(id).name).width + 44)), x0 = W - w - 12, y0 = 8;
-    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x0, y0, w, 30 + STORY_MUS_NEED.length * rh, 12); g.fill();
-    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('Meet the musalla', x0 + 14, y0 + 20);
-    STORY_MUS_NEED.forEach((id, i) => { const ok = !!st.met[id]; g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + castDef(id).name, x0 + 16, y0 + 20 + (i + 1) * rh); });
+    const w = Math.max(196, ...rows.map(r => g.measureText('✓ ' + r[1]).width + 44)), x0 = 12, y0 = Input.touchMode && g === ctx ? 72 : 60;
+    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x0, y0, w, 30 + rows.length * rh, 12); g.fill();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('The musalla', x0 + 14, y0 + 20);
+    rows.forEach(([ok, label], i) => { g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + label, x0 + 16, y0 + 20 + (i + 1) * rh); });
   };
 }
 

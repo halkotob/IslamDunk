@@ -8,7 +8,7 @@ function newMatch(tA, tB, opts = {}) {
   M.aiCfg = opts.aiCfg || null; M.career = !!opts.career; M.practice = opts.practice ? { kind: opts.practice } : null;
   M.gym = !!opts.practice; M.halfCourt = !!opts.practice; M.mustClear = [false, false]; M.cmdHook = null;
   M.fun = opts.attract || opts.career || opts.practice ? null : (opts.fun !== undefined ? opts.fun : activeFun());
-  M.balls = null; M.mini = null; M.miniIds = null; M.teamFouls = [0, 0]; M.ft = null; M.maxDef = 0; M._achEnd = false; M.run = null;
+  M.balls = null; M.mini = null; M.miniIds = null; M.story = null; M.teamFouls = [0, 0]; M.ft = null; M.maxDef = 0; M._achEnd = false; M.run = null;
   M.hot = null; M.hotCd = null; M.highlights = []; M.pendingClips = []; M.dmOverride = null; M.careerL = null; Replay.reset();
   M.players = [...M.teams[0].players, ...M.teams[1].players];
   M.assign = [[0, 1], [0, 1]];
