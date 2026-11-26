@@ -1,9 +1,11 @@
 // v9.22: the career story (src/career/story/, docs/career-overhaul/). Page-side helpers: tests/story-setup.js.
-//   story-ch0      a new career by bot: the creator, C0.1 to C0.6 (the pickup game lost once, then won), lands in
+//   story-ch0      a new career by bot: C0.1 to C0.5 (no ball until you ask to play; the tutorial game: its prompts, the
+//                  catch-up, lost once then won, no rewards card; nothing built), lands in
 //                  Chapter 1 at the hub; every scene in the Journal by ID; each screen drawn on the way; no page errors
-//   story-ch1      Chapter 1 by bot (C1.1 to C1.9, King of the Court lost once, then won), lands at C2.1; the gym walk's corners
-//                  done the real way: the whiteboard opens Upgrade stats and Back returns to the walk, the cooler, the cone
-//                  run, chai with Imam Dawud; Ammo Jamil's and Ilyas's scenes (C1.3, C1.4) inside the walk
+//   story-ch1      Chapter 1 (v9.33 order): the gym walk done the real way (Ilyas's cone dribble and Ammo Jamil's free throws
+//                  start from talking to them, the rebound, the layup, then through the musalla door), the musalla (intros,
+//                  pray, read, Musa calls everyone out, Lightning's ready panel), then by bot to C2.1 with King of the
+//                  Court (the practice gym, Musa, Hafiz Zubair, Qari Anas, the streak counter) lost once, then won
 //   story-ch2      Chapter 2 by bot: the masjid league won, a lost semifinal on the way (next season, back to C2.4), the
 //                  field (Al-Furqan and Rayyan, the masjid teams), lights out, the fundraiser and the title's project; and a
 //                  run out in the group
@@ -16,6 +18,10 @@
 //                  semifinal (back to C5.1), the Cup, the credits, the hub after The End, and Continue into P.1
 //   story-post     after The End: P.1, the replays (a title won again, a run lost, the all-star game, CHAI), all 21
 //                  milestones with their moments, P.4, every prize used in the world, econSelfCheck() empty
+//   story-welcome  New career: the welcome screen and a typed name (and the phone's keys), the creator's Look and
+//                  Game sections, five distinct archetypes and their perks (career games, your player only)
+//   story-rules    the rules: every scene from Chapter 2 on within its length cap, and a run from C0.1 to C5.1 with no
+//                  line drawn without its speaker on screen
 //   story-reload   a save at every Chapter 0 and Chapter 1 scene, a reload, Continue: the same scene starts again
 //   story-hub      the hub has exactly its four entries (Continue, Gym, Masjid, My Player), the chapter's name and the
 //                  next event; every entry opens its screen; desktop and phone draw without errors
@@ -40,6 +46,14 @@ export function storyTests({ newContext, open }) {
       const st = await p.evaluate(() => window.__sState());
       if (st.at === 'C1.1' && st.screen === 'hub') break;
       const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d);
+      if (st.at === 'C0.3' && st.screen === 'gym' && !out.noBall) out.noBall = await p.evaluate(() => ({ owner: ball.owner ? ball.owner.def.name : null, x: ball.x, up: Object.keys(C.up).length }));
+      if (st.at === 'C0.4' && st.screen === 'play' && !out.tut) out.tut = await p.evaluate(() => {
+        const T = M.story && M.story.tut, me = M.players.find(q => q.human === 0), cpu = M.players.find(q => q.team === 1), h = attackHoop(0), x = h.x - h.dir * 220, z = h.z;
+        M.teams[0].score = 0; M.teams[1].score = 5; const meB = shotWindow(me, x, z), cpuB = shotWindow(cpu, attackHoop(1).x - attackHoop(1).dir * 220, z);
+        M.teams[0].score = 5; M.teams[1].score = 0; const meA = shotWindow(me, x, z), cpuA = shotWindow(cpu, attackHoop(1).x - attackHoop(1).dir * 220, z);
+        M.teams[0].score = 0; M.teams[1].score = 0;
+        return { on: !!T, steps: TUT0_STEPS.length, target: M.fmt.target, catchUp: meB > meA && cpuB < cpuA };
+      });
       const r = await p.evaluate(lose => window.__sStep({ lose }), !lostOnce);
       if (r === 'lost') lostOnce = true;
       out.steps.push(st.at + ':' + r);
@@ -47,51 +61,65 @@ export function storyTests({ newContext, open }) {
     }
     out.end = await p.evaluate(() => ({ s: window.__sState(), journal: (C.journal || []).map(e => e.id), hub: HUB_MENU().map(e => e.label), ch: storyChapter(), saved: (readSave(SAVE_AUTO) || {}).story }));
     await ctx.close();
-    const ids = ['C0.1', 'C0.2', 'C0.3', 'C0.4', 'C0.5', 'C0.6'], at = out.steps.map(x => x.split(':')[0]);
-    const pickups = out.steps.filter(x => x.startsWith('C0.5:') && /won|lost/.test(x)).map(x => x.split(':')[1]);
+    const ids = ['C0.1', 'C0.2', 'C0.3', 'C0.4', 'C0.5'], at = out.steps.map(x => x.split(':')[0]);
+    const pickups = out.steps.filter(x => x.startsWith('C0.4:') && /won|lost/.test(x)).map(x => x.split(':')[1]);
+    const T0 = out.tut || {}, NB = out.noBall || {};
     const ok = out.start === 'C0.1' && ids.every(id => at.includes(id)) && pickups.join(',') === 'lost,won'
+      && T0.on && T0.steps === 6 && T0.target === 11 && T0.catchUp && !out.steps.some(x => x === 'C0.4:post') && NB.owner === null && NB.x < 200 && NB.up === 0
       && out.end.s.at === 'C1.1' && out.end.s.screen === 'hub' && out.end.ch === 1 && ids.every(id => out.end.journal.includes(id))
-      && out.end.hub.length === 4 && out.end.saved && out.end.saved.at === 'C1.1' && !out.draws.length && !errs.length;
-    return { ok, detail: [out.steps.join(' '), 'pickup: ' + pickups.join(','), 'end: ' + JSON.stringify(out.end), ...out.draws, ...errs] };
+      && out.end.hub[0] === 'Back to the gym' && out.end.saved && out.end.saved.at === 'C1.1' && !out.draws.length && !errs.length;
+    return { ok, detail: [out.steps.join(' '), 'pickup: ' + pickups.join(',') + ' tutorial: ' + JSON.stringify(out.tut) + ' no ball: ' + JSON.stringify(out.noBall), 'end: ' + JSON.stringify(out.end), ...out.draws, ...errs] };
   };
 
-  // Chapter 1 by bot, and the walk's corners done the real way: the whiteboard opens Upgrade stats (Back returns to the
-  // walk), the cooler, a drill (the cone run, finished), chai with Imam Dawud
+  // Chapter 1 (v9.33): the gym walk and the musalla done the real way, then by bot
   T['story-ch1'] = async ({ browser, base }) => {
     const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-ch1');
     await prep(p);
     const out = { draws: [] };
     out.toC1 = await p.evaluate(() => { window.__sNew('Bilal'); return window.__sRun('C1.1'); });
-    await p.evaluate(() => { window.__sStep(); window.__sStep(); });          // C1.1 (the scene), then the C1.2 walk starts
+    await p.evaluate(() => window.__sStep());                                  // home: Next starts the C1.1 walk
     out.walk = await p.evaluate(() => {
-      const r = { at: C.story.at, walk: !!Gym.story, free: !!(SW && SW.D.free) };
+      const r = { at: C.story.at, walk: !!Gym.story, free: !!(SW && SW.D.free), exit: SW && SW.D.exitTo };
       let k = 0; while (SW.talk && k++ < 20) { SW.talk.t = 1; swAdvance(); }
-      const me = M.players[0];
-      place(me, 1064, 60); const wb = gymPropNear(); r.wb = wb && wb.id; useGymProp(wb); r.train = Game.screen; BACK.train(); r.back = Game.screen; r.upgrade = !!SW.goals.upgrade;
-      place(me, 1150, 60); const co = gymPropNear(); r.co = co && co.id; useGymProp(co); r.cooler = !!SW.goals.cooler;
-      for (let n = 0; n < 60 * 3; n++) gymUpdate(1 / 60);
-      startDrill('cones'); for (const c of CONES) { place(M.players[0], c.x, c.z); drillUpdate(1 / 60); } r.drill = !!SW.goals.drill; r.result = !!Gym.result;
+      window.__sTalk('ilyas'); r.cones = Gym.drill && Gym.drill.kind;
+      for (const c of CONES) { place(M.players[0], c.x, c.z); drillUpdate(1 / 60); } r.conesDone = !!SW.goals.cones;
       Gym.result = null; setupPractice('free');
-      window.__sTalk('dawud'); r.chai = !!SW.goals.chai;
-      window.__sTalk('jamil'); window.__sTalk('ilyas'); r.parts = [!!C.story.seen['C1.3'], !!C.story.seen['C1.4']];
-      r.wp = JSON.stringify(C.story.wp && C.story.wp.goals);
+      window.__sTalk('jamil'); r.ft = Gym.drill && Gym.drill.kind; Gym.drill.made = 8; finishDrill(); r.ftDone = !!SW.goals.ft;
+      Gym.result = null; setupPractice('free');
+      const me = M.players[0]; ball.shot = { make: false, shooter: me }; giveBall(me, 'loose'); r.reb = !!SW.goals.rebound;
+      SW.gp.close = true; practiceScore(hoops[1]); r.layup = !!SW.goals.layup;
+      swGoal('sprint'); for (let n = 0; n < 3; n++) swGoal('score'); window.__sTalk('saleem');
+      r.onlyGo = swOnlyGo();
+      place(M.players[0], PRAY_SPOT.x + 40, PRAY_SPOT.z + 30);
+      for (let n = 0; n < 60 * 10 && Game.screen === 'gym'; n++) gymUpdate(1 / 60);
+      r.mus = Game.screen; r.musStory = !!(Game.mus && Game.mus.story); r.at2 = C.story.at;
+      for (const id of STORY_MUS_NEED) { talkTo(MUS_CAST.indexOf(id)); r.intro = (r.intro || 0) + (Game.mus.talk.lines.length === 2 ? 1 : 0); Game.mus.talk = null; }
+      musallaUpdate(1 / 60); r.early = !Game.mus.stalk;                         // (not yet: pray and read first)
+      useMusProp(Game.mus, { id: 'mihrab' }); Game.mus.fx = null; useMusProp(Game.mus, { id: 'shelf' }); Game.mus.fx = null;
+      musallaUpdate(1 / 60); r.closer = Game.mus && Game.mus.stalk && Game.mus.stalk.who;
+      for (let n = 0; n < 10 && Game.mus && Game.mus.stalk; n++) stalkAdvance();
+      r.ready = Gym.ready && Gym.ready.S.id; r.screen = Game.screen;
       return r;
     });
     for (let n = 0; n < 60; n++) {
       const st = await p.evaluate(() => window.__sState());
       if (st.at === 'C2.1' && st.screen === 'hub') break;
       const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d);
-      out.steps = (out.steps || []).concat(st.at + ':' + await p.evaluate(() => window.__sStep({ lose: at => at === 'C1.8' && !(C.story.seen['C1.8'] > 0) })));
+      if (st.at === 'C1.6' && st.screen === 'play' && !out.kotc) out.kotc = await p.evaluate(() => ({ lean: !!KOTC.lean, venue: M.venue && M.venue.id, roster: KOTC.roster.join(','), easy: !!M.aiCfg && JSON.stringify(M.aiCfg[1]) === JSON.stringify(diffAt(KOTC_STORY_L.musa)) }));
+      if (st.at === 'C1.3' && st.screen === 'gym' && !out.light) out.light = await p.evaluate(() => !!(Gym.drill && Gym.drill.story));
+      out.steps = (out.steps || []).concat(st.at + ':' + await p.evaluate(() => window.__sStep({ lose: at => at === 'C1.6' && !(C.story.seen['C1.6'] > 0) })));
       await sleep(30);
     }
-    out.end = await p.evaluate(() => ({ s: window.__sState(), journal: (C.journal || []).map(e => e.id).filter(Boolean), ch: storyChapter(), hub: HUB_MENU()[0].label }));
+    out.end = await p.evaluate(() => ({ s: window.__sState(), journal: (C.journal || []).map(e => e.id).filter(Boolean), ch: storyChapter() }));
     await ctx.close();
-    const ids = ['C1.1', 'C1.2', 'C1.3', 'C1.4', 'C1.5', 'C1.6', 'C1.7', 'C1.8', 'C1.9'], W = out.walk;
-    const kotc = out.steps.filter(x => x.startsWith('C1.8:') && /won|lost/.test(x)).map(x => x.split(':')[1]);
-    const ok = W.free && W.wb === 'wb' && W.train === 'train' && W.back === 'gym' && W.upgrade && W.co === 'cooler' && W.cooler && W.drill && W.chai && W.parts.every(Boolean)
+    const ids = ['C1.1', 'C1.2', 'C1.3', 'C1.4', 'C1.5', 'C1.6', 'C1.7'], W = out.walk, K = out.kotc || {};
+    const kotc = out.steps.filter(x => x.startsWith('C1.6:') && /won|lost/.test(x)).map(x => x.split(':')[1]);
+    const ok = W.free && W.exit === 'musalla' && W.cones === 'cones' && W.conesDone && W.ft === 'ft' && W.ftDone && W.reb && W.layup && W.onlyGo
+      && W.mus === 'musalla' && W.musStory && W.at2 === 'C1.2' && W.intro === 5 && W.early && W.closer === 'musa' && W.ready === 'C1.3' && W.screen === 'gym'
+      && K.lean && K.venue === 'home' && K.roster === 'you,musa,hafiz,anas' && K.easy
       && ids.every(id => out.end.s.seen.includes(id) && out.end.journal.includes(id)) && kotc.join(',') === 'lost,won'
       && out.end.s.at === 'C2.1' && out.end.s.screen === 'hub' && out.end.ch === 2 && !out.draws.length && !errs.length;
-    return { ok, detail: ['walk: ' + JSON.stringify(W), (out.steps || []).join(' '), 'King of the Court: ' + kotc.join(','), 'end: ' + JSON.stringify(out.end), ...out.draws, ...errs] };
+    return { ok, detail: ['walk: ' + JSON.stringify(W), 'kotc: ' + JSON.stringify(K), (out.steps || []).join(' '), 'King of the Court: ' + kotc.join(','), 'end: ' + JSON.stringify(out.end), ...out.draws, ...errs] };
   };
 
   // Chapter 2 by bot: the masjid league on the winning path (Al-Furqan in the field, the teams from teams.js, a real pool
@@ -112,7 +140,9 @@ export function storyTests({ newContext, open }) {
       }
       if (st.at === 'C2.4' && st.screen === 'gym' && !out.field) out.field = await p.evaluate(() => ({ teams: stageTeams(0).slice(1).map(t => t.name), rival: teamOf(0, 1).name, rayyan: teamOf(0, 1).players.some(q => q.name === 'Rayyan'), fmt: C.bracket && C.bracket.fmt, att: C.story.att, cp: C.story.cp }));
       const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d);
+      if (st.at === 'C2.5' && st.screen === 'spick' && !out.pick) out.pick = await p.evaluate(() => ({ sel: STORY_MATES[Game.spick.sel], walk: !!Game.spick.walk, inWalk: !!(SW && SW.D.pickWalk) }));
       const r = await p.evaluate(lose => window.__sStep({ lose: at => at === 'C2.14' && lose, pick: at => at === 'C2.5' ? 'ilyas' : null }), !lostSemi);
+      if (st.at === 'C2.5' && !out.ready) out.ready = await p.evaluate(() => SW && SW.talk ? SW.talk.lines[SW.talk.lines.length - 1].join(': ') : null);
       if (st.at === 'C2.14' && r === 'lost') lostSemi = true;
       steps.push(st.at + ':' + r);
     }
@@ -126,8 +156,9 @@ export function storyTests({ newContext, open }) {
     const ok = F.rival === 'Masjid Al-Furqan' && F.rayyan && F.fmt === 'pool' && F.teams.length === 7 && F.teams.every(n => /^Masjid /.test(n)) && F.cp === 'C2.4'
       && darkSeen && darkSeen.on0 && darkSeen.off && lostSemi && out.afterLoss && ids.every(id => E.s.seen.includes(id) && E.journal.includes(id))
       && E.s.at === 'C3.1' && E.s.screen === 'hub' && E.fundOn && E.fund >= 5000 && E.lights === 1 && E.trophy && E.titles >= 1 && E.att === 1 && E.season === 2 && E.chem > 0 && E.ch === 3
+      && out.pick && out.pick.sel === 'ilyas' && out.pick.walk && out.pick.inWalk && /ready for the first game/.test(out.ready || '')
       && out.group.path.includes('C2.13') && out.group.path.includes('C2.NS') && out.group.at === 'C2.4' && out.group.att === 1 && !out.draws.length && !errs.length;
-    return { ok, detail: ['field: ' + JSON.stringify(F), 'lights out: ' + JSON.stringify(darkSeen), steps.join(' '), 'end: ' + JSON.stringify(E), 'out in the group: ' + JSON.stringify(out.group), ...out.draws, ...errs] };
+    return { ok, detail: ['pick: ' + JSON.stringify(out.pick) + ' ' + out.ready, 'field: ' + JSON.stringify(F), 'lights out: ' + JSON.stringify(darkSeen), steps.join(' '), 'end: ' + JSON.stringify(E), 'out in the group: ' + JSON.stringify(out.group), ...out.draws, ...errs] };
   };
 
   T['story-ch3'] = async ({ browser, base }) => {
@@ -140,7 +171,7 @@ export function storyTests({ newContext, open }) {
     for (let n = 0; n < 260; n++) {
       const st = await p.evaluate(() => window.__sState());
       if (st.at === 'C4.1' && st.screen === 'hub') break;
-      if (st.at === 'C3.3' && st.screen === 'story' && !out.table) out.table = await p.evaluate(() => { const b = C.bracket; return { table: b.table, n: b.pg[0].length, ours: b.pg[0].filter(g => g.a === 0 || g.b === 0).map(g => g.md), teams: stageTeams(1).length, cp: C.story.cp, label: roundLabel(b) }; });
+      if (st.at === 'C3.3' && (st.screen === 'story' || st.screen === 'gym' || st.screen === 'hub') && !out.table) out.table = await p.evaluate(() => { const b = C.bracket; return { table: b.table, n: b.pg[0].length, ours: b.pg[0].filter(g => g.a === 0 || g.b === 0).map(g => g.md), teams: stageTeams(1).length, cp: C.story.cp, label: roundLabel(b) }; });
       if (st.at === 'C3.6' && st.screen === 'gym' && !out.chai) out.chai = await p.evaluate(() => M.mini && M.mini.word);
       if (st.at === 'C3.10' && st.screen === 'play' && !out.dunks) out.dunks = await p.evaluate(() => {
         const me = M.players.find(q => q.human === 0), h = hoops[1], s0 = M.teams[0].score;
@@ -182,8 +213,8 @@ export function storyTests({ newContext, open }) {
     for (let n = 0; n < 200; n++) {
       const st = await p.evaluate(() => window.__sState());
       if (st.at === 'C5.1' && st.screen === 'hub') break;
-      if (st.at === 'C4.2' && st.screen === 'story' && !out.ko) out.ko = await p.evaluate(() => { const b = C.bracket; return { ko: b.ko, first: b.rounds[0].length, teams: stageTeams(2).length, label: roundLabel(b), cp: C.story.cp, rivalOther: b.rounds[0].findIndex(m => m.a === 1 || m.b === 1) >= 4 }; });
-      if (st.at === 'C4.4' && st.screen === 'story' && !out.qf) out.qf = await p.evaluate(() => roundLabel(C.bracket));
+      if (st.at === 'C4.2' && (st.screen === 'story' || st.screen === 'gym' || st.screen === 'hub') && !out.ko) out.ko = await p.evaluate(() => { const b = C.bracket; return { ko: b.ko, first: b.rounds[0].length, teams: stageTeams(2).length, label: roundLabel(b), cp: C.story.cp, rivalOther: b.rounds[0].findIndex(m => m.a === 1 || m.b === 1) >= 4 }; });
+      if (st.at === 'C4.4' && (st.screen === 'story' || st.screen === 'gym' || st.screen === 'hub') && !out.qf) out.qf = await p.evaluate(() => roundLabel(C.bracket));
       if (st.screen !== 'play' || n % 3 === 0) { const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d); }
       const r = await p.evaluate(lose => window.__sStep({ lose: at => at === 'C4.4' && lose }), !lostQF);
       if (st.at === 'C4.4' && r === 'lost') lostQF = true;
@@ -215,7 +246,7 @@ export function storyTests({ newContext, open }) {
       const st = await p.evaluate(() => window.__sState());
       if (st.at === 'P.1' && st.screen === 'hub') break;
       if (st.at === 'C5.2' && st.screen === 'play' && !out.caps) out.caps = await p.evaluate(() => KOTC.roster.map(id => castPlayer(id).name));
-      if (st.at === 'C5.4' && st.screen === 'story') { const d = await p.evaluate(() => ({ draw: C.story.draw, ko: C.bracket && C.bracket.ko, first: C.bracket.rounds[0].length, opp: storyOpp().id, label: roundLabel(C.bracket) })); if (!out.draw.length || out.draw[out.draw.length - 1].draw !== d.draw) out.draw.push(d); }
+      if (st.at === 'C5.4' && (st.screen === 'story' || st.screen === 'gym' || st.screen === 'hub')) { const d = await p.evaluate(() => ({ draw: C.story.draw, ko: C.bracket && C.bracket.ko, first: C.bracket.rounds[0].length, opp: storyOpp().id, label: roundLabel(C.bracket) })); if (!out.draw.length || out.draw[out.draw.length - 1].draw !== d.draw) out.draw.push(d); }
       if (st.screen === 'scredits' && !out.credits) out.credits = await p.evaluate(() => { Game.credits.t = 20; return true; });
       if (st.screen !== 'play' || n % 3 === 0) { const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d); }
       const r = await p.evaluate(([lose, k]) => window.__sStep({ lose: at => (at === 'C5.6' && lose) || (at === 'C5.2' && k === 0) }), [!lostSF, kotc]);
@@ -285,12 +316,83 @@ export function storyTests({ newContext, open }) {
     return { ok, detail: ['covered: ' + JSON.stringify(covered), 'replays: ' + JSON.stringify(R), 'milestones: ' + JSON.stringify(MS_), ...out.draws, ...errs] };
   };
 
+  T['story-welcome'] = async ({ browser, base }) => {
+    const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-welcome');
+    await prep(p);
+    const out = { draws: [] };
+    // New career: the welcome screen comes first; the name is typed on the keyboard
+    await p.evaluate(() => { localStorage.removeItem(SAVE_AUTO); C = null; Input.touchMode = false; goTitle(); Game.screen = 'cmenu'; cmenuSelect(cmenuItems().map(x => x[1]).indexOf('new')); });
+    await sleep(200);
+    out.first = await p.evaluate(() => Game.screen);
+    { const d = await draw(p); if (d !== true) out.draws.push('welcome: ' + d); }
+    await p.keyboard.press('Enter'); await sleep(100);
+    out.empty = await p.evaluate(() => Game.screen);                     // no name: stays on the welcome
+    await p.keyboard.type('yusuf ali', { delay: 30 }); await sleep(100);
+    out.typed = await p.evaluate(() => Game.welcome && Game.welcome.name);
+    await p.keyboard.press('Enter'); await sleep(200);
+    out.creator = await p.evaluate(() => ({ screen: Game.screen, name: C.name, tab: Game.creator.tab, look: creatorRowsOf('look').map(x => x.r.key), game: creatorRowsOf('game').map(x => x.r.key) }));
+    { const d = await draw(p); if (d !== true) out.draws.push('look: ' + d); }
+    await p.keyboard.press('KeyE'); await sleep(100);
+    out.tab = await p.evaluate(() => Game.creator.tab);
+    { const d = await draw(p); if (d !== true) out.draws.push('game: ' + d); }
+    // the archetypes: no two share a strength; each perk works in a career game, for your player only
+    out.arch = await p.evaluate(() => {
+      const plus = {}; let shared = 0;
+      for (const [k, m] of Object.entries(STYLE_MOD)) for (const [s, v] of Object.entries(m)) if (v > 0) { if (plus[s]) shared++; plus[s] = k; }
+      const perk = {};
+      for (const st of ['sharpshooter', 'playmaker', 'rimrunner', 'lockdown', 'glue']) {
+        C.look.style = PLAY_STYLES.indexOf(st);
+        newMatch(amanahTeam(), TEAMS[1], { humans: [{ team: 0, slot: 1, pad: 0 }], career: true });
+        const me = M.players.find(q => q.human === 0), cpu = M.players.find(q => q.human < 0 && q.team === 1);
+        perk[st] = { me: me.perk, cpu: cpu.perk || null };
+      }
+      C.look.style = PLAY_STYLES.indexOf('sharpshooter'); newMatch(amanahTeam(), TEAMS[1], { humans: [{ team: 0, slot: 1, pad: 0 }], career: true });
+      const me = M.players.find(q => q.human === 0), h = attackHoop(me.team), sx = h.x - h.dir * 220, sz = h.z + 40, w1 = shotWindow(me, sx, sz); me.perk = null; const w0 = shotWindow(me, sx, sz);
+      newMatch(amanahTeam(), TEAMS[1], { humans: [{ team: 0, slot: 1, pad: 0 }] });             // not a career game: no perk
+      const qp = M.players.find(q => q.human === 0).perk || null;
+      return { shared, perk, wider: w1 > w0, quickPlay: qp };
+    });
+    // your name: in the credits and the journal, never "Brother"
+    out.name = await p.evaluate(() => { creatorDone(); const cr = creditsLines().some(l => l[1] === C.name); return { name: C.name, credits: cr, brother: JSON.stringify(C).includes('"Brother"') }; });
+    // a phone: tapping the box opens the on-screen keys, which come back to the welcome
+    out.phone = await p.evaluate(() => { C = freshCareer(); openWelcome(); Input.touchMode = true; csAskName('Your name', '', 14, v => { if (Game.welcome) Game.welcome.name = v; }); const keys = Game.screen; for (const ch of 'AMIR') nameType(ch); nameDone(); return { keys, back: Game.screen, name: Game.welcome && Game.welcome.name }; });
+    await ctx.close();
+    const A = out.arch, P = A.perk, cr = out.creator;
+    const ok = out.first === 'swelcome' && out.empty === 'swelcome' && out.typed === 'Yusuf Ali' && cr.screen === 'creator' && cr.name === 'Yusuf Ali' && cr.tab === 'look'
+      && !cr.look.includes('name') && !cr.look.includes('height') && cr.game.join() === 'height,build,style' && out.tab === 'game'
+      && A.shared === 0 && Object.entries(P).every(([k, v]) => v.me === k && v.cpu === null) && A.wider && A.quickPlay === null
+      && out.name.credits && !out.name.brother && out.phone.keys === 'namekeys' && out.phone.back === 'swelcome' && out.phone.name === 'Amir' && !out.draws.length && !errs.length;
+    return { ok, detail: [JSON.stringify(out), ...errs] };
+  };
+
+  // v9.31: the rules (SCENES.md): short dialogue everywhere, and no line drawn without its speaker on screen
+  T['story-rules'] = async ({ browser, base }) => {
+    const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-rules');
+    await prep(p);
+    const r = await p.evaluate(() => {
+      window.__sNew('Rules'); window.__faceless = [];
+      const path = window.__sRun('C5.1', { max: 1300 });
+      const n = L => (L || []).filter(l => Array.isArray(l) && l[0] !== 'narr').length, over = [];
+      const BIG = /^(C2\.16|C3\.22|C4\.9|C5\.9|C5\.10)$/;                     // the big scenes: titles and coming home (6 lines)
+      for (const [id, S] of Object.entries(SC)) {
+        if (S.ch < 2) continue;                                                // (Chapters 0 and 1 are rebuilt in the next releases)
+        for (const k of ['lines', 'pre', 'winLines', 'lossLines']) { let L = S[k]; if (typeof L === 'function') { try { L = L(); } catch (e) { L = null; } } const c = n(L); if (c > (BIG.test(id) ? 6 : 4)) over.push(id + '.' + k + ':' + c); }
+      }
+      for (const [k, v] of Object.entries(STORY_MOMENTS)) if (n(v) > 4) over.push('moment ' + k);
+      if (n(STORY_FINAL) > 6) over.push('P.4');
+      return { reached: C.story.at, faceless: window.__faceless.slice(0, 10), over, steps: path.length };
+    });
+    await ctx.close();
+    const ok = r.reached === 'C5.1' && !r.faceless.length && !r.over.length && !errs.length;
+    return { ok, detail: [JSON.stringify(r), ...errs] };
+  };
+
   T['story-reload'] = async ({ browser, base }) => {
     const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-reload');
-    const want = { 'C0.1': 'ssalams', 'C0.2': 'musalla', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'play', 'C0.6': 'gym',
-      'C1.1': 'gym', 'C1.2': 'gym', 'C1.5': 'musalla', 'C1.6': 'story', 'C1.7': 'office', 'C1.8': 'story', 'C1.9': 'gym',
-      'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'gym', 'C2.5': 'spick', 'C2.6': 'story', 'C2.9': 'gym', 'C2.10': 'story',
-      'C3.1': 'gym', 'C3.2': 'gym', 'C3.4': 'gym', 'C3.6': 'story', 'C3.9': 'office', 'C3.10': 'story', 'C3.14': 'story', 'C3.20': 'office' }, ids = Object.keys(want), res = [];
+    const want = { 'C0.1': 'ssalams', 'C0.2': 'musalla', 'C0.3': 'gym', 'C0.4': 'gym', 'C0.5': 'gym',
+      'C1.1': 'gym', 'C1.2': 'musalla', 'C1.3': 'gym', 'C1.4': 'office', 'C1.5': 'gym', 'C1.6': 'gym', 'C1.7': 'gym',
+      'C2.1': 'gym', 'C2.2': 'gym', 'C2.3': 'story', 'C2.4': 'gym', 'C2.5': 'gym', 'C2.6': 'gym', 'C2.9': 'gym', 'C2.10': 'gym',
+      'C3.1': 'gym', 'C3.2': 'gym', 'C3.4': 'gym', 'C3.6': 'gym', 'C3.9': 'office', 'C3.10': 'gym', 'C3.14': 'gym', 'C3.20': 'office' }, ids = Object.keys(want), res = [];
     for (const id of ids) {
       await prep(p);
       await p.evaluate(id => { window.__sNew('Reload'); window.__sRun(id); saveCareer(); }, id);
@@ -300,40 +402,49 @@ export function storyTests({ newContext, open }) {
         const items = cmenuItems().map(x => x[1]); if (!items.includes('continue')) return { items };
         cmenuSelect(items.indexOf('continue'));
         const hub = Game.screen; storyRun();
-        return { items, hub, at: C.story.at, screen: Game.screen, walk: !!Gym.story, sid: Game.story && Game.story.sid };
+        return { items, hub, at: C.story.at, screen: Game.screen, walk: !!Gym.story || !!Gym.ready, sid: Game.story && Game.story.sid };
       });
       await sleep(150);
       res.push(Object.assign({ id }, r));
     }
     await ctx.close();
-    const ok = res.every(r => r.hub === 'hub' && r.at === r.id && r.screen === want[r.id] && (r.screen !== 'gym' || r.walk) && (r.screen !== 'story' || r.sid === r.id)) && !errs.length;   // (C1.6 and C1.8 open on their lead-in scene)
+    const ok = res.every(r => r.hub === 'gym' && r.at === r.id && r.screen === want[r.id] && (r.screen !== 'gym' || r.walk) && (r.screen !== 'story' || r.sid === r.id)) && !errs.length;   // (C1.6 and C1.8 open on their lead-in scene)
     return { ok, detail: [...res.map(r => JSON.stringify(r)), ...errs] };
   };
 
+  // v9.31: home is the practice gym (its left bar), and the old hub screen is the full menu
   T['story-hub'] = async ({ browser, base }) => {
     const errs = [], detail = []; let ok = true;
     for (const [dn, dev, touch] of [['desktop', { viewport: { width: 1280, height: 720 } }, false], ['phone', { viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true }, true]]) {
       const ctx = await newContext(browser, { device: dev }), p = await open(ctx, base + '/', errs, 'story-hub ' + dn);
       await prep(p);
       const r = await p.evaluate(touch => {
-        Input.touchMode = touch; 
-        window.__sNew('Hub'); window.__sRun('C1.1'); careerHub();
-        const labels = HUB_MENU().map(e => e.label), seen = [];
+        Input.touchMode = touch;
+        window.__sNew('Hub'); window.__sRun('C2.7'); careerHub();
+        const home = { screen: Game.screen, atHome: storyAtHome(), bar: gymBarItems().map(x => x.k), starter: Object.keys(SW.npcs) };
+        render(ctx);
+        careerMenu();
+        const menu = Game.screen, labels = HUB_MENU().map(e => e.label), seen = [];
         const cv = document.createElement('canvas'); cv.width = 960; cv.height = 540; const g = cv.getContext('2d'), ft = g.fillText.bind(g);
         g.fillText = (t, ...a) => { seen.push(String(t)); return ft(t, ...a); };
         drawHub(g);
-        const opened = {};
-        const subs = { Masjid: HUB_MENU()[2].sub.map(x => x.label), 'My Player': HUB_MENU()[3].sub.map(x => x.label) };
-        for (const [i, k] of [[1, 'Gym']]) { careerHub(); HUB_MENU()[i].act(); opened[k] = Game.screen; }
-        for (const [k, j] of [['Musalla', 0], ['Office', 1], ['Outside', 2], ['Projects', 3]]) { careerHub(); HUB_MENU()[2].sub[j].act(); opened[k] = Game.screen; render(ctx); }
-        for (const [k, j] of [['Upgrade', 0], ['Look', 1], ['Journal', 2], ['Stats', 3]]) { careerHub(); HUB_MENU()[3].sub[j].act(); opened[k] = Game.screen; render(ctx); }
+        const opened = {}, M_ = () => HUB_MENU();
+        careerMenu(); M_()[0].act(); opened.Gym = storyAtHome() ? 'home' : Game.screen;
+        for (const [k, j] of [['Musalla', 0], ['Office', 1], ['Outside', 2], ['Projects', 3]]) { careerMenu(); M_()[1].sub[j].act(); opened[k] = Game.screen; render(ctx); }
+        for (const [k, j] of [['Upgrade', 0], ['Look', 1], ['Journal', 2], ['Stats', 3]]) { careerMenu(); M_()[2].sub[j].act(); opened[k] = Game.screen; render(ctx); }
+        careerMenu(); M_()[3].act(); opened.Plays = Game.screen;
+        careerMenu(); M_()[4].act(); opened.Settings = Game.screen; BACK.settings(); opened.SettingsBack = Game.screen;
+        // the bar opens what it says
+        careerHub(); const bar = {}; for (const it of gymBarItems()) { if (it.k === 'next' || it.k === 'musalla' || it.k === 'office') continue; careerHub(); gymBarItems().find(x => x.k === it.k).act(); bar[it.k] = Game.screen + (Gym.overlay ? ':' + Gym.overlay : ''); }
         careerHub(); render(ctx);
-        return { labels, subs, opened, chapter: seen.some(t => /Chapter 1: Making the team/.test(t)), next: seen.some(t => /^NEXT/.test(t)) };
+        return { home, menu, labels, opened, bar, chapter: seen.some(t => /Chapter 2: Masjid league/.test(t)) };
       }, touch);
       await sleep(300);
-      const good = r.labels.join('|') === 'Continue|Gym|Masjid|My Player' && r.chapter && r.next
-        && r.opened.Gym === 'gym' && r.opened.Musalla === 'musalla' && r.opened.Office === 'office' && r.opened.Outside === 'masjid' && r.opened.Projects === 'shop'
-        && r.opened.Upgrade === 'train' && r.opened.Look === 'creator' && r.opened.Journal === 'journal' && r.opened.Stats === 'cstats';
+      const good = r.home.screen === 'gym' && r.home.atHome && r.home.bar.join() === 'next,drills,musalla,office,upgrade,menu' && r.home.starter.includes('saleem')
+        && r.menu === 'hub' && r.labels.join('|') === 'Back to the gym|Masjid|My Player|My plays|Settings|Title' && r.chapter
+        && r.opened.Gym === 'home' && r.opened.Musalla === 'musalla' && r.opened.Office === 'office' && r.opened.Outside === 'masjid' && r.opened.Projects === 'shop'
+        && r.opened.Upgrade === 'train' && r.opened.Look === 'creator' && r.opened.Journal === 'journal' && r.opened.Stats === 'cstats' && r.opened.Plays === 'myplays'
+        && r.opened.Settings === 'settings' && r.opened.SettingsBack === 'hub' && r.bar.drills === 'gym:drills' && r.bar.upgrade === 'train' && r.bar.menu === 'hub';
       if (!good) ok = false;
       detail.push(dn + ': ' + JSON.stringify(r));
       await ctx.close();
@@ -370,7 +481,7 @@ export function storyTests({ newContext, open }) {
       return { items, fresh, profKept: localStorage.getItem('islamdunk.profile') === prof, loads: loadCareer(SAVE_AUTO) };
     });
     await ctx.close();
-    const ok = !r.items.includes('continue') && !r.items.includes('load') && r.items.includes('new') && r.fresh.screen === 'creator' && r.fresh.bp === 0 && r.fresh.wins === 0 && r.fresh.sv >= 10 && r.fresh.at === 'C0.1' && r.fresh.lv === 4 && r.profKept && r.loads === false && !errs.length;
+    const ok = !r.items.includes('continue') && !r.items.includes('load') && r.items.includes('new') && ['creator', 'swelcome'].includes(r.fresh.screen) && r.fresh.bp === 0 && r.fresh.wins === 0 && r.fresh.sv >= 10 && r.fresh.at === 'C0.1' && r.fresh.lv === 4 && r.profKept && r.loads === false && !errs.length;
     return { ok, detail: [JSON.stringify(r), ...errs] };
   };
   return T;

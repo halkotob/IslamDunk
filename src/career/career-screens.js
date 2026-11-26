@@ -43,7 +43,7 @@ function creatorEnter(i) {
   else creatorStep(i, 1);
 }
 function creatorDone() {
-  if (!C.name.trim()) C.name = 'Brother';
+  if (!C.name.trim()) C.name = 'Abdullah';                        // (v9.30: the career's welcome screen asks for a name first)
   if (Game.creator.isNew) {
     C.bracket = makeBracket(0); saveCareer(); setupPractice('free');
     playStory(STORY.intro, () => { C.seen.intro = true; C.seen.meetNew = true; slog(0); careerHub(); });

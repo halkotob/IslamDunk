@@ -240,14 +240,12 @@ STORY_MODES.lightsout = function (S) {
 function storyLeagueIntro(stage) {
   const o = storyOpp(), b = C.bracket, att = C.story.att || 0;
   const pool = b && b.pools ? b.pools[0].filter(i => i !== 0).map(i => teamOf(stage, i).name.replace('Masjid ', '')) : [];
-  const L = att ? [['saleem', 'A new season, brothers. Same masjid, same intention. Everything we built is still ours.'], ['jamil', 'And this year we win it.']] :
-    [['narr', 'The Metro Masjid League. Eight masjids, one trophy, and a gym full of uncles with opinions.'], ['saleem', 'Here’s how it works. Two groups of four. We play each team in our group once.'],
-      ['saleem', 'The top two in each group go through to the semifinals. Then the final.'], ['musa', 'So three games, then two more if we’re good.'], ['karim', 'Five games. Five chances to make the kids proud.']];
-  if (pool.length) L.push(['saleem', 'Our group: ' + pool.slice(0, -1).join(', ') + ' and ' + pool[pool.length - 1] + '.']);
-  if (b && b.pools && b.pools[1].includes(1)) L.push(['jamil', 'Al-Furqan is in the other group. If we meet them, it’s in the playoffs. Good.']);
-  else if (b && b.pools) L.push(['jamil', 'Al-Furqan is in our group. Of course they are.']);
-  if (!att) L.push(['rayyan', 'As-salamu alaykum, Al-Amanah. Rayyan, Al-Furqan. My uncle still talks about beating you in that final.'], ['jamil', 'Your uncle hit a lucky shot.'], ['rayyan', 'He says it was skill. May the better team win.']);
-  if (o) L.push(['saleem', 'First up: ' + o.team.name + '. Now, pick who plays beside you.']);
+  const furqan = b && b.pools ? (b.pools[1].includes(1) ? ' Al-Furqan is in the other group.' : ' Al-Furqan is in ours.') : '';
+  const L = att ? [['saleem', 'A new season, brothers. Same masjid, same intention. Everything we built is still ours.']]
+    : [['narr', 'The Metro Masjid League. Eight masjids, one trophy, and a gym full of uncles with opinions.'], ['saleem', 'Two groups of four. The top two in each go to the semifinals, then the final.']];
+  if (pool.length) L.push(['saleem', 'Our group: ' + pool.slice(0, -1).join(', ') + ' and ' + pool[pool.length - 1] + '.' + furqan]);
+  if (!att) L.push(['rayyan', 'As-salamu alaykum, Al-Amanah. Rayyan, Al-Furqan. My uncle still talks about beating you in that final.']);
+  if (o) L.push(['saleem', 'First up: ' + o.team.name + '. Pick who plays beside you.']);
   return L;
 }
 function storyGroupPush() {

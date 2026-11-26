@@ -23,16 +23,16 @@ const STORY_MODES = {
     const them = { name: 'Ammo Jamil & Ilyas', short: 'JAMIL', place: 'Eastside', c1: '#7a1f2b', c2: '#e8c35a', crest: 'dome', players: [storyMateDef('jamil', 0), storyMateDef('ilyas', 0)] };
     storyExhibition(S, us, them, { L: -1, fmt: { format: 'first21', target: 11 } });
   },
-  // C1.6: Lightning with Sh. Saleem, Ammo Jamil, Ilyas and Musa; any finish moves the story on
+  // C1.3: Lightning with Sh. Saleem, Ammo Jamil, Ilyas and Musa; any finish moves the story on
   lightning(S) {
     enterGym();
     setupMini('lightning', { roster: ['you', 'saleem', 'jamil', 'ilyas', 'musa'], humans: [{ team: 0, slot: 0, pad: 0 }] });
     Gym.drill = { kind: 'lightning', mini: true, story: S.id };
-    gymToast('Lightning: wait your turn on the spot behind the arc. Miss and chase your rebound. If the player behind you scores first, you’re out.', 4.5);
   },
-  // C1.8: King of the Court for a starting spot; crowned, or go again
+  // C1.6: King of the Court for a starting spot, in the practice gym: Musa, Hafiz Zubair, then Qari Anas; crowned, or go again
   kotc(S) {
-    startKotc({ roster: ['you', 'jamil', 'ilyas', 'musa'], humans: { you: 0 } });
+    KOTC.lean = true;
+    startKotc({ roster: ['you', 'musa', 'hafiz', 'anas'], humans: { you: 0 } });
     KOTC.gym = true; KOTC.story = S.id;
   }
 };

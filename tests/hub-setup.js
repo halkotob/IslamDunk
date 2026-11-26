@@ -29,7 +29,7 @@ export const HUB_HELPERS = `(() => {
     C.bp = o.money === '5' ? 48210 : o.money === '3' ? 640 : 120; C.hb = o.money === '5' ? 90455 : o.money === '3' ? 375 : 45;
     if (o.maxed) { for (const k in C.lv) C.lv[k] = 10; C.look.style = PLAY_STYLES.indexOf('lockdown'); }
     C.prayBonus = !!o.pray;
-    if (Game.menus) Game.menus.hub = null; careerHub(); _achQ.length = 0; Game.toastT = 0;
+    if (Game.menus) Game.menus.hub = null; careerMenu(); _achQ.length = 0;   // (v9.35: careerHub() goes home to the gym; the hub screen is the menu) Game.toastT = 0;
     if (o.open) { const it = HUB_MENU(), i = it.findIndex(e => e.label === o.open); menuActivate('hub', it, i); }
     return C.story.at;
   };

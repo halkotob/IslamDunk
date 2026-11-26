@@ -159,7 +159,7 @@ STORY_MODES.chai = function (S) {
   M.mini.word = 'CHAI';
   Gym.drill = { kind: 'horse', mini: true, story: S.id };
   C.story.chaiOpp = opp;
-  gymToast('CHAI: make a shot, then ' + castDef(opp).name + ' has ' + M.mini.timerLen + ' seconds to match it. Miss a shot you have to match and you get a letter. Spell CHAI and you make the chai.', 5);
+  // (v9.33: the rules are on the ready panel; no toast across the screen)
 };
 {
   const _fm = finishMini;
@@ -211,15 +211,15 @@ STORY_MODES.allstar = function (S) {
   };
   const _um = updateMatch;
   updateMatch = function (dt) { const r = _um.apply(this, arguments); const D = M.story && M.story.dunks; if (D && D.t > 0) D.t -= dt; return r; };
-  const _ds = drawScene;
-  drawScene = function (g) {
+  const _ds = drawHUD;
+  drawHUD = function (g) {                                          // (v9.33: screen space, on the left)
     const r = _ds.apply(this, arguments);
     const D = M.story && M.story.dunks;
-    if (D && Game.screen === 'play') {                                 // the crowd meter (the ticket sales), top centre
-      const w = 240, x = W / 2 - w / 2, y = 108, k = D.crowd, pop = D.t > 0 ? 1 + 0.06 * Math.sin(D.t * 20) : 1;
-      g.save(); g.translate(W / 2, y + 14); g.scale(pop, pop); g.translate(-W / 2, -(y + 14));
+    if (D && Game.screen === 'play') {                                 // the crowd meter (the ticket sales), on the left under the scoreboard (v9.33)
+      const TT = Input.touchMode && g === ctx, w = 196, x = 22, y = TT ? 122 : 98, k = D.crowd, pop = D.t > 0 ? 1 + 0.06 * Math.sin(D.t * 20) : 1;
+      g.save(); g.translate(x + w / 2, y + 14); g.scale(pop, pop); g.translate(-(x + w / 2), -(y + 14));
       g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x - 10, y - 16, w + 20, 44, 12); g.fill();
-      g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.fillText('CROWD  •  DUNKS ONLY  •  ' + D.n + ' DUNK' + (D.n === 1 ? '' : 'S'), W / 2, y - 2);
+      g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.fillText('CROWD  •  DUNKS ONLY  •  ' + D.n + ' DUNK' + (D.n === 1 ? '' : 'S'), x, y - 2);
       meter(g, x, y + 6, w, 12, k, k > 0.75 ? '#ffd76a' : '#57e389');
       g.restore();
     }

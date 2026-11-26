@@ -104,20 +104,22 @@ export const SCREENS = [
   ['career menu', CAREER + ` Game.screen = 'cmenu'; Game.idx = 0;`],
   ['creator', CAREER + ` Game.creator = { idx: 0, isNew: false }; Game.screen = 'creator';`],
   ['namekeys', CAREER + ` Game.creator = { idx: 0, isNew: false }; Game.nameBuf = C.name; Game.screen = 'namekeys';`],   // (v9.17.9: as the creator opens it; Back goes there)
-  ['story', CAREER + ` playStory([['saleem', 'Assalamu alaikum. Ready for your first game at the Metro Masjid League? Keep your intention pure and play hard.']], () => careerHub());`],
-  ['hub', CAREER + ` careerHub();`],
+  ['story', CAREER + ` playStory([['narr', 'Masjid Al-Amanah, Eastside. The gym lights hum after Isha, and the brothers lace up for the first game of the Masjid League.']], () => careerHub());`],   // (v9.35: lines with a speaker play in the gym; narration keeps this box)
+  ['hub', CAREER + ` careerMenu();`],   // (v9.35: the hub screen is the career menu; home is the gym)
   ['cbracket', CAREER + ` careerHub(); Game.screen = 'cbracket';`],
   // v9.22: the story: the salams, the musalla scene, a walk with its checklist and a bubble, the tutorial, the hub
   ['story: salams', STORY_HELPERS + ` window.__sNew('Abdullah'); Game.salams.t = 1.5;`],
   ['story: musalla', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.2'); stalkAdvance();`],
   ['story: walk', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.3'); SW.talk = null; SW.fade = 0;`],
-  ['story: walk bubble', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.3'); SW.fade = 0; SW.talk.t = 1;`],
-  ['story: tutorial', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.4'); SW.talk = null; SW.fade = 0; swGoal('walk');`],
-  ['story: teammate pick', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C2.5');`],
+  ['story: walk bubble', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.3'); SW.fade = 0; window.__sTalk && swTalkTo('saleem'); if (SW.talk) SW.talk.t = 1;`],
+  ['story: tutorial', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C0.4'); readyStart(); M.introT = 0; for (let i = 0; i < 200 && M.phase !== 'live'; i++) updateMatch(STEP);`],
+  ['story: teammate pick', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C2.5'); let k = 0; while (SW && SW.talk && k++ < 20) { SW.talk.t = 1; swAdvance(); } swTalkTo('saleem');`],   // (v9.35: C2.5 is a walk: talk to a brother, the pick opens)
   ['story: credits', STORY_HELPERS + ` window.__sNew('Abdullah'); storyCredits(SC['C5.11']); Game.credits.t = 9;`],
   ['story: replay', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('P.R', { max: 1500 }); careerHub(); openReplay();`],
   ['story: milestones', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('P.R', { max: 1500 }); careerHub(); C.chem.jamil = 100; storyMsCheck(); openMilestones();`],
-  ['story: hub', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C1.1'); careerHub();`],
+  ['story: welcome', STORY_HELPERS + ` C = freshCareer(); openWelcome(); Game.welcome.name = 'Abdullah';`],
+  ['story: creator game', STORY_HELPERS + ` C = freshCareer(); C.name = 'Abdullah'; Game.creator = { idx: creatorFirstRow('game'), isNew: true, tab: 'game', welcomed: true }; Game.screen = 'creator';`],
+  ['story: hub', STORY_HELPERS + ` window.__sNew('Abdullah'); window.__sRun('C1.1'); careerMenu();`],
   ['cstats', CAREER + ` careerHub(); openStats();`],
   ['crecords', CAREER + ` careerHub(); openRecords();`],
   ['career league leaders', LEAGUE_FIX + ` window.__lgOpen('leaders');`],

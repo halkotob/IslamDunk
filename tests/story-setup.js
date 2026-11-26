@@ -18,14 +18,19 @@ export const STORY_HELPERS = `(() => {
   };
   const flush = () => { let k = 0; while (SW && SW.talk && k++ < 60) { SW.talk.t = 1; swAdvance(); } };
   window.__sTalk = id => { flush(); swTalkTo(id); flush(); };
+  window.__faceless = [];
   window.__sStep = (o = {}) => {
     const s = Game.screen;
+    if (s === 'story' && Game.story && Game.story.lines.some(l => typeof CAST !== 'undefined' && CAST[l[0]] && l[0] !== 'narr')) window.__faceless.push(C.story.at);   // (v9.31: nobody talks off screen)
+    if (s === 'gym' && Gym.ready) { readyStart(); return 'ready'; }
+    if (s === 'gym' && Gym.story && SW && SW.D.home) { const k0 = SW; flush(); if (SW === k0 && SW && !SW.talk) storyHomeNext(); return 'continue'; }
     if (s === 'ssalams') { salamsNext(); return 'salams'; }
     if (s === 'scredits') { creditsDone(); return 'credits'; }
     if (s === 'sreplay') { replaySelect(o.replay != null ? (typeof o.replay === 'function' ? o.replay() : o.replay) : 6); return 'replay'; }
     if (s === 'story' && Game.story) { const st = Game.story; if (o.choice != null && st.lines[st.i] && st.lines[st.i][0] === 'choice') storyChoose(st, o.choice); storySkip(st); return 'scene'; }
     if (s === 'gym' && Gym.story && SW) {
-      flush();
+      const W0 = SW; flush(); if (SW !== W0) return 'walk';             // (the talk ended the walk: one thing at a time)
+      if (SW.D.pickWalk) { const want = (typeof o.pick === 'function' ? o.pick(C.story.at) : o.pick) || C.partner || 'saleem', ids = Object.keys(SW.npcs); swTalkTo(ids.includes(want) ? want : ids[0]); return 'walk'; }   // (v9.33: talk to a brother, the pick opens)
       for (const g of (SW.D.goals || [])) for (let k = 0; k < (g.n || 1) && !SW.goals[g.id]; k++) swGoal(g.id);
       for (const d of SW.D.npcs) if (d.need && !SW.met[d.id]) window.__sTalk(d.id);
       const cl = swCloser(); if (cl && !SW.done) window.__sTalk(cl);
@@ -40,6 +45,7 @@ export const STORY_HELPERS = `(() => {
     const lose = typeof o.lose === 'function' ? o.lose(C.story.at) : !!o.lose;
     if (s === 'musalla' && Game.mus && Game.mus.story) {
       for (const id of STORY_MUS_NEED) if (!Game.mus.story.met[id]) { talkTo(MUS_CAST.indexOf(id)); Game.mus.talk = null; }
+      for (const q of (typeof STORY_MUS_GOALS !== 'undefined' ? STORY_MUS_GOALS : [])) Game.mus.story.goals[q.id] = true;
       musallaUpdate(1 / 60); return 'musalla';
     }
     if (s === 'gym' && Gym.drill && Gym.drill.story && M.mini && M.mini.kind === 'horse') {   // a story HORSE (CHAI): won, or lost with o.lose
@@ -72,5 +78,5 @@ export const STORY_HELPERS = `(() => {
     if (path[path.length - 1] !== C.story.at) path.push(C.story.at);
     return path;
   };
-  window.__sState = () => ({ screen: Game.screen, at: C && C.story && C.story.at, cp: C && C.story && C.story.cp, walk: !!Gym.story, seen: C && C.story ? Object.keys(C.story.seen) : [] });
+  window.__sState = () => ({ screen: typeof storyAtHome === 'function' && storyAtHome() ? 'hub' : Game.screen, at: C && C.story && C.story.at, cp: C && C.story && C.story.cp, walk: !!Gym.story, seen: C && C.story ? Object.keys(C.story.seen) : [] });
 })();`;

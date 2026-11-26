@@ -28,7 +28,7 @@ export function saveSafeTests({ newContext, open }) {
   const frames = (p, n = 30) => p.evaluate(n => new Promise(r => { let k = 0; const f = () => (++k >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
   // v9.22: a career save from before the story (sv < 10) isn't loaded any more, so these tests use the 9.14.3 fixture's
   // career brought up to the story's format (the same career, with sv 10 and a story position)
-  const storyfy = t => { const o = JSON.parse(t); o.sv = 10; o.story = { at: 'C2.6', cp: 'C2.4', seen: {}, fund: 0, fundOn: true, att: 0, done: false }; return JSON.stringify(o); };
+  const storyfy = t => { const o = JSON.parse(t); o.sv = 10; o.story = { at: 'C2.6', cp: 'C2.4', seen: {}, fund: 0, fundOn: true, att: 0, done: false, lay: 3 }; return JSON.stringify(o); };
   const fx = Object.assign({}, OLD['9.14.3'].keys);
   for (const k of ['islamdunk.career.auto', 'islamdunk.career.slot1']) if (fx[k]) fx[k] = storyfy(fx[k]);
   T['save-backup'] = async ({ browser, base }) => {

@@ -71,7 +71,7 @@ canvas{display:block;image-rendering:auto;outline:none;touch-action:none;-webkit
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.34.0';
+const VERSION = '9.35.0';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -2043,7 +2043,7 @@ function newMatch(tA, tB, opts = {}) {
   M.aiCfg = opts.aiCfg || null; M.career = !!opts.career; M.practice = opts.practice ? { kind: opts.practice } : null;
   M.gym = !!opts.practice; M.halfCourt = !!opts.practice; M.mustClear = [false, false]; M.cmdHook = null;
   M.fun = opts.attract || opts.career || opts.practice ? null : (opts.fun !== undefined ? opts.fun : activeFun());
-  M.balls = null; M.mini = null; M.miniIds = null; M.teamFouls = [0, 0]; M.ft = null; M.maxDef = 0; M._achEnd = false; M.run = null;
+  M.balls = null; M.mini = null; M.miniIds = null; M.story = null; M.teamFouls = [0, 0]; M.ft = null; M.maxDef = 0; M._achEnd = false; M.run = null;
   M.hot = null; M.hotCd = null; M.highlights = []; M.pendingClips = []; M.dmOverride = null; M.careerL = null; Replay.reset();
   M.players = [...M.teams[0].players, ...M.teams[1].players];
   M.assign = [[0, 1], [0, 1]];
@@ -3195,7 +3195,7 @@ function gameUpdate(rdt) {
   Game.t += rdt; FX.updateReal(rdt); Game.keepInput = false; Game.interp = false;
   if (Game.toastT > 0) Game.toastT -= rdt;
   clutchTick(rdt);
-  if (Input.pressed.KeyF && !['namekeys', 'joincode'].includes(Game.screen)) toggleFullscreen();
+  if (Input.pressed.KeyF && !['namekeys', 'joincode', 'swelcome'].includes(Game.screen)) toggleFullscreen();
   Net.update(rdt);
   const tap = Input.taps[0];
   if (tap) for (const r of Game.rects.slice().reverse()) if (tap.x >= r.x && tap.x <= r.x + r.w && tap.y >= r.y && tap.y <= r.y + r.h) { SFX.blip(); r.fn(); break; }
@@ -5026,7 +5026,7 @@ function gymExtras(E, g) {
 
 // -------------------------------------------------------------- GYM HUD
 function drawGymHUD(g) {
-  { const iy = Input.touchMode ? H - 40 : H - 88;                 // compact info pill, clear of the wall
+  if (!(typeof storyOn === 'function' && storyOn())) { const iy = Input.touchMode ? H - 40 : H - 88;                 // compact info pill, clear of the wall (v9.31: not in the story career: the left bar)
     g.fillStyle = 'rgba(8,16,24,0.72)'; roundRect(g, 12, iy, 300, 28, 14); g.fill();
     g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = `11px ${FONT}`; g.fillText('AL-AMANAH GYM', 24, iy + 18);
     // v8.6.2: each item starts after the last one (the phone font is wider); phones say HB
@@ -5050,7 +5050,7 @@ function drawGymHUD(g) {
     }
     if (d.kind === 'v1' && M.mustClear[0] && ball.owner === M.players[0]) { g.fillStyle = '#ff9a8a'; g.font = `13px ${FONT}`; g.fillText('Take it back past the arc', W / 2, 124); }
     g.fillStyle = 'rgba(255,255,255,0.7)'; g.font = `11px ${BODY}`; g.fillText('Back or Esc stops the drill', W / 2, 140);
-  } else if (!Gym.walk && !Gym.fade) {
+  } else if (!Gym.walk && !Gym.fade && !(typeof storyOn === 'function' && storyOn())) {
     // drills + musalla: bottom bar on desktop, a column at top-right on touch
     // (clear of the joystick and the action buttons)
     const acts = Input.touchMode ? [['Drills', openDrills], ['Musalla', enterMusalla], ['Sheikh\u2019s office', enterOffice]]   // v8.6.2: no key hints on touch
@@ -5181,7 +5181,7 @@ function creatorEnter(i) {
   else creatorStep(i, 1);
 }
 function creatorDone() {
-  if (!C.name.trim()) C.name = 'Brother';
+  if (!C.name.trim()) C.name = 'Abdullah';                        // (v9.30: the career's welcome screen asks for a name first)
   if (Game.creator.isNew) {
     C.bracket = makeBracket(0); saveCareer(); setupPractice('free');
     playStory(STORY.intro, () => { C.seen.intro = true; C.seen.meetNew = true; slog(0); careerHub(); });
@@ -15323,6 +15323,11 @@ function kotcLeave() {
     _r(g);
     if (!KOTC.on || !M.kotc || (Game.screen !== 'play' && Game.screen !== 'netplay')) return;
     const K = KOTC, o = Math.round((W - 960) / 2);
+    if ((K.lean || K.hud) && typeof drawKotcLean === 'function') {                   // v9.33: the story's King of the Court: a streak counter on the left
+      drawKotcLean(g);
+      if (K.spect && !K.done && K.overT <= 0) uiButton(g, 12, Input.touchMode ? 188 : 160, 140, 32, 'Skip game', kotcSkip);
+      return;
+    }
     g.save(); g.translate(o, 0); const rw = W; W = 960;
     g.fillStyle = 'rgba(8,14,22,0.85)'; roundRect(g, W / 2 - 280, 74, 560, 54, 12); g.fill();
     g.textAlign = 'center'; g.font = `13px ${FONT}`; g.fillStyle = GOLD;
@@ -20677,7 +20682,9 @@ const LG_CAL = {
   // threes 0.343 -> 0.30, dunks 0.92 -> 0.87 of the twos)
   ppm: { 30: 9.78, 45: 8.75, 60: 8.45, 120: 8.23 }, rel: { 30: 0.3, 45: 0.29, 60: 0.22, 120: 0.19 }, quartersK: 0.98,
   first21: { lose: 0.77, loseSd: 0.17, over: 0.3 }, share: 0.5, shareSd: 0.14, dunkShare: 0.87,
-  rate: { fga: 0.6906, tpa: 0.2085, fta: 0.02275, reb: 0.1099, ast: 0.1583, stl: 0.07637, blk: 0.09854, tov: 0.07537, dnk: 0.3478, chg: 0.00441 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more; v9.16: ast 0.1456 -> 0.184, real games 3.29 a player, 500 games; v9.21.0: re-fit to the new CPU defense, which sags and fouls less: real games
+  rate: { fga: 0.6906, tpa: 0.2085, fta: 0.02275, reb: 0.1099, ast: 0.1583, stl: 0.1004, blk: 0.09854, tov: 0.0973, dnk: 0.3478, chg: 0.00441 },   // (v9.11: chg 0.0142 -> 0.0192, stoppers guard tighter and draw more; v9.16: ast 0.1456 -> 0.184, real games 3.29 a player, 500 games; v9.21.0: re-fit to the new CPU defense, which sags and fouls less: real games
+  // (v9.35.0: re-fit stl 0.07637 -> 0.1004 and tov 0.07537 -> 0.0973: real games 1.63 steals and 1.64 turnovers a
+  // player (500 games), the fallback 1.24 and 1.27; a block that reaches the ball knocks it loose more often)
   // (v9.34.0: real league games score 32.8 a team (31.7 on 9.33; between the legs got 0.14 s shorter, so a game fits a
   // few more shots): points a minute x 1.094 and every per-point rate / 1.094, so the counting stats' totals stay)
   // per player ast 2.55, fta 0.38, chg 0.07 (were 3.27, 1.07, 0.34 in the fallback): ast 0.203 -> 0.158, fta 0.064 -> 0.0227, chg 0.0212 -> 0.0044;
@@ -21302,6 +21309,88 @@ function layVariant(p) {
     if (v && p.human >= 0 && !M.mini && !p.layKind && (v === 'roll' || v === 'jelly')) popOnce(p, 'lay', v === 'roll' ? 'FINGER ROLL' : 'JELLY', '#fff', 0.6);
     return _rs.apply(this, arguments);
   };
+}
+// ================================================= v9.33 (refine 6): BLOCKS REACH FOR THE BALL, in every mode
+// (docs/career-overhaul/REFINE-PLAN.md, release 6)
+// - The reach: a block jump against a shot in the air (or a shooter rising) lunges toward the ball: a short sideways
+//   move in the first part of the jump, capped, from any side (in front, beside, behind). The CPU's blocks use the
+//   same rule. Lockdown (the career's archetype perk) reaches a little farther.
+// - The chance (replaces v98-review.js's): the hand reaches toward the ball, not just the way you face. It rises with how
+//   close the hand gets and how early the jump meets the ball. In front of the shooter, early, is still the good
+//   block; from the side or behind, a close hand now has a real (small) chance; far off rarely lands. A near miss says
+//   FINGERTIPS.
+const BLOCK_REACH = {
+  t: 0.18,            // how long the lunge lasts (s)
+  v: 150,             // lunge speed at Defense 0 (px/s)...
+  vDef: 7,            // ...plus this per point of Defense
+  lockV: 30,          // Lockdown's extra speed
+  lockR: 6,           // and extra hand reach (px)
+  range: 230,         // the ball (or the shooter) must be this close to start a lunge
+  stop: 14,           // stop short of the ball: the hand, not the body, goes to it
+  body: 30            // and stay this far from the shooter
+};
+function blockLockdown(o) { return typeof perkOf === 'function' && perkOf(o) === 'lockdown'; }
+// where to reach: the ball in flight, or the shooter's release point while he rises
+function blockTarget(o) {
+  if (ball.state === 'shot' && ball.shot && !ball.shot.dunk && ball.shot.team !== o.team && ball.shot.t <= 0.45) return { x: ball.x, z: ball.z };
+  const sh = (o.opps || []).find(q => q.state === 'windup' || q.state === 'shoot');
+  if (sh) { const h = attackHoop(sh.team), d = dxz(sh, h) || 1; return { x: sh.x + (h.x - sh.x) / d * 10, z: sh.z + (h.z - sh.z) / d * 10 }; }
+  return null;
+}
+{
+  const _sj = startJump;
+  startJump = function (p) {
+    const was = p.state; const r = _sj.apply(this, arguments);
+    if (p.state !== 'jump' || was === 'jump') return r;
+    const T = blockTarget(p); if (!T) return r;
+    const dx = T.x - p.x, dz = T.z - p.z, d = Math.hypot(dx, dz);
+    if (d > BLOCK_REACH.range || d < BLOCK_REACH.stop + 1) return r;
+    const v = Math.min((d - BLOCK_REACH.stop) / BLOCK_REACH.t, BLOCK_REACH.v + (p.st.def || 5) * BLOCK_REACH.vDef + (blockLockdown(p) ? BLOCK_REACH.lockV : 0));
+    let k = 1; const sh = ball.shot && ball.shot.shooter || (p.opps || []).find(q => q.state === 'windup' || q.state === 'shoot');
+    if (sh) for (; k > 0.05; k -= 0.1) { const ex = p.x + dx / d * v * k * BLOCK_REACH.t, ez = p.z + dz / d * v * k * BLOCK_REACH.t; if (Math.hypot(ex - sh.x, ez - sh.z) >= BLOCK_REACH.body || Math.hypot(p.x - sh.x, p.z - sh.z) < BLOCK_REACH.body) break; }
+    p.reach = { vx: dx / d * v * k, vz: dz / d * v * k, t: BLOCK_REACH.t };          // (never into the shooter's body: that's a foul, not a block)
+    if (Math.abs(dx) > 4) p.face = sgn(dx);
+    return r;
+  };
+  const _um = updateMatch;
+  updateMatch = function (dt) {
+    const r = _um.apply(this, arguments);
+    for (const p of M.players || []) {
+      const R = p.reach; if (!R) continue;
+      if (p.state !== 'jump' || R.t <= 0) { p.reach = null; continue; }
+      const k = Math.min(dt, R.t); R.t -= dt;
+      p.x += R.vx * k; p.z += R.vz * k;
+    }
+    return r;
+  };
+}
+checkBlockJump = function (o) {
+  if (ball.state !== 'shot' || !ball.shot || ball.shot.dunk || ball.shot.team === o.team || ball.shot.t > 0.45 || ball.shot.tried.has(o)) return;
+  const C0 = blockChance(o); if (!C0) return;
+  ball.shot.tried.add(o);
+  const sh = ball.shot.shooter, h = ball.shot.hoop;
+  if (o.swipe && sh && dxz(o, sh) < 22 && !C0.chase && foulsOn() && chance(0.3)) {     // swiped through the body: shooting foul
+    if (!ball.shot.foul) { ball.shot.foul = { by: o, pts: ball.shot.pts }; if (humanIn(o, sh)) popOnce(sh, 'contact', 'CONTACT', '#ffd76a'); }
+    return;
+  }
+  if (chance(C0.p)) { if (C0.chase) pinBlock(o, sh, h); else blockBall(o, sh); return; }
+  if (o.human >= 0) popOnce(o, 'blk', C0.close > 0.55 ? 'FINGERTIPS' : !C0.early ? 'LATE' : C0.lane < 0.5 ? 'NO ANGLE' : 'JUST MISSED', C0.close > 0.55 ? '#ffd76a' : '#9fb3c8', 0.8);
+};
+// the block chance for o's hand against the ball right now (null: out of reach)
+function blockChance(o) {
+  if (!ball.shot) return null;
+  const def = o.st.def || 5, R = (o.swipe ? 38 : 26) + def * 1.0 + (blockLockdown(o) ? BLOCK_REACH.lockR : 0);
+  const hx = o.x + (sgn(ball.x - o.x) || o.face) * 6;                          // the hand reaches toward the ball
+  const d = Math.hypot(ball.x - hx, ball.y - (o.y + 104), ball.z - o.z);
+  if (d >= R) return null;
+  const sh = ball.shot.shooter, h = ball.shot.hoop, close = clamp(1 - d / R, 0, 1);
+  const lane = sh ? clamp((dxz(sh, h) - dxz(o, h) + 20) / 100, 0, 1) : 0;
+  const height = sh ? clamp((o.y - sh.y) / 140, -0.08, 0.12) : 0;
+  const chase = !!(o.swipe && (o.chaseOK || chaseGeom(o, sh, h)));
+  const early = ball.shot.t <= 0.3, good = lane >= 0.5 && early;
+  const pr = good ? clamp(0.12 + def * 0.045 + height, 0.15, 0.7)      // (in front, early: as v9.8, Defense decides)
+    : clamp((0.02 + def * 0.012 + lane * 0.06 + height + (o.swipe ? 0.04 : 0)) * (0.5 + 0.5 * close) + close * (early ? 0.24 : 0.12), 0.02, 0.32);   // (a far-off hand rarely lands)
+  return { p: clamp((pr + (chase ? 0.18 : 0)) * defK(o), 0.03, 0.95), close, lane, early, chase };
 }
 // ================================================= v9.8: ONLINE LAG (play-test: "so much latency for the guest")
 // Players on different networks rarely got the direct (peer-to-peer) link: it only tries STUN, which fails behind
@@ -26710,133 +26799,94 @@ scn('C0.1', { kind: 'scene', custom: 'salams', name: 'After Isha', next: 'C0.2',
   lines: [['narr', 'As-salamu alaykum wa rahmatullah.'], ['narr', 'As-salamu alaykum wa rahmatullah.']] });
 scn('C0.2', { kind: 'scene', talk: { at: 'musalla', who: 'dawud' }, name: 'The musalla', next: 'C0.3', lines: [
   ['narr', 'Masjid Al-Amanah, Eastside. Your first week in town, your first Isha here.'],
-  ['dawud', 'Astaghfirullah, astaghfirullah, astaghfirullah.'],
-  ['dawud', 'Brother, I don’t know your face yet. Welcome. You’re new in Eastside?'],
+  ['dawud', 'As-salamu alaykum, akhi. I don’t know your face yet. Welcome.'],
   ['you', 'Wa alaykum as-salam. I moved here last week.'],
-  ['dawud', 'Then you found the right door. The young ones play ball in the gym after Isha. Through there, past the shoe racks.'],
-  ['you', 'JazakAllahu khayran.'],
-  ['dawud', 'Wa iyyak. Go on. Tell Saleem the imam sent you.']] });
-scn('C0.3', { kind: 'walk', name: 'The gym', next: 'C0.4', walk: 'C0.3' });
-scn('C0.4', { kind: 'drill', name: 'Shoot around', next: 'C0.5', walk: 'C0.4' });
-scn('C0.5', { kind: 'play', name: 'Pickup game', mode: 'pickup', stakes: 'opener', win: 'C0.6', loss: 'C0.5',
-  winLines: [['saleem', 'Game! Alhamdulillah.'], ['jamil', 'Again. Tomorrow. Same teams.']],
-  lossLines: [['jamil', 'Ha! The old man still has it.'], ['saleem', 'Good effort. Get a drink, catch your breath, and we run it back.'], ['ilyas', 'Dad, don’t celebrate yet. One more.']] });
-scn('C0.6', { kind: 'scene', name: 'Come back tomorrow', next: 'C1.1', hub: true, lines: [
-  ['ilyas', 'Okay, okay. You can play. Where did you learn that move?'],
-  ['jamil', 'Good hands. Good feet. You box out, too. Nobody here boxes out.'],
-  ['jamil', 'Come back tomorrow. Same time. We need a fourth who doesn’t complain.'],
-  ['saleem', 'He’s right. And you passed when you were open, and passed when I was more open. That’s rare.'],
-  ['ilyas', 'You let them score on you twice, Dad.'],
-  ['jamil', 'I let them? You missed four layups. Four!'],
-  ['ilyas', 'Three. The fourth one was blocked. That’s not missing.'],
-  ['jamil', 'Yalla, it’s still a miss. A miss is a miss.'],
-  ['saleem', 'Brothers, brothers. The Prophet ﷺ said the strong one isn’t the one who wins the wrestle; it’s the one who holds himself when he’s angry.'],
-  ['saleem', 'We lost a pickup game. We didn’t lose anything else. Come, let’s stack the chairs.'],
-  ['you', 'In sha Allah, I’ll be here tomorrow.'],
-  ['saleem', 'In sha Allah. Welcome to Al-Amanah, akhi.']] });
+  ['dawud', 'The young ones play ball in the gym after Isha. Through there. Go on.']] });
+scn('C0.3', { kind: 'walk', name: 'The gym', next: 'C0.4', walk: 'C0.3', direct: true });
+scn('C0.4', { kind: 'play', name: 'Pickup game', mode: 'pickup', stakes: 'opener', tutorial: true, noRewards: true, win: 'C0.5', loss: 'C0.4',
+  winLines: [['saleem', 'Game! Alhamdulillah.'], ['jamil', 'Hmph. Beginner’s luck.']],
+  lossLines: [['jamil', 'Ha! The old man still has it.'], ['saleem', 'Catch your breath. We run it back.']] });
+scn('C0.5', { kind: 'scene', name: 'Come back tomorrow', next: 'C1.1', hub: true, lines: [
+  ['saleem', 'Good game! I’m Saleem. This is Ammo Jamil, and his son Ilyas.'],
+  ['jamil', 'Nineteen years I play here. Nineteen years we never win the league. You box out, so: come back tomorrow.'],
+  ['ilyas', 'Practice is after Isha. Don’t be late, he makes you run.'],
+  ['saleem', 'We’ll show you the gym properly. See you tomorrow, {name}.']] });
 
 // ---------------------------------------------------------------- Chapter 1: Making the team
-scn('C1.1', { kind: 'scene', name: 'A full gym', next: 'C1.2', lines: [
-  ['narr', 'The next night. After Isha the gym is full: uncles on folding chairs, kids at the far hoop, a dozen brothers you haven’t met.'],
-  ['saleem', 'You came back! Alhamdulillah. Ammo Jamil owes me five dollars.'],
-  ['jamil', 'I said he’d come back. I bet he’d be late.'],
-  ['saleem', 'Tonight, meet everyone. The gym first, then the musalla through the partition.'],
-  ['saleem', 'When you’ve said salaam to all of them, come and find me in my office. We have something to talk about.']] });
-scn('C1.2', { kind: 'walk', name: 'Meet the gym', walk: 'C1.2', next: 'C1.3' });
-scn('C1.3', { kind: 'walk', name: 'Ammo Jamil', part: 'C1.2', next: 'C1.4', lines: [
-  ['jamil', 'Sit, sit. Let me tell you something about this gym.'],
-  ['jamil', 'Nineteen years I play here. Nineteen years we never win the masjid league. Not once.'],
-  ['you', 'Never?'],
-  ['jamil', 'Once we reached the final. Al-Furqan beat us by one. ONE point. I still see that shot when I close my eyes.'],
-  ['jamil', 'This year we win it. I am not getting any younger, and my knees are getting much older.']] });
-scn('C1.4', { kind: 'walk', name: 'Ilyas', part: 'C1.2', next: 'C1.5', lines: [
-  ['ilyas', 'Don’t let my dad scare you. He’s been talking about that final since before I was born.'],
-  ['ilyas', 'He wants the trophy. I just want him to watch me play one game without yelling “BEND YOUR KNEES.”'],
-  ['you', 'And if we win?'],
-  ['ilyas', 'If we win, maybe he finally says “good game, son.” Two words. Three. You get it.']] });
-scn('C1.5', { kind: 'walk', name: 'The musalla', musalla: true, next: 'C1.6' });
-scn('C1.6', { kind: 'play', name: 'Lightning', mode: 'lightning', win: 'C1.7', loss: 'C1.7',
-  pre: [['musa', 'EVERYBODY UP! Lightning, five of us, loser stacks the chairs!'], ['saleem', 'Five of us, two balls. You know the rules?'], ['you', 'Make it before the man behind you does.'], ['saleem', 'Then you know everything. Bismillah.']],
-  winLines: [['musa', 'Bro. You knocked out Ilyas AND his dad in one game.'], ['jamil', 'I let him. Respect for the guest.'], ['ilyas', 'You did not let him, Dad.']],
-  lossLines: [['ilyas', 'Got you! Welcome to Al-Amanah, we play for keeps.'], ['saleem', 'Good effort. Now, chairs. Then my office.']] });
-scn('C1.7', { kind: 'scene', name: 'The office', talk: { at: 'office', who: 'saleem' }, next: 'C1.8', lines: [
-  ['saleem', 'Come in, close the door. The chai is from Imam Dawud, so it’s strong.'],
-  ['saleem', 'I never introduced myself properly. Saleem. I studied in Madinah, came back, and the masjid asked me to stay a year. That was eleven years ago.'],
-  ['saleem', 'Al-Amanah is small. Two hundred families, a gym that is also the overflow musalla, a weekend school in two rooms.'],
-  ['saleem', 'But the people here look after each other. Ammo Jamil drives the uncles to the doctor. Ustath Karim teaches for free. Musa found us at a park.'],
-  ['you', 'Everyone has been kind to me. In two days it already feels like home.'],
-  ['saleem', 'Alhamdulillah. That’s what a masjid is for.'],
-  ['saleem', 'Now. The league starts soon, and we play two on two. We have seven brothers for two spots on the floor at a time.'],
-  ['saleem', 'I saw your game. I want you on the team. But a starting spot is earned here, not given.'],
-  ['saleem', 'Tomorrow, outside, King of the Court. Hold the court and the spot is yours.']] });
-scn('C1.8', { kind: 'play', name: 'King of the Court', mode: 'kotc', win: 'C1.9', loss: 'C1.8',
-  pre: [['saleem', 'One on one, first to three. Hold the court three straight and you’re king.'], ['jamil', 'Nobody holds the court on me. Nobody.'], ['musa', 'Can I dunk on him? Is that allowed?']],
-  winLines: [['saleem', 'Crowned! Masha’Allah.'], ['jamil', 'Hmph. My knee. Next time.'], ['ilyas', 'Dad, you said that last time.']],
-  lossLines: [['saleem', 'Not this time. Catch your breath, drink some water, and go again.'], ['jamil', 'The court doesn’t give, it takes. Again!']] });
-scn('C1.9', { kind: 'scene', name: 'The team', next: 'C2.1', hub: true, lines: [
+// v9.33 order (SCENES.md, Chapter 1): meet the gym, the musalla, Lightning, the office, King of the Court, the team.
+scn('C1.1', { kind: 'walk', name: 'Meet the gym', walk: 'C1.1', next: 'C1.2' });
+scn('C1.2', { kind: 'walk', name: 'The musalla', musalla: true, direct: true, next: 'C1.3',
+  closer: [['musa', 'Yo, {name}! Lightning, in the gym, now!'], ['musa', 'Loser stacks the chairs!']] });
+scn('C1.3', { kind: 'play', name: 'Lightning', mode: 'lightning', win: 'C1.4', loss: 'C1.4',
+  winLines: [['musa', 'Bro. You knocked out Ilyas AND his dad in one game.'], ['saleem', 'Masha’Allah, {name}. Come to my office, I want a word.']],
+  lossLines: [['ilyas', 'Got you! Welcome to Al-Amanah, we play for keeps.'], ['saleem', 'Good effort, {name}. Come to my office, I want a word.']] });
+scn('C1.4', { kind: 'scene', name: 'The office', talk: { at: 'office', who: 'saleem' }, direct: true, next: 'C1.5', lines: [
+  ['saleem', 'Al-Amanah is small, {name}. Two hundred families, a weekend school in two rooms, and a roof that leaks when it rains.'],
+  ['saleem', 'But the people here look after each other. When the masjid league comes, the whole community comes to watch, and when they watch, they give.'],
+  ['saleem', 'Every win helps the masjid and the families in it. We need you to help us win.'],
+  ['saleem', 'A spot is earned here, not given. Come outside with me.']] });
+scn('C1.5', { kind: 'scene', name: 'Earn your spot', sayNow: true, direct: true, next: 'C1.6', lines: [
+  ['saleem', 'Brothers! King of the Court. Everyone plays for his spot.'],
+  ['musa', 'Me first! I’m taking that crown.'],
+  ['saleem', 'Musa, then Hafiz Zubair, then Qari Anas. Hold the court three straight, {name}, and the spot is yours.']] });
+scn('C1.6', { kind: 'play', name: 'King of the Court', mode: 'kotc', win: 'C1.7', loss: 'C1.6',
+  winLines: [['saleem', 'Crowned! Masha’Allah.'], ['hafiz', 'Three straight. I counted, and nobody argues with a hafiz.']],
+  lossLines: [['saleem', 'Not this time. Catch your breath, drink some water, and go again.'], ['musa', 'The court doesn’t give, it takes. Again!']] });
+scn('C1.7', { kind: 'scene', name: 'The team', next: 'C2.1', hub: true, lines: [
   ['saleem', 'Brothers, gather round. I think you all saw what I saw.'],
   ['jamil', 'He boxes out. He passes. He doesn’t complain. I vote yes.'],
-  ['karim', 'He shoots with his elbow in. I vote yes.'],
   ['anas', 'He said salaam to the uncles before the ball. Yes.'],
   ['musa', 'Two new guys on the team? We should get matching headbands.'],
   ['ilyas', 'We are not getting matching headbands.'],
-  ['saleem', 'Then it’s settled. Welcome to the Al-Amanah team, akhi. You’re here to help us win the masjid league.'],
-  ['dawud', 'May Allah put barakah in it. And may the chai never run out.'],
-  ['narr', 'The career begins.']] });
+  ['saleem', 'Then it’s settled. Welcome to the Al-Amanah team, {name}. Let’s win this for the masjid.']] });
 
 // ---------------------------------------------------------------- walks
 // npcs: id, where (gym world x, z), what he's doing (act), which way he faces, what he says; need: must be met.
 // closer: who ends the walk once everyone needed is met (and every goal is done).
 const STORY_WALKS = {
+  // C0.3: Sh. Saleem, Ammo Jamil and Ilyas shoot at one hoop. You have no ball; you ask to play.
   'C0.3': {
-    title: 'Say salaam', npcs: [
-      { id: 'ilyas', x: 1120, z: 430, act: 'shoot', face: 1, need: true, lines: [['ilyas', 'Salaam! You play? Good. Dad says I shoot too much.'], ['you', 'Wa alaykum as-salam. Is there such a thing?'], ['ilyas', 'That’s what I keep telling him!']] },
-      { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, need: true, lines: [['jamil', 'Ilyas! Bend your knees! …Oh. Wa alaykum as-salam. You’re new.'], ['you', 'I just moved here. The imam sent me.'], ['jamil', 'Ammo Jamil. That one shooting is my son. He thinks defense is optional.']] },
-      { id: 'saleem', x: 860, z: 300, act: 'host', face: -1, closer: true,
-        early: [['saleem', 'Say salaam to the brothers first, then come see me.']],
-        lines: [['saleem', 'Assalamu alaykum. I saw you at Isha. I’m Saleem.'], ['you', 'Wa alaykum as-salam. The imam said to find you. Can I join in?'], ['saleem', 'Of course. Warm up first. Shoot around, get a feel for the floor.']] }],
-    start: [['saleem', 'There he is. Go say salaam, brother.']]
+    title: 'The gym', noBall: true, npcs: [
+      { id: 'ilyas', x: 1130, z: 420, act: 'shoot', face: 1 },
+      { id: 'jamil', x: 1060, z: 560, act: 'host', face: 1 },
+      { id: 'saleem', x: 960, z: 330, act: 'host', face: -1, closer: true,
+        lines: [['you', 'As-salamu alaykum. Can I play?'], ['saleem', 'Wa alaykum as-salam! We need a fourth. You’re with me against those two.'], ['jamil', 'Yalla. First to 11.']] }]
   },
-  'C0.4': {
-    title: 'Shoot around', tutorial: true, npcs: [
-      { id: 'ilyas', x: 1180, z: 600, act: 'host', face: -1 },
-      { id: 'jamil', x: 720, z: 140, act: 'sit', face: 1 },
-      { id: 'saleem', x: 860, z: 260, act: 'host', face: 1, closer: true,
-        early: [['saleem', 'Take your time. Finish your warm-up first.']],
-        lines: [['saleem', 'Good. You’ve got a feel for it.'], ['saleem', 'Two on two. You and me against Ammo Jamil and Ilyas. First to 11.'], ['jamil', 'Finally. My knees are getting cold.']] }],
+  // C1.1: the gym, properly. Shoot around (three baskets, a layup, a rebound, a sprint); Ilyas runs you through the cone
+  // dribble and explains Barakah Points; Ammo Jamil has you shoot free throws and explains Halal Bucks; Sh. Saleem, at
+  // his office door, explains the drills. Then through the door to the musalla.
+  'C1.1': {
+    title: 'Meet the gym', free: true, exitTo: 'musalla', npcs: [
+      { id: 'ilyas', x: 1120, z: 430, act: 'shoot', face: 1, drill: 'cones',
+        lines: [['ilyas', 'Every drill you finish earns Barakah Points. BP go into your stats on the whiteboard: shooting, speed, defense, all of it.'], ['ilyas', 'Cone dribble first. Weave every cone, fast as you can. Go!']],
+        again: [['ilyas', 'Spend your BP on the whiteboard. Upgrade on the left bar does the same.']] },
+      { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, drill: 'ft',
+        lines: [['jamil', 'Games and drills pay Halal Bucks too. Bucks are for looking good: sneakers, headbands, a celebration.'], ['jamil', 'But first you shoot ten free throws for me. Bend your knees!']],
+        again: [['jamil', 'Bucks for the look, BP for the game. Now go meet everybody.']] },
+      { id: 'saleem', x: 830, z: 110, act: 'host', face: 1, goal: 'saleem',
+        lines: [['saleem', 'You came back, {name}! Alhamdulillah.'], ['saleem', 'The drills are on the left bar, any time: shooting, dribbling, passing. Practice between games and it shows in games.']],
+        again: [['saleem', 'When you’re done here, the musalla is through this door.']] }],
     goals: [
-      { id: 'walk', label: 'Move around the floor', touch: 'Move: the left stick', key: 'Move: W A S D or the arrows' },
-      { id: 'sprint', label: 'Sprint', touch: 'Sprint: hold TURBO', key: 'Sprint: hold L' },
-      { id: 'shoot', label: 'Take a jump shot', touch: 'Shoot: hold SHOOT, let go at the top', key: 'Shoot: hold J, let go at the top of the jump' },
-      { id: 'score', label: 'Make two baskets', n: 2, touch: 'Green on the meter is money', key: 'Green on the meter is money' }],
-    start: [['saleem', 'Shoot around. Move, sprint, get some shots up. Make a couple, then come find me.']]
-  },
-  // Chapter 1: the full gym. Ammo Jamil and Ilyas have scenes of their own (C1.3, C1.4); around them, the gym's corners
-  // show what the career has: a shot, a drill, the stats on the whiteboard, chai with Imam Dawud, the water cooler
-  'C1.2': {
-    title: 'Meet the gym', free: true, npcs: [
-      { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, need: true, scene: 'C1.3', again: [['jamil', 'Go on, meet everybody. Then we talk trophies.']] },
-      { id: 'ilyas', x: 1120, z: 430, act: 'shoot', face: 1, need: true, scene: 'C1.4', again: [['ilyas', 'The cones are by the far hoop. Try the cone run, Q opens the drills.']] },
-      { id: 'dawud', x: 600, z: 230, act: 'chai', face: 1, goal: 'chai', lines: [['dawud', 'Ah, the brother from Isha. Come, have some chai.'], ['you', 'JazakAllahu khayran. This is strong.'], ['dawud', 'Cardamom and patience. I make it after every Isha. Players drink first, then the uncles complain.']], again: [['dawud', 'Another glass? Sip, beta. Sip.']] },
-      { id: 'uncle', x: 760, z: 540, act: 'sit', face: 1, lines: [['uncle', 'Salaam, beta! Don’t mind me. I’m just here for the chai and the shouting.']] }],
-    goals: [
-      { id: 'score', label: 'Shoot around: make a basket', n: 1, touch: 'Make a basket at the hoop', key: 'Make a basket at the hoop' },
-      { id: 'drill', label: 'Finish a drill', touch: 'Tap Drills, pick one', key: 'Q opens the drills: finish one' },
-      { id: 'upgrade', label: 'Your stats, on the whiteboard', touch: 'Walk to the whiteboard and tap it', key: 'Walk to the whiteboard, press F' },
-      { id: 'chai', label: 'Chai with Imam Dawud', touch: 'Imam Dawud is at the chai table', key: 'Imam Dawud is at the chai table' },
-      { id: 'cooler', label: 'Water at the cooler', touch: 'Walk to the water cooler and tap it', key: 'Walk to the water cooler, press F' }],
-    start: [['saleem', 'Meet everyone, try the gym out. When you’re done here, the musalla is through the partition.']],
-    end: [['narr', 'Everyone in the gym met. Through the partition to the musalla.']]
+      { id: 'sprint', label: 'Sprint the length of the floor', touch: 'Push the stick past the dashed ring', key: 'Hold Shift while you move' },
+      { id: 'score', label: 'Make 3 baskets', n: 3, touch: 'Hold SHOOT, let go at the top', key: 'Hold K, let go at the top of the jump' },
+      { id: 'layup', label: 'Make a layup', touch: 'Drive to the rim and shoot', key: 'Drive to the rim, then K' },
+      { id: 'rebound', label: 'Grab a rebound', touch: 'Miss a shot and catch the ball', key: 'Miss a shot, then get to the ball first' },
+      { id: 'cones', label: 'Cone dribble with Ilyas', touch: 'Talk to Ilyas', key: 'Talk to Ilyas (E)' },
+      { id: 'ft', label: 'Free throws with Ammo Jamil', touch: 'Talk to Ammo Jamil', key: 'Talk to Ammo Jamil (E)' },
+      { id: 'saleem', label: 'Sh. Saleem, at his office door', touch: 'Talk to Sh. Saleem', key: 'Talk to Sh. Saleem (E)' },
+      { id: 'go', label: 'Go to the musalla', touch: 'Walk to the musalla door', key: 'Walk to the musalla door, or press E' }]
   }
 };
-// C1.5: the musalla walk. Each of them introduces himself the first time you talk (then his usual talk)
-const STORY_MUS_NEED = ['anas', 'mufti', 'hafiz', 'karim', 'musa'];
+// C1.2: the musalla walk. Each of them introduces himself the first time you talk (then his usual talk). Pray and read,
+// then Musa calls everyone to the gym.
+const STORY_MUS_NEED = ['karim', 'dawud', 'anas', 'mufti', 'hafiz'];
+const STORY_MUS_GOALS = [{ id: 'pray', label: 'Pray two rak’ahs' }, { id: 'read', label: 'Read from the Qur’an' }];
 const STORY_MUS_INTRO = {
-  anas: ['As-salamu alaykum! You’re the new brother. I’m Anas. They call me Qari because I lead Taraweeh.', 'I also play center. Tall people don’t get a choice here.'],
-  mufti: ['Wa alaykum as-salam. I am Abdullah, the masjid’s mufti. People bring me their questions.', 'Mostly about inheritance. Sometimes whether the shot clock is halal. It is.'],
-  hafiz: ['Zubair. I memorised the Quran when I was twelve, and I’ve kept score for the brothers ever since.', 'If there’s an argument about the score, they ask me. Nobody argues with a hafiz.'],
-  karim: ['Ustath Karim. I teach the weekend school: forty-three kids in two rooms. And I shoot.', 'Sometimes it goes in. Mostly it goes in.'],
-  musa: ['Yo! The other new guy! I’m Musa. I took my shahadah in the spring.', 'Everybody here taught me how to pray. Now I teach them how to dunk.']
+  karim: ['Ustath Karim. I teach the weekend school, and I shoot.', 'Win and you earn Halal Bucks. A green headband, white high-tops, your own celebration. Look good, play good.'],
+  dawud: ['You came back, {name}. Before you play, pray.', 'The mihrab is at the front. Two rak’ahs, and the heart is ready for anything.'],
+  anas: ['As-salamu alaykum! I’m Anas. They call me Qari because I lead Taraweeh.', 'The mushaf is on the shelf. Read a little every day, even one ayah.'],
+  mufti: ['Wa alaykum as-salam. I am Abdullah, the masjid’s mufti.', 'People bring me their questions. Sometimes whether the shot clock is halal. It is.'],
+  hafiz: ['Zubair. I memorised the Qur’an at twelve, and I keep score for the brothers.', 'Nobody argues the score with a hafiz.']
 };
 
 // ---------------------------------------------------------------- what the people around the gym say on a normal visit
@@ -26851,21 +26901,12 @@ const STORY_GYM_TALK = {
 scn('C2.1', { kind: 'drill', name: 'First practice', walk: 'C2.1', next: 'C2.2' });
 scn('C2.2', { kind: 'walk', name: 'Father and son', walk: 'C2.2', next: 'C2.3' });
 scn('C2.3', { kind: 'scene', name: 'Why we play', salah: true, talk: { at: 'office', who: 'saleem' }, next: 'C2.4', effect: 'fundOn', lines: [
-  ['saleem', 'Come in, all of you. Squeeze in. Musa, sit on the bookshelf if you have to.'],
-  ['saleem', 'Before the league starts, I want you to know why we play. It isn’t for a trophy.'],
-  ['saleem', 'Ustath Karim, tell them.'],
-  ['karim', 'Forty-three kids come to the weekend school. We teach them in two rooms. One of the rooms is the coat closet.'],
-  ['karim', 'Last month we turned eleven families away. No space. Their kids go nowhere on the weekend.'],
-  ['saleem', 'The board approved a school wing on the parking lot side. Four classrooms. It costs one hundred thousand dollars.'],
-  ['jamil', 'One hundred thousand? We can barely pay for the electricity.'],
-  ['saleem', 'Every game we win, people come to watch. People who watch, give. The Masjid League final is the biggest night of our year.'],
-  ['dawud', 'The Prophet ﷺ said: when a person dies, his deeds end except three. One of them is knowledge that benefits.'],
-  ['dawud', 'Those classrooms will teach long after all of us are gone.'],
-  ['ilyas', 'So every win builds a classroom.'],
-  ['saleem', 'Every win builds a little of one. And every bit of adab we show on the court brings the community with us.'],
-  ['narr', 'The school wing fundraiser has begun. Its meter is on the hub.']] });
+  ['saleem', 'Forty-three kids come to our weekend school, in two rooms. Last month we turned eleven families away.'],
+  ['saleem', 'The board approved a school wing: four classrooms, one hundred thousand dollars. When we win, people come to watch, and people who watch give.'],
+  ['you', 'Then we win.'],
+  ['narr', 'The school wing fundraiser has begun. Its meter is on the left bar in the gym.']] });
 scn('C2.4', { kind: 'scene', name: 'The Masjid League', checkpoint: true, effect: 'bracket', stage: 0, next: 'C2.5', lines: () => storyLeagueIntro(0) });
-scn('C2.5', { kind: 'choice', name: 'Pick your teammate', pick: true, next: 'C2.6' });
+scn('C2.5', { kind: 'walk', name: 'Pick your teammate', walk: 'C2.5', next: 'C2.6' });
 scn('C2.6', { kind: 'play', name: 'Group game 1', bracket: true, stakes: 'opener', win: 'C2.7', loss: 'C2.7', out: 'C2.NS',
   winLines: [['saleem', 'Alhamdulillah. One down. Thank Allah, then thank the brother who set your screens.'], ['jamil', 'Good. Again on Thursday.']],
   lossLines: [['saleem', 'A loss in the group stage is not the end. Win the next one and we’re still alive.'], ['jamil', 'I hate losing. I REALLY hate losing.'], ['ilyas', 'We know, Dad.']] });
@@ -26876,7 +26917,7 @@ scn('C2.8', { kind: 'play', name: 'Group game 2', bracket: true, stakes: 'regula
 scn('C2.9', { kind: 'walk', name: 'Practice day', walk: 'C2.9', next: 'C2.10' });
 scn('C2.10', { kind: 'play', name: 'Lights out', mode: 'lightsout', win: 'C2.11', loss: 'C2.11',
   pre: [['narr', 'Practice, the next night. Halfway through a drill, the old tubes buzz… and go out. The whole gym goes dark.'], ['musa', 'Bro. BRO. I can’t see my own hands.'], ['jamil', 'The breaker again. Nineteen years, same breaker.'],
-    ['saleem', 'Nobody move to the switch, the uncles are on it. In the meantime… two on two. In the dark.'], ['ilyas', 'How do we see the ball?'], ['saleem', 'Listen for it. And watch the glow. Bismillah!']],
+    ['saleem', 'The uncles are on the switch. In the meantime, two on two. In the dark. Watch the glow. Bismillah!']],
   winLines: [['narr', 'The lights flicker back to life.'], ['musa', 'That was the best game of my life and I didn’t see any of it.'], ['saleem', 'You found your teammate without looking. That’s trust.']],
   lossLines: [['narr', 'The lights flicker back to life.'], ['jamil', 'In the dark, the old man is king! Ha!'], ['saleem', 'Win or lose, that was fun. Now: the breaker. Somebody call the electrician.']] });
 scn('C2.11', { kind: 'scene', name: 'The final push', next: 'C2.12', lines: () => storyGroupPush() });
@@ -26899,18 +26940,28 @@ scn('C2.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: (
 
 // the C2.1, C2.2 and C2.9 walks
 STORY_WALKS['C2.1'] = { title: 'First practice', free: true, npcs: [
-    { id: 'saleem', x: 860, z: 300, act: 'host', face: -1, closer: true, early: [['saleem', 'Three drills, then we talk. Q for the drill menu.']],
-      lines: [['saleem', 'Good work. That’s the habit: a little every day, even when nobody’s watching.'], ['saleem', 'Now go and find Ammo Jamil and Ilyas. I think they’re arguing again.']] }],
-  goals: [{ id: 'drill', label: 'Finish three drills', n: 3, touch: 'Tap Drills, pick one', key: 'Q opens the drills' }],
-  start: [['saleem', 'First real practice. Three drills, any three. Then come and see me.']] };
+    { id: 'saleem', x: 860, z: 300, act: 'host', face: -1, closer: true, early: [['saleem', 'Three drills, then we talk. Drills are on the left bar.']],
+      lines: [['saleem', 'Good work. A little every day, even when nobody’s watching.'], ['saleem', 'Ammo Jamil and Ilyas are by the far hoop. Go say salaam.']] }],
+  goals: [{ id: 'drill', label: 'Finish three drills', n: 3, touch: 'Tap Drills, pick one', key: 'Drills on the left bar, or Q' }],
+  start: [
+    ['saleem', 'Here’s how the season goes, {name}. Between every game, you come back here and practise.'],
+    ['saleem', 'Drills earn Barakah Points for your stats. Games earn Halal Bucks, for your look and for the masjid’s projects.'],
+    ['saleem', 'And when the adhan calls, pray. It gives you a boost for the next game.'],
+    ['saleem', 'Three drills tonight, any three. Let’s start the season off right.']] };
+// C2.2: father and son, a gym apart; each sees it his own way
 STORY_WALKS['C2.2'] = { title: 'Father and son', npcs: [
     { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, need: true, lines: [
-      ['jamil', 'You see my son? Twenty points last week in pickup. And still he doesn’t box out.'], ['you', 'He’s the quickest guard in the gym, Ammo.'],
-      ['jamil', 'Quick, yes. But quick doesn’t win leagues. Defense wins leagues.'], ['jamil', 'I push him because I don’t want him to lose a final by one point. Like me.']] },
+      ['jamil', 'My son scores twenty in pickup and still doesn’t box out. Defense wins leagues.'],
+      ['jamil', 'I push him so he never loses a final by one point. Like I did.']] },
     { id: 'ilyas', x: 1120, z: 430, act: 'shoot', face: 1, need: true, lines: [
-      ['ilyas', 'Did he tell you about the one-point final? He tells everyone.'], ['ilyas', 'I play defense. I do. He only sees what I don’t do.'],
-      ['you', 'Maybe tell him what you just told me.'], ['ilyas', 'Maybe. After we win something.']] }],
-  end: [['narr', 'Father and son, a gym apart. Each of them said the same thing about the other.']] };
+      ['ilyas', 'He only sees what I don’t do. I want to run, not stand in his zone.'],
+      ['you', 'Maybe tell him that.'], ['ilyas', 'After we win something.']] }] };
+// C2.5: the seven stand around the gym; talk to any of them and the pick screen opens with him selected
+STORY_WALKS['C2.5'] = { title: 'Pick your teammate', pickWalk: true, npcs: STORY_MATES.map((id, i) => {
+    const [x, z, face] = [[900, 320, -1], [980, 600, -1], [1120, 430, -1], [1180, 220, -1], [720, 600, 1], [600, 250, 1], [760, 170, 1]][i];
+    return { id, x, z, face, act: id === 'ilyas' ? 'shoot' : id === 'dawud' ? 'chai' : 'host', onTalk: () => storyPickWalkOpen(id) }; }),
+  goals: [{ id: 'pick', label: 'Pick your teammate', touch: 'Walk up to a brother and tap Talk', key: 'Walk up to a brother, press E' }],
+  start: [['saleem', 'Two on two, {name}: you and one of us. Talk to whoever you want to play with.']] };
 STORY_WALKS['C2.9'] = { title: 'Practice day', free: true, npcs: [
     { id: 'jamil', x: 980, z: 600, act: 'host', face: -1, need: true, lines: [['jamil', 'Two group games down. Every possession matters now. EVERY possession.'], ['you', 'In sha Allah, we’re ready.']] },
     { id: 'ilyas', x: 1120, z: 430, act: 'shoot', face: 1, need: true, lines: [['ilyas', 'My dad clapped once last game. Once. I counted.'], ['you', 'That’s a start.']] },
@@ -26975,43 +27026,28 @@ const STORY_PICK_LINES = {
 };
 // the title scenes ({built}: the projects the title paid for, {fund}: the fundraiser's total)
 const STORY_TITLE_TEXT = [
-  [['narr', 'Masjid Al-Amanah: champions of the Metro Masjid League.'], ['jamil', 'NINETEEN YEARS!'], ['jamil', 'Nineteen years, and now… now… somebody give me a tissue.'],
-    ['ilyas', 'Dad. Are you crying?'], ['jamil', 'It’s the chai. Too much cardamom.'], ['saleem', 'Alhamdulillah. First trophy in the history of this masjid. Thank Allah first, then your brothers.'],
+  [['narr', 'Masjid Al-Amanah: champions of the Metro Masjid League.'], ['jamil', 'NINETEEN YEARS! Somebody give me a tissue.'],
+    ['ilyas', 'Dad. Are you crying?'], ['jamil', 'It’s the chai. Too much cardamom.'],
+    ['saleem', 'Alhamdulillah. The first trophy in the history of this masjid, and the title builds {built}. You too, {name}.'],
     ['rayyan', 'Congratulations, Al-Amanah. You earned it. See you at State.'],
-    ['karim', 'The fundraiser stands at {fund}. The kids are already arguing about whose name goes on the classroom door.'],
-    ['saleem', 'And the title money builds something right away: {built}. No more flickering tubes. Sorry, lights-out game.'],
-    ['dawud', 'Tonight, chai for everyone. Even Al-Furqan.']],
-  [['narr', 'Masjid Al-Amanah: state champions.'], ['saleem', 'From a gym with a bent rim to the best in the state. Alhamdulillah.'], ['jamil', 'Two trophies. TWO.'],
-    ['ilyas', 'Dad, you said “good game” to me after the final. I heard you.'], ['jamil', '…I said it to everybody.'], ['ilyas', 'You looked at me when you said it.'],
-    ['anas', 'I want to thank the uncles who drove us to every away game. All forty minutes of complaining about traffic.'],
-    ['karim', 'The fundraiser stands at {fund}. My students drew a picture of the school wing. It has a pool. We are not building a pool.'],
+    ['karim', 'The fundraiser stands at {fund}. The kids are already arguing about whose name goes on the classroom door.']],
+  [['narr', 'Masjid Al-Amanah: state champions.'], ['saleem', 'From a gym with a bent rim to the best in the state. Masha’Allah, {name}.'],
+    ['ilyas', 'Dad, you said “good game” to me after the final. I heard you.'], ['jamil', '…I said it to everybody.'],
     ['musa', 'Eight months ago I didn’t know how to pray. Today I’m a state champion with my brothers.'],
-    ['saleem', 'The title brings {built}. And the invitation to the National tournament.'], ['dawud', 'Masha’Allah. And the chai stays the same.']],
-  [['narr', 'Masjid Al-Amanah: national champions.'], ['saleem', 'Alhamdulillah, alhamdulillah. From a gym with one working light to the best masjid team in the country.'],
-    ['narr', 'In the noise, Ammo Jamil walks across the court to his son.'],
-    ['jamil', 'Ilyas. Come here.'], ['ilyas', 'Dad, if this is about my box-outs—'],
-    ['jamil', 'No. Listen. Twenty years I wanted a trophy. Tonight I have one, and it is not the thing I am proudest of.'],
-    ['jamil', 'I am proud of you. Not for the points. For how you play, how you treat people, how you kept going when I was yelling.'],
-    ['jamil', 'I was hard on you because of my one-point final. That was my loss, not yours. I am sorry, my son.'],
+    ['karim', 'The fundraiser stands at {fund}.'], ['saleem', 'The title brings {built}. And the invitation to the National tournament.']],
+  [['narr', 'Masjid Al-Amanah: national champions. In the noise, Ammo Jamil walks across the court to his son.'],
+    ['jamil', 'Ilyas. Twenty years I wanted a trophy. Tonight I have one, and it is not the thing I am proudest of.'],
+    ['jamil', 'I am proud of you. Not for the points: for how you play, and how you kept going when I was yelling. I’m sorry, my son.'],
     ['ilyas', '…Dad. Good game.'], ['jamil', 'Good game, son.'],
-    ['musa', 'Is everyone crying? I’m crying. Anas is crying.'], ['anas', 'I am not crying. I am perspiring from the eyes.'],
-    ['karim', 'Brothers, the fundraiser: {fund}. The rest came in tonight, from the stands, from the stream, from people who never met us.'],
-    ['saleem', 'The school wing is paid for. Four classrooms. No more coat closet. The eleven families we turned away: they all have a place now.'],
-    ['karim', 'Monday morning, I teach in a real classroom. With a window.'],
-    ['dawud', 'Knowledge that benefits, long after us. This is what we played for.'],
-    ['saleem', 'And the title builds {built} as well. Go outside when we get home. Look at the masjid. Look at the new wing.'],
-    ['rayyan', 'National champions. From our street. Al-Furqan is proud of you. Don’t tell my uncle I said that.']],
+    ['karim', 'The fundraiser: {fund}. The rest came in tonight. The school wing is paid for: four classrooms, and every family has a place.'],
+    ['saleem', 'And the title builds {built}. When we get home, go outside and look at the masjid, {name}. Look at the new wing.']],
   [['narr', 'The Ummah Cup final is over. Masjid Al-Amanah, from Eastside, are champions of the world.'],
-    ['saleem', 'Allahu akbar. Allahu akbar. Brothers… sujood of thanks, right here, then we lift it.'],
+    ['saleem', 'Allahu akbar. A sujood of thanks, right here, then we lift it.'],
     ['narr', 'The team kneels on the court in sujood of thanks. Then Sh. Saleem hands the Cup to you.'],
-    ['saleem', 'You lift it first, akhi. You walked into our gym a stranger. Lift it as our brother.'],
-    ['jamil', 'Twenty years ago I lost a final by one point. Tonight I have a world cup. My knees don’t hurt. Nothing hurts.'],
-    ['ilyas', 'Dad. Proud of you.'], ['jamil', 'That is my line! …Proud of you too, son.'],
-    ['karim', 'I am going to put a picture of this in every classroom of the new wing.'],
-    ['anas', 'Teams from every corner of the ummah, clapping for each other. This is what I will remember.'],
-    ['musa', 'A year ago I said my shahadah. Today I have a thousand brothers, and a trophy. Allah is generous.'],
-    ['dawud', 'The chai tonight is on Istanbul. They make it in little glasses. I approve.'],
-    ['saleem', 'And at home, the title builds {built}. Al-Amanah will look like a real masjid now, with a dome you can see from the highway.']]
+    ['saleem', 'You lift it first, {name}. You walked into our gym a stranger. Lift it as our brother.'],
+    ['jamil', 'Twenty years ago I lost a final by one point. Tonight I have a world cup. Nothing hurts.'],
+    ['ilyas', 'Proud of you, Dad.'], ['jamil', 'That is my line! …Proud of you too, son.'],
+    ['saleem', 'And at home, the title builds {built}. A dome you can see from the highway.']]
 ];
 // after a run-ending loss: a new season, back to the chapter's checkpoint
 const STORY_NEXT_SEASON = {
@@ -27042,13 +27078,10 @@ C3G('C3.7', 3, 'C3.8');
 C3G('C3.8', 4, 'C3.9', { win: [['saleem', 'Halfway. Good. Come to my office tomorrow, all of you. I have an idea.']], loss: [['saleem', 'Halfway, and still in it. Come to my office tomorrow. I have an idea.']] });
 scn('C3.9', { kind: 'scene', name: 'Tickets', talk: { at: 'office', who: 'saleem' }, next: 'C3.10', lines: [
   ['narr', 'Sh. Saleem’s office, the next day. A box of printed tickets sits on the desk.'],
-  ['saleem', 'The school wing needs money, and people want to see this team. So we give them a show.'],
-  ['saleem', 'An all-star game. Saturday night, in our gym. Tickets ten dollars, kids free.'],
-  ['you', 'Who do we play?'],
-  ['saleem', 'Al-Furqan agreed to send their best two. Rayyan said, and I quote, “we’re going to embarrass you.”'],
-  ['saleem', 'One rule: dunks only. A jumper counts nothing. Musa suggested it.'],
-  ['musa', 'I suggested it!'],
-  ['saleem', 'Every dunk brings the crowd up. The louder the crowd, the more the uncles give. Go and practise your dunks.']] });
+  ['saleem', 'The school wing needs money, and people want to see this team. Saturday night: an all-star game in our gym. Al-Furqan sends their best two.'],
+  ['saleem', 'One rule: dunks only. A jumper counts nothing. Every dunk brings the crowd up, and the louder the crowd, the more the uncles give.'],
+  ['you', 'Dunks only. Musa’s idea?'],
+  ['saleem', 'Musa’s idea. Go and practise your dunks.']] });
 scn('C3.10', { kind: 'play', name: 'All-star game', mode: 'allstar', win: 'C3.11', loss: 'C3.11',
   pre: [['narr', 'Saturday night. The bleachers are full. Someone’s auntie has made a banner: DUNK FOR THE KIDS.'], ['rayyan', 'Dunks only. You sure you want this?'], ['musa', 'We were born for this.'], ['jamil', 'Nobody in this gym was born for this. Bend your knees.']],
   winLines: [['narr', 'The final dunk, and the gym explodes.'], ['rayyan', 'Okay. That was a good show. Tell no one I said that.']],
@@ -27071,12 +27104,9 @@ scn('C3.22', { kind: 'scene', name: 'State champions', effect: 'title', stage: 1
 scn('C3.23', { kind: 'scene', name: 'The invitation', talk: { at: 'office', who: 'saleem' }, next: 'C4.1', hub: true, lines: [
   ['narr', 'A week later. An envelope on Sh. Saleem’s desk, with a gold seal.'],
   ['saleem', '“Masjid Al-Amanah is invited to the National Masjid Tournament. Sixteen teams. Single elimination.”'],
-  ['jamil', 'Single elimination. One bad night and we go home.'],
-  ['ilyas', 'Then we don’t have a bad night.'],
-  ['jamil', '…When did you get so confident?'],
-  ['ilyas', 'I learned it from somebody. He yells a lot.'],
-  ['karim', 'The fundraiser is closer than ever. If we do well at Nationals, the school wing could open this year.'],
-  ['dawud', 'Pack the big thermos. We’re going on a trip.']] });
+  ['saleem', 'One bad night and we go home. And if we do well, the school wing could open this year.'],
+  ['you', 'Then we don’t have a bad night.'],
+  ['saleem', 'In sha Allah. Tell the brothers. And tell Imam Dawud to pack the big thermos.']] });
 scn('C3.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: () => C.story.cp || 'C3.2', hub: true, lines: () => storyNextSeasonLines(3) });
 
 STORY_WALKS['C3.1'] = { title: 'Back at the gym', npcs: [
@@ -27094,15 +27124,10 @@ STORY_WALKS['C3.4'] = { title: 'Practice', free: true, npcs: [
 
 function storyStateIntro() {
   const b = C.bracket, att = C.story.att || 0, o = storyOpp();
-  const L = att ? [['saleem', 'A new State season. Same table, same intention.'], ['jamil', 'This year, the top four. Then the trophy.']] : [
-    ['saleem', 'Brothers. As masjid league champions, we’re in the State Masjid Championship.'],
-    ['saleem', 'Nine masjids from across the state. We play each of them once. Eight games.'],
-    ['saleem', 'The top four go to the semifinals: first plays fourth, second plays third. Then the final.'],
-    ['anas', 'Eight games is a long season. We look after our bodies.'],
-    ['musa', 'And our hamstrings. Qari Anas told me hamstrings are an amanah.'],
-    ['jamil', 'Al-Furqan is in it too. Rayyan’s uncle called me. To “wish me luck.”'],
-    ['dawud', 'Then we wish them luck back. And beat them.']];
-  if (b && b.pools && !att) L.push(['saleem', 'Every masjid in the table is here: ' + b.pools[0].filter(i => i > 1).map(i => teamOf(1, i).name.replace('Masjid ', '')).join(', ') + ', and Al-Furqan.']);
+  const L = att ? [['saleem', 'A new State season. Same table, same intention.']] : [
+    ['saleem', 'As masjid league champions, we’re in the State Masjid Championship. Nine masjids from across the state.'],
+    ['saleem', 'We play each of them once: eight games. The top four go to the semifinals, then the final.'],
+    ['jamil', 'Al-Furqan is in it too. Rayyan’s uncle called me. To “wish me luck.”']];
   if (o) L.push(['saleem', 'First up: ' + o.team.name + '. Pick who plays beside you.']);
   return L;
 }
@@ -27128,14 +27153,11 @@ function storyTableResultLines() {
 }
 function storyStateFinalPrep() {
   const b = C.bracket, f = b && b.rounds[1] && b.rounds[1][0], oid = f ? (f.a === 0 ? f.b : f.a) : 1, opp = teamOf(1, oid);
-  const L = [['narr', 'The night before the State final. Sh. Saleem’s office, the door open, the gym dark behind it.'],
-    ['saleem', 'Tomorrow it’s ' + opp.name + '. Sit for a minute.'],
-    ['saleem', 'When I came back from Madinah, this gym had one working light and a rim bent like a banana.'],
-    ['saleem', 'Now look. Lights. Bleachers full every night. Kids who want to be you.'],
-    ['you', 'And a school wing on the way.'],
-    ['saleem', 'In sha Allah. Whatever happens tomorrow, the masjid already won. But I would still like that trophy.']];
-  if (oid === 1) L.push(['saleem', 'And it’s Rayyan. Play him straight. He hates that.']);
-  return L;
+  return [['narr', 'The night before the State final. Sh. Saleem’s office, the door open, the gym dark behind it.'],
+    ['saleem', 'Tomorrow it’s ' + opp.name + '. When I came back from Madinah, this gym had one working light and a rim bent like a banana.'],
+    ['saleem', 'Now look. Lights, bleachers full every night, kids who want to be you. Whatever happens tomorrow, the masjid already won.'],
+    ['you', 'But we’d still like that trophy.'],
+    ['saleem', oid === 1 ? 'We would. And it’s Rayyan: play him straight. He hates that.' : 'We would. In sha Allah.']];
 }
 // C3.14: the teammate who leaves for Hajj (his name came up this year), and his line when he's back for the playoffs.
 // Hajj itself is never shown: he talks about it before he goes, and comes back a hajji.
@@ -27162,20 +27184,20 @@ scn('C4.4', { kind: 'play', name: 'National quarterfinal', bracket: true, stakes
 scn('C4.5', { kind: 'scene', name: 'The last four', next: 'C4.6', lines: () => storyNatReact(1) });
 scn('C4.6', { kind: 'play', name: 'National semifinal', bracket: true, stakes: 'must-win', win: 'C4.7', out: 'C4.NS', loss: 'C4.NS',
   winLines: [['saleem', 'THE FINAL! Allahu akbar!'], ['jamil', 'I need to sit down.']], lossLines: [['saleem', 'One game from the final. It hurts because we cared. Good.']] });
-scn('C4.7', { kind: 'scene', name: 'The night before the final', next: 'C4.8', lines: () => storyNatReact(2).concat([
-  ['narr', 'Late that night, the team prays Isha together in the hotel’s small prayer room, then sits up talking.'],
+scn('C4.7', { kind: 'scene', name: 'The night before the final', next: 'C4.8', lines: () => [
+  ['narr', 'The night before the National final. After Isha in the hotel’s small prayer room, the team sits up talking.'],
+  ...storyNatReact(2).filter(l => l[0] !== 'narr').slice(-1),
   ['ilyas', 'Dad? Thanks for driving us to every single game. Even the ones with traffic.'], ['jamil', '…Go to sleep. Big game tomorrow.'],
-  ['saleem', 'Tomorrow, play for each other. The rest is written already.']]) });
+  ['saleem', 'Tomorrow, play for each other. The rest is written already.']] });
 scn('C4.8', { kind: 'play', name: 'National final', bracket: true, stakes: 'final', win: 'C4.9', out: 'C4.NS', loss: 'C4.NS',
   winLines: [['narr', 'The final buzzer. Al-Amanah are national champions.']], lossLines: [['narr', 'The final buzzer. Second in the whole country.'], ['saleem', 'Second in the nation, brothers. Hold your heads up. We come back.']] });
 scn('C4.9', { kind: 'scene', name: 'National champions', effect: 'title', stage: 2, next: 'C4.10', lines: () => storyTitleLines(2) });
 scn('C4.10', { kind: 'scene', name: 'The Ummah Cup', talk: { at: 'office', who: 'saleem' }, next: 'C5.1', hub: true, lines: [
   ['narr', 'Home again. A video call is waiting on Sh. Saleem’s laptop.'],
-  ['saleem', 'Come in, come in. This was sent from Istanbul this morning.'],
-  ['saleem', '“Masjid Al-Amanah is invited to the Ummah Cup: the best masjid teams from around the world.”'],
+  ['saleem', 'This came from Istanbul this morning. “Masjid Al-Amanah is invited to the Ummah Cup: the best masjid teams in the world.”'],
   ['you', 'The world?'],
-  ['saleem', 'Teams from Cairo, Kuala Lumpur, Sarajevo, Lagos… Brothers who pray the same prayer in a hundred languages.'],
-  ['saleem', 'The school wing is built. Whatever happens at the Cup is a gift. But let’s go and win it anyway.']] });
+  ['saleem', 'Cairo, Kuala Lumpur, Sarajevo, Lagos. Brothers who pray the same prayer in a hundred languages.'],
+  ['saleem', 'The school wing is built. Whatever happens there is a gift. But let’s go and win it anyway.']] });
 scn('C4.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: () => C.story.cp || 'C4.1', hub: true, lines: () => storyNextSeasonLines(4) });
 
 // ---------------------------------------------------------------- Chapter 5: the Ummah Cup (v9.28)
@@ -27190,21 +27212,22 @@ scn('C5.4', { kind: 'play', name: 'Ummah Cup quarterfinal', bracket: true, stake
 scn('C5.5', { kind: 'scene', name: 'The last four', next: 'C5.6', lines: () => storyCupReact(0) });
 scn('C5.6', { kind: 'play', name: 'Ummah Cup semifinal', bracket: true, stakes: 'must-win', win: 'C5.7', out: 'C5.NS', loss: 'C5.NS',
   winLines: [['saleem', 'THE FINAL OF THE UMMAH CUP!'], ['jamil', 'Somebody hold me up.']], lossLines: [['saleem', 'One game from the final of the world. That’s further than we dreamed.']] });
-scn('C5.7', { kind: 'scene', name: 'One of the top two', next: 'C5.8', lines: () => storyCupReact(1).concat([
+scn('C5.7', { kind: 'scene', name: 'One of the top two', next: 'C5.8', lines: () => [
   ['narr', 'The night before the final, the brothers walk to the masjid by the water for Isha, then sit on its steps until late.'],
+  ...storyCupReact(1).filter(l => l[0] !== 'narr').slice(-2),
   ['saleem', 'Whatever happens tomorrow, look around. A year ago this team was six brothers and a bent rim.'],
-  ['dawud', 'And chai. There was always chai.']]) });
+  ['dawud', 'And chai. There was always chai.']] });
 scn('C5.8', { kind: 'play', name: 'Ummah Cup final', bracket: true, stakes: 'final', win: 'C5.9', out: 'C5.NS', loss: 'C5.NS',
   winLines: [['narr', 'The final buzzer. The hall stands up.']], lossLines: [['narr', 'The final buzzer. Second in the whole world.'], ['saleem', 'Second in the world, brothers. We come back, in sha Allah.']] });
 scn('C5.9', { kind: 'scene', name: 'Champions of the ummah', effect: 'title', stage: 3, next: 'C5.10', lines: () => storyTitleLines(3) });
 scn('C5.10', { kind: 'scene', name: 'Home', next: 'C5.11', lines: [
-  ['narr', 'Home. The gym is packed: uncles on folding chairs, aunties in the bleachers, and the kids of the weekend school in front, in their new classroom T-shirts.'],
+  ['narr', 'Home. The gym is packed, and the kids of the weekend school are in the front row in their new classroom T-shirts.'],
   ['karim', 'Kids! Say salaam to the champions of the world!'],
   ['narr', 'Forty children shout “AS-SALAMU ALAYKUM!” at once. Ammo Jamil has to sit down.'],
-  ['saleem', 'This Cup goes in the trophy case, next to the others. But the real prize is in the new wing, learning Quran on a Saturday morning.'],
-  ['ilyas', 'One of the kids asked me if he can be on the team one day.'], ['jamil', 'What did you tell him?'], ['ilyas', 'Bend your knees.'],
-  ['musa', 'I’m starting a youth league. Saturdays after school. Matching headbands.'], ['ilyas', '…Fine. For the kids, matching headbands.'],
-  ['saleem', 'Akhi. You found a community here. Now you help us build the next one. That’s how a masjid lasts.']] });
+  ['saleem', 'The Cup goes in the case. The real prize is in the new wing, learning Qur’an on a Saturday morning.'],
+  ['ilyas', 'A kid asked me if he can be on the team one day. I told him: bend your knees.'],
+  ['musa', 'I’m starting a youth league. Saturdays. Matching headbands.'], ['ilyas', '…Fine. For the kids.'],
+  ['saleem', '{name}, you found a community here. Now help us build the next one. That’s how a masjid lasts.']] });
 scn('C5.11', { kind: 'scene', name: 'The End', custom: 'credits', next: 'P.1', hub: true });
 scn('C5.NS', { kind: 'scene', name: 'Next season', effect: 'nextSeason', next: () => C.story.cp || 'C5.1', hub: true, lines: () => storyNextSeasonLines(5) });
 // ================================================= v9.22: THE CAREER STORY — the runner and the save
@@ -27246,7 +27269,6 @@ function storyTitleOf(S) { const ch = CHAPTERS[Math.min(S.ch, CHAPTERS.length - 
   };
   // a new career: the creator, then Chapter 0 straight away
   creatorDone = function () {
-    if (!C.name.trim()) C.name = 'Brother';
     if (Game.creator.isNew) { C.story = storyFresh(); saveCareer(); storyRun(); }
     else careerHub();
   };
@@ -27483,7 +27505,7 @@ function swTrackGoals(dt) {
     if (I.talk) I.talk.t += dt;
     if (I.fade > 0 && !I.fadeDir) I.fade = Math.max(0, I.fade - dt * 1.5);
     if (I.fadeDir) { I.fade = Math.min(1, I.fade + dt * 1.4); if (I.fade >= 1) { swEnd(); return; } }
-    if (menuHit('back') && !I.fadeDir) { careerHub(); return; }
+    if (menuHit('back') && !I.fadeDir) { careerMenu(); return; }        // (v9.35: Esc opens the menu, as it does at home; the walk keeps its place)
     const me = M.players[0];
     if (!I.talk) I.with = null;
     I.lb += ((I.talk ? 1 : 0) - I.lb) * Math.min(1, dt * 6);
@@ -27537,16 +27559,17 @@ function swTrackGoals(dt) {
     if (I.D.free) { if (Gym.drill || Gym.overlay || Gym.result || Gym.walk || Gym.fade) return _hud.apply(this, arguments); if (!I.talk) _hud.apply(this, arguments); }
     if (I.lb > 0.01) { const b = 40 * I.lb; g.fillStyle = 'rgba(4,8,12,0.92)'; g.fillRect(-400, 0, W + 800, b); g.fillRect(-400, H - b, W + 800, b); }
     // the checklist: who to meet, or the tutorial's goals
+    I.listBottom = 0;
     const rows = I.D.goals ? I.D.goals.map(q => [I.goals[q.id], q.label + (q.n && !I.goals[q.id] ? '  ' + Math.min(q.id === 'score' ? I.gp.made : I.gc[q.id] || 0, q.n) + '/' + q.n : '')])
       : I.D.npcs.filter(d => d.need).map(d => [I.met[d.id], castDef(d.id).name]);
     if (rows.length) {
       g.save(); g.globalAlpha = 1 - I.lb; g.font = `12px ${BODY}`;
       const rh = Math.max(20, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 12) + 8), w = Math.max(196, ...rows.map(r => g.measureText('✓ ' + r[1]).width + 44));
-      const x0 = TT ? 12 : 132, y0 = TT ? 72 : 12;                       // (clear of the Back button: beside it on a computer, under it on a phone)
+      const x0 = 12, y0 = TT ? 72 : 60;                                  // (v9.31: under the Back button, the left column)
       g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x0, y0, w, 30 + rows.length * rh, 12); g.fill();
       g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(I.D.title || 'Walk around', x0 + 14, y0 + 20);
       rows.forEach(([ok, label], i) => { g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + label, x0 + 16, y0 + 20 + (i + 1) * rh); });
-      g.restore();
+      g.restore(); I.listBottom = y0 + 30 + rows.length * rh + 8;
     }
     for (const id in I.npcs) {
       const p = I.npcs[id], [x, y] = head(p), d = I.defs[id];
@@ -27598,10 +27621,8 @@ function swPrompt(g, x, y, label, fn) {
   addRect(x - w / 2, y - h, w, h, fn);
 }
 function swHint(g, text, free) {
-  g.font = `12px ${BODY}`; const w = Math.min(W - 40, g.measureText(text).width + 30), y = Input.touchMode ? 12 : free ? H - 128 : H - 40;   // (free walks: above the gym's own bar)
-  if (Input.touchMode) return;                                   // phones: the touch controls own the bottom; the checklist says it
-  g.fillStyle = 'rgba(8,16,24,0.72)'; roundRect(g, W / 2 - w / 2, y, w, 28, 14); g.fill();
-  g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText(fitText(g, text, w - 20), W / 2, y + 19);
+  if (Input.touchMode || !text) return;                          // phones: the touch controls own the screen; the checklist says it
+  Gym.hintText = text;                                           // (v9.31: drawn on the left, under the bar: story-home.js)
 }
 
 // ---------------------------------------------------------------- what people are doing while you walk in
@@ -27731,36 +27752,53 @@ function swPropFront(g, p) {
     if (Game.screen === 'train' && Game.trainBack && menuHit('back')) { Game.trainBack = null; Game.screen = 'gym'; return; }
     return _cu.apply(this, arguments);
   };
+  // the corner Back in a story walk opens the menu too (v9.35: careerHub() would only come back here)
+  const _bg = BACK.gym;
+  BACK.gym = function () { if (Gym.story && Gym.story === SW && !SW.D.home && !Gym.drill && !Gym.overlay && storyOn()) return careerMenu(); return _bg.apply(this, arguments); };
   const _bt = BACK.train;
   BACK.train = function () { if (Game.trainBack) { Game.trainBack = null; Game.screen = 'gym'; return; } return _bt ? _bt.apply(this, arguments) : careerHub(); };
 }
 
-// ---------------------------------------------------------------- C1.5: the musalla walk
-// The musalla's own screen (walk, talk, use things); the five people to meet each introduce themselves first. When
-// everyone is met (and the talk is closed), the story moves on. Esc or the doorway leaves; Continue comes back.
+// ---------------------------------------------------------------- C1.2: the musalla walk
+// The musalla's own screen (walk, talk, use things); the people to meet each introduce themselves first, and you pray
+// and read (v9.33). When it's all done, the scene's closer (Musa) calls everyone out and the story moves on.
 function storyMusallaStart(S) {
   enterGym(); M.lobbyGym = false; openMusalla();
   const wp = C.story.wp && C.story.wp.id === S.id ? C.story.wp : null;
-  Game.mus.story = { S, met: Object.assign({}, wp && wp.met) };
+  Game.mus.story = { S, met: Object.assign({}, wp && wp.met), goals: Object.assign({}, wp && wp.goals) };
 }
 function smusLeft() { const st = Game.mus && Game.mus.story; return st ? STORY_MUS_NEED.filter(id => !st.met[id]) : []; }
+function smusGoalsLeft() { const st = Game.mus && Game.mus.story; return st ? STORY_MUS_GOALS.filter(q => !st.goals[q.id]) : []; }
+function smusSave(st) { C.story.wp = { id: st.S.id, met: Object.assign({}, st.met), goals: Object.assign({}, st.goals) }; saveCareer(); }
 {
   const _tt = talkTo;
   talkTo = function (i) {
     const r = _tt.apply(this, arguments), m = Game.mus, st = m && m.story, id = MUS_CAST[i];
     if (st && STORY_MUS_INTRO[id] && !st.met[id]) {
-      const t = m.talk; t.mode = 'answer'; t.lines = STORY_MUS_INTRO[id].slice(); t.li = 0;
-      st.met[id] = true; C.story.wp = { id: st.S.id, met: Object.assign({}, st.met), goals: {} }; saveCareer();
+      const t = m.talk; t.mode = 'answer'; t.lines = STORY_MUS_INTRO[id].map(storyNameText); t.li = 0;
+      st.met[id] = true; smusSave(st);
     }
+    return r;
+  };
+  const _up = useMusProp;
+  useMusProp = function (m, p) {
+    const r = _up.apply(this, arguments), st = m && m.story, k = p && (p.id === 'mihrab' ? 'pray' : p.id === 'shelf' ? 'read' : null);
+    if (st && k && !st.goals[k]) { st.goals[k] = true; smusSave(st); }
     return r;
   };
   const _mu = musallaUpdate;
   musallaUpdate = function (rdt) {
     const m = Game.mus, st = m && m.story;
     const r = _mu.apply(this, arguments);
-    if (st && Game.mus === m && !m.talk && !smusLeft().length) {
-      const S = st.S, lines = STORY_MUS_NEED.map(id => [id, STORY_MUS_INTRO[id][0]]);
-      Game.mus = null; Game.screen = 'gym'; C.story.wp = null;
+    if (st && Game.mus === m && !m.talk && !m.fx && !m.stalk && !smusLeft().length && !smusGoalsLeft().length) {
+      const S = st.S, lines = STORY_MUS_NEED.map(id => [id, storyNameText(STORY_MUS_INTRO[id][0])]);
+      C.story.wp = null;
+      if (S.closer) {                                                   // he calls everyone out (stalkAdvance moves the story on)
+        const cl = S.closer.map(l => [l[0], storyNameText(l[1])]);
+        m.stalk = { S, who: cl[0][0], at: 'musalla', main: cl, all: lines.concat(cl) }; stalkShow(m.stalk, cl);
+        return r;
+      }
+      Game.mus = null; Game.screen = 'gym';
       storyJournal(S, lines); storyDone(S, 'next');
     }
     return r;
@@ -27768,12 +27806,13 @@ function smusLeft() { const st = Game.mus && Game.mus.story; return st ? STORY_M
   const _dm = drawMusallaScreen;
   drawMusallaScreen = function (g) {
     _dm.apply(this, arguments);
-    const m = Game.mus, st = m && m.story; if (!st || m.talk) return;
+    const m = Game.mus, st = m && m.story; if (!st || m.talk || m.stalk) return;
+    const rows = STORY_MUS_NEED.map(id => [!!st.met[id], castDef(id).name]).concat(STORY_MUS_GOALS.map(q => [!!st.goals[q.id], q.label]));
     g.font = `12px ${BODY}`; const rh = Math.max(20, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 12) + 8);
-    const w = Math.max(196, ...STORY_MUS_NEED.map(id => g.measureText('✓ ' + castDef(id).name).width + 44)), x0 = W - w - 12, y0 = 8;
-    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x0, y0, w, 30 + STORY_MUS_NEED.length * rh, 12); g.fill();
-    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('Meet the musalla', x0 + 14, y0 + 20);
-    STORY_MUS_NEED.forEach((id, i) => { const ok = !!st.met[id]; g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + castDef(id).name, x0 + 16, y0 + 20 + (i + 1) * rh); });
+    const w = Math.max(196, ...rows.map(r => g.measureText('✓ ' + r[1]).width + 44)), x0 = 12, y0 = Input.touchMode && g === ctx ? 72 : 60;
+    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x0, y0, w, 30 + rows.length * rh, 12); g.fill();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('The musalla', x0 + 14, y0 + 20);
+    rows.forEach(([ok, label], i) => { g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + label, x0 + 16, y0 + 20 + (i + 1) * rh); });
   };
 }
 
@@ -27918,16 +27957,16 @@ const STORY_MODES = {
     const them = { name: 'Ammo Jamil & Ilyas', short: 'JAMIL', place: 'Eastside', c1: '#7a1f2b', c2: '#e8c35a', crest: 'dome', players: [storyMateDef('jamil', 0), storyMateDef('ilyas', 0)] };
     storyExhibition(S, us, them, { L: -1, fmt: { format: 'first21', target: 11 } });
   },
-  // C1.6: Lightning with Sh. Saleem, Ammo Jamil, Ilyas and Musa; any finish moves the story on
+  // C1.3: Lightning with Sh. Saleem, Ammo Jamil, Ilyas and Musa; any finish moves the story on
   lightning(S) {
     enterGym();
     setupMini('lightning', { roster: ['you', 'saleem', 'jamil', 'ilyas', 'musa'], humans: [{ team: 0, slot: 0, pad: 0 }] });
     Gym.drill = { kind: 'lightning', mini: true, story: S.id };
-    gymToast('Lightning: wait your turn on the spot behind the arc. Miss and chase your rebound. If the player behind you scores first, you’re out.', 4.5);
   },
-  // C1.8: King of the Court for a starting spot; crowned, or go again
+  // C1.6: King of the Court for a starting spot, in the practice gym: Musa, Hafiz Zubair, then Qari Anas; crowned, or go again
   kotc(S) {
-    startKotc({ roster: ['you', 'jamil', 'ilyas', 'musa'], humans: { you: 0 } });
+    KOTC.lean = true;
+    startKotc({ roster: ['you', 'musa', 'hafiz', 'anas'], humans: { you: 0 } });
     KOTC.gym = true; KOTC.story = S.id;
   }
 };
@@ -28323,14 +28362,12 @@ STORY_MODES.lightsout = function (S) {
 function storyLeagueIntro(stage) {
   const o = storyOpp(), b = C.bracket, att = C.story.att || 0;
   const pool = b && b.pools ? b.pools[0].filter(i => i !== 0).map(i => teamOf(stage, i).name.replace('Masjid ', '')) : [];
-  const L = att ? [['saleem', 'A new season, brothers. Same masjid, same intention. Everything we built is still ours.'], ['jamil', 'And this year we win it.']] :
-    [['narr', 'The Metro Masjid League. Eight masjids, one trophy, and a gym full of uncles with opinions.'], ['saleem', 'Here’s how it works. Two groups of four. We play each team in our group once.'],
-      ['saleem', 'The top two in each group go through to the semifinals. Then the final.'], ['musa', 'So three games, then two more if we’re good.'], ['karim', 'Five games. Five chances to make the kids proud.']];
-  if (pool.length) L.push(['saleem', 'Our group: ' + pool.slice(0, -1).join(', ') + ' and ' + pool[pool.length - 1] + '.']);
-  if (b && b.pools && b.pools[1].includes(1)) L.push(['jamil', 'Al-Furqan is in the other group. If we meet them, it’s in the playoffs. Good.']);
-  else if (b && b.pools) L.push(['jamil', 'Al-Furqan is in our group. Of course they are.']);
-  if (!att) L.push(['rayyan', 'As-salamu alaykum, Al-Amanah. Rayyan, Al-Furqan. My uncle still talks about beating you in that final.'], ['jamil', 'Your uncle hit a lucky shot.'], ['rayyan', 'He says it was skill. May the better team win.']);
-  if (o) L.push(['saleem', 'First up: ' + o.team.name + '. Now, pick who plays beside you.']);
+  const furqan = b && b.pools ? (b.pools[1].includes(1) ? ' Al-Furqan is in the other group.' : ' Al-Furqan is in ours.') : '';
+  const L = att ? [['saleem', 'A new season, brothers. Same masjid, same intention. Everything we built is still ours.']]
+    : [['narr', 'The Metro Masjid League. Eight masjids, one trophy, and a gym full of uncles with opinions.'], ['saleem', 'Two groups of four. The top two in each go to the semifinals, then the final.']];
+  if (pool.length) L.push(['saleem', 'Our group: ' + pool.slice(0, -1).join(', ') + ' and ' + pool[pool.length - 1] + '.' + furqan]);
+  if (!att) L.push(['rayyan', 'As-salamu alaykum, Al-Amanah. Rayyan, Al-Furqan. My uncle still talks about beating you in that final.']);
+  if (o) L.push(['saleem', 'First up: ' + o.team.name + '. Pick who plays beside you.']);
   return L;
 }
 function storyGroupPush() {
@@ -28513,7 +28550,7 @@ STORY_MODES.chai = function (S) {
   M.mini.word = 'CHAI';
   Gym.drill = { kind: 'horse', mini: true, story: S.id };
   C.story.chaiOpp = opp;
-  gymToast('CHAI: make a shot, then ' + castDef(opp).name + ' has ' + M.mini.timerLen + ' seconds to match it. Miss a shot you have to match and you get a letter. Spell CHAI and you make the chai.', 5);
+  // (v9.33: the rules are on the ready panel; no toast across the screen)
 };
 {
   const _fm = finishMini;
@@ -28565,15 +28602,15 @@ STORY_MODES.allstar = function (S) {
   };
   const _um = updateMatch;
   updateMatch = function (dt) { const r = _um.apply(this, arguments); const D = M.story && M.story.dunks; if (D && D.t > 0) D.t -= dt; return r; };
-  const _ds = drawScene;
-  drawScene = function (g) {
+  const _ds = drawHUD;
+  drawHUD = function (g) {                                          // (v9.33: screen space, on the left)
     const r = _ds.apply(this, arguments);
     const D = M.story && M.story.dunks;
-    if (D && Game.screen === 'play') {                                 // the crowd meter (the ticket sales), top centre
-      const w = 240, x = W / 2 - w / 2, y = 108, k = D.crowd, pop = D.t > 0 ? 1 + 0.06 * Math.sin(D.t * 20) : 1;
-      g.save(); g.translate(W / 2, y + 14); g.scale(pop, pop); g.translate(-W / 2, -(y + 14));
+    if (D && Game.screen === 'play') {                                 // the crowd meter (the ticket sales), on the left under the scoreboard (v9.33)
+      const TT = Input.touchMode && g === ctx, w = 196, x = 22, y = TT ? 122 : 98, k = D.crowd, pop = D.t > 0 ? 1 + 0.06 * Math.sin(D.t * 20) : 1;
+      g.save(); g.translate(x + w / 2, y + 14); g.scale(pop, pop); g.translate(-(x + w / 2), -(y + 14));
       g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x - 10, y - 16, w + 20, 44, 12); g.fill();
-      g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.fillText('CROWD  •  DUNKS ONLY  •  ' + D.n + ' DUNK' + (D.n === 1 ? '' : 'S'), W / 2, y - 2);
+      g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.fillText('CROWD  •  DUNKS ONLY  •  ' + D.n + ' DUNK' + (D.n === 1 ? '' : 'S'), x, y - 2);
       meter(g, x, y + 6, w, 12, k, k > 0.75 ? '#ffd76a' : '#57e389');
       g.restore();
     }
@@ -28717,14 +28754,11 @@ function drawSchoolWing(g, t) {
 
 // ---------------------------------------------------------------- lines that depend on the knockout
 function storyNatIntro() {
-  const att = C.story.att || 0, o = storyOpp(), L = att ? [['saleem', 'Nationals again. Sixteen teams, one loss and you’re out. We know the road now.'], ['jamil', 'And this time we walk all of it.']] : [
-    ['narr', 'The National Masjid Invitational. A hotel ballroom of team captains, a bracket on a screen, and one uncle from every masjid filming it on his phone.'],
-    ['saleem', 'Before anything, renew your intention. We are not here for our names. We’re here for our masjid, for the kids, and for Allah.'],
-    ['saleem', 'And we represent our whole state now. Every masjid we beat in the State league is cheering for us tonight.'],
-    ['karim', 'Sixteen teams. Single elimination. Four wins and we’re national champions.'],
-    ['jamil', 'Four wins. I have waited nineteen years for one. Four is fine.'],
-    ['anas', 'One game at a time. Bismillah.']];
-  if (!att) L.push(['saleem', 'Al-Furqan is on the other side of the draw. If we meet them, it’s in the final.'], ['rayyan', 'See you in the final, Al-Amanah. Don’t make me wait.']);
+  const att = C.story.att || 0, o = storyOpp(), L = att ? [['saleem', 'Nationals again. Sixteen teams, one loss and you’re out. We know the road now.']] : [
+    ['narr', 'The National Masjid Invitational. A hotel ballroom of team captains, a bracket on a screen, and one uncle from every masjid filming it.'],
+    ['saleem', 'Renew your intention, brothers. We’re here for our masjid, for the kids, and for Allah. And we play for our whole state now.'],
+    ['karim', 'Sixteen teams, single elimination. Four wins and we’re national champions.'],
+    ['rayyan', 'Al-Furqan is on the other side of the draw. See you in the final, Al-Amanah.']];
   if (o) L.push(['saleem', 'Round of 16: ' + o.team.name + (o.team.place ? ', from ' + o.team.place : '') + '. Pick who plays beside you.']);
   return L;
 }
@@ -28767,7 +28801,7 @@ Object.assign(STORY_EFFECTS, {
 STORY_MODES.kotcDraw = function (S) {
   storyCupCaptains();
   startKotc({ roster: ['you', ...CUP_CAPS], humans: { you: 0 } });
-  KOTC.gym = true; KOTC.story = S.id;
+  KOTC.gym = true; KOTC.story = S.id; KOTC.hud = true;               // (v9.33: the streak counter on the left, no banner)
 };
 {
   const _kl = kotcLeave;
@@ -28778,15 +28812,13 @@ STORY_MODES.kotcDraw = function (S) {
 }
 function storyCupIntro() {
   const att = C.story.att || 0;
-  if (att) return [['saleem', 'The Ummah Cup again. We know the way now, brothers.'], ['jamil', 'And the food. I know where the good food is.'], ['saleem', 'King of the Court first, for the draw. Then three wins.']];
+  if (att) return [['saleem', 'The Ummah Cup again. King of the Court first, for the draw. Then three wins.']];
   return [
     ['narr', 'Istanbul. A sports hall beside the Bosphorus, the adhan from three masjids at once, and flags from every corner of the world.'],
-    ['saleem', 'Brothers. Renew your intention one more time. We came to meet the ummah, and to play well in front of it.'],
-    ['saleem', 'The rules: eight masjid teams. Tonight, one player from four of the teams plays King of the Court for the draw.'],
-    ['saleem', 'Win it and we play the weakest team in the quarterfinal. Every game you win gets us an easier draw. Losing doesn’t knock us out.'],
-    ['karim', 'Then a quarterfinal, a semifinal and a final. Three wins and the Cup is ours.'],
-    ['musa', 'Bro. The team from Kuala Lumpur has matching headbands.'], ['ilyas', 'We are still not getting matching headbands.'],
-    ['saleem', 'Akhi, you’re our player for the draw. Bismillah.']];
+    ['saleem', 'Renew your intention one more time. We came to meet the ummah, and to play well in front of it.'],
+    ['saleem', 'Eight teams. King of the Court decides the draw: every game you win makes our quarterfinal easier. Losing it doesn’t knock us out.'],
+    ['musa', 'Bro. The team from Kuala Lumpur has matching headbands.'],
+    ['saleem', '{name}, you’re our player for the draw. Bismillah.']];
 }
 function storyCupDrawLines() {
   const d = C.story.draw || 0, o = storyOpp(), L = [];
@@ -28810,7 +28842,7 @@ function storyCredits(S) { Game.credits = { t: 0, S }; Game.screen = 'scredits';
 function creditsDone() { const c = Game.credits; if (!c) return; Game.credits = null; C.story.done = true; storyDone(c.S, 'next'); }
 function creditsLines() {
   const f = '$' + (C.story.fund || 0).toLocaleString('en-US');
-  return [['h', 'ISLAM DUNK'], ['s', 'The story of Masjid Al-Amanah'], ['', ''], ['h', C.name || 'The Brother'], ['s', 'New in town. Now home.'], ['', ''],
+  return [['h', 'ISLAM DUNK'], ['s', 'The story of Masjid Al-Amanah'], ['', ''], ['h', C.name || 'You'], ['s', 'New in town. Now home.'], ['', ''],
     ['h', 'Sh. Saleem'], ['s', 'Floor general, mentor, builder of a school'], ['h', 'Ammo Jamil'], ['s', 'Enforcer, and a proud father'], ['h', 'Ilyas'], ['s', 'Quick guard, his own man'],
     ['h', 'Ustath Karim'], ['s', 'Shooter, teacher, finally in a classroom with a window'], ['h', 'Qari Anas'], ['s', 'Big man, gentle giant'], ['h', 'Imam Dawud'], ['s', 'Old-head playmaker, keeper of the chai'],
     ['h', 'Musa'], ['s', 'High-flyer, newest of the brothers'], ['h', 'Rayyan'], ['s', 'Captain of Al-Furqan, rival, friend'], ['', ''],
@@ -28925,7 +28957,7 @@ function storyMoment(id, after) {
   // after The End, a new moment plays on Continue before anything else
   const _sr = storyRun;
   storyRun = function () {
-    if (storyOn() && C.story.done && (C.story.mq || []).length && !Gym.story) return storyMoment(C.story.mq[0], careerHub);
+    if (storyOn() && C.story.done && (C.story.mq || []).length && (!Gym.story || (SW && SW.D.home))) { Gym.story = null; SW = null; return storyMoment(C.story.mq[0], careerHub); }
     return _sr.apply(this, arguments);
   };
 }
@@ -29123,17 +29155,953 @@ const STORY_MOMENTS = {
 };
 const STORY_FINAL = [
   ['narr', 'Every milestone. Late one night after Isha, the brothers are all still in the gym.'],
-  ['saleem', 'Akhi. Come here. Everyone wanted to be here for this.'],
-  ['jamil', 'We have something for you. Imam Dawud, the box.'],
-  ['dawud', 'A basketball. Painted gold. The kids did it at the weekend school. It took them three Saturdays.'],
-  ['ilyas', 'It goes on a stand in the gym. Where everyone can see it.'],
-  ['karim', 'One day a new brother will walk in here, nervous, not knowing anyone. And he will see it and ask about it.'],
-  ['anas', 'And we will tell him about you.'],
+  ['dawud', 'We have something for you, {name}. A basketball, painted gold. The kids did it at the weekend school.'],
+  ['ilyas', 'It goes on a stand in the gym, where everyone can see it.'],
+  ['karim', 'One day a new brother will walk in here, nervous, and ask about it. And we will tell him about you.'],
   ['musa', 'And then we will make him play HORSE.'],
-  ['saleem', 'The Prophet ﷺ said: the most beloved of people to Allah are those most beneficial to people. You were that for us.'],
-  ['saleem', 'JazakAllahu khayran, akhi. For everything.'],
+  ['saleem', 'The Prophet ﷺ said: the most beloved of people to Allah are those most beneficial to people. You were that for us. JazakAllahu khayran, akhi.'],
   ['narr', 'The golden ball now sits on its stand in the gym. Walk up to it any time.']
 ];
+// ================================================= v9.30: CAREER REFINE 1 — welcome, creator, archetypes, your name
+// (docs/career-overhaul/REFINE-PLAN.md, release 1)
+// - New career opens a short welcome: what the career is, what the next screen does, and your name (typed on a
+//   computer, the on-screen keys on a phone). A name is required; "Brother" is never used for you.
+// - The creator has two sections: Look (cosmetic only) and Game (height, build and play style, which change stats).
+// - The five play styles (archetypes) each have their own strengths (no two share a plus) and one small perk, in
+//   career games and for your player only.
+
+// ---------------------------------------------------------------- the welcome screen
+const WELCOME_MAX = 14;
+function openWelcome() { Game.welcome = { name: (C && C.name && C.name !== 'Brother' ? C.name : '') || '', t: 0 }; Game.screen = 'swelcome'; Game.idx = 0; SFX.blip && SFX.blip(); }
+function welcomeType(ch) {
+  const w = Game.welcome; if (!w || w.name.length >= WELCOME_MAX) return;
+  const start = !w.name.length || /[ \-']$/.test(w.name);
+  w.name += start ? ch.toUpperCase() : ch.toLowerCase(); SFX.blip && SFX.blip();
+}
+function welcomeNext() {
+  const w = Game.welcome; if (!w) return;
+  const n = w.name.trim(); if (!n) { SFX.bad && SFX.bad(); w.shake = 0.4; return; }
+  C.name = n; Game.welcome = null;
+  Game.creator = { idx: creatorFirstRow('look'), isNew: true, tab: 'look', welcomed: true }; Game.screen = 'creator'; SFX.good && SFX.good();
+}
+function welcomeUpdate(rdt) {
+  const w = Game.welcome; if (!w) return;
+  w.t += rdt; if (w.shake > 0) w.shake -= rdt;
+  for (let c = 65; c <= 90; c++) if (Input.pressed['Key' + String.fromCharCode(c)]) welcomeType(String.fromCharCode(c));
+  if ((Input.pressed.Space) && w.name.length && !/ $/.test(w.name) && w.name.length < WELCOME_MAX) w.name += ' ';
+  if (Input.pressed.Minus && w.name.length && w.name.length < WELCOME_MAX) w.name += '-';
+  if (Input.pressed.Quote && w.name.length && w.name.length < WELCOME_MAX) w.name += '\'';
+  if (Input.pressed.Backspace) w.name = w.name.slice(0, -1);
+  if (Input.pressed.Enter || Input.pressed.NumpadEnter) welcomeNext();
+  else if (Input.pressed.Escape) { Game.welcome = null; Game.screen = 'cmenu'; Game.idx = 0; }
+}
+function drawWelcome(g) {
+  const w = Game.welcome; if (!w) return;
+  const TT = Input.touchMode && g === ctx, x0 = W / 2 - 340, y0 = 56, pw = 680, ph = 430;
+  g.fillStyle = 'rgba(4,8,14,0.82)'; g.fillRect(-400, -400, W + 800, H + 800);
+  panel(g, x0, y0, pw, ph, true);
+  g.textAlign = 'center'; g.fillStyle = GOLD; g.font = `28px ${FONT}`; g.fillText('Welcome to your career', W / 2, y0 + 50);
+  g.fillStyle = IVORY; g.font = `15px ${BODY}`;
+  wrapText(g, 'Your first week in Eastside. Down the road is Masjid Al-Amanah: a small masjid with a gym, a weekend school, and a team that has never won the league.', W / 2, y0 + 86, pw - 80, 22);
+  g.fillStyle = '#cfd8e3'; g.font = `14px ${BODY}`;
+  wrapText(g, 'Next, you make your player: first how he looks, then how he plays. You can change his look any time from the gym.', W / 2, y0 + 156, pw - 80, 20);
+  // the name
+  g.fillStyle = GOLD; g.font = `14px ${FONT}`; g.fillText('YOUR NAME', W / 2, y0 + 218);
+  const bx = W / 2 - 180 + (w.shake > 0 ? Math.sin(w.t * 60) * 6 : 0), by = y0 + 230, bw = 360, bh = 54;
+  g.fillStyle = 'rgba(255,255,255,0.08)'; roundRect(g, bx, by, bw, bh, 12); g.fill();
+  g.strokeStyle = w.name ? GOLD : 'rgba(255,255,255,0.35)'; g.lineWidth = 2; roundRect(g, bx, by, bw, bh, 12); g.stroke();
+  g.fillStyle = w.name ? '#fff' : '#7d8a99'; g.font = `26px ${FONT}`;
+  g.fillText((w.name || (TT ? 'Tap to type' : '')) + (!TT && w.t % 1 < 0.5 ? '|' : ''), W / 2, by + 36);
+  addRect(bx, by, bw, bh, () => { if (Input.touchMode) csAskName('Your name', w.name, WELCOME_MAX, v => { if (Game.welcome) Game.welcome.name = v.slice(0, WELCOME_MAX); }); });
+  g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(TT ? 'Tap the box to type your name' : 'Type your name, then press Enter', W / 2, by + bh + 22);
+  // next
+  const ok = !!w.name.trim(), nx = W / 2 - 150, ny = y0 + ph - 78;
+  g.fillStyle = ok ? GOLD : 'rgba(255,255,255,0.12)'; roundRect(g, nx, ny, 300, 50, 25); g.fill();
+  g.fillStyle = ok ? NIGHT : '#7d8a99'; g.font = `20px ${FONT}`; g.fillText('Make your player  ›', W / 2, ny + 33);
+  addRect(nx, ny, 300, 50, welcomeNext);
+}
+{
+  CAREER_SCREENS.add('swelcome');
+  BACK.swelcome = () => { Game.welcome = null; Game.screen = 'cmenu'; Game.idx = 0; };
+  // every way into a new career (the career menu, Save and load) lands on the creator: the welcome comes first
+  const route = () => { if (Game.screen === 'creator' && Game.creator && Game.creator.isNew && !Game.creator.welcomed && storyOn()) openWelcome(); };
+  const _cu = careerUpdate;
+  careerUpdate = function (rdt) { route(); if (Game.screen === 'swelcome') return welcomeUpdate(rdt); return _cu.apply(this, arguments); };
+  const _cr = careerRender;
+  careerRender = function (g) { route(); if (Game.screen === 'swelcome') return drawWelcome(g); return _cr.apply(this, arguments); };
+  // the name is never "Brother": the welcome makes it required
+  const _cd = creatorDone;
+  creatorDone = function () { if (C && !C.name.trim()) { openWelcome(); return; } return _cd.apply(this, arguments); };
+}
+// "{name}" in a line is your name
+function storyNameText(t) { return typeof t === 'string' && C && C.name ? t.replace(/\{name\}/g, C.name) : t; }
+{
+  const _lo = storyLinesOf;
+  storyLinesOf = function () { return _lo.apply(this, arguments).map(l => Array.isArray(l) && typeof l[1] === 'string' ? [l[0], storyNameText(l[1])].concat(l.slice(2)) : l); };
+  const _sw = swSay;
+  swSay = function (lines, done) { return _sw.call(this, (lines || []).map(l => Array.isArray(l) && typeof l[1] === 'string' ? [l[0], storyNameText(l[1])] : l), done); };
+  const _ps = playStory;
+  playStory = function (lines) { const a = Array.from(arguments); a[0] = (lines || []).map(l => Array.isArray(l) && typeof l[1] === 'string' ? [l[0], storyNameText(l[1])].concat(l.slice(2)) : l); return _ps.apply(this, a); };
+}
+
+// ---------------------------------------------------------------- the creator: Look and Game
+const CR_GAME_KEYS = ['height', 'build', 'style'];
+const CR_HIDE = ['name'];                                               // (the name is on the welcome screen now)
+function creatorRowsOf(tab) { return CREATOR_ROWS.map((r, i) => ({ r, i })).filter(({ r }) => r.key !== 'done' && !CR_HIDE.includes(r.key) && (tab === 'game') === CR_GAME_KEYS.includes(r.key)); }
+function creatorFirstRow(tab) { const L = creatorRowsOf(tab); return L.length ? L[0].i : 0; }
+function creatorTab() { const cr = Game.creator; if (!cr.tab) cr.tab = CR_GAME_KEYS.includes((CREATOR_ROWS[cr.idx] || {}).key) ? 'game' : 'look'; return cr.tab; }
+function creatorSetTab(tab) { const cr = Game.creator; if (cr.tab === tab) return; cr.tab = tab; cr.idx = creatorFirstRow(tab); cr.onTabs = false; SFX.blip && SFX.blip(); }
+// the archetypes as the creator shows them
+const ARCH_INFO = {
+  classic: { name: 'Classic', col: '#9fb3c8', icon: 'dot', perk: 'No perk. No strengths or weaknesses from your play style.' },
+  sharpshooter: { name: 'Sharpshooter', col: '#57b8ff', icon: 'target', perk: 'Perk: a wider green window on your jump shots.' },
+  playmaker: { name: 'Playmaker', col: '#f2cf6b', icon: 'arrow', perk: 'Perk: your passes travel faster.' },
+  rimrunner: { name: 'Rim Runner', col: '#ff8a4a', icon: 'up', perk: 'Perk: you can dunk from a step further out.' },
+  lockdown: { name: 'Lockdown', col: '#57e389', icon: 'shield', perk: 'Perk: a longer reach for steals and blocks.' },
+  glue: { name: 'Glue Guy', col: '#c58cff', icon: 'knot', perk: 'Perk: you win more loose balls and rebounds.' }
+};
+function drawArchIcon(g, kind, x, y, r, col) {
+  g.save(); g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 2.5; g.lineCap = 'round'; g.lineJoin = 'round';
+  g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.globalAlpha = 0.18; g.fill(); g.globalAlpha = 1; g.stroke();
+  const s = r * 0.55; g.beginPath();
+  if (kind === 'target') { g.arc(x, y, s, 0, Math.PI * 2); g.moveTo(x + s * 0.35, y); g.arc(x, y, s * 0.35, 0, Math.PI * 2); g.stroke(); }
+  else if (kind === 'arrow') { g.moveTo(x - s, y); g.lineTo(x + s, y); g.moveTo(x + s * 0.3, y - s * 0.6); g.lineTo(x + s, y); g.lineTo(x + s * 0.3, y + s * 0.6); g.stroke(); }
+  else if (kind === 'up') { g.moveTo(x, y + s); g.lineTo(x, y - s); g.moveTo(x - s * 0.7, y - s * 0.2); g.lineTo(x, y - s); g.lineTo(x + s * 0.7, y - s * 0.2); g.stroke(); }
+  else if (kind === 'shield') { g.moveTo(x, y - s); g.lineTo(x + s, y - s * 0.6); g.lineTo(x + s * 0.8, y + s * 0.4); g.lineTo(x, y + s); g.lineTo(x - s * 0.8, y + s * 0.4); g.lineTo(x - s, y - s * 0.6); g.closePath(); g.stroke(); }
+  else if (kind === 'knot') { g.arc(x - s * 0.4, y, s * 0.5, 0, Math.PI * 2); g.moveTo(x + s * 0.9, y); g.arc(x + s * 0.4, y, s * 0.5, 0, Math.PI * 2); g.stroke(); }
+  else { g.arc(x, y, s * 0.3, 0, Math.PI * 2); g.fill(); }
+  g.restore();
+}
+function styleSummary(st) {
+  const m = STYLE_MOD[st] || {};
+  const up = BUILD_ROWS.filter(([k]) => m[k] > 0).map(([k, n]) => n + ' +' + m[k]), dn = BUILD_ROWS.filter(([k]) => m[k] < 0).map(([k, n]) => n + ' −' + -m[k]);
+  return up.length ? 'Strong: ' + up.join(', ') + '.   Weaker: ' + dn.join(', ') + '.' : 'Even across the board.';
+}
+{
+  const _cu = creatorUpdate;
+  creatorUpdate = function () {
+    const cr = Game.creator; if (!cr || !storyOn()) return _cu.apply(this, arguments);
+    const tab = creatorTab(), L = creatorRowsOf(tab), di = CREATOR_ROWS.findIndex(r => r.key === 'done');
+    if (Input.pressed.KeyQ || Input.pressed.BracketLeft) return creatorSetTab('look');
+    if (Input.pressed.KeyE || Input.pressed.BracketRight) return creatorSetTab('game');
+    if (Input.pressed.Tab) { cr.idx = di; cr.onTabs = false; SFX.blip && SFX.blip(); return; }
+    const seq = [-1, ...L.map(x => x.i), di], at = cr.onTabs ? 0 : Math.max(0, seq.indexOf(cr.idx));
+    if (Input.hit(['ArrowUp', 'KeyW'])) { const j = (at + seq.length - 1) % seq.length; cr.onTabs = seq[j] === -1; if (!cr.onTabs) cr.idx = seq[j]; SFX.blip && SFX.blip(); return; }
+    if (Input.hit(['ArrowDown', 'KeyS'])) { const j = (at + 1) % seq.length; cr.onTabs = seq[j] === -1; if (!cr.onTabs) cr.idx = seq[j]; SFX.blip && SFX.blip(); return; }
+    if (cr.onTabs) {
+      if (menuHit('left') || menuHit('right') || menuHit('ok')) creatorSetTab(tab === 'look' ? 'game' : 'look');
+      else if (menuHit('back')) { if (!cr.isNew) careerHub(); else if (cr.welcomed) openWelcome(); }   // (v9.35: a new career steps back to the name)
+      return;
+    }
+    if (menuHit('left')) creatorStep(cr.idx, -1);
+    if (menuHit('right')) creatorStep(cr.idx, 1);
+    if (menuHit('ok')) creatorEnter(cr.idx);
+    if (menuHit('back')) { if (!cr.isNew) careerHub(); else if (cr.welcomed) openWelcome(); }
+  };
+  const _dc = drawCreator;
+  drawCreator = function (g) {
+    const cr = Game.creator; if (!cr || !storyOn()) return _dc.apply(this, arguments);
+    const lk = C.look, tab = creatorTab(), L = creatorRowsOf(tab), TT = Input.touchMode && g === ctx;
+    panel(g, 30, 46, 470, 488, true);
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText(fitText(g, (cr.isNew ? 'Make your player' : 'Your player') + (C.name ? ':  ' + C.name : ''), 600), 104, 32);
+    if (!TT) { g.textAlign = 'right'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('Q / E switch section   ↑ ↓ choose   ← → change', 930, 32); }
+    // the two sections
+    [['look', 'Look', 'Cosmetic only'], ['game', 'Game', 'Changes your stats']].forEach(([k, label, sub], j) => {
+      const x = 44 + j * 224, on = tab === k, foc = cr.onTabs && on;
+      g.fillStyle = on ? (foc ? '#ffe08a' : GOLD) : 'rgba(255,255,255,0.08)'; roundRect(g, x, 56, 214, 48, 12); g.fill();
+      if (foc) { g.strokeStyle = '#fff'; g.lineWidth = 2; roundRect(g, x, 56, 214, 48, 12); g.stroke(); }
+      g.textAlign = 'center'; g.fillStyle = on ? NIGHT : '#fff'; g.font = `17px ${FONT}`; g.fillText(label, x + 107, 78);
+      g.fillStyle = on ? 'rgba(10,20,30,0.75)' : '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(sub, x + 107, 96);
+      addRect(x, 56, 214, 48, () => creatorSetTab(k));
+    });
+    const gap = Math.min(tab === 'game' ? 64 : 38, 412 / Math.max(1, L.length));
+    L.forEach(({ r, i }, n) => {
+      const y = 116 + n * gap, sel = i === cr.idx && !cr.onTabs, cy = y + gap / 2 + 5;
+      if (sel) { g.fillStyle = 'rgba(232,195,90,0.18)'; roundRect(g, 40, y + 1, 450, gap - 2, 8); g.fill(); }
+      g.fillStyle = sel ? '#fff' : IVORY; g.font = `${tab === 'game' ? 16 : 14}px ${tab === 'game' ? FONT : BODY}`; g.textAlign = 'left'; g.fillText(r.label, 54, cy);
+      addRect(40, y, 250, gap, () => { cr.idx = i; cr.onTabs = false; creatorEnter(i); });
+      const vx = 330;
+      g.fillStyle = GOLD; g.font = `16px ${FONT}`; g.textAlign = 'center'; g.fillText('◂', vx, cy + 1); g.fillText('▸', vx + 120, cy + 1);
+      addRect(vx - 20, y, 40, gap, () => { cr.idx = i; cr.onTabs = false; creatorStep(i, -1); }); addRect(vx + 100, y, 40, gap, () => { cr.idx = i; cr.onTabs = false; creatorStep(i, 1); });
+      if (r.sw) { g.fillStyle = r.sw[lk[r.key]]; roundRect(g, vx + 30, cy - 14, 60, 18, 9); g.fill(); g.strokeStyle = 'rgba(255,255,255,0.4)'; g.lineWidth = 1; g.stroke(); }
+      else { g.fillStyle = '#fff'; g.font = `13px ${BODY}`; g.fillText(fitText(g, r.txt ? r.txt[lk[r.key]] : String(lk[r.key]), 96), vx + 60, cy); }
+    });
+    const T = amanahTeam(), d = playerDef();
+    if (tab === 'look') {                                                 // the preview, big: cosmetic only
+      panel(g, 530, 46, 400, 420, false);
+      drawPortrait(g, 640, 360, d, T, 2.1, 'thobe'); drawPortrait(g, 830, 360, d, T, 2.1, null);
+      g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('At the masjid', 640, 384); g.fillText('Game day', 830, 384);
+      g.fillStyle = IVORY; g.font = `13px ${BODY}`; wrapText(g, 'Nothing here changes your stats. Your height, build and play style are in Game.', 730, 420, 360, 18);
+    } else {                                                              // the archetype card and the stats
+      const st = PLAY_STYLES[lk.style || 0], A = ARCH_INFO[st] || ARCH_INFO.classic;
+      panel(g, 530, 46, 400, 150, false);
+      drawArchIcon(g, A.icon, 576, 96, 26, A.col);
+      g.textAlign = 'left'; g.fillStyle = A.col; g.font = `20px ${FONT}`; g.fillText(A.name, 614, 90);
+      g.fillStyle = '#cfd8e3'; g.font = `12px ${BODY}`; wrapTextLeft(g, styleSummary(st), 614, 110, 300, 16);
+      g.fillStyle = '#fff'; g.font = `13px ${BODY}`; wrapTextLeft(g, A.perk, 552, 160, 360, 17);
+      const m = myMods(), base = Object.assign({}, C.lv, { stl: Math.round((C.lv.def + C.lv.spd) / 2), hus: C.lv.hus || 4, clu: C.lv.clu || 4 });
+      panel(g, 530, 204, 400, 262, false);
+      g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(cr.isNew ? 'STARTING STATS' : 'YOUR STATS', 548, 228);
+      g.fillStyle = '#9fb3c8'; g.font = `11px ${BODY}`; g.fillText(fitText(g, LOOK_TXT.height[lk.height] + ', ' + LOOK_TXT.build[lk.build].toLowerCase() + ', ' + A.name.toLowerCase(), 230), 680, 228);
+      BUILD_ROWS.forEach(([k, label], i) => {
+        const y = 242 + i * (TT ? 24 : 22);
+        g.textAlign = 'left'; g.fillStyle = IVORY; g.font = `12px ${BODY}`; g.fillText(label, 552, y + 9);
+        buildPips(g, 650, y, base[k], m[k] || 0); modTag(g, 748, y + 9, m[k] || 0);
+      });
+    }
+    // the big button
+    const di = CREATOR_ROWS.findIndex(r => r.key === 'done'), sel = cr.idx === di && !cr.onTabs, pulse = 0.5 + 0.5 * Math.sin(Game.t * 4);
+    const bx = 530, by = 474, bw = 400, bh = 56;
+    g.save(); g.shadowColor = 'rgba(242,207,107,' + (0.35 + 0.4 * (sel ? 1 : pulse)) + ')'; g.shadowBlur = sel ? 26 : 12 + 10 * pulse;
+    const gr = g.createLinearGradient(0, by, 0, by + bh); gr.addColorStop(0, '#ffe08a'); gr.addColorStop(1, '#d9a83a');
+    g.fillStyle = gr; roundRect(g, bx, by, bw, bh, 28); g.fill(); g.restore();
+    g.strokeStyle = sel ? '#fff' : 'rgba(255,255,255,0.55)'; g.lineWidth = sel ? 3 : 1.5; roundRect(g, bx, by, bw, bh, 28); g.stroke();
+    g.textAlign = 'center'; g.fillStyle = NIGHT; g.font = `24px ${FONT}`;
+    g.fillText(cr.isNew ? (tab === 'look' ? 'Next: how he plays  ›' : 'Start career  ›') : 'Done  ›', bx + bw / 2, by + 37);
+    addRect(bx, by, bw, bh, () => { if (cr.isNew && tab === 'look') return creatorSetTab('game'); cr.idx = di; creatorDone(); });
+  };
+  // Enter on the button in Look moves on to Game first
+  const _ce = creatorEnter;
+  creatorEnter = function (i) {
+    const cr = Game.creator, r = CREATOR_ROWS[i];
+    if (cr && storyOn() && r && r.key === 'done' && cr.isNew && creatorTab() === 'look') return creatorSetTab('game');
+    return _ce.apply(this, arguments);
+  };
+}
+
+// ---------------------------------------------------------------- distinct archetypes and their perks
+// No two play styles share a strength now (playmaker and rim runner both had speed; lockdown and glue both defense).
+Object.assign(STYLE_MOD, {
+  sharpshooter: { sht: 2, clu: 1, dnk: -2, def: -1 },
+  playmaker: { pas: 2, spd: 1, dnk: -1, sht: -1, def: -1 },
+  rimrunner: { dnk: 2, sta: 1, sht: -2, clu: -1 },
+  lockdown: { def: 2, stl: 1, sht: -2, pas: -1 },
+  glue: { hus: 2, sht: -1, dnk: -1 }
+});
+const PERK = { greenK: 1.15, passPas: 3, dunkBoost: true, stealReach: 66, glueHus: 2 };
+function perkOf(p) { return p && p.perk || null; }
+{
+  // your player's perk, set for career games only (the gym's practice and every other mode have none)
+  const _nm = newMatch;
+  newMatch = function () {
+    const r = _nm.apply(this, arguments);
+    if (M && M.career && C && C.look) {
+      const me = M.players.find(p => p.human === 0), a = lookArch(C.look);
+      if (me && a) { me.perk = a; if (a === 'glue' && me.st) me.st.hus = clamp((me.st.hus != null ? me.st.hus : hustleOf(me.st)) + PERK.glueHus, 1, 10); }
+    }
+    return r;
+  };
+  const _sw = shotWindow;
+  shotWindow = function (p) { const w = _sw.apply(this, arguments); return perkOf(p) === 'sharpshooter' && w > 0 ? w * PERK.greenK : w; };
+  const _dp = doPass;
+  doPass = function (p) {
+    if (perkOf(p) !== 'playmaker' || !p.st) return _dp.apply(this, arguments);
+    const was = p.st.pas; p.st.pas = (was != null ? was : 5) + PERK.passPas;
+    try { return _dp.apply(this, arguments); } finally { p.st.pas = was; }
+  };
+  const _cd = canDunk;
+  canDunk = function (p) {
+    if (perkOf(p) !== 'rimrunner') return _cd.apply(this, arguments);
+    const was = p.boost; if (!(was > 0)) p.boost = 1e-6;                // the boost's +20 reach, for the rim runner
+    try { return _cd.apply(this, arguments); } finally { p.boost = was; }
+  };
+  const _ts = trySteal;
+  trySteal = function (p) {
+    const h = ball.owner;
+    if (perkOf(p) !== 'lockdown' || !h || h.team === p.team) return _ts.apply(this, arguments);
+    const d = dxz(p, h);
+    if (d < 54 || d >= PERK.stealReach) return _ts.apply(this, arguments);
+    const ox = p.x, oz = p.z, k = (d - 53) / d;                          // the longer reach: as if a step closer, for the attempt only
+    p.x += (h.x - p.x) * k; p.z += (h.z - p.z) * k;
+    try { return _ts.apply(this, arguments); } finally { p.x = ox; p.z = oz; }
+  };
+}
+// ================================================= v9.31: CAREER REFINE 2 — the practice gym is home
+// (docs/career-overhaul/REFINE-PLAN.md, release 2; SCENES.md, Rules)
+// - Home is the practice gym: you, the ball, and whoever has the next game or scene standing on court with a marker.
+//   Talk to him, or press Next on the left bar, to go on. Before and after every game you are back here.
+// - The left bar (Next, Drills, Musalla, Office, Upgrade, Menu) replaces the gym's bottom bar; the objective box
+//   sits under the Back button.
+// - Nobody talks off screen: every line the story says outside a place-talk plays here, in the gym, with its
+//   speakers standing near you (storySay). Narration alone may still set a scene.
+// - Mini games get a ready panel on the left in their own look; league games keep their pregame card.
+// - The old hub screen is the full menu now (Menu, or Esc in the gym).
+
+// ---------------------------------------------------------------- who has the next thing
+function storyStarterOf(S) {
+  if (!S || S.unbuilt || (S.ch > STORY_BUILT && S.ch <= 5)) return null;
+  if (S.kind === 'walk' || S.kind === 'drill') return null;              // a walk starts with Next (it's here in the gym)
+  if (S.bracket) return C.partner || 'saleem';
+  if (S.kind === 'choice') return 'saleem';
+  if (S.kind === 'play') { const L = S.pre && !C.story.seen[S.id] ? storyLinesOf(S, 'pre') : []; const f = L.find(l => CAST[l[0]] && l[0] !== 'narr' && l[0] !== 'you'); return f ? f[0] : 'saleem'; }
+  if (S.talk && S.talk.who) return S.talk.who;
+  if (S.custom) return null;
+  const L = typeof S.lines === 'function' ? [] : (S.lines || []), f = L.find(l => CAST[l[0]] && l[0] !== 'narr' && l[0] !== 'you');
+  return f ? f[0] : 'saleem';
+}
+function storyNextName() { const S = storyScene(); return S && !S.unbuilt ? S.name : ''; }
+// ---------------------------------------------------------------- home
+let _homeBusy = false;
+function storyHome() {
+  if (!storyOn() || _homeBusy) return;
+  _homeBusy = true;
+  try {
+    const S = storyScene(), who = storyStarterOf(S);
+    const npcs = who && CAST[who] ? [{ id: who, x: 1000, z: 420, act: 'host', face: -1, closer: true, onTalk: storyHomeNext }] : [];
+    storyWalkStart({ id: 'HOME', ch: storyChapter(), name: 'Practice' }, { title: 'Practice', free: true, home: true, npcs });
+    if (SW) SW.fade = 0.4;
+  } finally { _homeBusy = false; }
+}
+function storyAtHome() { return Game.screen === 'gym' && !!(Gym.story && SW && SW.D.home); }
+function storyHomeNext() {
+  if (Gym.ready) return;
+  Game.fromHome = true; try { storyRun(); } finally { Game.fromHome = false; }
+}
+function careerMenu() { Game.wantMenu = true; careerHub(); }
+{
+  const _ch = careerHub;
+  careerHub = function () {
+    const menu = Game.wantMenu; Game.wantMenu = false;
+    const r = _ch.apply(this, arguments);
+    if (storyOn() && !menu && !_homeBusy) { Gym.ready = null; storyHome(); }
+    return r;
+  };
+  // a talk with someone at home: his own action (go on to the next thing)
+  const _tt = swTalkTo;
+  swTalkTo = function (id) { const I = SW, d = I && I.defs[id]; if (d && d.onTalk && !I.talk && !I.fadeDir) { d.onTalk(); return; } return _tt.apply(this, arguments); };
+  // home never ends by itself, and Esc there opens the menu
+  const _ce = swCheckEnd;
+  swCheckEnd = function () { if (SW && (SW.D.home || SW.D.say)) return; return _ce.apply(this, arguments); };
+  const _gu = gymUpdate;
+  gymUpdate = function (rdt) {
+    if (Gym.ready && Game.screen === 'gym') { readyUpdate(); return; }
+    if (storyAtHome() && !SW.talk && !Gym.drill && !Gym.overlay && !Gym.result && !Gym.walk && !Gym.fade && !Gym.prop && menuHit('back')) { careerMenu(); return; }
+    if (storyAtHome() && !SW.talk && !Gym.drill && !Gym.overlay && Input.pressed.KeyN) { storyHomeNext(); return; }
+    return _gu.apply(this, arguments);
+  };
+  // during a drill only the drill's people are on court
+  const _ex = gymExtras;
+  gymExtras = function (E, g) { if (Gym.story && Gym.story === SW && Gym.drill) { const keep = Gym.story; Gym.story = null; try { return _ex.apply(this, arguments); } finally { Gym.story = keep; } } return _ex.apply(this, arguments); };
+}
+
+// ---------------------------------------------------------------- nobody talks off screen
+// The lines play in the gym with their speakers standing near you, in the game's own view and the same text box.
+const SAY_SPOTS = [[95, -70], [165, 20], [-115, -50], [-60, 80]];
+function storySay(lines, then, title) {
+  const speakers = []; for (const [id] of lines) if (CAST[id] && id !== 'narr' && id !== 'you' && !speakers.includes(id) && speakers.length < SAY_SPOTS.length) speakers.push(id);
+  const done = () => { Gym.story = null; SW = null; if (then) then(); };
+  if (Game.screen === 'gym' && SW && Gym.story === SW) {                 // already in the gym: they walk up, and it plays here
+    const me = M.players[0];
+    speakers.forEach((id, k) => { if (SW.npcs[id]) return; const p = swPlayer(id), [dx, dz] = SAY_SPOTS[k]; p.x = clamp(me.x + dx, 520, 1300); p.z = clamp(me.z + dz, 60, 640); p.face = sgn(me.x - p.x) || 1; p.swAct = 'host'; SW.npcs[id] = p; SW.defs[id] = { id, x: p.x, z: p.z, act: 'host' }; SW.D.npcs.push(SW.defs[id]); });
+    swSay(lines, done); if (SW.talk) SW.talk.t = 0.3;
+    return;
+  }
+  enterGym(); M.lobbyGym = false;
+  const me = M.players[0], mx = 820, mz = 520;
+  const npcs = speakers.map((id, k) => { const [dx, dz] = SAY_SPOTS[k]; return { id, x: clamp(mx + dx, 520, 1300), z: clamp(mz + dz, 60, 640), act: 'host', face: dx > 0 ? -1 : 1 }; });
+  storyWalkStart({ id: 'SAY', ch: storyChapter(), name: title || 'Practice' }, { title: '', say: true, npcs });
+  if (me) { place(me, mx, mz); me.face = 1; }
+  if (SW) { SW.fade = 0; swSay(lines, done); if (SW.talk) SW.talk.t = 0.3; }
+}
+{
+  // every story line said with people in it goes through storySay; narration alone keeps the plain box
+  const _ps = playStory;
+  playStory = function (lines, then, title) {
+    const L = (lines || []).filter(l => Array.isArray(l));
+    if (!storyOn() || !L.some(l => CAST[l[0]] && l[0] !== 'narr') || L.some(l => l[0] === 'choice')) return _ps.apply(this, arguments);
+    if (C && !Game.replaying) { const J = C.journal || (C.journal = []); J.push({ s: C.season || 1, st: C.stage, g: C.gamesPlayed || 0, title: title || '', lines: L.filter(l => l[0] !== 'choice').slice(0, 14) }); if (J.length > 120) J.shift(); }   // (as the story screen did: the Journal keeps it)
+    storySay(L, then, title);
+  };
+}
+
+// ---------------------------------------------------------------- before and after every game: the gym
+{
+  const _sd = storyDone;
+  storyDone = function (S, outcome) {
+    const st = C.story;
+    let next = outcome === 'win' ? S.win : outcome === 'loss' ? S.loss : outcome === 'out' ? S.out : S.next;
+    if (typeof next === 'function') next = next(outcome);
+    if (!next) next = S.next;
+    const N = SC[next];
+    if (S.kind === 'play' || (N && N.kind === 'play')) {                  // a game just ended, or one is next: home first
+      st.seen[S.id] = (st.seen[S.id] || 0) + 1;
+      storyGo(next); careerHub(); return;
+    }
+    return _sd.apply(this, arguments);
+  };
+}
+
+// ---------------------------------------------------------------- the ready panel (mini games, the tutorial game)
+const READY_LOOK = {
+  pickup: { title: 'Pickup game', col: '#2c6e8f', how: 'You and Sh. Saleem against Ammo Jamil and Ilyas. First to 11.' },
+  lightning: { title: 'Lightning', col: '#e8c35a', how: 'Two balls, one line. Make your shot before the player behind you makes his, or you’re out.' },
+  kotc: { title: 'King of the Court', col: '#c9a24a', how: 'One on one, first to 3. Hold the court three games in a row to be crowned.' },
+  kotcDraw: { title: 'King of the Court: the draw', col: '#c9a24a', how: 'One on one against the other teams’ captains. Every game you win makes the draw easier.' },
+  chai: { title: 'CHAI', col: '#7a4a2a', how: 'Make a shot, and he has a few seconds to match it from the same spot. Miss one you have to match and you take a letter. Spell CHAI and you make the chai.' },
+  allstar: { title: 'All-star game', col: '#ff8a4a', how: 'Dunks only: a jumper or a layup counts nothing. Every dunk fills the crowd meter.' },
+  lightsout: { title: 'Lights out', col: '#3b3b3b', how: 'Two on two in the dark. Watch the glow around the players and the ball.' }
+};
+function storyReady(S, go) {
+  if (Game.screen !== 'gym') { enterGym(); M.lobbyGym = false; }
+  Gym.story = null; SW = null; Gym.overlay = null; Gym.drill = null; Gym.toastT = 0;
+  const L = READY_LOOK[S.mode] || { title: S.name, col: GOLD, how: '' };
+  Gym.ready = { S, go, look: L, sel: 0 }; SFX.blip && SFX.blip();
+}
+function readyStart() { const R = Gym.ready; if (!R) return; Gym.ready = null; R.go(); }
+function readyLater() { Gym.ready = null; careerHub(); }
+function readyUpdate() {
+  const R = Gym.ready;
+  if (menuHit('up') || menuHit('down')) { R.sel ^= 1; SFX.blip && SFX.blip(); }
+  if (menuHit('ok')) { if (R.sel) readyLater(); else readyStart(); }
+  else if (menuHit('back')) readyLater();
+}
+function drawReady(g) {
+  const R = Gym.ready; if (!R) return;
+  const L = R.look, x = 12, y = 60, w = 300, TT = Input.touchMode && g === ctx;
+  g.font = `13px ${BODY}`; const lines = wrapCount(g, L.how, w - 32), lh = Math.max(18, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 13) + 6), h = 96 + lines * lh + 104;
+  g.fillStyle = 'rgba(8,16,24,0.9)'; roundRect(g, x, y, w, h, 14); g.fill();
+  g.fillStyle = L.col; roundRect(g, x, y, w, 8, 4); g.fill();
+  g.strokeStyle = L.col; g.lineWidth = 2; roundRect(g, x, y, w, h, 14); g.stroke();
+  g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; g.fillText('READY?', x + 16, y + 32);
+  g.fillStyle = '#fff'; g.font = `20px ${FONT}`; g.fillText(fitText(g, L.title, w - 32), x + 16, y + 58);
+  g.fillStyle = IVORY; g.font = `13px ${BODY}`; wrapTextLeft(g, L.how, x + 16, y + 84, w - 32, lh);
+  const by = y + 96 + lines * lh;
+  [['Start', readyStart], ['Not yet', readyLater]].forEach(([t, fn], i) => {
+    const bx = x + 16, bw = w - 32, yy = by + i * 46, on = R.sel === i;
+    g.fillStyle = i === 0 ? (on ? '#ffe08a' : GOLD) : (on ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.12)'); roundRect(g, bx, yy, bw, 38, 19); g.fill();
+    if (on) { g.strokeStyle = '#fff'; g.lineWidth = 2; roundRect(g, bx, yy, bw, 38, 19); g.stroke(); }
+    g.textAlign = 'center'; g.fillStyle = i === 0 ? NIGHT : '#fff'; g.font = `15px ${FONT}`; g.fillText(t, bx + bw / 2, yy + 25);
+    addRect(bx, yy, bw, 38, () => { R.sel = i; fn(); });
+  });
+}
+function wrapCount(g, text, maxW) { const words = String(text || '').split(' '); let n = text ? 1 : 0, line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { n++; line = w; } else line = t; } return n; }
+{
+  // every story mini game asks first (league games have their pregame card)
+  for (const k of Object.keys(STORY_MODES)) { const go = STORY_MODES[k]; STORY_MODES[k] = function (S) { storyReady(S, () => go(S)); }; }
+}
+
+// ---------------------------------------------------------------- the left bar
+function gymBarItems() {
+  const home = storyAtHome(), nx = home ? storyNextName() : '';
+  return [
+    home ? { k: 'next', label: nx ? 'Next: ' + nx : 'Next', act: storyHomeNext, glow: true } : null,
+    { k: 'drills', label: 'Drills', act: openDrills },
+    { k: 'musalla', label: 'Musalla', act: enterMusalla },
+    { k: 'office', label: 'Office', act: enterOffice },
+    { k: 'upgrade', label: 'Upgrade', act: () => { Game.trainBack = 'gym'; Game.screen = 'train'; Game.idx = 0; } },
+    home ? { k: 'menu', label: 'Menu', act: careerMenu } : null
+  ].filter(Boolean);
+}
+function drawBarIcon(g, k, x, y, col) {
+  g.save(); g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 2; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath();
+  if (k === 'next') { g.moveTo(x - 5, y - 6); g.lineTo(x + 4, y); g.lineTo(x - 5, y + 6); g.closePath(); g.fill(); }
+  else if (k === 'drills') { g.arc(x, y, 6, 0, Math.PI * 2); g.moveTo(x - 6, y); g.lineTo(x + 6, y); g.moveTo(x, y - 6); g.quadraticCurveTo(x + 4, y, x, y + 6); g.stroke(); }
+  else if (k === 'musalla') { g.moveTo(x - 6, y + 6); g.lineTo(x - 6, y - 1); g.quadraticCurveTo(x - 5, y - 7, x, y - 8); g.quadraticCurveTo(x + 5, y - 7, x + 6, y - 1); g.lineTo(x + 6, y + 6); g.stroke(); }
+  else if (k === 'office') { g.rect(x - 6, y - 7, 12, 14); g.moveTo(x + 3, y); g.arc(x + 3, y, 1, 0, Math.PI * 2); g.stroke(); }
+  else if (k === 'upgrade') { g.moveTo(x, y + 7); g.lineTo(x, y - 6); g.moveTo(x - 5, y - 1); g.lineTo(x, y - 6); g.lineTo(x + 5, y - 1); g.stroke(); }
+  else { for (const dy of [-5, 0, 5]) { g.moveTo(x - 6, y + dy); g.lineTo(x + 6, y + dy); } g.stroke(); }
+  g.restore();
+}
+// the left column: objective box (if any) under the Back button, then the bar; returns the bar's bottom
+function drawGymBar(g, y0) {
+  const TT = Input.touchMode && g === ctx, items = gymBarItems(), x = 12, w = TT ? 46 : 168, h = TT ? 44 : 34, gap = 6;
+  items.forEach((it, i) => {
+    const y = y0 + i * (h + gap), pulse = it.glow ? 0.5 + 0.5 * Math.sin(Game.t * 4) : 0;
+    g.fillStyle = it.glow ? `rgba(232,195,90,${0.82 + 0.18 * pulse})` : 'rgba(8,16,24,0.74)'; roundRect(g, x, y, w, h, 10); g.fill();
+    if (it.glow) { g.strokeStyle = '#fff8dc'; g.lineWidth = 1.5; roundRect(g, x, y, w, h, 10); g.stroke(); }
+    drawBarIcon(g, it.k, x + (TT ? w / 2 : 18), y + h / 2, it.glow ? NIGHT : '#f2cf6b');
+    if (!TT) { g.textAlign = 'left'; g.fillStyle = it.glow ? NIGHT : '#fff'; g.font = `12px ${it.glow ? FONT : BODY}`; g.fillText(fitText(g, it.label, w - 40), x + 34, y + h / 2 + 4); }
+    addRect(x, y, w, h, it.act);
+  });
+  const by = y0 + items.length * (h + gap);
+  // Barakah Points and Halal Bucks, small, under the bar
+  g.textAlign = 'left'; g.font = `11px ${BODY}`; g.fillStyle = '#f2cf6b'; g.fillText(C.bp + ' BP', x + 2, by + 12); g.fillStyle = '#9dffb0'; g.fillText(C.hb + ' HB', x + 2 + (TT ? 0 : 70), by + (TT ? 28 : 12));
+  return by + 30;
+}
+function gymBarShown() { return storyOn() && Game.screen === 'gym' && !Gym.drill && !Gym.overlay && !Gym.result && !Gym.walk && !Gym.fade && !Gym.ready && !(SW && (SW.talk || SW.fadeDir || SW.D.say)) && !(SW && !SW.D.free && !SW.D.home); }
+
+{
+  // the HUD: the objective box (story-walk.js) then the bar, the hint, and the ready panel, all on the left
+  const _hud = drawGymHUD;
+  drawGymHUD = function (g) {
+    Gym.hintText = '';
+    const r = _hud.apply(this, arguments);
+    if (!storyOn() || Game.screen !== 'gym') return r;
+    if (Gym.ready) { drawReady(g); return r; }
+    if (gymBarShown()) {
+      const by = drawGymBar(g, (SW && SW.listBottom) || (Input.touchMode && g === ctx ? 72 : 60));
+      if (Gym.hintText && !(Input.touchMode && g === ctx)) { g.font = `11px ${BODY}`; g.fillStyle = 'rgba(8,16,24,0.7)'; const w = Math.min(260, g.measureText(Gym.hintText).width + 22); roundRect(g, 12, by, w, 24, 12); g.fill(); g.fillStyle = '#cfd8e3'; g.textAlign = 'left'; g.fillText(fitText(g, Gym.hintText, w - 20), 23, by + 16); }
+    }
+    return r;
+  };
+  // the menu (the old hub screen): everything that isn't quick
+  storyHubItems = function () {
+    return [
+      { label: 'Back to the gym', act: () => careerHub() },
+      { label: 'Masjid', sub: [
+        { label: 'The musalla', act: () => storyOpenMusalla() },
+        { label: 'Sh. Saleem’s office', act: () => storyOpenOffice() },
+        { label: 'Outside', act: () => { Game.screen = 'masjid'; Game.masjidView = 'ext'; } },
+        { label: 'Projects', act: () => { Game.screen = 'shop'; Game.idx = 0; Game.shopTab = Game.shopTab || 'masjid'; } }] },
+      { label: 'My Player', sub: [
+        { label: 'Upgrade stats', act: () => { Game.screen = 'train'; Game.idx = 0; } },
+        { label: 'Look', act: () => { Game.creator = { idx: creatorFirstRow('look'), isNew: false, tab: 'look', welcomed: true }; Game.screen = 'creator'; } },
+        { label: 'Journal', act: () => openJournal() },
+        { label: 'League & stats', act: () => openStats() }] },
+      { label: 'My plays', act: () => { openMyPlays(); PlayLib.back = { screen: 'hub' }; } },
+      { label: 'Settings', act: () => { Game.setRet = 'hub'; Game.screen = 'settings'; Game.idx = 0; Game.setGroup = null; } },
+      { label: 'Title', act: () => { saveCareer(); goTitle(); } }          // (one word, as every way out: Back, Quit, Title)
+    ];
+  };
+  const _bs = BACK.settings;
+  BACK.settings = function () { if (Game.setRet === 'hub' && Game.setGroup == null && C) { Game.setRet = null; careerMenu(); return; } return _bs.apply(this, arguments); };
+  // the menu's back (Esc, the Back pill) goes back to the gym
+  const _bh = BACK.hub;
+  BACK.hub = function () { if (storyOn() && !(Game.hubMenu && Game.hubMenu.open) && !(Game.menus && Game.menus.hub && Game.menus.hub.sub >= 0)) { careerHub(); return; } return _bh.apply(this, arguments); };
+  // the rewards card after a league game: the totals, short (the full list of reasons goes)
+  const _dp = drawPostgame;
+  drawPostgame = function (g) {
+    const p = Game.post; if (!storyOn() || !p || !p.rw) return _dp.apply(this, arguments);
+    panel(g, W / 2 - 300, 70, 600, 380, true);
+    g.textAlign = 'center'; g.fillStyle = p.won ? GOLD : '#ffb0b0'; g.font = `34px ${FONT}`;
+    g.fillText(p.res === 'champ' ? p.stage.name.toUpperCase() + ' CHAMPIONS' : p.won ? 'WIN' : 'LOSS', W / 2, 124);
+    g.fillStyle = '#fff'; g.font = `17px ${BODY}`; g.fillText(fitText(g, 'Al-Amanah ' + p.us + ', ' + p.opp.name.replace('Masjid ', '') + ' ' + p.them + '  (' + p.roundName + ')', 540), W / 2, 156);
+    if (p.unlocked) { g.fillStyle = '#9dffb0'; g.font = `15px ${FONT}`; g.fillText(fitText(g, p.unlocked, 540), W / 2, 184); }
+    // the totals count up, one line of the rewards at a time, a soft tick each (sfx-moments-hooks.js)
+    const items = [...(p.rw.bp || []).map(x => [0, +x[1] || 0]), ...(p.rw.hb || []).map(x => [1, +x[1] || 0])];
+    const n = typeof earnShown === 'function' && items.length ? earnShown(p, items.length) : items.length;
+    const shown = [0, 1].map(k => items.slice(0, n).filter(x => x[0] === k).reduce((a, x) => a + x[1], 0));
+    const tot = [p.rw.bpTotal, p.rw.hbTotal].map((v, k) => n >= items.length || !items.length ? v : Math.min(v, shown[k]));
+    [['BARAKAH POINTS', tot[0], '#f2cf6b', 'for your stats'], ['HALAL BUCKS', tot[1], '#9dffb0', 'for your look and the masjid']].forEach(([t, v, col, sub], i) => {
+      const x = W / 2 - 250 + i * 260;
+      g.fillStyle = 'rgba(255,255,255,0.06)'; roundRect(g, x, 212, 240, 130, 14); g.fill();
+      g.textAlign = 'center'; g.fillStyle = '#9fb3c8'; g.font = `12px ${FONT}`; g.fillText(t, x + 120, 240);
+      g.fillStyle = col; g.font = `40px ${FONT}`; g.fillText('+' + v, x + 120, 294);
+      g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText(sub, x + 120, 322);
+    });
+    g.textAlign = 'center'; g.fillStyle = '#cfd8e3'; g.font = `13px ${BODY}`; wrapText(g, 'Spend them in the gym: Upgrade for your stats, Masjid for projects. Your saved plays are in Menu, My plays.', W / 2, 372, 520, 18);
+    g.fillStyle = '#fff'; g.font = `15px ${FONT}`; g.fillText(Input.touchMode ? 'Tap to go back to the gym' : 'Enter or tap: back to the gym', W / 2, 428);
+    addRect(0, 0, W, H, postgameContinue);
+  };
+}
+// ================================================= v9.32: CAREER REFINE 3 — Chapter 0 rebuilt
+// (docs/career-overhaul/REFINE-PLAN.md, release 3; SCENES.md, Chapter 0)
+// The first night: the salams, Imam Dawud in the musalla (a walk-up talk), the gym where Sh. Saleem, Ammo Jamil and
+// Ilyas shoot at one hoop and you ask to play (no ball for you until then), the tutorial game, and on the court the
+// three introduce themselves and invite you to practice.
+// - The tutorial game: first to 11, the easiest CPU, easier still when you're behind (your green window opens up,
+//   theirs closes, and they reach for fewer steals and blocks). The controls are taught by prompts in the left box,
+//   each ticked off when you do it. There's no rewards card after it: points and bucks are explained in Chapter 1.
+// - The gym starts bare: nothing is built (the water cooler is a project now).
+// - A Chapter 0 save from before this layout starts again at C0.1.
+
+// ---------------------------------------------------------------- the tutorial game's prompts (the left box)
+const TUT0_STEPS = [
+  { id: 'move', title: 'Move', text: () => tk('W A S D or the arrow keys', 'the stick on the left', 'the left stick'), done: s => s.dist > 220 },
+  { id: 'pass', title: 'Pass', text: () => tk('tap J to pass to Sh. Saleem', 'tap PASS', 'tap X'), done: s => s.passed },
+  { id: 'shoot', title: 'Shoot', text: () => tk('hold K, let go at the top of the jump', 'hold SHOOT, let go at the top', 'hold A, let go at the top'), done: s => s.shotDone },
+  { id: 'sprint', title: 'Sprint', text: () => tk('hold Shift while you move', 'push the stick past the dashed ring', 'hold B while you move'), done: s => s.sprint > 0.6 },
+  { id: 'defend', title: 'Defend', text: () => tk('hold L on defense to stay with your man', 'hold DEFEND on defense', 'hold Y on defense'), done: s => s.guard > 1.2 },
+  { id: 'contest', title: 'Contest a shot', text: () => tk('press K to jump when he shoots', 'press BLOCK when he shoots', 'press A when he shoots'), done: s => s.contested }
+];
+function tut0() { return M && M.story && M.story.tut; }
+{
+  const _um = updateMatch;
+  updateMatch = function (dt) {
+    const r = _um.apply(this, arguments), T = tut0();
+    if (!T || !M.players) return r;
+    const me = M.players.find(q => q.human === 0), s = T.s; if (!me) return r;
+    const sp = Math.hypot(me.vx || 0, me.vz || 0);
+    if (s.last) s.dist += Math.hypot(me.x - s.last.x, me.z - s.last.z); s.last = { x: me.x, z: me.z };
+    if (me.cmd && me.cmd.turbo && sp > 200) s.sprint += dt;
+    if (ball.state === 'shot' && ball.shot && ball.shot.shooter === me && !ball.shot.dunk) s.shot = true;
+    if (s.shot && ball.state !== 'shot') s.shotDone = true;
+    if (ball.owner === me) s.hadBall = true;
+    if (s.hadBall && (ball.owner === me.mate || (ball.pass && ball.pass.from === me))) s.passed = true;
+    if (me.v8 && me.v8.held && me.v8.inPos) s.guard += dt;
+    if (me.state === 'jump' && me.opps.some(o => o.state === 'windup' || o.state === 'shoot') ) s.contested = true;
+    for (const st of TUT0_STEPS) if (!T.done[st.id] && st.done(s)) { T.done[st.id] = true; T.flash = { id: st.id, t: 1 }; SFX.good && SFX.good(); }
+    if (T.flash) { T.flash.t -= dt; if (T.flash.t <= 0) T.flash = null; }
+    return r;
+  };
+  // the catch-up: when you're behind, your shots open up and theirs close
+  const _sw = shotWindow;
+  shotWindow = function (p) {
+    const w = _sw.apply(this, arguments), T = tut0(); if (!T || !(w > 0) || !M.teams) return w;
+    const behind = M.teams[0].score < M.teams[1].score;
+    return p.team === 0 ? w * (behind ? 1.6 : 1.2) : w * (behind ? 0.45 : 0.75);
+  };
+  const _dk = defK;
+  defK = function (p) { const k = _dk.apply(this, arguments), T = tut0(); if (!T || !p || p.team !== 1 || !M.teams) return k; return k * (M.teams[0].score < M.teams[1].score ? 0.3 : 0.6); };
+  // the box, on the left
+  const _dh = drawHUD;
+  drawHUD = function (g) {
+    const r = _dh.apply(this, arguments), T = tut0();
+    if (!T || Game.screen !== 'play') return r;
+    const TT = Input.touchMode && g === ctx, x = 12, y = TT ? 112 : 88, w = TT ? 250 : 300;
+    g.font = `12px ${BODY}`; const rh = Math.max(20, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 12) + 8), cur = TUT0_STEPS.find(st => !T.done[st.id]);
+    const h = 30 + TUT0_STEPS.length * rh + (cur ? rh + 6 : 0);
+    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x, y, w, h, 12); g.fill();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('The basics', x + 14, y + 20);
+    TUT0_STEPS.forEach((st, i) => {
+      const ok = !!T.done[st.id], on = st === cur, yy = y + 20 + (i + 1) * rh;
+      g.fillStyle = ok ? '#9dffb0' : on ? '#fff' : '#9fb3c8'; g.font = `12px ${on ? FONT : BODY}`;
+      g.fillText((ok ? '✓ ' : on ? '› ' : '• ') + st.title, x + 16, yy);
+    });
+    if (cur) { g.fillStyle = '#f2cf6b'; g.font = `12px ${BODY}`; g.fillText(fitText(g, cur.text(), w - 28), x + 16, y + 26 + (TUT0_STEPS.length + 1) * rh); }
+    return r;
+  };
+}
+{
+  // the tutorial game is set up as the pickup game, plus its prompts
+  const _ex = storyExhibition;
+  storyExhibition = function (S) { const r = _ex.apply(this, arguments); if (S && S.tutorial && M.story) M.story.tut = { s: { dist: 0, sprint: 0, guard: 0 }, done: {} }; return r; };
+  // no rewards card after it: its lines play in the gym, and on
+  const _ae = storyAfterExhib;
+  storyAfterExhib = function () {
+    const S = M.story && SC[M.story.id];
+    if (!S || !S.noRewards) return _ae.apply(this, arguments);
+    const won = M.winner === 0;
+    C.gamesPlayed = (C.gamesPlayed || 0) + 1; saveCareer();
+    setupPractice('free'); Game.post = null;
+    const lines = storyLinesOf(S, won ? 'winLines' : 'lossLines');
+    if (!lines.length) { storyJournal(S, [['narr', S.name + ': ' + (won ? 'won' : 'lost')]]); return storyDone(S, won ? 'win' : 'loss'); }
+    playStory(lines, () => storyDone(S, won ? 'win' : 'loss'), storyTitleOf(S)); storyTagJournal(S);
+  };
+}
+
+// ---------------------------------------------------------------- walks: no ball until a scene gives you one
+{
+  const _ws = storyWalkStart;
+  storyWalkStart = function (S, D0) {
+    const r = _ws.apply(this, arguments), D = SW && SW.D;
+    if (D && D.noBall && M.players) { ball.owner = null; ball.state = 'loose'; ball.shot = null; ball.pass = null; ball.x = -3000; ball.z = 300; ball.y = 0; ball.vx = ball.vy = ball.vz = 0; ball.grabLock = 1e9; }
+    return r;
+  };
+  // a scene marked direct goes straight on (asking to play leads straight to the ready prompt, not home)
+  const _sd = storyDone;
+  storyDone = function (S, outcome) {
+    if (!S.direct) return _sd.apply(this, arguments);
+    const st = C.story; st.seen[S.id] = (st.seen[S.id] || 0) + 1;
+    const next = typeof S.next === 'function' ? S.next(outcome) : S.next;
+    storyGo(next); storyRun();
+  };
+  // in Chapter 0 the bar is only Next and Menu: nothing else has been shown to you yet
+  const _bi = gymBarItems;
+  gymBarItems = function () { const L = _bi.apply(this, arguments); return storyChapter() === 0 ? L.filter(it => it.k === 'next' || it.k === 'menu') : L; };
+}
+
+// ---------------------------------------------------------------- the gym starts bare; old Chapter 0 saves start over
+const STORY_LAYOUT = 3;                                                // 2: Chapter 0 in the v9.32 order; 3: Chapter 1 in the v9.33 order
+{
+  const _fc = freshCareer;
+  freshCareer = function () { const c = _fc.apply(this, arguments); if (c.story) c.up = {}; return c; };
+  const _sf = storyFresh;
+  storyFresh = function () { return Object.assign(_sf.apply(this, arguments), { lay: STORY_LAYOUT }); };
+  const _lc = loadCareer;
+  loadCareer = function (key) {
+    const raw = readSave(key), lay = (raw && raw.story && raw.story.lay) || 0;   // (the saved layout, before the fresh defaults fill in)
+    const r = _lc.apply(this, arguments);
+    if (r && C && C.story && lay < 2) {
+      if (/^C0\./.test(C.story.at || '')) { C.story.at = 'C0.1'; C.story.wp = null; }
+      C.story.lay = STORY_LAYOUT;
+    }
+    return r;
+  };
+}
+// ================================================= v9.33: CAREER REFINE 4 — Chapter 1 rebuilt
+// (docs/career-overhaul/REFINE-PLAN.md, release 4; SCENES.md, Chapter 1)
+// - C1.1 Meet the gym: a free walk with goals (sprint, three baskets, a layup, a rebound). Ilyas runs you through the
+//   cone dribble and explains Barakah Points; Ammo Jamil has you shoot free throws and explains Halal Bucks; Sh. Saleem
+//   at his office door explains the drills. Then "Go to the musalla": walk through the door.
+// - C1.2 The musalla: short intros, pray, read; then Musa calls everyone to the gym and Lightning's ready panel opens.
+// - C1.3 Lightning, in the practice gym, with only a small count on the left. After it Sh. Saleem asks you to his office.
+// - C1.4 the office (four lines), C1.5 on court: everyone plays for his spot.
+// - C1.6 King of the Court in the practice gym: Musa, then Hafiz Zubair, then Qari Anas, each a little harder, all easy.
+//   Only a streak counter on the left.
+// - C1.7 the team. A Chapter 1 save from before this layout starts again at C1.1.
+
+// ---------------------------------------------------------------- C1.1: the gym walk
+function swOnlyGo() { return !!(SW && SW.D.exitTo && !swNeedLeft().length && swGoalsLeft().every(id => id === 'go')); }
+{
+  // talking to someone who has a drill for you: his lines, then the drill
+  const _tt = swTalkTo;
+  swTalkTo = function (id) {
+    const I = SW, d = I && I.defs[id];
+    if (!d || !d.drill || d.closer || I.talk || I.fadeDir || I.goals[d.drill]) return _tt.apply(this, arguments);
+    const p = I.npcs[id], me = M.players[0]; p.face = sgn(me.x - p.x) || 1; me.face = -p.face; I.with = id;
+    swSay(d.lines, () => { if (!I.met[id]) { I.met[id] = true; swSave(); } startDrill(d.drill); });
+  };
+  // a drill finished in a walk ticks off its own goal (the cone dribble, the free throws)
+  const _fd = finishDrill;
+  finishDrill = function () { const k = Gym.drill && Gym.drill.kind, r = _fd.apply(this, arguments); if (k && Gym.story && Gym.story === SW) swGoal(k); return r; };
+  // a rebound: your own miss, back in your hands
+  const _gb = giveBall;
+  giveBall = function (p, how) {
+    const sh = ball.shot;
+    if (how !== 'inbound' && sh && !sh.make && sh.shooter === p && Gym.story && Gym.story === SW && SW.D.free && !Gym.drill && p === M.players[0]) swGoal('rebound');
+    return _gb.apply(this, arguments);
+  };
+  // a layup: a basket from close in (or a layup move)
+  const _ps = practiceScore;
+  practiceScore = function () {
+    if (Gym.story && Gym.story === SW && SW.D.free && !Gym.drill && SW.gp.close) swGoal('layup');
+    return _ps.apply(this, arguments);
+  };
+  const _gu = gymUpdate;
+  gymUpdate = function (rdt) {
+    const I = SW, me = M.players[0];
+    if (I && Gym.story === I && I.D.free && me && Game.screen === 'gym' && !Gym.drill) {
+      if (ball.state === 'shot' && ball.shot && ball.shot.shooter === me) {
+        if (!I.gp.shotSeen) { I.gp.shotSeen = true; const h = hoops[1], ty = ball.shot.type; I.gp.close = Math.hypot(me.x - h.x, me.z - h.z) < 170 || /layup|reverse|euro|upunder|gg|floater/.test(ty || ''); }
+      } else if (ball.state !== 'shot') I.gp.shotSeen = false;
+      // the musalla door: walk up to it once the gym is done
+      if (swOnlyGo() && !I.talk && !I.fadeDir && !Gym.walk && !Gym.fade && !Gym.overlay && Math.hypot(me.x - PRAY_SPOT.x, me.z - PRAY_SPOT.z) < 90) { enterMusalla(); }
+    }
+    return _gu.apply(this, arguments);
+  };
+  // through the door: the walk is over and the musalla scene starts
+  const _om = openMusalla;
+  openMusalla = function () {
+    const I = SW;
+    if (I && Gym.story === I && I.D.exitTo === 'musalla' && swOnlyGo()) { I.goals.go = true; swEnd(); return; }
+    return _om.apply(this, arguments);
+  };
+  // the marker over the door
+  const _hud = drawGymHUD;
+  drawGymHUD = function (g) {
+    const r = _hud.apply(this, arguments);
+    if (swOnlyGo() && Game.screen === 'gym' && !SW.talk && !SW.fadeDir && !Gym.drill && !Gym.walk && !Gym.fade) { const [x, y] = P(PRAY_SPOT.x, 150, PRAY_SPOT.z); drawStalkMarker(g, x, y); }
+    return r;
+  };
+}
+
+// ---------------------------------------------------------------- C1.5: lines said right here, on court
+{
+  const _ts = storyTalkStart;
+  storyTalkStart = function (S) {
+    if (!S || !S.sayNow) return _ts.apply(this, arguments);
+    const L = storyLinesOf(S);
+    storySay(L, () => { storyJournal(S, L); storyDone(S, 'next'); }, S.name);
+  };
+}
+
+// ---------------------------------------------------------------- Lightning: a small count on the left
+function storyMiniLean() { return storyOn() && Gym.drill && Gym.drill.story && M.mini && M.mini.kind === 'lightning'; }
+{
+  const _dm = drawMiniHUD;
+  drawMiniHUD = function (g) {
+    if (!storyMiniLean()) return _dm.apply(this, arguments);
+    const mg = M.mini, n = M.players.length, left = M.players.filter((p, i) => !mg.places[i]).length;
+    const me = Math.max(0, M.players.findIndex(p => p.human >= 0)), out = mg.places[me], act = mg.active.indexOf(me), tk = mg.taken && mg.taken.has(me);
+    const you = out ? (out === 1 ? 'You won!' : 'You’re out: ' + ordinal(out)) : act === 0 ? (tk ? 'Chase your rebound' : 'You’re on the spot') : act === 1 ? (tk ? 'Chase your rebound' : 'You’re on deck') : 'In line: #' + (mg.queue.indexOf(me) + 1);
+    const TT = Input.touchMode && g === ctx, x = 12, y = TT ? 72 : 60, w = 196;
+    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x, y, w, 70, 12); g.fill();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('Lightning', x + 14, y + 20);
+    g.fillStyle = '#fff'; g.font = `12px ${BODY}`; g.fillText('Players left: ' + left + ' of ' + n, x + 14, y + 40);
+    g.fillStyle = out === 1 ? '#9dffb0' : out ? '#9fb3c8' : '#f2cf6b'; g.fillText(you, x + 14, y + 58);
+  };
+}
+
+// ---------------------------------------------------------------- King of the Court in the practice gym
+const KOTC_STORY_L = { musa: -0.85, hafiz: -0.6, anas: -0.35 };     // each a little harder, all of them easy
+{
+  const _kv = kotcVenue;
+  kotcVenue = function () { if (!KOTC.lean) return _kv.apply(this, arguments); const b = VENUE_LIST.find(v => v.id === 'home'); return b ? makeVenue(b, { host: 0, crowd: 0 }) : null; };
+  const _kb = kotcBuild;
+  kotcBuild = function (ids) {
+    const r = _kb.apply(this, arguments);
+    if (KOTC.lean) M.aiCfg = ids.map(id => diffAt(KOTC_STORY_L[id] != null ? KOTC_STORY_L[id] : -0.5));
+    return r;
+  };
+  // the crown goes straight back to the story: no standings card
+  const _um = updateMatch;
+  updateMatch = function (dt) { const r = _um.apply(this, arguments); if (KOTC.on && (KOTC.lean || KOTC.hud) && KOTC.done && KOTC.doneT > 2.4) kotcLeave(); return r; };
+  const _kl = kotcLeave;
+  kotcLeave = function () { const r = _kl.apply(this, arguments); KOTC.lean = false; KOTC.hud = false; return r; };
+}
+// the streak counter (v8-kotc.js draws it instead of the banner when KOTC.lean)
+function drawKotcLean(g) {
+  const K = KOTC, TT = Input.touchMode && g === ctx, x = 12, y = TT ? 104 : 76, w = 210, mine = K.king === 'you';   // (under the scoreboard)
+  g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x, y, w, 76, 12); g.fill();
+  g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('♛ King of the Court', x + 14, y + 20);
+  for (let i = 0; i < KOTC_CROWN; i++) {
+    const on = mine && i < K.streak; g.fillStyle = on ? '#f2cf6b' : 'rgba(255,255,255,0.16)';
+    g.beginPath(); g.arc(x + 22 + i * 24, y + 40, 8, 0, Math.PI * 2); g.fill();
+  }
+  g.fillStyle = '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((mine ? K.streak : 0) + ' of ' + KOTC_CROWN, x + 22 + KOTC_CROWN * 24, y + 44);
+  g.fillStyle = '#9fb3c8'; g.fillText(fitText(g, (mine ? 'Next: ' : 'King: ') + kotcName(mine ? K.chal : K.king), w - 28), x + 14, y + 64);
+}
+
+// ---------------------------------------------------------------- saves: Chapter 1 in the v9.33 order
+{
+  const _lc = loadCareer;
+  loadCareer = function (key) {
+    const raw = readSave(key), lay = (raw && raw.story && raw.story.lay) || 0;
+    const r = _lc.apply(this, arguments);
+    if (r && C && C.story && lay < 3) {
+      if (/^C1\./.test(C.story.at || '')) { C.story.at = 'C1.1'; C.story.wp = null; }
+      C.story.lay = STORY_LAYOUT;
+    }
+    return r;
+  };
+}
+// ================================================= v9.33 (refine 5): Chapter 2's opening
+// (docs/career-overhaul/REFINE-PLAN.md, release 5; SCENES.md, Chapter 2)
+// - C2.1 Sh. Saleem explains the loop at the first practice (practise between games, points, bucks, the prayer boost).
+// - C2.2 and C2.3 shorter; "Why we play" is Sh. Saleem alone in his office.
+// - C2.5 the seven stand around the gym: talk to any of them and the pick screen opens with him selected. The pick
+//   screen (here and in every later pick) lists the seven on the left; on the right, his nine stats next to yours,
+//   and your chemistry. Your teammate's last line: "Come talk to me when you're ready for the first game."
+
+const PICK_STATS = [['sht', 'Shooting'], ['spd', 'Speed'], ['dnk', 'Dunking'], ['def', 'Defense'], ['stl', 'Stealing'], ['sta', 'Stamina'], ['pas', 'Passing'], ['hus', 'Hustle'], ['clu', 'Clutch']];
+const PICK_READY = 'Come talk to me when you’re ready for the first game.';
+
+// ---------------------------------------------------------------- C2.5: talk to a brother, and the pick opens
+function storyPickWalkOpen(id) {
+  const I = SW; if (!I || I.talk || I.fadeDir) return;
+  const p = I.npcs[id], me = M.players[0]; if (p && me) { p.face = sgn(me.x - p.x) || 1; me.face = -p.face; }
+  let i = STORY_MATES.indexOf(id); if (i < 0 || !storyPickable(id)) i = Math.max(0, STORY_MATES.findIndex(storyPickable));
+  Game.spick = { S: I.S, sel: i, walk: true }; Game.screen = 'spick'; SFX.blip && SFX.blip();
+}
+{
+  const _sp = storyPick;
+  storyPick = function (i) {
+    const P = Game.spick; if (!P || !P.walk) return _sp.apply(this, arguments);
+    const id = STORY_MATES[i]; if (!storyPickable(id)) { SFX.bad && SFX.bad(); return; }
+    C.partner = id; Game.spick = null; Game.screen = 'gym'; saveCareer(); SFX.good && SFX.good();
+    const I = SW; if (!I) return storyDone(P.S, 'next');   // (swEnd: D.after, or the next scene)
+    I.with = id; I.goals.pick = true;
+    const L = storyPickLines(id).slice(0, 3).concat([[id, I.D.ready || PICK_READY]]);
+    I.D = Object.assign({}, I.D, { journal: L });
+    swSay(L, () => swEnd());
+  };
+  // Back from the pick screen in the walk: back to the walk, not the menu
+  const _bs = BACK.spick;
+  BACK.spick = function () { const P = Game.spick; if (P && P.walk) { Game.spick = null; Game.screen = 'gym'; return; } return _bs.apply(this, arguments); };
+  const _cu = careerUpdate;
+  careerUpdate = function (rdt) {
+    if (Game.screen !== 'spick') return _cu.apply(this, arguments);
+    const P = Game.spick; if (!P) return _cu.apply(this, arguments);
+    const n = STORY_MATES.length;
+    if (menuHit('up') || menuHit('left')) { P.sel = (P.sel + n - 1) % n; SFX.blip(); }
+    else if (menuHit('down') || menuHit('right')) { P.sel = (P.sel + 1) % n; SFX.blip(); }
+    else if (menuHit('ok')) storyPick(P.sel);
+    else if (menuHit('back')) BACK.spick();
+  };
+}
+
+// ---------------------------------------------------------------- the pick screen: the list on the left, him and you on the right
+function spickLayout() {
+  const TT = Input.touchMode, x0 = Math.round((W - 880) / 2), y0 = 66, rh = TT ? 54 : 52;
+  return { x0, y0, lw: 300, rh, rx: x0 + 316, rw: 564, rows: STORY_MATES.map((id, i) => ({ id, x: x0, y: y0 + i * rh, w: 300, h: rh - 6 })) };
+}
+function spickRects() { return spickLayout().rows; }
+function drawStoryPick(g) {
+  const P = Game.spick; if (!P) return;
+  dim(g, 0.84);
+  const Lo = spickLayout(), T = amanahTeam(), id = STORY_MATES[P.sel], TT = Input.touchMode;
+  g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `22px ${FONT}`; g.fillText(P.S && P.S.keep ? 'Your teammate for the next game' : 'Pick your teammate', Math.max(Lo.x0, 136), 46);   // (clear of the Back button)
+  // the seven
+  Lo.rows.forEach((r, i) => {
+    const on = P.sel === i, ok = storyPickable(r.id), cur = C.partner === r.id;
+    g.globalAlpha = ok ? 1 : 0.45;
+    g.fillStyle = on ? 'rgba(232,195,90,0.24)' : 'rgba(8,16,24,0.88)'; roundRect(g, r.x, r.y, r.w, r.h, 10); g.fill();
+    if (on) { g.strokeStyle = GOLD; g.lineWidth = 2; roundRect(g, r.x, r.y, r.w, r.h, 10); g.stroke(); }
+    g.fillStyle = '#fff'; g.font = `14px ${FONT}`; g.fillText(fitText(g, castDef(r.id).name, r.w - 80), r.x + 16, r.y + 20);
+    g.fillStyle = HUB_GOLD_DIM; g.font = `12px ${BODY}`; g.fillText(fitText(g, ok ? MATE_ROLE[r.id] : 'Away for Hajj', r.w - 80), r.x + 16, r.y + 38);
+    if (cur) { g.fillStyle = GOLD; g.font = `11px ${FONT}`; g.textAlign = 'right'; g.fillText('NOW', r.x + r.w - 12, r.y + 20); g.textAlign = 'left'; }
+    g.globalAlpha = 1;
+    addRect(r.x, r.y, r.w, r.h, () => { if (P.sel === i) storyPick(i); else { P.sel = i; SFX.blip(); } });
+  });
+  // him and you
+  const x = Lo.rx, y = Lo.y0, w = Lo.rw, h = Lo.rows.length * Lo.rh - 6;
+  g.fillStyle = 'rgba(8,16,24,0.9)'; roundRect(g, x, y, w, h, 14); g.fill();
+  g.save(); roundRect(g, x + 2, y + 2, 150, h - 4, 12); g.clip(); drawPortrait(g, x + 78, y + h - 12, castDef(id), T, 1.5, 'thobe'); g.restore();
+  const cx = x + 168, cw = w - 184;
+  g.fillStyle = '#fff'; g.font = `18px ${FONT}`; g.fillText(fitText(g, castDef(id).name, cw), cx, y + 30);
+  g.fillStyle = HUB_GOLD_DIM; g.font = `12px ${BODY}`; g.fillText(fitText(g, storyPickable(id) ? MATE_ROLE[id] : 'Away for Hajj', cw), cx, y + 50);
+  const his = storyMateStats(id, C.stage), mine = playerDef().stats, top = MATE_STANDOUT[id] || [];
+  const colY = y + 76, bw = Math.round((cw - 104) / 2), rh = TT ? 28 : 27, ax = cx + 96, bx = ax + bw + 8;
+  g.font = `11px ${FONT}`; g.fillStyle = '#f2cf6b'; g.fillText((C.name || 'You').toUpperCase(), ax, colY); g.fillStyle = '#8fe3ff'; g.fillText(fitText(g, castDef(id).name.toUpperCase(), bw), bx, colY);
+  PICK_STATS.forEach(([k, lab], j) => {
+    const yy = colY + 12 + j * rh, a = clamp(+mine[k] || 0, 0, 10), b = clamp(+his[k] || 0, 0, 10), hot = top.includes(k);
+    g.fillStyle = hot ? '#fff' : IVORY; g.font = `12px ${hot ? FONT : BODY}`; g.fillText(lab, cx, yy + 13);
+    [[ax, a, '#f2cf6b'], [bx, b, '#8fe3ff']].forEach(([px, v, col]) => {
+      g.fillStyle = 'rgba(255,255,255,0.08)'; roundRect(g, px, yy + 4, bw - 26, 10, 5); g.fill();
+      g.fillStyle = col; roundRect(g, px, yy + 4, Math.max(4, (bw - 26) * v / 10), 10, 5); g.fill();
+      g.fillStyle = '#fff'; g.font = `12px ${FONT}`; g.textAlign = 'right'; g.fillText(String(v), px + bw - 4, yy + 14); g.textAlign = 'left';
+    });
+  });
+  const v = chemOf(id), my = colY + 12 + PICK_STATS.length * rh + 14;
+  g.fillStyle = HUB_GOLD_DIM; g.font = `11px ${FONT}`; g.fillText('CHEMISTRY ' + Math.round(v), cx, my + 8);
+  meter(g, ax, my, cw - 96, 9, v / 100, v >= 75 ? '#57e389' : v >= 25 ? '#f2cf6b' : '#9fb3c8');
+  // play with him
+  const bh = TT ? 44 : 38, bwid = 300, by = y + h + 12;
+  g.fillStyle = storyPickable(id) ? GOLD : 'rgba(255,255,255,0.2)'; roundRect(g, x + w - bwid, by, bwid, bh, bh / 2); g.fill();
+  g.textAlign = 'center'; g.fillStyle = NIGHT; g.font = `15px ${FONT}`; g.fillText(fitText(g, 'Play with ' + castDef(id).name, bwid - 24), x + w - bwid / 2, by + bh / 2 + 5);
+  addRect(x + w - bwid, by, bwid, bh, () => storyPick(P.sel));
+  if (!TT) { g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `12px ${BODY}`; g.fillText('↑ ↓ to choose  •  Enter to pick  •  Esc to go back', Lo.x0, by + bh / 2 + 5); }
+}
+// ================================================= v9.33 (refine 7): Chapters 3 to 5 under the new rules
+// (docs/career-overhaul/REFINE-PLAN.md, release 7) The owner's notes on Chapters 0 to 2, applied to the rest:
+// - Mini game screens: CHAI's centred letters banner, the all-star game's crowd meter and the King of the Court
+//   draw's banner move into small boxes on the left. The scoreboard, the callouts and the bubbles stay.
+// - Every teammate pick is a walk: the brothers stand around the gym and you talk to the one you want (the State
+//   league, Nationals, the Ummah Cup draw, and the re-pick when your teammate leaves for Hajj, without him).
+
+// ---------------------------------------------------------------- the pick is a walk, every time
+function storyPickWalk(S, then, o = {}) {
+  const spots = [[900, 320, -1], [980, 600, -1], [1120, 430, -1], [1180, 220, -1], [720, 600, 1], [600, 250, 1], [760, 170, 1]];
+  const npcs = STORY_MATES.filter(storyPickable).map((id, i) => {
+    const [x, z, face] = spots[i];
+    return { id, x, z, face, act: id === 'ilyas' ? 'shoot' : id === 'dawud' ? 'chai' : 'host', onTalk: () => storyPickWalkOpen(id) };
+  });
+  storyWalkStart(S, { title: 'Pick your teammate', pickWalk: true, npcs, after: then, ready: o.ready,
+    goals: [{ id: 'pick', label: 'Pick your teammate', touch: 'Walk up to a brother and tap Talk', key: 'Walk up to a brother, press E' }] });
+}
+const PICK_NEXT = 'Come talk to me when you’re ready for the next game.';
+{
+  // after a checkpoint's talk (C3.2, C4.1, C5.3)
+  storyPickThen = function (S, then) { storyPickWalk(S, then, { ready: PICK_NEXT }); };
+  // C3.14: his news, then the pick without him
+  const _cs = storyChoiceStart;
+  storyChoiceStart = function (S) {
+    if (!S.injure) return _cs.apply(this, arguments);
+    if (!C.story.injured) { C.story.injured = C.partner || 'saleem'; saveCareer(); }
+    playStory(storyLinesOf(S), () => storyPickWalk(S, () => storyDone(S, 'next'), { ready: PICK_NEXT }), storyTitleOf(S));
+    storyTagJournal(S);
+  };
+}
+
+// ---------------------------------------------------------------- CHAI: a small box on the left
+{
+  const _dm = drawMiniHUD;
+  drawMiniHUD = function (g) {
+    const mg = M.mini;
+    if (!(storyOn() && Gym.drill && Gym.drill.story && mg && mg.kind === 'horse')) return _dm.apply(this, arguments);
+    const TT = Input.touchMode && g === ctx, x = 12, y = TT ? 72 : 60, w = 236, rows = [0, 1], tm = mg.phase === 'follow' && !mg.done;
+    const h = 40 + rows.length * 28 + (tm ? 14 : 0) + (mg.msg && !mg.done ? 20 : 0);
+    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x, y, w, h, 12); g.fill();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(mg.word, x + 14, y + 20);
+    rows.forEach(i => {
+      const yy = y + 30 + i * 28, lead = mg.leader === i;
+      g.fillStyle = lead ? '#f2cf6b' : '#fff'; g.font = `12px ${FONT}`; g.fillText(fitText(g, (lead ? '▶ ' : '') + miniName(i), 96), x + 14, yy + 14);
+      mg.word.split('').forEach((ch, k) => {
+        const on = k < mg.letters[i], bx = x + 116 + k * 26;
+        g.fillStyle = on ? '#e05a5a' : 'rgba(255,255,255,0.1)'; roundRect(g, bx, yy, 22, 18, 5); g.fill();
+        g.fillStyle = on ? '#fff' : '#6d7a8c'; g.textAlign = 'center'; g.fillText(ch, bx + 11, yy + 14); g.textAlign = 'left';
+      });
+    });
+    let yy = y + 30 + rows.length * 28 + 4;
+    if (tm) { g.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(g, x + 14, yy, w - 28, 6, 3); g.fill(); g.fillStyle = mg.timer < 3 ? '#e05a5a' : '#ffcf6a'; roundRect(g, x + 14, yy, (w - 28) * clamp(mg.timer / (mg.timerLen || 10), 0, 1), 6, 3); g.fill(); yy += 14; }
+    if (mg.msg && !mg.done) { g.fillStyle = '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText(fitText(g, mg.msg, w - 28), x + 14, yy + 10); }
+    if (mg.said) {                                                     // what he says stays a bubble over his head
+      const p = M.players[mg.said.who]; if (p) { const [px, py] = P(p.x, p.y + 132, p.z); g.font = `12px ${BODY}`; const bw = g.measureText(mg.said.text).width + 20;
+        g.fillStyle = 'rgba(255,255,255,0.95)'; roundRect(g, px - bw / 2, py - 24, bw, 24, 12); g.fill(); g.fillStyle = NIGHT; g.textAlign = 'center'; g.fillText(mg.said.text, px, py - 8); }
+    }
+  };
+}
 // ================================================= v9.30.0: LIGHTNING AND HORSE ONLINE WITH ROLLBACK
 // Head to head, Same team vs CPU and 1 on 1 run on rollback (rollback-net.js): both phones play the whole game and
 // send each other only their controls, so your own player answers at once and there are no snapshot hiccups. The

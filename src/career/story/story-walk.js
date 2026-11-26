@@ -87,7 +87,7 @@ function swTrackGoals(dt) {
     if (I.talk) I.talk.t += dt;
     if (I.fade > 0 && !I.fadeDir) I.fade = Math.max(0, I.fade - dt * 1.5);
     if (I.fadeDir) { I.fade = Math.min(1, I.fade + dt * 1.4); if (I.fade >= 1) { swEnd(); return; } }
-    if (menuHit('back') && !I.fadeDir) { careerHub(); return; }
+    if (menuHit('back') && !I.fadeDir) { careerMenu(); return; }        // (v9.35: Esc opens the menu, as it does at home; the walk keeps its place)
     const me = M.players[0];
     if (!I.talk) I.with = null;
     I.lb += ((I.talk ? 1 : 0) - I.lb) * Math.min(1, dt * 6);
@@ -141,16 +141,17 @@ function swTrackGoals(dt) {
     if (I.D.free) { if (Gym.drill || Gym.overlay || Gym.result || Gym.walk || Gym.fade) return _hud.apply(this, arguments); if (!I.talk) _hud.apply(this, arguments); }
     if (I.lb > 0.01) { const b = 40 * I.lb; g.fillStyle = 'rgba(4,8,12,0.92)'; g.fillRect(-400, 0, W + 800, b); g.fillRect(-400, H - b, W + 800, b); }
     // the checklist: who to meet, or the tutorial's goals
+    I.listBottom = 0;
     const rows = I.D.goals ? I.D.goals.map(q => [I.goals[q.id], q.label + (q.n && !I.goals[q.id] ? '  ' + Math.min(q.id === 'score' ? I.gp.made : I.gc[q.id] || 0, q.n) + '/' + q.n : '')])
       : I.D.npcs.filter(d => d.need).map(d => [I.met[d.id], castDef(d.id).name]);
     if (rows.length) {
       g.save(); g.globalAlpha = 1 - I.lb; g.font = `12px ${BODY}`;
       const rh = Math.max(20, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 12) + 8), w = Math.max(196, ...rows.map(r => g.measureText('✓ ' + r[1]).width + 44));
-      const x0 = TT ? 12 : 132, y0 = TT ? 72 : 12;                       // (clear of the Back button: beside it on a computer, under it on a phone)
+      const x0 = 12, y0 = TT ? 72 : 60;                                  // (v9.31: under the Back button, the left column)
       g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x0, y0, w, 30 + rows.length * rh, 12); g.fill();
       g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText(I.D.title || 'Walk around', x0 + 14, y0 + 20);
       rows.forEach(([ok, label], i) => { g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + label, x0 + 16, y0 + 20 + (i + 1) * rh); });
-      g.restore();
+      g.restore(); I.listBottom = y0 + 30 + rows.length * rh + 8;
     }
     for (const id in I.npcs) {
       const p = I.npcs[id], [x, y] = head(p), d = I.defs[id];
@@ -202,10 +203,8 @@ function swPrompt(g, x, y, label, fn) {
   addRect(x - w / 2, y - h, w, h, fn);
 }
 function swHint(g, text, free) {
-  g.font = `12px ${BODY}`; const w = Math.min(W - 40, g.measureText(text).width + 30), y = Input.touchMode ? 12 : free ? H - 128 : H - 40;   // (free walks: above the gym's own bar)
-  if (Input.touchMode) return;                                   // phones: the touch controls own the bottom; the checklist says it
-  g.fillStyle = 'rgba(8,16,24,0.72)'; roundRect(g, W / 2 - w / 2, y, w, 28, 14); g.fill();
-  g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText(fitText(g, text, w - 20), W / 2, y + 19);
+  if (Input.touchMode || !text) return;                          // phones: the touch controls own the screen; the checklist says it
+  Gym.hintText = text;                                           // (v9.31: drawn on the left, under the bar: story-home.js)
 }
 
 // ---------------------------------------------------------------- what people are doing while you walk in
@@ -335,36 +334,53 @@ function swPropFront(g, p) {
     if (Game.screen === 'train' && Game.trainBack && menuHit('back')) { Game.trainBack = null; Game.screen = 'gym'; return; }
     return _cu.apply(this, arguments);
   };
+  // the corner Back in a story walk opens the menu too (v9.35: careerHub() would only come back here)
+  const _bg = BACK.gym;
+  BACK.gym = function () { if (Gym.story && Gym.story === SW && !SW.D.home && !Gym.drill && !Gym.overlay && storyOn()) return careerMenu(); return _bg.apply(this, arguments); };
   const _bt = BACK.train;
   BACK.train = function () { if (Game.trainBack) { Game.trainBack = null; Game.screen = 'gym'; return; } return _bt ? _bt.apply(this, arguments) : careerHub(); };
 }
 
-// ---------------------------------------------------------------- C1.5: the musalla walk
-// The musalla's own screen (walk, talk, use things); the five people to meet each introduce themselves first. When
-// everyone is met (and the talk is closed), the story moves on. Esc or the doorway leaves; Continue comes back.
+// ---------------------------------------------------------------- C1.2: the musalla walk
+// The musalla's own screen (walk, talk, use things); the people to meet each introduce themselves first, and you pray
+// and read (v9.33). When it's all done, the scene's closer (Musa) calls everyone out and the story moves on.
 function storyMusallaStart(S) {
   enterGym(); M.lobbyGym = false; openMusalla();
   const wp = C.story.wp && C.story.wp.id === S.id ? C.story.wp : null;
-  Game.mus.story = { S, met: Object.assign({}, wp && wp.met) };
+  Game.mus.story = { S, met: Object.assign({}, wp && wp.met), goals: Object.assign({}, wp && wp.goals) };
 }
 function smusLeft() { const st = Game.mus && Game.mus.story; return st ? STORY_MUS_NEED.filter(id => !st.met[id]) : []; }
+function smusGoalsLeft() { const st = Game.mus && Game.mus.story; return st ? STORY_MUS_GOALS.filter(q => !st.goals[q.id]) : []; }
+function smusSave(st) { C.story.wp = { id: st.S.id, met: Object.assign({}, st.met), goals: Object.assign({}, st.goals) }; saveCareer(); }
 {
   const _tt = talkTo;
   talkTo = function (i) {
     const r = _tt.apply(this, arguments), m = Game.mus, st = m && m.story, id = MUS_CAST[i];
     if (st && STORY_MUS_INTRO[id] && !st.met[id]) {
-      const t = m.talk; t.mode = 'answer'; t.lines = STORY_MUS_INTRO[id].slice(); t.li = 0;
-      st.met[id] = true; C.story.wp = { id: st.S.id, met: Object.assign({}, st.met), goals: {} }; saveCareer();
+      const t = m.talk; t.mode = 'answer'; t.lines = STORY_MUS_INTRO[id].map(storyNameText); t.li = 0;
+      st.met[id] = true; smusSave(st);
     }
+    return r;
+  };
+  const _up = useMusProp;
+  useMusProp = function (m, p) {
+    const r = _up.apply(this, arguments), st = m && m.story, k = p && (p.id === 'mihrab' ? 'pray' : p.id === 'shelf' ? 'read' : null);
+    if (st && k && !st.goals[k]) { st.goals[k] = true; smusSave(st); }
     return r;
   };
   const _mu = musallaUpdate;
   musallaUpdate = function (rdt) {
     const m = Game.mus, st = m && m.story;
     const r = _mu.apply(this, arguments);
-    if (st && Game.mus === m && !m.talk && !smusLeft().length) {
-      const S = st.S, lines = STORY_MUS_NEED.map(id => [id, STORY_MUS_INTRO[id][0]]);
-      Game.mus = null; Game.screen = 'gym'; C.story.wp = null;
+    if (st && Game.mus === m && !m.talk && !m.fx && !m.stalk && !smusLeft().length && !smusGoalsLeft().length) {
+      const S = st.S, lines = STORY_MUS_NEED.map(id => [id, storyNameText(STORY_MUS_INTRO[id][0])]);
+      C.story.wp = null;
+      if (S.closer) {                                                   // he calls everyone out (stalkAdvance moves the story on)
+        const cl = S.closer.map(l => [l[0], storyNameText(l[1])]);
+        m.stalk = { S, who: cl[0][0], at: 'musalla', main: cl, all: lines.concat(cl) }; stalkShow(m.stalk, cl);
+        return r;
+      }
+      Game.mus = null; Game.screen = 'gym';
       storyJournal(S, lines); storyDone(S, 'next');
     }
     return r;
@@ -372,12 +388,13 @@ function smusLeft() { const st = Game.mus && Game.mus.story; return st ? STORY_M
   const _dm = drawMusallaScreen;
   drawMusallaScreen = function (g) {
     _dm.apply(this, arguments);
-    const m = Game.mus, st = m && m.story; if (!st || m.talk) return;
+    const m = Game.mus, st = m && m.story; if (!st || m.talk || m.stalk) return;
+    const rows = STORY_MUS_NEED.map(id => [!!st.met[id], castDef(id).name]).concat(STORY_MUS_GOALS.map(q => [!!st.goals[q.id], q.label]));
     g.font = `12px ${BODY}`; const rh = Math.max(20, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 12) + 8);
-    const w = Math.max(196, ...STORY_MUS_NEED.map(id => g.measureText('✓ ' + castDef(id).name).width + 44)), x0 = W - w - 12, y0 = 8;
-    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x0, y0, w, 30 + STORY_MUS_NEED.length * rh, 12); g.fill();
-    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('Meet the musalla', x0 + 14, y0 + 20);
-    STORY_MUS_NEED.forEach((id, i) => { const ok = !!st.met[id]; g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + castDef(id).name, x0 + 16, y0 + 20 + (i + 1) * rh); });
+    const w = Math.max(196, ...rows.map(r => g.measureText('✓ ' + r[1]).width + 44)), x0 = 12, y0 = Input.touchMode && g === ctx ? 72 : 60;
+    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x0, y0, w, 30 + rows.length * rh, 12); g.fill();
+    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('The musalla', x0 + 14, y0 + 20);
+    rows.forEach(([ok, label], i) => { g.fillStyle = ok ? '#9dffb0' : '#cfd8e3'; g.font = `12px ${BODY}`; g.fillText((ok ? '✓ ' : '• ') + label, x0 + 16, y0 + 20 + (i + 1) * rh); });
   };
 }
 

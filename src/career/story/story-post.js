@@ -78,7 +78,7 @@ function storyMoment(id, after) {
   // after The End, a new moment plays on Continue before anything else
   const _sr = storyRun;
   storyRun = function () {
-    if (storyOn() && C.story.done && (C.story.mq || []).length && !Gym.story) return storyMoment(C.story.mq[0], careerHub);
+    if (storyOn() && C.story.done && (C.story.mq || []).length && (!Gym.story || (SW && SW.D.home))) { Gym.story = null; SW = null; return storyMoment(C.story.mq[0], careerHub); }
     return _sr.apply(this, arguments);
   };
 }
@@ -276,14 +276,10 @@ const STORY_MOMENTS = {
 };
 const STORY_FINAL = [
   ['narr', 'Every milestone. Late one night after Isha, the brothers are all still in the gym.'],
-  ['saleem', 'Akhi. Come here. Everyone wanted to be here for this.'],
-  ['jamil', 'We have something for you. Imam Dawud, the box.'],
-  ['dawud', 'A basketball. Painted gold. The kids did it at the weekend school. It took them three Saturdays.'],
-  ['ilyas', 'It goes on a stand in the gym. Where everyone can see it.'],
-  ['karim', 'One day a new brother will walk in here, nervous, not knowing anyone. And he will see it and ask about it.'],
-  ['anas', 'And we will tell him about you.'],
+  ['dawud', 'We have something for you, {name}. A basketball, painted gold. The kids did it at the weekend school.'],
+  ['ilyas', 'It goes on a stand in the gym, where everyone can see it.'],
+  ['karim', 'One day a new brother will walk in here, nervous, and ask about it. And we will tell him about you.'],
   ['musa', 'And then we will make him play HORSE.'],
-  ['saleem', 'The Prophet ﷺ said: the most beloved of people to Allah are those most beneficial to people. You were that for us.'],
-  ['saleem', 'JazakAllahu khayran, akhi. For everything.'],
+  ['saleem', 'The Prophet ﷺ said: the most beloved of people to Allah are those most beneficial to people. You were that for us. JazakAllahu khayran, akhi.'],
   ['narr', 'The golden ball now sits on its stand in the gym. Walk up to it any time.']
 ];

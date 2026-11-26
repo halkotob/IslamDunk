@@ -1,5 +1,193 @@
 # Changelog
 
+## 9.35.0: The career refined, from the first playtest
+From the first playtest (docs/career-overhaul/REFINE-PLAN.md, releases 1 to 7), released together: the welcome and
+the creator, the practice gym as home, Chapters 0 to 5 rebuilt under the new rules, and blocks that reach for the ball.
+### Fixed before the release (the full test tier)
+- **Esc in a story walk,** and the walk's corner Back, open the career menu, as they do at home. Before, they went
+  home, which was the same gym screen, so nothing seemed to happen.
+- **In a new career's creator,** Esc steps back to the welcome screen where you typed your name. Before, it did
+  nothing.
+- **The career menu's way out** is one word, **Title**, like every other screen's way out.
+- **The league fallback** (the quick estimate of league games you don't play) is re-fitted to real games: blocks
+  that reach the ball knock it loose more often, so steals and turnovers went from 1.24 and 1.27 a player to 1.59 and
+  1.63 (real games: 1.63 and 1.64).
+- **Tests and the Review Studio** open the career menu where they meant the hub screen (`careerHub()` now goes home
+  to the gym). The story text box is shown with a narration line, the tutorial is listed as a match, and the
+  teammate pick is reached through its walk.
+
+### Chapters 3 to 5 under the new rules (refine 7)
+These changes apply the notes on Chapters 0 to 2 to the rest of the story:
+- **Every teammate pick is a walk:** the brothers stand around the gym and you talk to the one you want.
+  - This covers the State league, Nationals and the Ummah Cup draw.
+  - When your teammate leaves for Hajj, the re-pick happens without him.
+  - The new teammate's last line: "Come talk to me when you're ready for the next game."
+- **CHAI:** the centred letters banner and the long rules toast are gone. A small box on the left shows both players'
+  letters, who leads, the match timer and the current message. The rules are on the ready panel.
+- **The all-star game:** the crowd meter moves to the left, under the scoreboard.
+- **King of the Court, the draw:** the banner and the standings card are gone. It has the same streak counter on the
+  left as Chapter 1, and goes straight on when it ends.
+
+- **The rewards card after a story game** counts its two totals up, a soft tick for each line, as the classic
+  summary does.
+
+### Blocks reach for the ball, in every mode (refine 6)
+- **The reach:** a block jump against a shot in the air, or a shooter rising, lunges toward the ball. The lunge is
+  short (about a body width, in under a fifth of a second), works from any side (in front, beside, behind), and
+  never carries you into the shooter's body, which would be a foul. The CPU blocks the same way.
+- **The chance:** your hand reaches toward the ball, not just the way you face.
+  - It rises with how close the hand gets and how early the jump meets the ball.
+  - In front of the shooter and early is still the best block, with Defense deciding it as before (about 55% at
+    Defense 7).
+  - Beside or behind with a close hand now has a real chance (about 32%).
+  - Far off it rarely lands (about 14%).
+  - A near miss says FINGERTIPS.
+- **Lockdown's perk** now reaches farther for blocks as well as steals.
+- **CPU games:** the block rate in seeded CPU-only games is about the same as before (12.6% of shots against 13.1%,
+  within noise). The reach mostly helps a player who times the jump.
+
+### Chapter 2's opening (refine 5)
+- **C2.1 First practice:** Sh. Saleem explains the loop in four lines.
+  - Between every game you come back here and practise.
+  - Drills earn Barakah Points for your stats, and games earn Halal Bucks.
+  - Pray when the adhan calls for a boost in the next game.
+  - "Let's start the season off right."
+- **C2.2 Father and son:** shorter, and each of them sees it his own way (the closing narration is gone).
+- **C2.3 Why we play:** three lines with Sh. Saleem alone in his office, plus the fundraiser note.
+- **C2.5 Pick your teammate:** the seven stand around the gym. Talk to any of them and the pick screen opens with
+  him selected. Your teammate's last line: "Come talk to me when you're ready for the first game."
+- **The pick screen** (here and in every later pick):
+  - The seven are listed on the left.
+  - On the right: the selected brother's nine stats as bars next to yours, his standout stats in bold, and your
+    chemistry.
+  - Up and down to choose, Enter to pick.
+
+### Chapter 1 rebuilt (refine 4)
+Chapter 1 now runs in the order from your notes, in seven scenes (C1.1 to C1.7):
+- **C1.1 Meet the gym.** A free walk with a checklist on the left: sprint, make 3 baskets, a layup, a rebound.
+  - **Ilyas** explains Barakah Points and your stats, then runs you through the cone dribble.
+  - **Ammo Jamil** explains Halal Bucks and cosmetics, then has you shoot ten free throws.
+  - **Sh. Saleem** stands by his office door and explains the drills.
+  - When it's all done the box says "Go to the musalla", a marker floats over the door, and you walk through it.
+- **C1.2 The musalla.**
+  - **Short intros, two lines each:** Ustath Karim mentions cosmetics with examples, Imam Dawud suggests praying, Qari
+    Anas suggests the Qur'an, and the Mufti and Hafiz Zubair say hello.
+  - **Pray and read:** two more checklist items, at the mihrab and the shelf. The checklist is on the left now.
+  - **Musa:** "Lightning, in the gym, now!" Then Lightning's ready prompt.
+- **C1.3 Lightning** in the practice gym. The row of player cards is gone: a small box on the left shows how many
+  players are left and where you are. Afterwards Sh. Saleem asks you to his office.
+- **C1.4 The office.** Four lines with heart: the masjid is small, the community gives when it comes to watch, and
+  every win helps. "We need you to help us win. Come outside with me."
+- **C1.5 On court.** Sh. Saleem tells everyone to play King of the Court for their spots. Straight on to the ready
+  prompt.
+- **C1.6 King of the Court** in the practice gym, against Musa, then Hafiz Zubair, then Qari Anas: all easy, each a
+  little harder than the last. The banner and the standings card are gone; only a streak counter on the left. A loss
+  goes again.
+- **C1.7 The team.** The invite, on court, in six lines.
+- **Fixed:** a story game's settings (the tutorial's prompts, lights out's dark, the dunk counter) no longer carry into
+  the next match.
+- **Saves:** a Chapter 1 save from before this layout starts again at C1.1.
+
+### Chapter 0 rebuilt (refine 3)
+From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 3). Chapter 0 now runs in the order from your
+notes:
+- **C0.1** The closing salams on black, as before.
+- **C0.2** The musalla: walk up to Imam Dawud for a short welcome (three lines), and he points you to the gym.
+- **C0.3** The gym: Sh. Saleem, Ammo Jamil and Ilyas are shooting at one hoop. You have no ball. Walk up to Sh.
+  Saleem and ask if you can play: "We need a fourth. You’re with me against those two." Straight on to the ready
+  prompt.
+- **C0.4 The tutorial game.** You and Sh. Saleem against Ammo Jamil and Ilyas, first to 11.
+  - **The prompts:** a box on the left teaches the basics as you play, each ticked off when you do it: move, pass,
+    shoot, sprint, defend, contest a shot. The keys are the right ones for what you're using (keyboard, touch or
+    gamepad), for example "hold Shift" to sprint on a keyboard.
+  - **Easy to win:** the easiest CPU there is, easier still when you're behind. Your green window opens up, theirs
+    closes, and they reach for fewer steals and blocks.
+  - **No rewards card:** points and bucks are explained in Chapter 1. A loss replays the game.
+- **C0.5** Back on the court, the three introduce themselves (Ammo Jamil: nineteen years without the league) and
+  invite you to practice tomorrow. Four lines.
+- **Cut:** the separate shoot-around tutorial (its goals move to Chapter 1's Meet the gym in the next release), and
+  the long post-game argument.
+- **The gym starts bare.** Nothing is built at the start of a career: the water cooler is a project now (Masjid >
+  Projects). Chapter 1's walk no longer asks for a drink at the cooler.
+- **In Chapter 0,** the gym's left bar shows only Next and Menu.
+- **Old saves:** a Chapter 0 save from before this layout starts again at C0.1. Saves in later chapters keep their
+  place.
+
+How it was checked:
+- `story-ch0` checks there's no ball for you at C0.3, nothing built, the tutorial game's six prompts, first to 11,
+  and that the catch-up opens your window and closes theirs. It also checks there's no rewards card, and loses the
+  game once before winning.
+- `story-reload` covers the new Chapter 0, and a check loads an old-layout save at C0.6 (it lands on C0.1) and one
+  at C2.6 (it keeps its place).
+- Also `story-*`, `studio-coverage`, `studio-phone`, the phone audit and `first-three`.
+
+### The practice gym is home (refine 2)
+From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 2; the rules are in SCENES.md):
+- **Home is the practice gym.** Before and after every game, in every chapter, you're in the practice gym with the
+  ball. Whoever has the next game or scene stands on the court with a gold marker: your teammate before a league
+  game, Sh. Saleem before a scene. Walk up and talk, or press **Next** on the left bar (N on a keyboard).
+- **The left bar** replaces the gym's bottom bar: Next (it glows, and names what's next), Drills, Musalla, Office,
+  Upgrade and Menu, with your Barakah Points and Halal Bucks under it. The objective box in walks now sits under
+  the Back button, and the hint ("Go and talk to...") under the bar. Nothing is at the bottom or the right of the
+  screen any more.
+- **Nobody talks off screen.** Every line that used to play over a backdrop with nobody there now plays in the gym,
+  with its speakers walking up to stand near you, in the same text box as the walks. That covers the lines before a
+  league game, after it, before and after the mini games, the teammate pick, and the news before a Hajj. Narration
+  alone (the rows lining up for salah) keeps its plain box.
+- **A ready prompt before every game.** Mini games get a panel on the left, in their own colours, with a line on how
+  to play and **Start** / **Not yet**. League games keep their pregame card, and Back returns to the gym.
+- **The menu.** The old hub screen is now the full menu (Menu on the bar, or Esc in the gym): Back to the gym,
+  Masjid, My Player (now with Milestones), My plays (your saved plays from career games), Settings (Back returns
+  here), and Quit to title.
+- **A short rewards card.** After a league game: the score, then your Barakah Points and Halal Bucks as two totals,
+  with one line on where to spend them. The full list of reasons is gone.
+- **Shorter dialogue, Chapter 2 to the end.** Every scene fits the new caps: a conversation is at most 4 spoken
+  lines, a big scene (a title, coming home with the Cup, the 100% scene) at most 6. That includes the league and
+  tournament intros, the fundraiser scene in the office, the tickets, the invitations, the four titles (the father
+  and son's peace keeps its heart), the night before each final, and P.4.
+- **During a drill,** only the drill's people are on the court.
+- **Fix:** new moments after The End played only when you weren't already in a walk. They now play straight from
+  the gym too.
+
+How it was checked:
+- **New test** `story-rules`: every scene from Chapter 2 on fits its cap, and a run from C0.1 to C5.1 draws no line
+  without its speaker on screen.
+- **Rewritten** `story-hub`: home has the left bar and your teammate with the marker, and the menu has its seven
+  entries, each opening what it says (Settings comes back to the menu). The bar's buttons open what they say.
+- Every story test now plays through home, Next and the ready panel.
+- Also `studio-coverage`, `studio-phone` and the phone audit.
+
+### Welcome, creator sections, distinct archetypes, your name (refine 1)
+From the first playtest (docs/career-overhaul/REFINE-PLAN.md, release 1):
+- **A welcome screen.** New career no longer drops you straight into the creator. It opens a short welcome: what
+  the career is, what the next screen does, and your name. On a computer you type it (Enter goes on); on a phone,
+  tap the box for the on-screen keys. You can't go on without a name.
+- **The creator in two sections.** **Look** (skin, hair, beard, cap, thobe, sneakers, number) is cosmetic only and
+  says so. **Game** (height, build and play style) changes your stats. It shows your play style's card: its icon,
+  its strengths and weaknesses, its perk, and your starting stats. Q and E (or a tap) switch sections. In a new
+  career, the button reads "Next: how he plays" on Look and "Start career" on Game.
+- **Five distinct archetypes.** No two play styles share a strength any more:
+  - Sharpshooter: shooting and clutch
+  - Playmaker: passing and speed
+  - Rim Runner: dunking and stamina
+  - Lockdown: defense and steals
+  - Glue Guy: hustle
+
+  Each has one small perk, in career games, for your player only:
+  - Sharpshooter: a wider green window
+  - Playmaker: faster passes
+  - Rim Runner: dunks from a step further out
+  - Lockdown: a longer reach on steals
+  - Glue Guy: more loose balls and rebounds
+- **Your name everywhere.** "Brother" is gone as a stand-in, including from the credits. Sh. Saleem uses your
+  name at the team invite and at the titles.
+- F no longer toggles fullscreen while you type your name.
+
+How it was checked: **new test** `story-welcome`. It types a name, checks an empty name can't go on, checks the
+phone's keys come back, checks the two sections, the five distinct archetypes, each perk on your player only (and
+not in Quick Play), the wider timing window, and the name in the credits. Also `story-*`, `studio-coverage`,
+`studio-phone`, the phone audit, `build-stats` and `first-three`.
+
 ## 9.34.0: between the legs is smoother and quicker, and portrait is gone: turn your phone sideways to play
 **Part 2: landscape only.** The game is played sideways. A phone held upright now sees only the "Turn your phone
 sideways" card, the same card as before, and nothing else.
