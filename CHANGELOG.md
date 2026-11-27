@@ -1,5 +1,27 @@
 # Changelog
 
+## 9.35.1: King of the Court plays on, a guided tutorial, a minimal left bar
+From the second playtest.
+- **King of the Court no longer freezes after the first game.**
+  - Hafiz Zubair had no stats of his own, so the first update of any game he was in threw and stopped the whole
+    match. That's why the camera moved to the next matchup and nothing happened.
+  - Any character without stats now gets a plain line of 5s.
+  - New test: story-kotc-flow plays on after a first game won and after one lost.
+- **No lone scene first.** When the next thing is a talk in the gym (like right after the tutorial), the scene
+  starts at once with all its people on court and the marker over the one who starts it. Before, he stood alone
+  first, and talking to him started the same scene again with the others.
+- **The tutorial is guided.**
+  - Each new move freezes the frame and explains it: on offense move, sprint, pass (Sh. Saleem gives it back) and
+    shoot; on defense guard, steal and block. The block freezes the moment he rises to shoot.
+  - Press Enter or tap to try it. The game runs only as far as the lesson needs, and the others hold still.
+  - When all seven are learned the score goes back to 0-0: "Now play it out, first to 11." It's an open game, with
+    the catch-up when you're behind.
+  - A replay after a loss starts straight in the open game.
+- **The left bar is minimal:** Continue story, and a Menu that opens in place, with M on a keyboard.
+  - The menu has Drills, Upgrade stats, My Player, Masjid, My plays, Settings and Title, with your BP and HB at its
+    top.
+  - There are no shortcuts to places: walk to the musalla and office doors. Esc still opens the full menu.
+
 ## 9.35.0: The career refined, from the first playtest
 From the first playtest (docs/career-overhaul/REFINE-PLAN.md, releases 1 to 7), released together: the welcome and
 the creator, the practice gym as home, Chapters 0 to 5 rebuilt under the new rules, and blocks that reach for the ball.
