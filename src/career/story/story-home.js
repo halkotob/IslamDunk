@@ -21,6 +21,11 @@ function storyStarterOf(S) {
   const L = typeof S.lines === 'function' ? [] : (S.lines || []), f = L.find(l => CAST[l[0]] && l[0] !== 'narr' && l[0] !== 'you');
   return f ? f[0] : 'saleem';
 }
+// a talk in the gym is its own home: its people stand on court and the one who starts it has the marker
+function storyHomeDirect(S) {
+  if (!S || S.unbuilt || S.kind !== 'scene' || S.custom || (S.ch > STORY_BUILT && S.ch <= 5)) return false;
+  return !S.talk || !S.talk.at || S.talk.at === 'gym';
+}
 function storyNextName() { const S = storyScene(); return S && !S.unbuilt ? S.name : ''; }
 // ---------------------------------------------------------------- home
 let _homeBusy = false;
@@ -28,7 +33,9 @@ function storyHome() {
   if (!storyOn() || _homeBusy) return;
   _homeBusy = true;
   try {
-    const S = storyScene(), who = storyStarterOf(S);
+    const S = storyScene();
+    if (storyHomeDirect(S)) { storyRun(); return; }                      // (v9.35.1: the scene itself, its people on court; not one of them alone first)
+    const who = storyStarterOf(S);
     const npcs = who && CAST[who] ? [{ id: who, x: 1000, z: 420, act: 'host', face: -1, closer: true, onTalk: storyHomeNext }] : [];
     storyWalkStart({ id: 'HOME', ch: storyChapter(), name: 'Practice' }, { title: 'Practice', free: true, home: true, npcs });
     if (SW) SW.fade = 0.4;
@@ -57,6 +64,15 @@ function careerMenu() { Game.wantMenu = true; careerHub(); }
   const _gu = gymUpdate;
   gymUpdate = function (rdt) {
     if (Gym.ready && Game.screen === 'gym') { readyUpdate(); return; }
+    if (Gym.barOpen && gymBarShown()) {                                // the open menu takes the keys
+      const L = gymMenuItems(); Gym.barSel = Gym.barSel || 0;
+      if (menuHit('up')) Gym.barSel = (Gym.barSel + L.length - 1) % L.length;
+      else if (menuHit('down')) Gym.barSel = (Gym.barSel + 1) % L.length;
+      else if (menuHit('ok')) L[Gym.barSel].act();
+      else if (menuHit('back') || Input.pressed.KeyM) Gym.barOpen = false;
+      return;
+    }
+    if (gymBarShown() && Input.pressed.KeyM) { Gym.barOpen = true; Gym.barSel = 0; SFX.blip && SFX.blip(); return; }
     if (storyAtHome() && !SW.talk && !Gym.drill && !Gym.overlay && !Gym.result && !Gym.walk && !Gym.fade && !Gym.prop && menuHit('back')) { careerMenu(); return; }
     if (storyAtHome() && !SW.talk && !Gym.drill && !Gym.overlay && Input.pressed.KeyN) { storyHomeNext(); return; }
     return _gu.apply(this, arguments);
@@ -164,15 +180,25 @@ function wrapCount(g, text, maxW) { const words = String(text || '').split(' ');
 
 // ---------------------------------------------------------------- the left bar
 function gymBarItems() {
-  const home = storyAtHome(), nx = home ? storyNextName() : '';
+  // v9.35.1: minimal. Continue story and a Menu that opens in place; no shortcuts to places (walk to their doors)
+  const home = storyAtHome();
   return [
-    home ? { k: 'next', label: nx ? 'Next: ' + nx : 'Next', act: storyHomeNext, glow: true } : null,
-    { k: 'drills', label: 'Drills', act: openDrills },
-    { k: 'musalla', label: 'Musalla', act: enterMusalla },
-    { k: 'office', label: 'Office', act: enterOffice },
-    { k: 'upgrade', label: 'Upgrade', act: () => { Game.trainBack = 'gym'; Game.screen = 'train'; Game.idx = 0; } },
-    home ? { k: 'menu', label: 'Menu', act: careerMenu } : null
+    home ? { k: 'next', label: 'Continue story', act: storyHomeNext, glow: true } : null,
+    { k: 'menu', label: Gym.barOpen ? 'Close menu' : 'Menu', act: () => { Gym.barOpen = !Gym.barOpen; SFX.blip && SFX.blip(); }, open: !!Gym.barOpen }
   ].filter(Boolean);
+}
+// what the Menu opens to, in place under it: drills and upgrades (quick, here in the gym), then the full menu's parts
+function gymMenuItems() {
+  const hub = label => () => { Gym.barOpen = false; careerMenu(); const it = HUB_MENU(), i = it.findIndex(e => e.label === label); if (i < 0) return; if (it[i].sub) menuActivate('hub', it, i); else it[i].act(); };
+  return [
+    { label: 'Drills', act: () => { Gym.barOpen = false; openDrills(); } },
+    { label: 'Upgrade stats', act: () => { Gym.barOpen = false; Game.trainBack = 'gym'; Game.screen = 'train'; Game.idx = 0; } },
+    { label: 'My Player', act: hub('My Player') },
+    { label: 'Masjid', act: hub('Masjid') },
+    { label: 'My plays', act: hub('My plays') },
+    { label: 'Settings', act: hub('Settings') },
+    { label: 'Title', act: hub('Title') }
+  ];
 }
 function drawBarIcon(g, k, x, y, col) {
   g.save(); g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 2; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath();
@@ -186,19 +212,30 @@ function drawBarIcon(g, k, x, y, col) {
 }
 // the left column: objective box (if any) under the Back button, then the bar; returns the bar's bottom
 function drawGymBar(g, y0) {
-  const TT = Input.touchMode && g === ctx, items = gymBarItems(), x = 12, w = TT ? 46 : 168, h = TT ? 44 : 34, gap = 6;
-  items.forEach((it, i) => {
-    const y = y0 + i * (h + gap), pulse = it.glow ? 0.5 + 0.5 * Math.sin(Game.t * 4) : 0;
-    g.fillStyle = it.glow ? `rgba(232,195,90,${0.82 + 0.18 * pulse})` : 'rgba(8,16,24,0.74)'; roundRect(g, x, y, w, h, 10); g.fill();
+  const TT = Input.touchMode && g === ctx, items = gymBarItems(), x = 12, w = TT ? 190 : 168, h = TT ? 52 : 36, gap = 8;
+  let y = y0;
+  for (const it of items) {
+    const pulse = it.glow ? 0.5 + 0.5 * Math.sin(Game.t * 4) : 0;
+    g.fillStyle = it.glow ? `rgba(232,195,90,${0.82 + 0.18 * pulse})` : it.open ? 'rgba(30,90,74,0.92)' : 'rgba(8,16,24,0.78)'; roundRect(g, x, y, w, h, 10); g.fill();
     if (it.glow) { g.strokeStyle = '#fff8dc'; g.lineWidth = 1.5; roundRect(g, x, y, w, h, 10); g.stroke(); }
-    drawBarIcon(g, it.k, x + (TT ? w / 2 : 18), y + h / 2, it.glow ? NIGHT : '#f2cf6b');
-    if (!TT) { g.textAlign = 'left'; g.fillStyle = it.glow ? NIGHT : '#fff'; g.font = `12px ${it.glow ? FONT : BODY}`; g.fillText(fitText(g, it.label, w - 40), x + 34, y + h / 2 + 4); }
+    drawBarIcon(g, it.k, x + 18, y + h / 2, it.glow ? NIGHT : '#f2cf6b');
+    g.textAlign = 'left'; g.fillStyle = it.glow ? NIGHT : '#fff'; g.font = `${TT ? 15 : 13}px ${FONT}`; g.fillText(fitText(g, it.label, w - 44), x + 34, y + h / 2 + 5);
     addRect(x, y, w, h, it.act);
-  });
-  const by = y0 + items.length * (h + gap);
-  // Barakah Points and Halal Bucks, small, under the bar
-  g.textAlign = 'left'; g.font = `11px ${BODY}`; g.fillStyle = '#f2cf6b'; g.fillText(C.bp + ' BP', x + 2, by + 12); g.fillStyle = '#9dffb0'; g.fillText(C.hb + ' HB', x + 2 + (TT ? 0 : 70), by + (TT ? 28 : 12));
-  return by + 30;
+    y += h + gap;
+  }
+  if (Gym.barOpen) {                                                   // the menu, open in place
+    const L = gymMenuItems(), rh = TT ? 46 : 30, ph = 30 + L.length * rh + 8;
+    g.fillStyle = 'rgba(8,16,24,0.9)'; roundRect(g, x, y, w, ph, 10); g.fill();
+    g.textAlign = 'left'; g.font = `11px ${BODY}`; g.fillStyle = '#f2cf6b'; g.fillText(C.bp + ' BP', x + 14, y + 19); g.fillStyle = '#9dffb0'; g.fillText(C.hb + ' HB', x + 84, y + 19);
+    L.forEach((it, i) => {
+      const yy = y + 28 + i * rh, on = Gym.barSel === i;
+      if (on) { g.fillStyle = 'rgba(232,195,90,0.22)'; roundRect(g, x + 6, yy, w - 12, rh - 4, 8); g.fill(); }
+      g.fillStyle = '#fff'; g.font = `${TT ? 14 : 12}px ${BODY}`; g.fillText(it.label, x + 16, yy + rh / 2 + 3);
+      addRect(x + 6, yy, w - 12, rh - 2, it.act);
+    });
+    y += ph + gap;
+  }
+  return y;
 }
 function gymBarShown() { return storyOn() && Game.screen === 'gym' && !Gym.drill && !Gym.overlay && !Gym.result && !Gym.walk && !Gym.fade && !Gym.ready && !(SW && (SW.talk || SW.fadeDir || SW.D.say)) && !(SW && !SW.D.free && !SW.D.home); }
 

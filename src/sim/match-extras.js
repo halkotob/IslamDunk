@@ -298,7 +298,8 @@ Object.assign(CAST.khalil, { stats: { spd: 8, sht: 5, dnk: 7, def: 5, stl: 6 } }
 CAST.hamid = { name: 'Sh. Hamid', num: 61, sheikh: true, mufti: true, elder: true, skin: '#9a6440', hat: 'imama', capColor: '#f7f7f2', hair: '#e8e8e8', thobe: '#4a3b2a',
   beardStyle: 3, stats: { spd: 3, sht: 8, dnk: 1, def: 4, stl: 3 } };                        // masjid elder: slow, precise
 // 'you' without a career save (Quick Play mini games): a generic player
-function castPlayer(id) { if (id === 'you') return C ? playerDef() : Object.assign({}, TEAMS[0].players[1], { name: 'You', num: 8 }); if (id === 'saleem') return C ? saleemDef() : Object.assign({}, CAST.saleem, { stats: { spd: 5, sht: 7, dnk: 4, def: 7, stl: 6 } }); return Object.assign({}, CAST[id]); }
+function castPlayer(id) { if (id === 'you') return C ? playerDef() : Object.assign({}, TEAMS[0].players[1], { name: 'You', num: 8 }); if (id === 'saleem') return C ? saleemDef() : Object.assign({}, CAST.saleem, { stats: { spd: 5, sht: 7, dnk: 4, def: 7, stl: 6 } }); return Object.assign({ stats: CAST_STATS_PLAIN }, CAST[id]); }   // (v9.35.1: a brother with no stats of his own, the Hafiz in King of the Court, gets plain ones: without them his first update threw and froze the game)
+const CAST_STATS_PLAIN = { spd: 5, sht: 5, dnk: 4, def: 5, stl: 5, sta: 5, pas: 5, hus: 5, clu: 5 };
 const MINI_TEAM = { name: 'Masjid Al-Amanah', short: 'AMANAH', c1: '#2c6e8f', c2: '#f2cf6b', crest: 'arch' };
 // timing error by character (seconds) before difficulty; elders shoot well but move slowly
 const MINI_ERR = { saleem: 0.045, mahmoud: 0.035, rafiq: 0.04, hamid: 0.035, khalil: 0.07, nasser: 0.04, you: 0.05 };

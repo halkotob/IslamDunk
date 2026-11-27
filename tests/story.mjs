@@ -49,10 +49,18 @@ export function storyTests({ newContext, open }) {
       if (st.at === 'C0.3' && st.screen === 'gym' && !out.noBall) out.noBall = await p.evaluate(() => ({ owner: ball.owner ? ball.owner.def.name : null, x: ball.x, up: Object.keys(C.up).length }));
       if (st.at === 'C0.4' && st.screen === 'play' && !out.tut) out.tut = await p.evaluate(() => {
         const T = M.story && M.story.tut, me = M.players.find(q => q.human === 0), cpu = M.players.find(q => q.team === 1), h = attackHoop(0), x = h.x - h.dir * 220, z = h.z;
+        // v9.35.1: guided. The first lesson freezes the frame; the frame holds; done, the next freezes; at the end it opens
+        const g = { first: tut0Lesson() && tut0Lesson().id, frozen: !!T.freeze };
+        for (let i = 0; i < 6; i++) updateMatch(STEP);                  // (the first frames run, so the ball is in his hands)
+        const t0 = M.time; for (let i = 0; i < 30; i++) updateMatch(STEP); g.held = M.time === t0;
+        T.freeze.t = 1; tut0Unfreeze(); g.thawed = !T.freeze;
+        for (let i = 0; i < 90 && T.i === 0; i++) { me.x += 6; updateMatch(STEP); }
+        g.next = tut0Lesson() && tut0Lesson().id; g.frozenAgain = !!T.freeze;
+        M.teams[1].score = 4; tut0Go(TUT0_LESSONS.length); g.open = T.open && M.teams[0].score === 0 && M.teams[1].score === 0 && !M.cmdHook && C.story.tutDone;
         M.teams[0].score = 0; M.teams[1].score = 5; const meB = shotWindow(me, x, z), cpuB = shotWindow(cpu, attackHoop(1).x - attackHoop(1).dir * 220, z);
         M.teams[0].score = 5; M.teams[1].score = 0; const meA = shotWindow(me, x, z), cpuA = shotWindow(cpu, attackHoop(1).x - attackHoop(1).dir * 220, z);
         M.teams[0].score = 0; M.teams[1].score = 0;
-        return { on: !!T, steps: TUT0_STEPS.length, target: M.fmt.target, catchUp: meB > meA && cpuB < cpuA };
+        return { on: !!T, steps: TUT0_LESSONS.length, target: M.fmt.target, catchUp: meB > meA && cpuB < cpuA, guided: g };
       });
       const r = await p.evaluate(lose => window.__sStep({ lose }), !lostOnce);
       if (r === 'lost') lostOnce = true;
@@ -65,7 +73,7 @@ export function storyTests({ newContext, open }) {
     const pickups = out.steps.filter(x => x.startsWith('C0.4:') && /won|lost/.test(x)).map(x => x.split(':')[1]);
     const T0 = out.tut || {}, NB = out.noBall || {};
     const ok = out.start === 'C0.1' && ids.every(id => at.includes(id)) && pickups.join(',') === 'lost,won'
-      && T0.on && T0.steps === 6 && T0.target === 11 && T0.catchUp && !out.steps.some(x => x === 'C0.4:post') && NB.owner === null && NB.x < 200 && NB.up === 0
+      && T0.on && T0.steps === 7 && T0.target === 11 && T0.catchUp && T0.guided && T0.guided.first === 'move' && T0.guided.frozen && T0.guided.held && T0.guided.thawed && T0.guided.next === 'sprint' && T0.guided.frozenAgain && T0.guided.open && !out.steps.some(x => x === 'C0.4:post') && NB.owner === null && NB.x < 200 && NB.up === 0
       && out.end.s.at === 'C1.1' && out.end.s.screen === 'hub' && out.end.ch === 1 && ids.every(id => out.end.journal.includes(id))
       && out.end.hub[0] === 'Back to the gym' && out.end.saved && out.end.saved.at === 'C1.1' && !out.draws.length && !errs.length;
     return { ok, detail: [out.steps.join(' '), 'pickup: ' + pickups.join(',') + ' tutorial: ' + JSON.stringify(out.tut) + ' no ball: ' + JSON.stringify(out.noBall), 'end: ' + JSON.stringify(out.end), ...out.draws, ...errs] };
@@ -134,7 +142,7 @@ export function storyTests({ newContext, open }) {
     let lostSemi = false, darkSeen = null;
     for (let n = 0; n < 160; n++) {
       const st = await p.evaluate(() => window.__sState());
-      if (st.at === 'C3.1' && st.screen === 'hub') break;
+      if (st.at === 'C3.1' && (st.screen === 'hub' || st.walk)) break;   // (v9.35.1: a chapter's first scene starts at once)
       if (st.at === 'C2.10' && st.screen === 'play' && !darkSeen) {
         darkSeen = await p.evaluate(() => { const D = M.story.dark, on0 = D.on; M.teams[0].score = 6; updateMatch(STEP); return { on0, off: !D.on, k: D.k }; });
       }
@@ -155,7 +163,7 @@ export function storyTests({ newContext, open }) {
     const ids = ['C2.1', 'C2.2', 'C2.3', 'C2.4', 'C2.5', 'C2.6', 'C2.7', 'C2.8', 'C2.9', 'C2.10', 'C2.11', 'C2.12', 'C2.13', 'C2.14', 'C2.15', 'C2.16'], E = out.end, F = out.field || {};
     const ok = F.rival === 'Masjid Al-Furqan' && F.rayyan && F.fmt === 'pool' && F.teams.length === 7 && F.teams.every(n => /^Masjid /.test(n)) && F.cp === 'C2.4'
       && darkSeen && darkSeen.on0 && darkSeen.off && lostSemi && out.afterLoss && ids.every(id => E.s.seen.includes(id) && E.journal.includes(id))
-      && E.s.at === 'C3.1' && E.s.screen === 'hub' && E.fundOn && E.fund >= 5000 && E.lights === 1 && E.trophy && E.titles >= 1 && E.att === 1 && E.season === 2 && E.chem > 0 && E.ch === 3
+      && E.s.at === 'C3.1' && (E.s.screen === 'hub' || E.s.walk) && E.fundOn && E.fund >= 5000 && E.lights === 1 && E.trophy && E.titles >= 1 && E.att === 1 && E.season === 2 && E.chem > 0 && E.ch === 3
       && out.pick && out.pick.sel === 'ilyas' && out.pick.walk && out.pick.inWalk && /ready for the first game/.test(out.ready || '')
       && out.group.path.includes('C2.13') && out.group.path.includes('C2.NS') && out.group.at === 'C2.4' && out.group.att === 1 && !out.draws.length && !errs.length;
     return { ok, detail: ['pick: ' + JSON.stringify(out.pick) + ' ' + out.ready, 'field: ' + JSON.stringify(F), 'lights out: ' + JSON.stringify(darkSeen), steps.join(' '), 'end: ' + JSON.stringify(E), 'out in the group: ' + JSON.stringify(out.group), ...out.draws, ...errs] };
@@ -170,7 +178,7 @@ export function storyTests({ newContext, open }) {
     let lostSemi = false;
     for (let n = 0; n < 260; n++) {
       const st = await p.evaluate(() => window.__sState());
-      if (st.at === 'C4.1' && st.screen === 'hub') break;
+      if (st.at === 'C4.1' && (st.screen === 'hub' || st.walk)) break;   // (v9.35.1: a chapter's first scene starts at once)
       if (st.at === 'C3.3' && (st.screen === 'story' || st.screen === 'gym' || st.screen === 'hub') && !out.table) out.table = await p.evaluate(() => { const b = C.bracket; return { table: b.table, n: b.pg[0].length, ours: b.pg[0].filter(g => g.a === 0 || g.b === 0).map(g => g.md), teams: stageTeams(1).length, cp: C.story.cp, label: roundLabel(b) }; });
       if (st.at === 'C3.6' && st.screen === 'gym' && !out.chai) out.chai = await p.evaluate(() => M.mini && M.mini.word);
       if (st.at === 'C3.10' && st.screen === 'play' && !out.dunks) out.dunks = await p.evaluate(() => {
@@ -198,7 +206,7 @@ export function storyTests({ newContext, open }) {
       && out.chai === 'CHAI' && D.jumper === 0 && D.dunk === 2 && D.n === 1 && F.A && F.A.paid && F.log && F.log[0] === 'All-star game'
       && H.injured && H.partner !== H.injured && B.injured === null && B.partner === H.injured
       && lostSemi && out.afterLoss && ids.every(id => E.s.seen.includes(id) && E.journal.includes(id))
-      && E.s.at === 'C4.1' && E.s.screen === 'hub' && E.bleachers >= 1 && E.trophy && E.att >= 1 && E.ch === 4
+      && E.s.at === 'C4.1' && (E.s.screen === 'hub' || E.s.walk) && E.bleachers >= 1 && E.trophy && E.att >= 1 && E.ch === 4
       && out.miss.path.includes('C3.18') && out.miss.path.includes('C3.NS') && out.miss.at === 'C3.2' && out.miss.injured === null && !out.draws.length && !errs.length;
     return { ok, detail: ['table: ' + JSON.stringify(T0), 'chai: ' + out.chai, 'dunks: ' + JSON.stringify(D), 'fund: ' + JSON.stringify(F), 'hurt: ' + JSON.stringify(H) + ' back: ' + JSON.stringify(B), steps.join(' '), 'end: ' + JSON.stringify(E), 'missed the top four: ' + JSON.stringify(out.miss), ...out.draws, ...errs] };
   };
@@ -212,7 +220,7 @@ export function storyTests({ newContext, open }) {
     let lostQF = false;
     for (let n = 0; n < 200; n++) {
       const st = await p.evaluate(() => window.__sState());
-      if (st.at === 'C5.1' && st.screen === 'hub') break;
+      if (st.at === 'C5.1' && (st.screen === 'hub' || st.walk)) break;   // (v9.35.1: a chapter's first scene starts at once)
       if (st.at === 'C4.2' && (st.screen === 'story' || st.screen === 'gym' || st.screen === 'hub') && !out.ko) out.ko = await p.evaluate(() => { const b = C.bracket; return { ko: b.ko, first: b.rounds[0].length, teams: stageTeams(2).length, label: roundLabel(b), cp: C.story.cp, rivalOther: b.rounds[0].findIndex(m => m.a === 1 || m.b === 1) >= 4 }; });
       if (st.at === 'C4.4' && (st.screen === 'story' || st.screen === 'gym' || st.screen === 'hub') && !out.qf) out.qf = await p.evaluate(() => roundLabel(C.bracket));
       if (st.screen !== 'play' || n % 3 === 0) { const d = await draw(p); if (d !== true) out.draws.push(st.at + ' ' + st.screen + ': ' + d); }
@@ -231,7 +239,7 @@ export function storyTests({ newContext, open }) {
     const ids = ['C4.1', 'C4.2', 'C4.3', 'C4.4', 'C4.5', 'C4.6', 'C4.7', 'C4.8', 'C4.9', 'C4.10', 'C4.NS'], E = out.end, K = out.ko || {};
     const ok = out.toC4 === 'C4.1' && K.ko && K.first === 8 && K.teams === 16 && K.label === 'Round of 16' && K.cp === 'C4.1' && K.rivalOther && out.qf === 'Quarterfinal'
       && lostQF && out.afterLoss && ids.every(id => E.s.seen.includes(id) && E.journal.includes(id))
-      && E.s.at === 'C5.1' && E.s.screen === 'hub' && Number.isFinite(E.hb) && E.wing && E.fund >= 100000 && E.trophy && E.ch === 5 && E.ext === true && E.peace && !out.draws.length && !errs.length;
+      && E.s.at === 'C5.1' && (E.s.screen === 'hub' || E.s.walk) && Number.isFinite(E.hb) && E.wing && E.fund >= 100000 && E.trophy && E.ch === 5 && E.ext === true && E.peace && !out.draws.length && !errs.length;
     return { ok, detail: ['ko: ' + JSON.stringify(K) + ' qf: ' + out.qf, steps.join(' '), 'end: ' + JSON.stringify(Object.assign({}, E, { journal: E.journal.slice(-14) })), ...out.draws, ...errs] };
   };
 
@@ -244,7 +252,7 @@ export function storyTests({ newContext, open }) {
     let lostSF = false, kotc = 0;
     for (let n = 0; n < 200; n++) {
       const st = await p.evaluate(() => window.__sState());
-      if (st.at === 'P.1' && st.screen === 'hub') break;
+      if (st.at === 'P.1' && (st.screen === 'hub' || st.walk)) break;   // (v9.35.1: a chapter's first scene starts at once)
       if (st.at === 'C5.2' && st.screen === 'play' && !out.caps) out.caps = await p.evaluate(() => KOTC.roster.map(id => castPlayer(id).name));
       if (st.at === 'C5.4' && (st.screen === 'story' || st.screen === 'gym' || st.screen === 'hub')) { const d = await p.evaluate(() => ({ draw: C.story.draw, ko: C.bracket && C.bracket.ko, first: C.bracket.rounds[0].length, opp: storyOpp().id, label: roundLabel(C.bracket) })); if (!out.draw.length || out.draw[out.draw.length - 1].draw !== d.draw) out.draw.push(d); }
       if (st.screen === 'scredits' && !out.credits) out.credits = await p.evaluate(() => { Game.credits.t = 20; return true; });
@@ -261,7 +269,7 @@ export function storyTests({ newContext, open }) {
     const ids = ['C5.1', 'C5.2', 'C5.3', 'C5.4', 'C5.5', 'C5.6', 'C5.7', 'C5.8', 'C5.9', 'C5.10', 'C5.11', 'C5.NS'], E = out.end, D = out.draw;
     const ok = out.toC5 === 'C5.1' && out.caps && out.caps.length === 4 && D.length >= 2 && D[0].draw === 1 && D[1].draw === 3 && D.every(d => d.ko && d.first === 4 && d.label === 'Quarterfinal') && D[0].opp !== D[1].opp
       && lostSF && out.afterLoss && out.credits && ids.every(id => E.s.seen.includes(id) && E.journal.includes(id))
-      && E.s.at === 'P.1' && E.s.screen === 'hub' && Number.isFinite(E.hb) && Number.isFinite(E.bp) && E.done && E.trophy && E.dome >= 1 && E.label === 'Continue' && E.after.screen === 'gym' && !out.draws.length && !errs.length;
+      && E.s.at === 'P.1' && (E.s.screen === 'hub' || E.s.walk) && Number.isFinite(E.hb) && Number.isFinite(E.bp) && E.done && E.trophy && E.dome >= 1 && E.label === 'Continue' && E.after.screen === 'gym' && !out.draws.length && !errs.length;
     return { ok, detail: ['captains: ' + JSON.stringify(out.caps), 'draws: ' + JSON.stringify(D), steps.join(' '), 'end: ' + JSON.stringify(Object.assign({}, E, { journal: E.journal.slice(-14) })), ...out.draws, ...errs] };
   };
 
@@ -435,21 +443,47 @@ export function storyTests({ newContext, open }) {
         careerMenu(); M_()[3].act(); opened.Plays = Game.screen;
         careerMenu(); M_()[4].act(); opened.Settings = Game.screen; BACK.settings(); opened.SettingsBack = Game.screen;
         // the bar opens what it says
-        careerHub(); const bar = {}; for (const it of gymBarItems()) { if (it.k === 'next' || it.k === 'musalla' || it.k === 'office') continue; careerHub(); gymBarItems().find(x => x.k === it.k).act(); bar[it.k] = Game.screen + (Gym.overlay ? ':' + Gym.overlay : ''); }
+        // v9.35.1: the bar is Continue story and a Menu that opens in place
+        careerHub(); const bar = {}; gymBarItems().find(x => x.k === 'menu').act(); bar.open = !!Gym.barOpen; render(ctx); bar.items = gymMenuItems().map(x => x.label).join('|');
+        for (const lab of ['Drills', 'Upgrade stats', 'My Player', 'Settings']) { careerHub(); Gym.barOpen = true; gymMenuItems().find(x => x.label === lab).act(); bar[lab] = Game.screen + (Gym.overlay ? ':' + Gym.overlay : ''); }
         careerHub(); render(ctx);
         return { home, menu, labels, opened, bar, chapter: seen.some(t => /Chapter 2: Masjid league/.test(t)) };
       }, touch);
       await sleep(300);
-      const good = r.home.screen === 'gym' && r.home.atHome && r.home.bar.join() === 'next,drills,musalla,office,upgrade,menu' && r.home.starter.includes('saleem')
+      const good = r.home.screen === 'gym' && r.home.atHome && r.home.bar.join() === 'next,menu' && r.home.starter.includes('saleem')
         && r.menu === 'hub' && r.labels.join('|') === 'Back to the gym|Masjid|My Player|My plays|Settings|Title' && r.chapter
         && r.opened.Gym === 'home' && r.opened.Musalla === 'musalla' && r.opened.Office === 'office' && r.opened.Outside === 'masjid' && r.opened.Projects === 'shop'
         && r.opened.Upgrade === 'train' && r.opened.Look === 'creator' && r.opened.Journal === 'journal' && r.opened.Stats === 'cstats' && r.opened.Plays === 'myplays'
-        && r.opened.Settings === 'settings' && r.opened.SettingsBack === 'hub' && r.bar.drills === 'gym:drills' && r.bar.upgrade === 'train' && r.bar.menu === 'hub';
+        && r.opened.Settings === 'settings' && r.opened.SettingsBack === 'hub' && r.bar.open && r.bar.items === 'Drills|Upgrade stats|My Player|Masjid|My plays|Settings|Title' && r.bar.Drills === 'gym:drills' && r.bar['Upgrade stats'] === 'train' && r.bar['My Player'] === 'hub' && r.bar.Settings === 'settings';
       if (!good) ok = false;
       detail.push(dn + ': ' + JSON.stringify(r));
       await ctx.close();
     }
     return { ok: ok && !errs.length, detail: [...detail, ...errs] };
+  };
+
+  // v9.35.1: King of the Court goes on after the first game (won or lost): the next game's players move, and every
+  // character who can be in a game has stats (the Hafiz had none, and his first update threw and froze the game)
+  T['story-kotc-flow'] = async ({ browser, base }) => {
+    const errs = [], ctx = await newContext(browser), p = await open(ctx, base + '/', errs, 'story-kotc-flow');
+    await prep(p);
+    const r = await p.evaluate(() => {
+      const out = { noStats: Object.keys(CAST).filter(id => !castPlayer(id).stats) };
+      for (const w of [0, 1]) {
+        window.__sNew('King'); window.__sRun('C1.6'); storyRun(); if (Gym.ready) readyStart();
+        for (let i = 0; i < 120; i++) playUpdate(1 / 60);
+        M.teams[w].score = 3; kotcGameOver(w);
+        for (let i = 0; i < 60 * 4; i++) playUpdate(1 / 60);
+        const x0 = M.players.map(q => q.x + q.z), g = KOTC.games;
+        let err = null; try { for (let i = 0; i < 60 * 5; i++) playUpdate(1 / 60); } catch (e) { err = e.message; }
+        out[w ? 'lost' : 'won'] = { games: g, moved: M.players.some((q, i) => Math.abs(q.x + q.z - x0[i]) > 20), updated: M.players.every(q => 'sprintOn' in q), err, ids: (M.kotcIds || []).join(',') };   // (updated: each player's update ran to the end; won, the next game waits for your check-up pass)
+        KOTC.on = false; M.kotc = false;
+      }
+      return out;
+    });
+    await ctx.close();
+    const ok = !r.noStats.length && r.won.games === 2 && r.won.updated && !r.won.err && r.lost.games === 2 && r.lost.moved && r.lost.updated && !r.lost.err && !errs.length;
+    return { ok, detail: [JSON.stringify(r), ...errs] };
   };
 
   T['story-cast'] = async ({ browser, base }) => {

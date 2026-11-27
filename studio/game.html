@@ -107,7 +107,7 @@ addEventListener('unhandledrejection', e => { window.__studioErrors.push('unhand
 // 2) Make passes, drives, dunks, and defensive contests communicate their intent and counterplay.
 // 3) Keep camera/impact presentation readable, accessible, and inexpensive on mobile.
 let REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const VERSION = '9.35.0';
+const VERSION = '9.35.1';
 /* =====================================================================
    ISLAM DUNK — 2v2 masjid-league arcade basketball
    Systems (in order): Config & Data · Utils · Audio · Input · Hoops/Net
@@ -6508,7 +6508,8 @@ Object.assign(CAST.khalil, { stats: { spd: 8, sht: 5, dnk: 7, def: 5, stl: 6 } }
 CAST.hamid = { name: 'Sh. Hamid', num: 61, sheikh: true, mufti: true, elder: true, skin: '#9a6440', hat: 'imama', capColor: '#f7f7f2', hair: '#e8e8e8', thobe: '#4a3b2a',
   beardStyle: 3, stats: { spd: 3, sht: 8, dnk: 1, def: 4, stl: 3 } };                        // masjid elder: slow, precise
 // 'you' without a career save (Quick Play mini games): a generic player
-function castPlayer(id) { if (id === 'you') return C ? playerDef() : Object.assign({}, TEAMS[0].players[1], { name: 'You', num: 8 }); if (id === 'saleem') return C ? saleemDef() : Object.assign({}, CAST.saleem, { stats: { spd: 5, sht: 7, dnk: 4, def: 7, stl: 6 } }); return Object.assign({}, CAST[id]); }
+function castPlayer(id) { if (id === 'you') return C ? playerDef() : Object.assign({}, TEAMS[0].players[1], { name: 'You', num: 8 }); if (id === 'saleem') return C ? saleemDef() : Object.assign({}, CAST.saleem, { stats: { spd: 5, sht: 7, dnk: 4, def: 7, stl: 6 } }); return Object.assign({ stats: CAST_STATS_PLAIN }, CAST[id]); }   // (v9.35.1: a brother with no stats of his own, the Hafiz in King of the Court, gets plain ones: without them his first update threw and froze the game)
+const CAST_STATS_PLAIN = { spd: 5, sht: 5, dnk: 4, def: 5, stl: 5, sta: 5, pas: 5, hus: 5, clu: 5 };
 const MINI_TEAM = { name: 'Masjid Al-Amanah', short: 'AMANAH', c1: '#2c6e8f', c2: '#f2cf6b', crest: 'arch' };
 // timing error by character (seconds) before difficulty; elders shoot well but move slowly
 const MINI_ERR = { saleem: 0.045, mahmoud: 0.035, rafiq: 0.04, hamid: 0.035, khalil: 0.07, nasser: 0.04, you: 0.05 };
@@ -29475,6 +29476,11 @@ function storyStarterOf(S) {
   const L = typeof S.lines === 'function' ? [] : (S.lines || []), f = L.find(l => CAST[l[0]] && l[0] !== 'narr' && l[0] !== 'you');
   return f ? f[0] : 'saleem';
 }
+// a talk in the gym is its own home: its people stand on court and the one who starts it has the marker
+function storyHomeDirect(S) {
+  if (!S || S.unbuilt || S.kind !== 'scene' || S.custom || (S.ch > STORY_BUILT && S.ch <= 5)) return false;
+  return !S.talk || !S.talk.at || S.talk.at === 'gym';
+}
 function storyNextName() { const S = storyScene(); return S && !S.unbuilt ? S.name : ''; }
 // ---------------------------------------------------------------- home
 let _homeBusy = false;
@@ -29482,7 +29488,9 @@ function storyHome() {
   if (!storyOn() || _homeBusy) return;
   _homeBusy = true;
   try {
-    const S = storyScene(), who = storyStarterOf(S);
+    const S = storyScene();
+    if (storyHomeDirect(S)) { storyRun(); return; }                      // (v9.35.1: the scene itself, its people on court; not one of them alone first)
+    const who = storyStarterOf(S);
     const npcs = who && CAST[who] ? [{ id: who, x: 1000, z: 420, act: 'host', face: -1, closer: true, onTalk: storyHomeNext }] : [];
     storyWalkStart({ id: 'HOME', ch: storyChapter(), name: 'Practice' }, { title: 'Practice', free: true, home: true, npcs });
     if (SW) SW.fade = 0.4;
@@ -29511,6 +29519,15 @@ function careerMenu() { Game.wantMenu = true; careerHub(); }
   const _gu = gymUpdate;
   gymUpdate = function (rdt) {
     if (Gym.ready && Game.screen === 'gym') { readyUpdate(); return; }
+    if (Gym.barOpen && gymBarShown()) {                                // the open menu takes the keys
+      const L = gymMenuItems(); Gym.barSel = Gym.barSel || 0;
+      if (menuHit('up')) Gym.barSel = (Gym.barSel + L.length - 1) % L.length;
+      else if (menuHit('down')) Gym.barSel = (Gym.barSel + 1) % L.length;
+      else if (menuHit('ok')) L[Gym.barSel].act();
+      else if (menuHit('back') || Input.pressed.KeyM) Gym.barOpen = false;
+      return;
+    }
+    if (gymBarShown() && Input.pressed.KeyM) { Gym.barOpen = true; Gym.barSel = 0; SFX.blip && SFX.blip(); return; }
     if (storyAtHome() && !SW.talk && !Gym.drill && !Gym.overlay && !Gym.result && !Gym.walk && !Gym.fade && !Gym.prop && menuHit('back')) { careerMenu(); return; }
     if (storyAtHome() && !SW.talk && !Gym.drill && !Gym.overlay && Input.pressed.KeyN) { storyHomeNext(); return; }
     return _gu.apply(this, arguments);
@@ -29618,15 +29635,25 @@ function wrapCount(g, text, maxW) { const words = String(text || '').split(' ');
 
 // ---------------------------------------------------------------- the left bar
 function gymBarItems() {
-  const home = storyAtHome(), nx = home ? storyNextName() : '';
+  // v9.35.1: minimal. Continue story and a Menu that opens in place; no shortcuts to places (walk to their doors)
+  const home = storyAtHome();
   return [
-    home ? { k: 'next', label: nx ? 'Next: ' + nx : 'Next', act: storyHomeNext, glow: true } : null,
-    { k: 'drills', label: 'Drills', act: openDrills },
-    { k: 'musalla', label: 'Musalla', act: enterMusalla },
-    { k: 'office', label: 'Office', act: enterOffice },
-    { k: 'upgrade', label: 'Upgrade', act: () => { Game.trainBack = 'gym'; Game.screen = 'train'; Game.idx = 0; } },
-    home ? { k: 'menu', label: 'Menu', act: careerMenu } : null
+    home ? { k: 'next', label: 'Continue story', act: storyHomeNext, glow: true } : null,
+    { k: 'menu', label: Gym.barOpen ? 'Close menu' : 'Menu', act: () => { Gym.barOpen = !Gym.barOpen; SFX.blip && SFX.blip(); }, open: !!Gym.barOpen }
   ].filter(Boolean);
+}
+// what the Menu opens to, in place under it: drills and upgrades (quick, here in the gym), then the full menu's parts
+function gymMenuItems() {
+  const hub = label => () => { Gym.barOpen = false; careerMenu(); const it = HUB_MENU(), i = it.findIndex(e => e.label === label); if (i < 0) return; if (it[i].sub) menuActivate('hub', it, i); else it[i].act(); };
+  return [
+    { label: 'Drills', act: () => { Gym.barOpen = false; openDrills(); } },
+    { label: 'Upgrade stats', act: () => { Gym.barOpen = false; Game.trainBack = 'gym'; Game.screen = 'train'; Game.idx = 0; } },
+    { label: 'My Player', act: hub('My Player') },
+    { label: 'Masjid', act: hub('Masjid') },
+    { label: 'My plays', act: hub('My plays') },
+    { label: 'Settings', act: hub('Settings') },
+    { label: 'Title', act: hub('Title') }
+  ];
 }
 function drawBarIcon(g, k, x, y, col) {
   g.save(); g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 2; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath();
@@ -29640,19 +29667,30 @@ function drawBarIcon(g, k, x, y, col) {
 }
 // the left column: objective box (if any) under the Back button, then the bar; returns the bar's bottom
 function drawGymBar(g, y0) {
-  const TT = Input.touchMode && g === ctx, items = gymBarItems(), x = 12, w = TT ? 46 : 168, h = TT ? 44 : 34, gap = 6;
-  items.forEach((it, i) => {
-    const y = y0 + i * (h + gap), pulse = it.glow ? 0.5 + 0.5 * Math.sin(Game.t * 4) : 0;
-    g.fillStyle = it.glow ? `rgba(232,195,90,${0.82 + 0.18 * pulse})` : 'rgba(8,16,24,0.74)'; roundRect(g, x, y, w, h, 10); g.fill();
+  const TT = Input.touchMode && g === ctx, items = gymBarItems(), x = 12, w = TT ? 190 : 168, h = TT ? 52 : 36, gap = 8;
+  let y = y0;
+  for (const it of items) {
+    const pulse = it.glow ? 0.5 + 0.5 * Math.sin(Game.t * 4) : 0;
+    g.fillStyle = it.glow ? `rgba(232,195,90,${0.82 + 0.18 * pulse})` : it.open ? 'rgba(30,90,74,0.92)' : 'rgba(8,16,24,0.78)'; roundRect(g, x, y, w, h, 10); g.fill();
     if (it.glow) { g.strokeStyle = '#fff8dc'; g.lineWidth = 1.5; roundRect(g, x, y, w, h, 10); g.stroke(); }
-    drawBarIcon(g, it.k, x + (TT ? w / 2 : 18), y + h / 2, it.glow ? NIGHT : '#f2cf6b');
-    if (!TT) { g.textAlign = 'left'; g.fillStyle = it.glow ? NIGHT : '#fff'; g.font = `12px ${it.glow ? FONT : BODY}`; g.fillText(fitText(g, it.label, w - 40), x + 34, y + h / 2 + 4); }
+    drawBarIcon(g, it.k, x + 18, y + h / 2, it.glow ? NIGHT : '#f2cf6b');
+    g.textAlign = 'left'; g.fillStyle = it.glow ? NIGHT : '#fff'; g.font = `${TT ? 15 : 13}px ${FONT}`; g.fillText(fitText(g, it.label, w - 44), x + 34, y + h / 2 + 5);
     addRect(x, y, w, h, it.act);
-  });
-  const by = y0 + items.length * (h + gap);
-  // Barakah Points and Halal Bucks, small, under the bar
-  g.textAlign = 'left'; g.font = `11px ${BODY}`; g.fillStyle = '#f2cf6b'; g.fillText(C.bp + ' BP', x + 2, by + 12); g.fillStyle = '#9dffb0'; g.fillText(C.hb + ' HB', x + 2 + (TT ? 0 : 70), by + (TT ? 28 : 12));
-  return by + 30;
+    y += h + gap;
+  }
+  if (Gym.barOpen) {                                                   // the menu, open in place
+    const L = gymMenuItems(), rh = TT ? 46 : 30, ph = 30 + L.length * rh + 8;
+    g.fillStyle = 'rgba(8,16,24,0.9)'; roundRect(g, x, y, w, ph, 10); g.fill();
+    g.textAlign = 'left'; g.font = `11px ${BODY}`; g.fillStyle = '#f2cf6b'; g.fillText(C.bp + ' BP', x + 14, y + 19); g.fillStyle = '#9dffb0'; g.fillText(C.hb + ' HB', x + 84, y + 19);
+    L.forEach((it, i) => {
+      const yy = y + 28 + i * rh, on = Gym.barSel === i;
+      if (on) { g.fillStyle = 'rgba(232,195,90,0.22)'; roundRect(g, x + 6, yy, w - 12, rh - 4, 8); g.fill(); }
+      g.fillStyle = '#fff'; g.font = `${TT ? 14 : 12}px ${BODY}`; g.fillText(it.label, x + 16, yy + rh / 2 + 3);
+      addRect(x + 6, yy, w - 12, rh - 2, it.act);
+    });
+    y += ph + gap;
+  }
+  return y;
 }
 function gymBarShown() { return storyOn() && Game.screen === 'gym' && !Gym.drill && !Gym.overlay && !Gym.result && !Gym.walk && !Gym.fade && !Gym.ready && !(SW && (SW.talk || SW.fadeDir || SW.D.say)) && !(SW && !SW.D.free && !SW.D.home); }
 
@@ -29725,42 +29763,114 @@ function gymBarShown() { return storyOn() && Game.screen === 'gym' && !Gym.drill
 // The first night: the salams, Imam Dawud in the musalla (a walk-up talk), the gym where Sh. Saleem, Ammo Jamil and
 // Ilyas shoot at one hoop and you ask to play (no ball for you until then), the tutorial game, and on the court the
 // three introduce themselves and invite you to practice.
-// - The tutorial game: first to 11, the easiest CPU, easier still when you're behind (your green window opens up,
-//   theirs closes, and they reach for fewer steals and blocks). The controls are taught by prompts in the left box,
-//   each ticked off when you do it. There's no rewards card after it: points and bucks are explained in Chapter 1.
+// - The tutorial game: guided lessons with a frozen frame for each new thing (v9.35.1, below), then an open game,
+//   first to 11, the easiest CPU, easier still when you're behind. There's no rewards card after it: points and
+//   bucks are explained in Chapter 1.
 // - The gym starts bare: nothing is built (the water cooler is a project now).
 // - A Chapter 0 save from before this layout starts again at C0.1.
 
-// ---------------------------------------------------------------- the tutorial game's prompts (the left box)
-const TUT0_STEPS = [
-  { id: 'move', title: 'Move', text: () => tk('W A S D or the arrow keys', 'the stick on the left', 'the left stick'), done: s => s.dist > 220 },
-  { id: 'pass', title: 'Pass', text: () => tk('tap J to pass to Sh. Saleem', 'tap PASS', 'tap X'), done: s => s.passed },
-  { id: 'shoot', title: 'Shoot', text: () => tk('hold K, let go at the top of the jump', 'hold SHOOT, let go at the top', 'hold A, let go at the top'), done: s => s.shotDone },
-  { id: 'sprint', title: 'Sprint', text: () => tk('hold Shift while you move', 'push the stick past the dashed ring', 'hold B while you move'), done: s => s.sprint > 0.6 },
-  { id: 'defend', title: 'Defend', text: () => tk('hold L on defense to stay with your man', 'hold DEFEND on defense', 'hold Y on defense'), done: s => s.guard > 1.2 },
-  { id: 'contest', title: 'Contest a shot', text: () => tk('press K to jump when he shoots', 'press BLOCK when he shoots', 'press A when he shoots'), done: s => s.contested }
+// ---------------------------------------------------------------- the tutorial game: guided, then open (v9.35.1)
+// Each lesson freezes the frame and explains one thing (the first pass, the first shot, the first time he shoots on
+// you), then you do it while everyone else holds still or does only what the lesson needs. Offense first (move,
+// sprint, pass, shoot), then defense (guard, steal, block). When all of it is taught the score goes back to 0-0 and
+// it's an open game, first to 11, the easiest CPU, easier still when you're behind. A replay after a loss is open from
+// the start.
+const TUT0_LESSONS = [
+  { id: 'move', side: 'off', title: 'Move', text: () => tk('Move with W A S D or the arrow keys.', 'Move with the stick on the left.', 'Move with the left stick.'),
+    place: { me: [760, 350], ball: true }, done: s => s.dist > 240 },
+  { id: 'sprint', side: 'off', title: 'Sprint', text: () => tk('Hold Shift while you move to sprint. It uses stamina.', 'Push the stick past the dashed ring to sprint.', 'Hold B while you move to sprint.'),
+    done: s => s.sprint > 0.6 },
+  { id: 'pass', side: 'off', title: 'Pass', text: () => tk('Tap J to pass to Sh. Saleem. He will give it back.', 'Tap PASS to throw it to Sh. Saleem. He will give it back.', 'Tap X to pass to Sh. Saleem. He will give it back.'),
+    place: { me: [800, 300], mate: [1000, 520], ball: true }, done: s => s.passed && s.back },
+  { id: 'shoot', side: 'off', title: 'Shoot', text: () => tk('Hold K to jump, and let go at the top of your jump. A green flash is a perfect release.', 'Hold SHOOT to jump, let go at the top. Green is perfect.', 'Hold A to jump, let go at the top. Green is perfect.'),
+    place: { me: [1010, 300], ball: true }, done: s => s.shotDone },
+  { id: 'defend', side: 'def', title: 'Defend', text: () => tk('Now they have it. Hold L to guard ' + tut0Opp() + ': you stay between him and the rim.', 'Now they have it. Hold DEFEND to guard ' + tut0Opp() + ', between him and the rim.', 'Now they have it. Hold Y to guard ' + tut0Opp() + ', between him and the rim.'),
+    place: { me: [500, 340], opp: [620, 330], oppBall: true }, drive: true, done: s => s.guard > 1.4 },
+  { id: 'steal', side: 'def', title: 'Steal', text: () => tk('Get close to the ball and tap J to swipe at it. Reach across his body and it’s a foul.', 'Get close and tap STEAL to swipe at the ball.', 'Get close and tap X to swipe at the ball.'),
+    place: { me: [420, 345], opp: [470, 340], oppBall: true }, drive: true, done: s => s.swiped },
+  { id: 'block', side: 'def', title: 'Block', text: () => tk('He’s going up! Press K now to jump and block it.', 'He’s going up! Tap BLOCK now to jump at it.', 'He’s going up! Press A now to jump at it.'),
+    place: { me: [230, 350], opp: [310, 350], oppBall: true }, shootAt: 0.7, freezeOn: 'windup', done: s => s.contested }
 ];
 function tut0() { return M && M.story && M.story.tut; }
+function tut0Opp() { const me = M.players && M.players.find(q => q.human === 0), o = me && me.opps && me.opps[0]; return o ? o.def.name : 'him'; }
+function tut0Lesson() { const T = tut0(); return T && !T.open ? TUT0_LESSONS[T.i] : null; }
+function tut0Go(i) {
+  const T = tut0(); if (!T) return;
+  if (i >= TUT0_LESSONS.length) return tut0Open();
+  const L = TUT0_LESSONS[i];
+  T.i = i; T.t = 0; T.s = { dist: 0, sprint: 0, guard: 0, last: null }; T.armed = !L.freezeOn;
+  if (L.place) tutPlace(L.place);
+  for (const q of M.players) { q.vx = q.vz = 0; }
+  if (!L.freezeOn) tut0Freeze(); else T.freeze = null;                // (the block freezes when he rises)
+}
+function tut0Freeze(now) { const T = tut0(); T.freeze = { t: 0, wait: now ? 0 : 3 }; SFX.blip && SFX.blip(); }   // (wait: a few frames so the ball is in his hands and everyone is in place)
+function tut0Unfreeze() { const T = tut0(); if (!T || !T.freeze || T.freeze.t < 0.35) return; T.freeze = null; T.armed = true; SFX.good && SFX.good(); }
+function tut0Open() {
+  const T = tut0(); T.open = true; T.freeze = null; M.cmdHook = null;
+  M.teams[0].score = M.teams[1].score = 0; for (const t of M.teams) t.qs = [];
+  for (const q of M.players) { q.stats.pts = q.stats.fgm = q.stats.fga = 0; }
+  formation(0); inbound(0);
+  if (C && C.story) { C.story.tutDone = true; saveCareer(); }
+  FX.callout && FX.callout('NOW PLAY IT OUT', '#ffd76a', 'FIRST TO 11');
+}
+// everyone but you holds still during a lesson, except what the lesson needs
+function tut0Cmd(q) {
+  const T = tut0(), L = tut0Lesson(); if (!T || !L || q.human === 0) return false;
+  const c = q.cmd; zeroCmd(c);
+  const me = M.players.find(p => p.human === 0); if (!me) return true;
+  if (q === me.mate && ball.owner === q && L.id === 'pass' && T.t > 0.6) c.a = true;      // Sh. Saleem gives it back
+  if (q === me.opps[0] && ball.owner === q) {
+    const h = attackHoop(q.team);
+    if (L.drive) { const tt = T.t % 5, tx = tt < 2.5 ? 360 : 560, tz = tt < 2.5 ? 270 : 430, d = Math.hypot(tx - q.x, tz - q.z); if (d > 10) { c.mx = (tx - q.x) / d * 0.45; c.mz = (tz - q.z) / d * 0.45; } }
+    if (L.shootAt && T.t > L.shootAt && q.state === 'free' && !T.s.shotGo) { c.b = true; c.bHeld = true; T.s.shotGo = true; T.s.holdT = 0.45; }
+    if (T.s.holdT > 0) { T.s.holdT -= STEP; c.bHeld = T.s.holdT > 0; }
+    c.face = sgn(h.x - q.x) || q.face;
+  }
+  return true;
+}
 {
   const _um = updateMatch;
   updateMatch = function (dt) {
-    const r = _um.apply(this, arguments), T = tut0();
-    if (!T || !M.players) return r;
+    const T = tut0();
+    if (!T || T.open || !M.players) return _um.apply(this, arguments);
+    if (T.start) { T.start = false; M.introT = 0; if (FX.calls) FX.calls = []; tut0Go(0); return; }
+    if (T.freeze && T.freeze.wait > 0) { T.freeze.wait--; if (M.cmdHook !== tut0Cmd) M.cmdHook = tut0Cmd; return _um.apply(this, arguments); }
+    if (T.freeze) { T.freeze.t += dt; return; }                         // the frame holds while the card is up
+    if (M.cmdHook !== tut0Cmd) M.cmdHook = tut0Cmd;
+    const r = _um.apply(this, arguments), L = tut0Lesson(); if (!L) return r;
     const me = M.players.find(q => q.human === 0), s = T.s; if (!me) return r;
+    T.t += dt;
     const sp = Math.hypot(me.vx || 0, me.vz || 0);
     if (s.last) s.dist += Math.hypot(me.x - s.last.x, me.z - s.last.z); s.last = { x: me.x, z: me.z };
     if (me.cmd && me.cmd.turbo && sp > 200) s.sprint += dt;
     if (ball.state === 'shot' && ball.shot && ball.shot.shooter === me && !ball.shot.dunk) s.shot = true;
     if (s.shot && ball.state !== 'shot') s.shotDone = true;
-    if (ball.owner === me) s.hadBall = true;
+    if (ball.owner === me) { if (s.passed) s.back = true; s.hadBall = true; }
     if (s.hadBall && (ball.owner === me.mate || (ball.pass && ball.pass.from === me))) s.passed = true;
     if (me.v8 && me.v8.held && me.v8.inPos) s.guard += dt;
-    if (me.state === 'jump' && me.opps.some(o => o.state === 'windup' || o.state === 'shoot') ) s.contested = true;
-    for (const st of TUT0_STEPS) if (!T.done[st.id] && st.done(s)) { T.done[st.id] = true; T.flash = { id: st.id, t: 1 }; SFX.good && SFX.good(); }
-    if (T.flash) { T.flash.t -= dt; if (T.flash.t <= 0) T.flash = null; }
+    if (me.state === 'steal') s.swiped = true;
+    if (me.state === 'jump' && (me.opps.some(o => o.state === 'windup' || o.state === 'shoot') || (ball.state === 'shot' && ball.shot && ball.shot.team !== me.team))) s.contested = true;
+    // the block: the frame freezes the moment he rises
+    if (L.freezeOn && !T.armed && me.opps.some(o => o.state === L.freezeOn || o.state === 'shoot')) { tut0Freeze(true); return r; }
+    if (L.done(s)) { s.doneT = (s.doneT || 0) + dt; if (s.doneT > 0.5) { FX.callout && FX.callout('✓ ' + L.title.toUpperCase(), '#9dffb0'); tut0Go(T.i + 1); } }
+    else if (L.id === 'block' && s.shotGo && T.t > 3 && ball.state !== 'shot') tut0Go(T.i);   // missed the moment: once more
+    else if (T.t > 3 && (M.phase !== 'live' || (!ball.owner && ball.state === 'loose' && L.id !== 'shoot'))) { s.stuckT = (s.stuckT || 0) + dt; if (s.stuckT > 1.2) tut0Go(T.i); }
+    for (const t of M.teams) t.score = Math.min(t.score, 9);         // (nothing counts until the open game)
     return r;
   };
-  // the catch-up: when you're behind, your shots open up and theirs close
+  // the card: freeze it, explain, then "try it"
+  const _pu = playUpdate;
+  playUpdate = function (rdt) {
+    const T = tut0();
+    if (T && !T.open && T.freeze && !(T.freeze.wait > 0) && !Game.paused && Game.screen === 'play') {
+      T.freeze.t += rdt;
+      if (menuHit('back')) { Game.paused = true; Game.idx = 0; return; }
+      if (menuHit('ok') || Input.pressed.Space) tut0Unfreeze();
+      return;
+    }
+    return _pu.apply(this, arguments);
+  };
+  // the catch-up, in the open game: when you're behind, your shots open up and theirs close
   const _sw = shotWindow;
   shotWindow = function (p) {
     const w = _sw.apply(this, arguments), T = tut0(); if (!T || !(w > 0) || !M.teams) return w;
@@ -29769,29 +29879,35 @@ function tut0() { return M && M.story && M.story.tut; }
   };
   const _dk = defK;
   defK = function (p) { const k = _dk.apply(this, arguments), T = tut0(); if (!T || !p || p.team !== 1 || !M.teams) return k; return k * (M.teams[0].score < M.teams[1].score ? 0.3 : 0.6); };
-  // the box, on the left
+  // the lesson: a card on the left (dimmed and frozen while it explains; a small reminder while you do it)
   const _dh = drawHUD;
   drawHUD = function (g) {
-    const r = _dh.apply(this, arguments), T = tut0();
-    if (!T || Game.screen !== 'play') return r;
-    const TT = Input.touchMode && g === ctx, x = 12, y = TT ? 112 : 88, w = TT ? 250 : 300;
-    g.font = `12px ${BODY}`; const rh = Math.max(20, (typeof phoneEffPx === 'function' ? phoneEffPx(g) : 12) + 8), cur = TUT0_STEPS.find(st => !T.done[st.id]);
-    const h = 30 + TUT0_STEPS.length * rh + (cur ? rh + 6 : 0);
-    g.fillStyle = 'rgba(8,16,24,0.78)'; roundRect(g, x, y, w, h, 12); g.fill();
-    g.textAlign = 'left'; g.fillStyle = GOLD; g.font = `13px ${FONT}`; g.fillText('The basics', x + 14, y + 20);
-    TUT0_STEPS.forEach((st, i) => {
-      const ok = !!T.done[st.id], on = st === cur, yy = y + 20 + (i + 1) * rh;
-      g.fillStyle = ok ? '#9dffb0' : on ? '#fff' : '#9fb3c8'; g.font = `12px ${on ? FONT : BODY}`;
-      g.fillText((ok ? '✓ ' : on ? '› ' : '• ') + st.title, x + 16, yy);
-    });
-    if (cur) { g.fillStyle = '#f2cf6b'; g.font = `12px ${BODY}`; g.fillText(fitText(g, cur.text(), w - 28), x + 16, y + 26 + (TUT0_STEPS.length + 1) * rh); }
+    const r = _dh.apply(this, arguments), T = tut0(), L = tut0Lesson();
+    if (!T || !L || Game.screen !== 'play' || Game.paused) return r;
+    const TT = Input.touchMode && g === ctx, x = 12, y = TT ? 112 : 88, w = TT ? 300 : 340, fr = !!T.freeze, n = TUT0_LESSONS.length;
+    if (fr) { g.fillStyle = 'rgba(4,8,14,0.45)'; g.fillRect(-400, 0, W + 800, H); }
+    g.font = `14px ${BODY}`; const lh = 19, lines = wrapCount(g, L.text(), w - 32), h = 58 + lines * lh + (fr ? 34 : 8);
+    g.fillStyle = fr ? 'rgba(8,16,24,0.95)' : 'rgba(8,16,24,0.8)'; roundRect(g, x, y, w, h, 12); g.fill();
+    if (fr) { g.strokeStyle = GOLD; g.lineWidth = 2; roundRect(g, x, y, w, h, 12); g.stroke(); }
+    g.textAlign = 'left'; g.fillStyle = '#9fb3c8'; g.font = `11px ${FONT}`; g.fillText((L.side === 'off' ? 'OFFENSE' : 'DEFENSE') + '  •  ' + (T.i + 1) + ' of ' + n, x + 16, y + 20);
+    g.fillStyle = GOLD; g.font = `17px ${FONT}`; g.fillText(L.title, x + 16, y + 42);
+    g.fillStyle = IVORY; g.font = `14px ${BODY}`; wrapTextLeft(g, L.text(), x + 16, y + 64, w - 32, lh);
+    if (fr) { g.fillStyle = '#f2cf6b'; g.font = `13px ${FONT}`; g.fillText(Input.touchMode ? 'Tap to try it' : 'Enter to try it', x + 16, y + h - 14); addRect(0, 0, W, H, tut0Unfreeze); }
+    for (let k = 0; k < n; k++) { g.fillStyle = k < T.i ? '#9dffb0' : k === T.i ? GOLD : 'rgba(255,255,255,0.2)'; g.beginPath(); g.arc(x + w - 16 - (n - 1 - k) * 12, y + 17, 3.5, 0, Math.PI * 2); g.fill(); }
     return r;
   };
 }
 {
   // the tutorial game is set up as the pickup game, plus its prompts
   const _ex = storyExhibition;
-  storyExhibition = function (S) { const r = _ex.apply(this, arguments); if (S && S.tutorial && M.story) M.story.tut = { s: { dist: 0, sprint: 0, guard: 0 }, done: {} }; return r; };
+  storyExhibition = function (S) {
+    const r = _ex.apply(this, arguments);
+    if (S && S.tutorial && M.story) {
+      M.story.tut = { i: 0, t: 0, s: {}, open: !!(C.story && C.story.tutDone) };
+      if (!M.story.tut.open) { M.introT = 0; for (const q of M.players) q.hifzUsed = true; M.story.tut.start = true; }   // (no venue sweep, no Noor questions mid-lesson; the first lesson starts on the first frame of play, once the tip-off setup is done)
+    }
+    return r;
+  };
   // no rewards card after it: its lines play in the gym, and on
   const _ae = storyAfterExhib;
   storyAfterExhib = function () {
